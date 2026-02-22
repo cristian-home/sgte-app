@@ -10,11 +10,12 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Scout\Searchable;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, TwoFactorAuthenticatable, Searchable, LogsActivity;
+    use HasFactory, Notifiable, TwoFactorAuthenticatable, Searchable, LogsActivity, HasRoles;
 
     /**
      * The attributes that are mass assignable.
