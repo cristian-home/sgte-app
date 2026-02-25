@@ -20,8 +20,16 @@ export type UseCurrentUrlReturn = {
 };
 
 export function useCurrentUrl(): UseCurrentUrlReturn {
-    const page = usePage();
-    const currentUrlPath = new URL(page.url, window?.location.origin).pathname;
+    const page = usePage<{
+        url: string;
+    }>();
+
+    // En SSR, usar la URL completa del servidor. En cliente, usar window.location.origin
+    const baseUrl = typeof window !== 'undefined'
+        ? window.location.origin
+        : page.props.url;
+
+    const currentUrlPath = new URL(page.url, baseUrl).pathname;
 
     const isCurrentUrl: IsCurrentUrlFn = (
         urlToCheck: NonNullable<InertiaLinkProps['href']>,
