@@ -25,9 +25,8 @@ export function useCurrentUrl(): UseCurrentUrlReturn {
     }>();
 
     // En SSR, usar la URL completa del servidor. En cliente, usar window.location.origin
-    const baseUrl = typeof window !== 'undefined'
-        ? window.location.origin
-        : page.props.url;
+    const baseUrl =
+        typeof window !== 'undefined' ? window.location.origin : page.props.url;
 
     const currentUrlPath = new URL(page.url, baseUrl).pathname;
 

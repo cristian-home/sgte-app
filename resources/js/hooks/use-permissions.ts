@@ -8,7 +8,10 @@ import type { Role as RoleType } from '@/enums/Role';
 export function usePermissions() {
     const { auth } = usePage().props;
 
-    const isSuperAdmin = useMemo(() => auth.roles.includes(Role.SUPER_ADMIN as RoleType), [auth.roles]);
+    const isSuperAdmin = useMemo(
+        () => auth.roles.includes(Role.SUPER_ADMIN as RoleType),
+        [auth.roles],
+    );
 
     const can = useCallback(
         (permission: Permission) => {
@@ -21,7 +24,10 @@ export function usePermissions() {
         [isSuperAdmin, auth.permissions],
     );
 
-    const hasRole = useCallback((role: RoleType) => auth.roles.includes(role), [auth.roles]);
+    const hasRole = useCallback(
+        (role: RoleType) => auth.roles.includes(role),
+        [auth.roles],
+    );
 
     return {
         can,

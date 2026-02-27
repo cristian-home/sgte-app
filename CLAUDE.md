@@ -1,3 +1,102 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+**SGTE** (Sistema de Gestión de Transporte Especial) — a fleet management system for special transport in Colombia. Built with Laravel 12 + Inertia v2 + React 19 + Tailwind CSS v4. The UI labels and domain terminology are in Spanish.
+
+Domain modules: vehicles, drivers, third-parties (clients/providers), contracts, services (Gantt-based scheduling), day summaries, incidents, invoices, FUEC document generation, and reports.
+
+## Development Commands
+
+```bash
+# Full dev environment (server + queue + logs + vite)
+composer run dev
+
+# Individual services
+php artisan serve          # Backend only
+npm run dev                # Vite dev server only
+
+# Build
+npm run build              # Production build
+npm run build:ssr          # Production + SSR build
+
+# Testing
+php artisan test --compact                          # Run all tests
+php artisan test --compact tests/Feature/Auth       # Run a directory
+php artisan test --compact --filter=testName        # Run specific test
+
+# Linting & formatting
+vendor/bin/pint --dirty --format agent   # Format modified PHP files (REQUIRED before finalizing PHP changes)
+npm run lint                             # ESLint fix
+npm run format                           # Prettier format resources/
+npm run format:check                     # Prettier check
+npm run types                            # TypeScript type check (tsc --noEmit)
+
+# Full test + lint pipeline
+composer run test    # config:clear → pint --test → artisan test
+
+# Code generation
+php artisan enum:typescript              # Regenerate TS enums from PHP enums → resources/js/enums/
+```
+
+## Architecture
+
+### Backend (Laravel 12)
+
+- **Routing**: `bootstrap/app.php` registers routes (web, api, console, channels) and middleware. No `Kernel.php`.
+- **Providers**: `bootstrap/providers.php` → AppServiceProvider, FortifyServiceProvider, HorizonServiceProvider.
+- **Auth**: Laravel Fortify (headless). Super Admin role bypasses all gates via `Gate::before` in AppServiceProvider.
+- **Permissions**: Spatie Permission package. Roles defined in `app/Enums/Role.php` (5 roles). Permissions in `app/Enums/Permission.php` (47 permissions, CRUD pattern per module).
+- **Validation**: Form Request classes in `app/Http/Requests/` — never inline validation in controllers.
+- **Shared Inertia data**: `HandleInertiaRequests` middleware shares `auth.user`, `auth.permissions`, `auth.roles`, `sidebarOpen`, `name`, `url` to all pages.
+
+### Frontend (React 19 + Inertia v2)
+
+- **Pages**: `resources/js/pages/` — resolved by Inertia from controller `render('page-name')` calls.
+- **Layouts**: `resources/js/layouts/` — `app-layout.tsx` (main), `auth-layout.tsx` (auth), `settings/layout.tsx`.
+- **Components**: `resources/js/components/` — shared app components. `components/ui/` for base UI primitives. `components/kibo-ui/` for custom complex components.
+- **Path alias**: `@/` → `resources/js/` (configured in tsconfig.json and vite).
+- **Prettier**: 4-space indentation, single quotes, semicolons, `tailwindcss` plugin for class ordering.
+
+### Permission System (Full Stack)
+
+PHP enums (`app/Enums/Permission.php`, `app/Enums/Role.php`) are the source of truth. Run `php artisan enum:typescript` to generate TypeScript mirrors in `resources/js/enums/`. These files are auto-generated — do not edit manually.
+
+Frontend usage:
+- `<Can permission={Permission.VIEW_VEHICLES}>` component for conditional rendering
+- `usePermissions()` hook → `can()`, `hasRole()`, `isSuperAdmin`
+
+### Wayfinder (Route Generation)
+
+Wayfinder auto-generates TypeScript route functions in `resources/js/actions/` (controller actions) and `resources/js/routes/` (named routes). Do not edit these directories manually — they regenerate on build.
+
+### Infrastructure (Docker via Sail)
+
+Services in `compose.yaml`: PostgreSQL 18, Redis, Typesense (search), MinIO (S3 storage), Mailpit (email testing), Reverb (WebSockets).
+
+### Testing
+
+- Pest 4 with RefreshDatabase on Feature tests (`tests/Pest.php`).
+- SQLite in-memory for tests (`phpunit.xml`).
+- Feature tests in `tests/Feature/`, unit tests in `tests/Unit/`.
+- Use factories for model creation in tests.
+
+### Key Packages
+
+- **spatie/laravel-permission**: Role & permission management
+- **spatie/laravel-activitylog**: Activity logging on models
+- **spatie/laravel-medialibrary**: File/media attachments
+- **spatie/laravel-query-builder**: API query filtering
+- **laravel/scout + Typesense**: Full-text search
+- **laravel/horizon**: Queue monitoring dashboard
+- **laravel/reverb + laravel-echo**: Real-time WebSocket broadcasting
+
+## Documentation
+
+Project documentation lives in `/docs/`: SRS (`SRS.md`), data model (`modelo-datos.md`), navigation structure (`navegacion.md`), UI mockups (`mockups.md`), ADRs in `/docs/adr/`, and phase plans in `/docs/fases/`.
+
 <laravel-boost-guidelines>
 === foundation rules ===
 

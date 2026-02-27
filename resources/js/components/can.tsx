@@ -2,7 +2,6 @@ import { usePermissions } from '@/hooks/use-permissions';
 import type { ReactNode } from 'react';
 import type { Permission } from '@/enums/Permission';
 
-
 export function Can({
     permission,
     fallback = null,

@@ -2,7 +2,6 @@ import type { InertiaLinkProps } from '@inertiajs/react';
 import type { LucideIcon } from 'lucide-react';
 import type { Permission } from '@/enums/Permission';
 
-
 export type BreadcrumbItem = {
     title: string;
     href: string;
