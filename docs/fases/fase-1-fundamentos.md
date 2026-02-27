@@ -60,6 +60,11 @@ Establecer la base del proyecto: stack frontend/backend, autenticación, autoriz
 - [x] `UserSeeder` con 21 usuarios de prueba
 - [x] Gate `super_admin` bypass en `AppServiceProvider`
 - [x] Middleware `can:dashboard.view` en ruta dashboard
+- [x] Comando `php artisan enum:typescript` — genera enums TypeScript desde PHP (ver ADR-001)
+- [x] Permisos y roles compartidos al frontend via Inertia (`HandleInertiaRequests`)
+- [x] Hook `usePermissions()` con `can()`, `hasRole()` y bypass super_admin
+- [x] Componente `<Can permission={...}>` para renderizado condicional
+- [x] Gate aplicado en sidebar, header y menú de usuario
 
 ### 1.5 Configuración de tiempo real
 
@@ -109,6 +114,8 @@ Establecer la base del proyecto: stack frontend/backend, autenticación, autoriz
 - Se usó Laravel Blueprint para generar el scaffolding completo de 11 entidades.
 - Los permisos se expandieron de 14 genéricos a 43 granulares con patrón `recurso.accion` para uso en backend (gates/middleware) y frontend (mostrar/ocultar UI).
 - Se usa `syncPermissions` en el seeder para idempotencia al re-ejecutar.
+- Los enums PHP se comparten con el frontend via `php artisan enum:typescript` (ver ADR-001). Los archivos generados en `resources/js/enums/` se versionan en git.
+- El middleware `HandleInertiaRequests` comparte `auth.permissions` y `auth.roles` en cada respuesta Inertia, permitiendo control de UI sin requests adicionales.
 
 ### Commits relevantes
 
