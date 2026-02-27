@@ -12,15 +12,17 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
+import { Permission } from '@/enums/Permission';
 import { dashboard } from '@/routes';
-import type { NavItem } from '@/types';
 import AppLogo from './app-logo';
+import type { NavItem } from '@/types';
 
 const mainNavItems: NavItem[] = [
     {
         title: 'Dashboard',
         href: dashboard(),
         icon: LayoutGrid,
+        permission: Permission.VIEW_DASHBOARD,
     },
 ];
 

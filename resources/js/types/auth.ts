@@ -1,3 +1,6 @@
+import type { Permission } from '@/enums/Permission';
+import type { Role } from '@/enums/Role';
+
 export type User = {
     id: number;
     name: string;
@@ -12,6 +15,8 @@ export type User = {
 
 export type Auth = {
     user: User;
+    permissions: Permission[];
+    roles: Role[];
 };
 
 export type TwoFactorSetupData = {

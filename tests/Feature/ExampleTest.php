@@ -3,5 +3,6 @@
 test('returns a successful response', function () {
     $response = $this->get(route('home'));
 
-    $response->assertOk();
+    $response->assertStatus(302);
+    $response->assertRedirect(route('dashboard'));
 });
