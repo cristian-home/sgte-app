@@ -26,6 +26,6 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
-/draft.yaml
+/test-draft.yaml
 /.blueprint
 /.claude

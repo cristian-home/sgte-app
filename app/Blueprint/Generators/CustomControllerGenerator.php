@@ -2,6 +2,7 @@
 
 namespace App\Blueprint\Generators;
 
+use App\Enums\Permission;
 use Blueprint\Generators\ControllerGenerator;
 use Blueprint\Models\Controller;
 use Blueprint\Models\Statements\QueryStatement;
@@ -10,6 +11,29 @@ use Illuminate\Support\Str;
 
 class CustomControllerGenerator extends ControllerGenerator
 {
+    /**
+     * Models whose permission prefix doesn't follow the convention
+     * Str::upper(Str::snake(Str::plural($modelName))).
+     */
+    private const PERMISSION_PREFIX_OVERRIDES = [
+        'ServiceIncident' => 'INCIDENTS',
+        'DayStatus' => 'DAY_SUMMARY',
+        'Fuec' => 'FUEC',
+    ];
+
+    /**
+     * Map controller method names to CRUD permission action prefixes.
+     */
+    private const METHOD_TO_ACTION = [
+        'index' => 'VIEW',
+        'show' => 'VIEW',
+        'create' => 'CREATE',
+        'store' => 'CREATE',
+        'edit' => 'UPDATE',
+        'update' => 'UPDATE',
+        'destroy' => 'DELETE',
+    ];
+
     protected function populateStub(string $stub, Controller $controller): string
     {
         $this->ensureNotificationImports($controller);
@@ -18,12 +42,23 @@ class CustomControllerGenerator extends ControllerGenerator
             $this->addImport($controller, 'Spatie\QueryBuilder\QueryBuilder');
         }
 
+        $permissionMap = $this->buildPermissionMap($controller);
+
+        if (! empty($permissionMap)) {
+            $this->addImport($controller, 'Illuminate\Support\Facades\Gate');
+            $this->addImport($controller, 'App\Enums\Permission');
+        }
+
         $stub = parent::populateStub($stub, $controller);
         $stub = $this->normalizeNotificationNamespaces($stub);
 
         $modelName = Str::singular($controller->prefix());
         $modelClass = Str::studly($modelName);
         $stub = $this->replaceModelCollectionQueries($stub, $modelClass);
+
+        if (! empty($permissionMap)) {
+            $stub = $this->injectPermissionGates($stub, $permissionMap);
+        }
 
         return $stub;
     }
@@ -95,5 +130,70 @@ class CustomControllerGenerator extends ControllerGenerator
             .$linePrefix.'    ->allowedFilters([])'
             .$linePrefix.'    ->allowedSorts([])'
             .$linePrefix."    ->{$operation}();";
+    }
+
+    /**
+     * Build a map of controller method → Permission enum case name.
+     *
+     * Only includes methods whose corresponding Permission case actually exists.
+     *
+     * @return array<string, string> e.g. ['index' => 'VIEW_VEHICLES', 'store' => 'CREATE_VEHICLES']
+     */
+    protected function buildPermissionMap(Controller $controller): array
+    {
+        $modelName = Str::studly(Str::singular($controller->prefix()));
+        $prefix = $this->resolvePermissionPrefix($modelName);
+        $validCases = array_map(fn (Permission $case): string => $case->name, Permission::cases());
+
+        $map = [];
+
+        foreach (array_keys($controller->methods()) as $method) {
+            $action = self::METHOD_TO_ACTION[$method] ?? null;
+
+            if ($action === null) {
+                continue;
+            }
+
+            $caseName = $action.'_'.$prefix;
+
+            if (in_array($caseName, $validCases, true)) {
+                $map[$method] = $caseName;
+            }
+        }
+
+        return $map;
+    }
+
+    /**
+     * Resolve the Permission enum prefix for a given model name.
+     *
+     * Uses explicit overrides for non-standard mappings, otherwise derives
+     * the prefix by convention: Str::upper(Str::snake(Str::plural($modelName))).
+     */
+    protected function resolvePermissionPrefix(string $modelName): string
+    {
+        return self::PERMISSION_PREFIX_OVERRIDES[$modelName]
+            ?? Str::upper(Str::snake(Str::plural($modelName)));
+    }
+
+    /**
+     * Inject Gate::authorize() calls at the start of each method body.
+     *
+     * @param  array<string, string>  $permissionMap  method → Permission case name
+     */
+    protected function injectPermissionGates(string $stub, array $permissionMap): string
+    {
+        foreach ($permissionMap as $methodName => $caseName) {
+            $gate = self::INDENT."Gate::authorize(Permission::{$caseName}->value);";
+
+            $stub = preg_replace(
+                '/(public function '.preg_quote($methodName, '/').'\([^)]*\)[^{]*\{)\n/',
+                "$1\n{$gate}\n",
+                $stub,
+                1,
+            ) ?? $stub;
+        }
+
+        return $stub;
     }
 }
