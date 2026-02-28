@@ -27,6 +27,18 @@ test('index behaves as expected', function (): void {
     $response->assertOk();
 });
 
+test('index returns inertia page with eps', function (): void {
+    Eps::factory()->count(5)->create();
+
+    $response = get(route('eps.index'));
+
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->component('eps/index')
+            ->has('eps', 5)
+    );
+});
+
 test('create behaves as expected', function (): void {
     $response = get(route('eps.create'));
 

@@ -124,7 +124,7 @@
     --chart-5: oklch(0.645 0.246 16.439);
     --sidebar: oklch(0.216 0.006 56.043);
     --sidebar-foreground: oklch(0.985 0.001 106.423);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
+    --sidebar-primary: oklch(73.902% 0.15403 77.923);
     --sidebar-primary-foreground: oklch(0.985 0.001 106.423);
     --sidebar-accent: oklch(0.268 0.007 34.298);
     --sidebar-accent-foreground: oklch(0.985 0.001 106.423);
@@ -139,5 +139,49 @@
 
     body {
         @apply bg-background text-foreground;
+    }
+}
+
+/* Pull sidebar into its own transition group */
+[data-slot='sidebar'] {
+    view-transition-name: sidebar;
+}
+
+/* Default: all groups crossfade */
+::view-transition-old(root),
+::view-transition-old(sidebar),
+::view-transition-old(header),
+::view-transition-old(main-content) {
+    animation: 250ms 0ms ease-out both fade-out;
+}
+
+::view-transition-new(root),
+::view-transition-new(sidebar),
+::view-transition-new(header),
+::view-transition-new(main-content) {
+    animation: 250ms 0ms ease-in both fade-in;
+}
+
+/* Same-layout (old had sidebar + new has sidebar): keep sidebar & root static */
+:root[data-had-sidebar]:has([data-slot='sidebar'])::view-transition-old(
+        sidebar
+    ),
+:root[data-had-sidebar]:has([data-slot='sidebar'])::view-transition-new(
+        sidebar
+    ),
+:root[data-had-sidebar]:has([data-slot='sidebar'])::view-transition-old(root),
+:root[data-had-sidebar]:has([data-slot='sidebar'])::view-transition-new(root) {
+    animation: none;
+}
+
+@keyframes fade-out {
+    to {
+        opacity: 0;
+    }
+}
+
+@keyframes fade-in {
+    from {
+        opacity: 0;
     }
 }

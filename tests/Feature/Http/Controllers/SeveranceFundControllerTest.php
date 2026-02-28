@@ -27,6 +27,18 @@ test('index behaves as expected', function (): void {
     $response->assertOk();
 });
 
+test('index returns inertia page with severance funds', function (): void {
+    SeveranceFund::factory()->count(5)->create();
+
+    $response = get(route('severance-funds.index'));
+
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->component('severance-funds/index')
+            ->has('severanceFunds', 5)
+    );
+});
+
 test('create behaves as expected', function (): void {
     $response = get(route('severance-funds.create'));
 

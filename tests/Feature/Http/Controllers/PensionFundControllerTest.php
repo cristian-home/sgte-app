@@ -27,6 +27,18 @@ test('index behaves as expected', function (): void {
     $response->assertOk();
 });
 
+test('index returns inertia page with pension funds', function (): void {
+    PensionFund::factory()->count(5)->create();
+
+    $response = get(route('pension-funds.index'));
+
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->component('pension-funds/index')
+            ->has('pensionFunds', 5)
+    );
+});
+
 test('create behaves as expected', function (): void {
     $response = get(route('pension-funds.create'));
 

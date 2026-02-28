@@ -28,6 +28,18 @@ createInertiaApp({
             </StrictMode>,
         );
     },
+    defaults: {
+        visitOptions: () => {
+            // Record current layout before navigation so CSS can
+            // distinguish same-layout vs cross-layout transitions.
+            if (document.querySelector('[data-slot="sidebar"]')) {
+                document.documentElement.setAttribute('data-had-sidebar', '');
+            } else {
+                document.documentElement.removeAttribute('data-had-sidebar');
+            }
+            return { viewTransition: true };
+        },
+    },
     progress: {
         color: '#4B5563',
     },

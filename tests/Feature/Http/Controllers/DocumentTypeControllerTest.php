@@ -27,6 +27,18 @@ test('index behaves as expected', function (): void {
     $response->assertOk();
 });
 
+test('index returns inertia page with document types', function (): void {
+    DocumentType::factory()->count(5)->create();
+
+    $response = get(route('document-types.index'));
+
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->component('document-types/index')
+            ->has('documentTypes', 5)
+    );
+});
+
 test('create behaves as expected', function (): void {
     $response = get(route('document-types.create'));
 
