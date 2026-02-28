@@ -369,9 +369,9 @@ stop
    - Correo electrónico
    - Categoría de licencia
    - Fecha vencimiento licencia
-   - EPS (Entidad Promotora de Salud)
-   - Fondo de pensiones
-   - Fondo de cesantías
+   - EPS (Entidad Promotora de Salud — seleccionada desde catálogo)
+   - Fondo de pensiones (seleccionado desde catálogo)
+   - Fondo de cesantías (seleccionado desde catálogo)
    - Estado de seguridad social vigente
 
 2. CUANDO se intenta asignar un conductor a un servicio ENTONCES el sistema DEBERÁ validar que la categoría de licencia corresponda al tipo de vehículo.

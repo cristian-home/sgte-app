@@ -14,3 +14,10 @@ export type NavItem = {
     isActive?: boolean;
     permission?: Permission;
 };
+
+export type NavGroup = {
+    label: string;
+    icon?: LucideIcon;
+    permission?: Permission;
+    items: NavItem[];
+};

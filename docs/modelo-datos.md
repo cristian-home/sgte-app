@@ -81,6 +81,42 @@ Unifica clientes, proveedores y cualquier persona natural o jurídica (excepto c
 
 ---
 
+## Tabla 1b: Eps
+
+Catálogo de Entidades Promotoras de Salud (EPS) de Colombia.
+
+| Campo  | Tipo        | Descripción          |
+| ------ | ----------- | -------------------- |
+| id     | UUID        | Primary Key          |
+| codigo | VARCHAR(10) | Código de la EPS     |
+| nombre | VARCHAR     | Nombre de la EPS     |
+
+---
+
+## Tabla 1c: FondoPensiones
+
+Catálogo de Fondos de Pensiones de Colombia.
+
+| Campo  | Tipo        | Descripción                  |
+| ------ | ----------- | ---------------------------- |
+| id     | UUID        | Primary Key                  |
+| codigo | VARCHAR(10) | Código del fondo de pensiones|
+| nombre | VARCHAR     | Nombre del fondo de pensiones|
+
+---
+
+## Tabla 1d: FondoCesantias
+
+Catálogo de Fondos de Cesantías de Colombia.
+
+| Campo  | Tipo        | Descripción                    |
+| ------ | ----------- | ------------------------------ |
+| id     | UUID        | Primary Key                    |
+| codigo | VARCHAR(10) | Código del fondo de cesantías  |
+| nombre | VARCHAR     | Nombre del fondo de cesantías  |
+
+---
+
 ## Tabla 4: Conductor
 
 | Campo                    | Tipo    | Descripción                         |
@@ -98,9 +134,9 @@ Unifica clientes, proveedores y cualquier persona natural o jurídica (excepto c
 | email                    | VARCHAR | Correo electrónico                  |
 | categoria_licencia       | VARCHAR | Categoría de licencia               |
 | licencia_vencimiento     | DATE    | Fecha de vencimiento de la licencia |
-| eps                      | VARCHAR | Nombre de la EPS                    |
-| fondo_pensiones          | VARCHAR | Nombre del fondo de pensiones       |
-| fondo_cesantias          | VARCHAR | Nombre del fondo de cesantías       |
+| eps_id                   | UUID    | Foreign Key → Eps                   |
+| fondo_pensiones_id       | UUID    | Foreign Key → FondoPensiones        |
+| fondo_cesantias_id       | UUID    | Foreign Key → FondoCesantias        |
 | seguridad_social_vigente | BOOLEAN | Estado de seguridad social          |
 | activo                   | BOOLEAN | Si está activo en la empresa        |
 
@@ -264,6 +300,9 @@ Las siguientes tablas son creadas y gestionadas automáticamente por el framewor
 | ------------- | ----------------- | ----------------------------- |
 | TipoDocumento | Tercero           | One-to-Many                   |
 | TipoDocumento | Conductor         | One-to-Many                   |
+| Eps           | Conductor         | One-to-Many                   |
+| FondoPensiones| Conductor         | One-to-Many                   |
+| FondoCesantias| Conductor         | One-to-Many                   |
 | Tercero       | Vehiculo          | One-to-Many (si es proveedor) |
 | Tercero       | Contrato          | One-to-Many (si es cliente)   |
 | Contrato      | Servicio          | One-to-Many                   |

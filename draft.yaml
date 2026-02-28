@@ -26,6 +26,30 @@ models:
     relationships:
       hasMany: ThirdParty, Driver
 
+  Eps:
+    code: string:10
+    name: string:100
+    timestamps: true
+    softdeletes: true
+    relationships:
+      hasMany: Driver
+
+  PensionFund:
+    code: string:10
+    name: string:100
+    timestamps: true
+    softdeletes: true
+    relationships:
+      hasMany: Driver
+
+  SeveranceFund:
+    code: string:10
+    name: string:100
+    timestamps: true
+    softdeletes: true
+    relationships:
+      hasMany: Driver
+
   # ============================================
   # 2. MASTER DATA (dependen de DocumentType)
   # ============================================
@@ -66,15 +90,15 @@ models:
     email: string:255
     license_category: string:10
     license_due_date: date
-    eps: string:100
-    pension_fund: string:100
-    severance_fund: string:100
+    eps_id: id foreign:eps
+    pension_fund_id: id foreign:pension_funds
+    severance_fund_id: id foreign:severance_funds
     has_social_security: boolean default:true
     active: boolean default:true
     timestamps: true
     softdeletes: true
     relationships:
-      belongsTo: DocumentType
+      belongsTo: DocumentType, Eps, PensionFund, SeveranceFund
       hasMany: Service
 
   # ============================================
@@ -216,7 +240,7 @@ models:
     relationships:
       belongsTo: Vehicle
 
-seeders: DocumentType, ThirdParty, Driver, Vehicle, Contract, Invoice, DayStatus, Service, ServiceIncident, Fuec, VehicleLocation
+seeders: DocumentType, Eps, PensionFund, SeveranceFund, ThirdParty, Driver, Vehicle, Contract, Invoice, DayStatus, Service, ServiceIncident, Fuec, VehicleLocation
 
 controllers:
 
@@ -245,6 +269,72 @@ controllers:
     destroy:
       delete: documentType
       redirect: document-types.index
+
+  Eps:
+    index:
+      query: all
+      inertia: eps/index with:eps
+    create:
+      inertia: eps/create
+    store:
+      validate: code, name
+      save: eps
+      redirect: eps.index
+    show:
+      inertia: eps/show with:eps
+    edit:
+      inertia: eps/edit with:eps
+    update:
+      validate: code, name
+      update: eps
+      redirect: eps.index
+    destroy:
+      delete: eps
+      redirect: eps.index
+
+  PensionFund:
+    index:
+      query: all
+      inertia: pension-funds/index with:pensionFunds
+    create:
+      inertia: pension-funds/create
+    store:
+      validate: code, name
+      save: pensionFund
+      redirect: pension-funds.index
+    show:
+      inertia: pension-funds/show with:pensionFund
+    edit:
+      inertia: pension-funds/edit with:pensionFund
+    update:
+      validate: code, name
+      update: pensionFund
+      redirect: pension-funds.index
+    destroy:
+      delete: pensionFund
+      redirect: pension-funds.index
+
+  SeveranceFund:
+    index:
+      query: all
+      inertia: severance-funds/index with:severanceFunds
+    create:
+      inertia: severance-funds/create
+    store:
+      validate: code, name
+      save: severanceFund
+      redirect: severance-funds.index
+    show:
+      inertia: severance-funds/show with:severanceFund
+    edit:
+      inertia: severance-funds/edit with:severanceFund
+    update:
+      validate: code, name
+      update: severanceFund
+      redirect: severance-funds.index
+    destroy:
+      delete: severanceFund
+      redirect: severance-funds.index
 
   # ============================================
   # MASTER DATA
@@ -279,7 +369,7 @@ controllers:
     create:
       inertia: drivers/create
     store:
-      validate: document_type_id, identification_number, first_name, second_name, first_lastname, second_lastname, city, address, phone, email, license_category, license_due_date, eps, pension_fund, severance_fund, has_social_security, active
+      validate: document_type_id, identification_number, first_name, second_name, first_lastname, second_lastname, city, address, phone, email, license_category, license_due_date, eps_id, pension_fund_id, severance_fund_id, has_social_security, active
       save: driver
       redirect: drivers.index
     show:
@@ -287,7 +377,7 @@ controllers:
     edit:
       inertia: drivers/edit with:driver
     update:
-      validate: document_type_id, identification_number, first_name, second_name, first_lastname, second_lastname, city, address, phone, email, license_category, license_due_date, eps, pension_fund, severance_fund, has_social_security, active
+      validate: document_type_id, identification_number, first_name, second_name, first_lastname, second_lastname, city, address, phone, email, license_category, license_due_date, eps_id, pension_fund_id, severance_fund_id, has_social_security, active
       update: driver
       redirect: drivers.index
     destroy:

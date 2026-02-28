@@ -1,0 +1,67 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Http\Requests\EpsStoreRequest;
+use App\Http\Requests\EpsUpdateRequest;
+use App\Models\Eps;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
+use Spatie\QueryBuilder\QueryBuilder;
+
+class EpsController extends Controller
+{
+    public function index(Request $request): Response
+    {
+        $eps = QueryBuilder::for(Eps::class)
+            ->allowedFilters([])
+            ->allowedSorts([])
+            ->get();
+
+        return Inertia::render('eps/index', [
+            'eps' => $eps,
+        ]);
+    }
+
+    public function create(Request $request): Response
+    {
+        return Inertia::render('eps/create');
+    }
+
+    public function store(EpsStoreRequest $request): RedirectResponse
+    {
+        $eps = Eps::create($request->validated());
+
+        return redirect()->route('eps.index');
+    }
+
+    public function show(Request $request, Eps $ep): Response
+    {
+        return Inertia::render('eps/show', [
+            'eps' => $ep,
+        ]);
+    }
+
+    public function edit(Request $request, Eps $ep): Response
+    {
+        return Inertia::render('eps/edit', [
+            'eps' => $ep,
+        ]);
+    }
+
+    public function update(EpsUpdateRequest $request, Eps $ep): RedirectResponse
+    {
+        $ep->update($request->validated());
+
+        return redirect()->route('eps.index');
+    }
+
+    public function destroy(Request $request, Eps $ep): RedirectResponse
+    {
+        $ep->delete();
+
+        return redirect()->route('eps.index');
+    }
+}

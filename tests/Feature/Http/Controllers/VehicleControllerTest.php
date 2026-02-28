@@ -1,0 +1,203 @@
+<?php
+
+namespace Tests\Feature\Http\Controllers;
+
+use App\Models\ThirdParty;
+use App\Models\User;
+use App\Models\Vehicle;
+use Illuminate\Support\Carbon;
+use Spatie\Permission\Models\Role as SpatieRole;
+
+use function Pest\Laravel\assertSoftDeleted;
+use function Pest\Laravel\delete;
+use function Pest\Laravel\get;
+use function Pest\Laravel\post;
+use function Pest\Laravel\put;
+
+beforeEach(function (): void {
+    SpatieRole::create(['name' => 'super_admin', 'guard_name' => 'web']);
+    $user = User::factory()->create();
+    $user->assignRole('super_admin');
+    $this->actingAs($user);
+});
+
+test('index behaves as expected', function (): void {
+    $vehicles = Vehicle::factory()->count(3)->create();
+
+    $response = get(route('vehicles.index'));
+
+    $response->assertOk();
+});
+
+test('create behaves as expected', function (): void {
+    $response = get(route('vehicles.create'));
+
+    $response->assertOk();
+});
+
+test('store uses form request validation')
+    ->assertActionUsesFormRequest(
+        \App\Http\Controllers\VehicleController::class,
+        'store',
+        \App\Http\Requests\VehicleStoreRequest::class
+    );
+
+test('store saves and redirects', function (): void {
+    $internal_code = fake()->word();
+    $plate = strtoupper(fake()->bothify('???###'));
+    $mobile_number = fake()->word();
+    $brand = fake()->word();
+    $line = fake()->word();
+    $model_year = fake()->numberBetween(2015, 2026);
+    $type = fake()->randomElement(['bus', 'buseta', 'van', 'automobile']);
+    $engine_number = fake()->word();
+    $chassis_number = fake()->word();
+    $capacity = fake()->numberBetween(4, 40);
+    $city = fake()->city();
+    $is_third_party = fake()->boolean();
+    $third_party = ThirdParty::factory()->create();
+    $soat_due_date = Carbon::parse(fake()->date());
+    $rtm_due_date = Carbon::parse(fake()->date());
+    $operation_card_due_date = Carbon::parse(fake()->date());
+    $status = fake()->randomElement(['active', 'maintenance', 'retired']);
+
+    $response = post(route('vehicles.store'), [
+        'internal_code' => $internal_code,
+        'plate' => $plate,
+        'mobile_number' => $mobile_number,
+        'brand' => $brand,
+        'line' => $line,
+        'model_year' => $model_year,
+        'type' => $type,
+        'engine_number' => $engine_number,
+        'chassis_number' => $chassis_number,
+        'capacity' => $capacity,
+        'city' => $city,
+        'is_third_party' => $is_third_party,
+        'third_party_id' => $third_party->id,
+        'soat_due_date' => $soat_due_date,
+        'rtm_due_date' => $rtm_due_date,
+        'operation_card_due_date' => $operation_card_due_date,
+        'status' => $status,
+    ]);
+
+    $vehicles = Vehicle::query()
+        ->where('internal_code', $internal_code)
+        ->where('plate', $plate)
+        ->where('mobile_number', $mobile_number)
+        ->where('brand', $brand)
+        ->where('line', $line)
+        ->where('model_year', $model_year)
+        ->where('type', $type)
+        ->where('engine_number', $engine_number)
+        ->where('chassis_number', $chassis_number)
+        ->where('capacity', $capacity)
+        ->where('city', $city)
+        ->where('is_third_party', $is_third_party)
+        ->where('third_party_id', $third_party->id)
+        ->where('soat_due_date', $soat_due_date)
+        ->where('rtm_due_date', $rtm_due_date)
+        ->where('operation_card_due_date', $operation_card_due_date)
+        ->where('status', $status)
+        ->get();
+    expect($vehicles)->toHaveCount(1);
+    $vehicle = $vehicles->first();
+
+    $response->assertRedirect(route('vehicles.index'));
+});
+
+test('show behaves as expected', function (): void {
+    $vehicle = Vehicle::factory()->create();
+
+    $response = get(route('vehicles.show', $vehicle));
+
+    $response->assertOk();
+});
+
+test('edit behaves as expected', function (): void {
+    $vehicle = Vehicle::factory()->create();
+
+    $response = get(route('vehicles.edit', $vehicle));
+
+    $response->assertOk();
+});
+
+test('update uses form request validation')
+    ->assertActionUsesFormRequest(
+        \App\Http\Controllers\VehicleController::class,
+        'update',
+        \App\Http\Requests\VehicleUpdateRequest::class
+    );
+
+test('update redirects', function (): void {
+    $vehicle = Vehicle::factory()->create();
+    $internal_code = fake()->word();
+    $plate = strtoupper(fake()->bothify('???###'));
+    $mobile_number = fake()->word();
+    $brand = fake()->word();
+    $line = fake()->word();
+    $model_year = fake()->numberBetween(2015, 2026);
+    $type = fake()->randomElement(['bus', 'buseta', 'van', 'automobile']);
+    $engine_number = fake()->word();
+    $chassis_number = fake()->word();
+    $capacity = fake()->numberBetween(4, 40);
+    $city = fake()->city();
+    $is_third_party = fake()->boolean();
+    $third_party = ThirdParty::factory()->create();
+    $soat_due_date = Carbon::parse(fake()->date());
+    $rtm_due_date = Carbon::parse(fake()->date());
+    $operation_card_due_date = Carbon::parse(fake()->date());
+    $status = fake()->randomElement(['active', 'maintenance', 'retired']);
+
+    $response = put(route('vehicles.update', $vehicle), [
+        'internal_code' => $internal_code,
+        'plate' => $plate,
+        'mobile_number' => $mobile_number,
+        'brand' => $brand,
+        'line' => $line,
+        'model_year' => $model_year,
+        'type' => $type,
+        'engine_number' => $engine_number,
+        'chassis_number' => $chassis_number,
+        'capacity' => $capacity,
+        'city' => $city,
+        'is_third_party' => $is_third_party,
+        'third_party_id' => $third_party->id,
+        'soat_due_date' => $soat_due_date,
+        'rtm_due_date' => $rtm_due_date,
+        'operation_card_due_date' => $operation_card_due_date,
+        'status' => $status,
+    ]);
+
+    $vehicle->refresh();
+
+    $response->assertRedirect(route('vehicles.index'));
+
+    expect($internal_code)->toEqual($vehicle->internal_code);
+    expect($plate)->toEqual($vehicle->plate);
+    expect($mobile_number)->toEqual($vehicle->mobile_number);
+    expect($brand)->toEqual($vehicle->brand);
+    expect($line)->toEqual($vehicle->line);
+    expect($model_year)->toEqual($vehicle->model_year);
+    expect($type)->toEqual($vehicle->type);
+    expect($engine_number)->toEqual($vehicle->engine_number);
+    expect($chassis_number)->toEqual($vehicle->chassis_number);
+    expect($capacity)->toEqual($vehicle->capacity);
+    expect($city)->toEqual($vehicle->city);
+    expect($is_third_party)->toEqual($vehicle->is_third_party);
+    expect($third_party->id)->toEqual($vehicle->third_party_id);
+    expect($soat_due_date)->toEqual($vehicle->soat_due_date);
+    expect($rtm_due_date)->toEqual($vehicle->rtm_due_date);
+    expect($operation_card_due_date)->toEqual($vehicle->operation_card_due_date);
+    expect($status)->toEqual($vehicle->status);
+});
+
+test('destroy deletes and redirects', function (): void {
+    $vehicle = Vehicle::factory()->create();
+
+    $response = delete(route('vehicles.destroy', $vehicle));
+
+    $response->assertRedirect(route('vehicles.index'));
+
+    assertSoftDeleted($vehicle);
+});

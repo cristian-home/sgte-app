@@ -1,7 +1,7 @@
 # Fase 1: Fundamentos y Datos Maestros
 
-**Estado:** En progreso (~90%)
-**Última actualización:** 2026-02-26
+**Estado:** En progreso (~95%)
+**Última actualización:** 2026-02-28
 
 ## Objetivo
 
@@ -40,22 +40,22 @@ Establecer la base del proyecto: stack frontend/backend, autenticación, autoriz
 
 ### 1.3 Scaffolding con Laravel Blueprint
 
-- [x] `draft.yaml` definido con 11 entidades
-- [x] 11 modelos con relaciones generados
-- [x] 11 migraciones ejecutadas en PostgreSQL
-- [x] 11 controladores con CRUD completo
-- [x] 22 form requests (store/update)
-- [x] 11 factories + 11 seeders
-- [x] 11 feature tests generados
-- [x] 44 páginas React (Inertia) generadas
+- [x] `draft.yaml` definido con 14 entidades
+- [x] 14 modelos con relaciones generados
+- [x] 14 migraciones ejecutadas en PostgreSQL
+- [x] 14 controladores con CRUD completo
+- [x] 28 form requests (store/update)
+- [x] 14 factories + 14 seeders
+- [x] 14 feature tests generados (183 tests, 569 assertions)
+- [x] 56 páginas React (Inertia) generadas
 
-**Entidades:** DocumentType, ThirdParty, Driver, Vehicle, Contract, Invoice, DayStatus, Service, ServiceIncident, Fuec, VehicleLocation
+**Entidades:** DocumentType, Eps, PensionFund, SeveranceFund, ThirdParty, Driver, Vehicle, Contract, Invoice, DayStatus, Service, ServiceIncident, Fuec, VehicleLocation
 
 ### 1.4 Autenticación y autorización
 
 - [x] Autenticación base (Laravel Fortify + react-starter-kit)
 - [x] 5 roles en `App\Enums\Role` (super_admin, admin, operator, driver, accounting)
-- [x] 43 permisos granulares en `App\Enums\Permission` (patrón `recurso.accion`)
+- [x] 47 permisos granulares en `App\Enums\Permission` (patrón `recurso.accion`)
 - [x] `RolesAndPermissionsSeeder` con `syncPermissions`
 - [x] `UserSeeder` con 21 usuarios de prueba
 - [x] Gate `super_admin` bypass en `AppServiceProvider`
@@ -86,8 +86,19 @@ Establecer la base del proyecto: stack frontend/backend, autenticación, autoriz
 
 - [x] Modelo, migración, controlador, form requests, factory, seeder
 - [x] 4 páginas React
+- [x] Normalización de EPS: catálogo `Eps` con FK `eps_id` (antes string)
+- [x] Normalización de Fondo de Pensiones: catálogo `PensionFund` con FK `pension_fund_id` (antes string)
+- [x] Normalización de Fondo de Cesantías: catálogo `SeveranceFund` con FK `severance_fund_id` (antes string)
 - [ ] Validación custom de licencia vigente
 - [ ] Alertas automáticas por vencimiento — Fase 2
+
+### 1.7b Catálogos de Seguridad Social
+
+- [x] Modelo `Eps` — CRUD completo, factory, seeder (8 EPS colombianas), test
+- [x] Modelo `PensionFund` — CRUD completo, factory, seeder (5 fondos), test
+- [x] Modelo `SeveranceFund` — CRUD completo, factory, seeder (4 fondos), test
+- [x] Patrón catálogo: code/name, SoftDeletes, LogsActivity, Searchable
+- [x] Seeders con datos reales del contexto colombiano
 
 ### 1.8 CRUD de Terceros
 
@@ -101,18 +112,27 @@ Establecer la base del proyecto: stack frontend/backend, autenticación, autoriz
 - [ ] Lógica de generación automática de contratos genéricos
 - [ ] Validación custom de vigencia
 
-### 1.10 Inserción inicial de datos (Seeders)
+### 1.10 Navegación (Sidebar)
 
-- [x] Seeders catálogos (Roles, Permisos, DocumentType)
+- [x] Sidebar con grupos colapsables por módulo (Producción, Administración, Facturación, FUEC, GPS, Catálogos)
+- [x] Cada grupo enlaza a los index de sus recursos
+- [x] Filtrado por permisos (items y grupos se ocultan según rol)
+- [x] Rutas protegidas con middleware `['auth', 'verified']`
+
+### 1.11 Inserción inicial de datos (Seeders)
+
+- [x] Seeders catálogos (Roles, Permisos, DocumentType, Eps, PensionFund, SeveranceFund)
 - [x] Seeders generados por Blueprint para todas las entidades
-- [ ] Personalizar seeders con datos reales del cliente
+- [x] Seeders de conductores y catálogos con datos reales colombianos
+- [ ] Personalizar seeders restantes con datos reales del cliente
 
 ---
 
 ## Notas de implementación
 
-- Se usó Laravel Blueprint para generar el scaffolding completo de 11 entidades.
-- Los permisos se expandieron de 14 genéricos a 43 granulares con patrón `recurso.accion` para uso en backend (gates/middleware) y frontend (mostrar/ocultar UI).
+- Se usó Laravel Blueprint para generar el scaffolding completo de 14 entidades (11 originales + 3 catálogos de seguridad social).
+- Los permisos se expandieron de 14 genéricos a 47 granulares con patrón `recurso.accion` para uso en backend (gates/middleware) y frontend (mostrar/ocultar UI).
+- Los campos string `eps`, `pension_fund` y `severance_fund` del modelo Driver fueron normalizados a FKs apuntando a catálogos dedicados (Eps, PensionFund, SeveranceFund), siguiendo el patrón de DocumentType.
 - Se usa `syncPermissions` en el seeder para idempotencia al re-ejecutar.
 - Los enums PHP se comparten con el frontend via `php artisan enum:typescript` (ver ADR-001). Los archivos generados en `resources/js/enums/` se versionan en git.
 - El middleware `HandleInertiaRequests` comparte `auth.permissions` y `auth.roles` en cada respuesta Inertia, permitiendo control de UI sin requests adicionales.

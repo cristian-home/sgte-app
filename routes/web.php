@@ -10,3 +10,20 @@ Route::get('/', function () {
 Route::get('dashboard', [DashboardController::class, 'show'])->middleware(['auth', 'verified', 'can:dashboard.view'])->name('dashboard');
 
 require __DIR__.'/settings.php';
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::resource('document-types', App\Http\Controllers\DocumentTypeController::class);
+    Route::resource('eps', App\Http\Controllers\EpsController::class);
+    Route::resource('pension-funds', App\Http\Controllers\PensionFundController::class);
+    Route::resource('severance-funds', App\Http\Controllers\SeveranceFundController::class);
+    Route::resource('third-parties', App\Http\Controllers\ThirdPartyController::class);
+    Route::resource('drivers', App\Http\Controllers\DriverController::class);
+    Route::resource('vehicles', App\Http\Controllers\VehicleController::class);
+    Route::resource('contracts', App\Http\Controllers\ContractController::class);
+    Route::resource('invoices', App\Http\Controllers\InvoiceController::class);
+    Route::resource('day-statuses', App\Http\Controllers\DayStatusController::class);
+    Route::resource('services', App\Http\Controllers\ServiceController::class);
+    Route::resource('service-incidents', App\Http\Controllers\ServiceIncidentController::class);
+    Route::resource('fuecs', App\Http\Controllers\FuecController::class);
+    Route::resource('vehicle-locations', App\Http\Controllers\VehicleLocationController::class);
+});
