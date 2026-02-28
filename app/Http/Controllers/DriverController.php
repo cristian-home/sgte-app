@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
+use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
 
 class DriverController extends Controller
@@ -19,8 +20,15 @@ class DriverController extends Controller
     {
         Gate::authorize(Permission::VIEW_DRIVERS->value);
         $drivers = QueryBuilder::for(Driver::class)
-            ->allowedFilters([])
-            ->allowedSorts([])
+            ->allowedFilters([
+                'identification_number',
+                'first_name',
+                'first_lastname',
+                'city',
+                AllowedFilter::exact('license_category'),
+                AllowedFilter::exact('active'),
+            ])
+            ->allowedSorts(['first_name', 'first_lastname', 'city', 'license_due_date', 'active'])
             ->get();
 
         return Inertia::render('drivers/index', [

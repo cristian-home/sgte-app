@@ -57,7 +57,7 @@ test('store saves and redirects', function (): void {
     $phone = fake()->phoneNumber();
     $email = fake()->safeEmail();
     $license_category = fake()->randomElement(['C1', 'C2', 'C3']);
-    $license_due_date = Carbon::parse(fake()->date());
+    $license_due_date = Carbon::parse(fake()->dateTimeBetween('+1 month', '+3 years'));
     $eps = Eps::factory()->create();
     $pension_fund = PensionFund::factory()->create();
     $severance_fund = SeveranceFund::factory()->create();
@@ -203,4 +203,72 @@ test('destroy deletes and redirects', function (): void {
     $response->assertRedirect(route('drivers.index'));
 
     assertSoftDeleted($driver);
+});
+
+test('store fails with invalid license category', function (): void {
+    $response = post(route('drivers.store'), [
+        'document_type_id' => DocumentType::factory()->create()->id,
+        'identification_number' => fake()->numerify('##########'),
+        'first_name' => fake()->firstName(),
+        'first_lastname' => fake()->lastName(),
+        'city' => fake()->city(),
+        'address' => fake()->streetAddress(),
+        'phone' => fake()->numerify('3#########'),
+        'email' => fake()->safeEmail(),
+        'license_category' => 'X5',
+        'license_due_date' => Carbon::now()->addYear()->toDateString(),
+        'eps_id' => Eps::factory()->create()->id,
+        'pension_fund_id' => PensionFund::factory()->create()->id,
+        'severance_fund_id' => SeveranceFund::factory()->create()->id,
+        'has_social_security' => true,
+        'active' => true,
+    ]);
+
+    $response->assertSessionHasErrors(['license_category']);
+});
+
+test('store fails with expired license date', function (): void {
+    $response = post(route('drivers.store'), [
+        'document_type_id' => DocumentType::factory()->create()->id,
+        'identification_number' => fake()->numerify('##########'),
+        'first_name' => fake()->firstName(),
+        'first_lastname' => fake()->lastName(),
+        'city' => fake()->city(),
+        'address' => fake()->streetAddress(),
+        'phone' => fake()->numerify('3#########'),
+        'email' => fake()->safeEmail(),
+        'license_category' => 'C1',
+        'license_due_date' => Carbon::now()->subDay()->toDateString(),
+        'eps_id' => Eps::factory()->create()->id,
+        'pension_fund_id' => PensionFund::factory()->create()->id,
+        'severance_fund_id' => SeveranceFund::factory()->create()->id,
+        'has_social_security' => true,
+        'active' => true,
+    ]);
+
+    $response->assertSessionHasErrors(['license_due_date']);
+});
+
+test('update allows past license date for existing drivers', function (): void {
+    $driver = Driver::factory()->create();
+
+    $response = put(route('drivers.update', $driver), [
+        'document_type_id' => $driver->document_type_id,
+        'identification_number' => $driver->identification_number,
+        'first_name' => $driver->first_name,
+        'first_lastname' => $driver->first_lastname,
+        'city' => $driver->city,
+        'address' => $driver->address,
+        'phone' => $driver->phone,
+        'email' => $driver->email,
+        'license_category' => 'C1',
+        'license_due_date' => Carbon::now()->subMonth()->toDateString(),
+        'eps_id' => $driver->eps_id,
+        'pension_fund_id' => $driver->pension_fund_id,
+        'severance_fund_id' => $driver->severance_fund_id,
+        'has_social_security' => true,
+        'active' => true,
+    ]);
+
+    $response->assertRedirect(route('drivers.index'));
 });

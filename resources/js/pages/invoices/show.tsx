@@ -11,8 +11,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export default function InvoicesShow({ invoice }: { invoice: any }) {
+export default function InvoicesShow({ invoice }: { invoice: unknown }) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Invoices Show" />

@@ -16,8 +16,8 @@ class PensionFundController extends Controller
     public function index(Request $request): Response
     {
         $pensionFunds = QueryBuilder::for(PensionFund::class)
-            ->allowedFilters([])
-            ->allowedSorts([])
+            ->allowedFilters(['code', 'name'])
+            ->allowedSorts(['code', 'name'])
             ->get();
 
         return Inertia::render('pension-funds/index', [

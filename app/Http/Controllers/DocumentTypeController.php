@@ -16,8 +16,8 @@ class DocumentTypeController extends Controller
     public function index(Request $request): Response
     {
         $documentTypes = QueryBuilder::for(DocumentType::class)
-            ->allowedFilters([])
-            ->allowedSorts([])
+            ->allowedFilters(['code', 'name'])
+            ->allowedSorts(['code', 'name'])
             ->get();
 
         return Inertia::render('document-types/index', [

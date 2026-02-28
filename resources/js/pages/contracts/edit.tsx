@@ -11,8 +11,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export default function ContractsEdit({ contract }: { contract: any }) {
+export default function ContractsEdit({ contract }: { contract: unknown }) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Contracts Edit" />

@@ -5,12 +5,14 @@ namespace App\Http\Controllers;
 use App\Enums\Permission;
 use App\Http\Requests\ThirdPartyStoreRequest;
 use App\Http\Requests\ThirdPartyUpdateRequest;
+use App\Models\DocumentType;
 use App\Models\ThirdParty;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
+use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
 
 class ThirdPartyController extends Controller
@@ -19,8 +21,18 @@ class ThirdPartyController extends Controller
     {
         Gate::authorize(Permission::VIEW_THIRD_PARTIES->value);
         $thirdParties = QueryBuilder::for(ThirdParty::class)
-            ->allowedFilters([])
-            ->allowedSorts([])
+            ->allowedFilters([
+                'identification_number',
+                AllowedFilter::exact('is_natural_person'),
+                'first_name',
+                'first_lastname',
+                'company_name',
+                'city',
+                AllowedFilter::exact('is_customer'),
+                AllowedFilter::exact('is_provider'),
+                AllowedFilter::exact('active'),
+            ])
+            ->allowedSorts(['first_name', 'first_lastname', 'company_name', 'city', 'active'])
             ->get();
 
         return Inertia::render('third-parties/index', [
@@ -32,7 +44,9 @@ class ThirdPartyController extends Controller
     {
         Gate::authorize(Permission::CREATE_THIRD_PARTIES->value);
 
-        return Inertia::render('third-parties/create');
+        return Inertia::render('third-parties/create', [
+            'documentTypes' => DocumentType::all(['id', 'code', 'name']),
+        ]);
     }
 
     public function store(ThirdPartyStoreRequest $request): RedirectResponse
@@ -58,6 +72,7 @@ class ThirdPartyController extends Controller
 
         return Inertia::render('third-parties/edit', [
             'thirdParty' => $thirdParty,
+            'documentTypes' => DocumentType::all(['id', 'code', 'name']),
         ]);
     }
 

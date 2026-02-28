@@ -16,8 +16,8 @@ class EpsController extends Controller
     public function index(Request $request): Response
     {
         $eps = QueryBuilder::for(Eps::class)
-            ->allowedFilters([])
-            ->allowedSorts([])
+            ->allowedFilters(['code', 'name'])
+            ->allowedSorts(['code', 'name'])
             ->get();
 
         return Inertia::render('eps/index', [

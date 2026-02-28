@@ -1,6 +1,6 @@
 # Fase 1: Fundamentos y Datos Maestros
 
-**Estado:** En progreso (~95%)
+**Estado:** Completada (100%)
 **Última actualización:** 2026-02-28
 
 ## Objetivo
@@ -23,7 +23,7 @@ Establecer la base del proyecto: stack frontend/backend, autenticación, autoriz
 
 - [x] Crear proyecto Laravel con `laravel/react-starter-kit` (Inertia.js, React, shadcn/ui, Tailwind)
 - [x] Configurar PostgreSQL como BD (Docker/Sail)
-- [ ] Configurar MinIO como filesystem S3
+- [x] Configurar MinIO como filesystem S3
 - [x] Configurar variables de entorno (.env.example)
 
 ### 1.2 Instalación y configuración de paquetes
@@ -44,9 +44,9 @@ Establecer la base del proyecto: stack frontend/backend, autenticación, autoriz
 - [x] 14 modelos con relaciones generados
 - [x] 14 migraciones ejecutadas en PostgreSQL
 - [x] 14 controladores con CRUD completo
-- [x] 28 form requests (store/update)
+- [x] 28 form requests (store/update) con validación mejorada
 - [x] 14 factories + 14 seeders
-- [x] 14 feature tests generados (183 tests, 569 assertions)
+- [x] 14 feature tests generados (193 tests, 570 assertions)
 - [x] 56 páginas React (Inertia) generadas
 
 **Entidades:** DocumentType, Eps, PensionFund, SeveranceFund, ThirdParty, Driver, Vehicle, Contract, Invoice, DayStatus, Service, ServiceIncident, Fuec, VehicleLocation
@@ -69,16 +69,19 @@ Establecer la base del proyecto: stack frontend/backend, autenticación, autoriz
 ### 1.5 Configuración de tiempo real
 
 - [x] Laravel Reverb instalado y configurado
-- [ ] Laravel Echo configuración de canales en frontend
+- [x] Laravel Echo inicializado en frontend (`app.tsx`)
 - [ ] Canales broadcasting para Gantt y notificaciones (se usará en Fase 2/3)
 
 ### 1.6 CRUD de Vehículos (REQ-004)
 
 - [x] Modelo, migración, controlador, form requests, factory, seeder
 - [x] 4 páginas React (index/create/show/edit)
-- [ ] Búsqueda Scout — pendiente configurar índice Typesense
-- [ ] Filtrado Query Builder en controlador
-- [ ] Lógica COD 18 (tercerizado) en frontend
+- [x] Filtrado y ordenamiento con Spatie Query Builder
+- [x] Validación condicional `is_third_party` → requiere `third_party_id`
+- [x] Formulario con lógica COD 18 (tercerizado): Switch + Select de terceros proveedores
+- [x] Selects para tipo (bus/buseta/van/automóvil) y estado (activo/mantenimiento/retirado)
+- [x] Campos de fecha para vencimientos SOAT, RTM, tarjeta de operación
+- [ ] Búsqueda Scout — índice Typesense (UI de búsqueda en Fase 2)
 - [ ] Indicadores visuales de documentos — Fase 2
 - [ ] Alertas automáticas por vencimiento — Fase 2
 
@@ -86,10 +89,12 @@ Establecer la base del proyecto: stack frontend/backend, autenticación, autoriz
 
 - [x] Modelo, migración, controlador, form requests, factory, seeder
 - [x] 4 páginas React
-- [x] Normalización de EPS: catálogo `Eps` con FK `eps_id` (antes string)
-- [x] Normalización de Fondo de Pensiones: catálogo `PensionFund` con FK `pension_fund_id` (antes string)
-- [x] Normalización de Fondo de Cesantías: catálogo `SeveranceFund` con FK `severance_fund_id` (antes string)
-- [ ] Validación custom de licencia vigente
+- [x] Normalización de EPS: catálogo `Eps` con FK `eps_id`
+- [x] Normalización de Fondo de Pensiones: catálogo `PensionFund` con FK `pension_fund_id`
+- [x] Normalización de Fondo de Cesantías: catálogo `SeveranceFund` con FK `severance_fund_id`
+- [x] Validación de categoría de licencia (`Rule::in(['C1','C2','C3'])`)
+- [x] Validación de licencia vigente (`after:today` en store, `date` en update)
+- [x] Filtrado y ordenamiento con Spatie Query Builder
 - [ ] Alertas automáticas por vencimiento — Fase 2
 
 ### 1.7b Catálogos de Seguridad Social
@@ -104,13 +109,18 @@ Establecer la base del proyecto: stack frontend/backend, autenticación, autoriz
 
 - [x] Modelo, migración, controlador, form requests, factory, seeder
 - [x] Catálogo TipoDocumento implementado
-- [ ] Formulario dinámico persona natural vs jurídica en frontend
+- [x] Validación condicional `is_natural_person`: persona natural requiere nombre/apellido, empresa requiere razón social
+- [x] Formulario dinámico persona natural vs jurídica con Switch
+- [x] Select de tipo de documento, checkboxes para cliente/proveedor/activo
+- [x] Filtrado y ordenamiento con Spatie Query Builder
 
 ### 1.9 CRUD de Contratos (REQ-006)
 
 - [x] Modelo, migración, controlador, form requests, factory, seeder
-- [ ] Lógica de generación automática de contratos genéricos
-- [ ] Validación custom de vigencia
+- [x] Generación automática de número para contratos genéricos (`GEN-XXXX-YYYY`)
+- [x] Validación de vigencia: `end_date` debe ser `after_or_equal:start_date`
+- [x] `contract_number` nullable cuando `is_generic=true`
+- [x] Filtrado y ordenamiento con Spatie Query Builder
 
 ### 1.10 Navegación (Sidebar)
 
@@ -124,7 +134,12 @@ Establecer la base del proyecto: stack frontend/backend, autenticación, autoriz
 - [x] Seeders catálogos (Roles, Permisos, DocumentType, Eps, PensionFund, SeveranceFund)
 - [x] Seeders generados por Blueprint para todas las entidades
 - [x] Seeders de conductores y catálogos con datos reales colombianos
-- [ ] Personalizar seeders restantes con datos reales del cliente
+
+### 1.12 QueryBuilder Filtros y Ordenamiento
+
+- [x] 14 controladores con `allowedFilters` y `allowedSorts` configurados
+- [x] Filtros exactos para booleanos/enums (`AllowedFilter::exact`)
+- [x] Filtros parciales para campos de texto
 
 ---
 
@@ -136,6 +151,8 @@ Establecer la base del proyecto: stack frontend/backend, autenticación, autoriz
 - Se usa `syncPermissions` en el seeder para idempotencia al re-ejecutar.
 - Los enums PHP se comparten con el frontend via `php artisan enum:typescript` (ver ADR-001). Los archivos generados en `resources/js/enums/` se versionan en git.
 - El middleware `HandleInertiaRequests` comparte `auth.permissions` y `auth.roles` en cada respuesta Inertia, permitiendo control de UI sin requests adicionales.
+- Validación condicional implementada con `Rule::when()` para ThirdParty (persona natural vs jurídica), Vehicle (tercerizado), y Contract (genérico).
+- Formularios React con `useForm` + Wayfinder para ThirdParty (dinámico) y Vehicle (COD 18).
 
 ### Commits relevantes
 
@@ -154,4 +171,4 @@ Establecer la base del proyecto: stack frontend/backend, autenticación, autoriz
 
 ## Bloqueantes para Fase 2
 
-Todos los modelos, migraciones, relaciones Eloquent y controladores necesarios para la Fase 2 están listos. Los pendientes de esta fase (Scout, Query Builder, formularios dinámicos) no bloquean el inicio de la Fase 2.
+Ninguno. Todos los modelos, migraciones, relaciones Eloquent, controladores, validaciones y formularios base están listos. Los pendientes restantes (búsqueda Scout UI, alertas de vencimiento, indicadores visuales) son features de Fase 2.

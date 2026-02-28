@@ -9,6 +9,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
 
 class VehicleLocationController extends Controller
@@ -16,8 +17,11 @@ class VehicleLocationController extends Controller
     public function index(Request $request): Response
     {
         $vehicleLocations = QueryBuilder::for(VehicleLocation::class)
-            ->allowedFilters([])
-            ->allowedSorts([])
+            ->allowedFilters([
+                AllowedFilter::exact('vehicle_id'),
+                AllowedFilter::exact('is_manual'),
+            ])
+            ->allowedSorts(['recorded_at'])
             ->get();
 
         return Inertia::render('vehicle-locations/index', [

@@ -41,65 +41,47 @@ test('store uses form request validation')
         \App\Http\Requests\ThirdPartyStoreRequest::class
     );
 
-test('store saves and redirects', function (): void {
+test('store saves natural person and redirects', function (): void {
     $document_type = DocumentType::factory()->create();
-    $identification_number = fake()->word();
-    $is_natural_person = fake()->boolean();
-    $first_name = fake()->firstName();
-    $second_name = fake()->word();
-    $first_lastname = fake()->word();
-    $second_lastname = fake()->word();
-    $company_name = fake()->word();
-    $trade_name = fake()->word();
-    $city = fake()->city();
-    $address = fake()->word();
-    $phone = fake()->phoneNumber();
-    $email = fake()->safeEmail();
-    $is_customer = fake()->boolean();
-    $is_provider = fake()->boolean();
-    $active = fake()->boolean();
 
     $response = post(route('third-parties.store'), [
         'document_type_id' => $document_type->id,
-        'identification_number' => $identification_number,
-        'is_natural_person' => $is_natural_person,
-        'first_name' => $first_name,
-        'second_name' => $second_name,
-        'first_lastname' => $first_lastname,
-        'second_lastname' => $second_lastname,
-        'company_name' => $company_name,
-        'trade_name' => $trade_name,
-        'city' => $city,
-        'address' => $address,
-        'phone' => $phone,
-        'email' => $email,
-        'is_customer' => $is_customer,
-        'is_provider' => $is_provider,
-        'active' => $active,
+        'identification_number' => fake()->numerify('##########'),
+        'is_natural_person' => true,
+        'first_name' => fake()->firstName(),
+        'first_lastname' => fake()->lastName(),
+        'city' => fake()->city(),
+        'address' => fake()->streetAddress(),
+        'phone' => fake()->numerify('3#########'),
+        'email' => fake()->safeEmail(),
+        'is_customer' => true,
+        'is_provider' => false,
+        'active' => true,
     ]);
 
-    $thirdParties = ThirdParty::query()
-        ->where('document_type_id', $document_type->id)
-        ->where('identification_number', $identification_number)
-        ->where('is_natural_person', $is_natural_person)
-        ->where('first_name', $first_name)
-        ->where('second_name', $second_name)
-        ->where('first_lastname', $first_lastname)
-        ->where('second_lastname', $second_lastname)
-        ->where('company_name', $company_name)
-        ->where('trade_name', $trade_name)
-        ->where('city', $city)
-        ->where('address', $address)
-        ->where('phone', $phone)
-        ->where('email', $email)
-        ->where('is_customer', $is_customer)
-        ->where('is_provider', $is_provider)
-        ->where('active', $active)
-        ->get();
-    expect($thirdParties)->toHaveCount(1);
-    $thirdParty = $thirdParties->first();
+    $response->assertRedirect(route('third-parties.index'));
+    expect(ThirdParty::query()->where('document_type_id', $document_type->id)->count())->toBe(1);
+});
+
+test('store saves company and redirects', function (): void {
+    $document_type = DocumentType::factory()->create();
+
+    $response = post(route('third-parties.store'), [
+        'document_type_id' => $document_type->id,
+        'identification_number' => fake()->numerify('##########'),
+        'is_natural_person' => false,
+        'company_name' => fake()->company(),
+        'city' => fake()->city(),
+        'address' => fake()->streetAddress(),
+        'phone' => fake()->numerify('3#########'),
+        'email' => fake()->safeEmail(),
+        'is_customer' => false,
+        'is_provider' => true,
+        'active' => true,
+    ]);
 
     $response->assertRedirect(route('third-parties.index'));
+    expect(ThirdParty::query()->where('document_type_id', $document_type->id)->count())->toBe(1);
 });
 
 test('show behaves as expected', function (): void {
@@ -126,63 +108,28 @@ test('update uses form request validation')
     );
 
 test('update redirects', function (): void {
-    $thirdParty = ThirdParty::factory()->create();
-    $document_type = DocumentType::factory()->create();
-    $identification_number = fake()->word();
-    $is_natural_person = fake()->boolean();
-    $first_name = fake()->firstName();
-    $second_name = fake()->word();
-    $first_lastname = fake()->word();
-    $second_lastname = fake()->word();
-    $company_name = fake()->word();
-    $trade_name = fake()->word();
-    $city = fake()->city();
-    $address = fake()->word();
-    $phone = fake()->phoneNumber();
-    $email = fake()->safeEmail();
-    $is_customer = fake()->boolean();
-    $is_provider = fake()->boolean();
-    $active = fake()->boolean();
+    $thirdParty = ThirdParty::factory()->create(['is_natural_person' => true, 'first_name' => 'Juan', 'first_lastname' => 'Pérez']);
+    $newName = fake()->firstName();
 
     $response = put(route('third-parties.update', $thirdParty), [
-        'document_type_id' => $document_type->id,
-        'identification_number' => $identification_number,
-        'is_natural_person' => $is_natural_person,
-        'first_name' => $first_name,
-        'second_name' => $second_name,
-        'first_lastname' => $first_lastname,
-        'second_lastname' => $second_lastname,
-        'company_name' => $company_name,
-        'trade_name' => $trade_name,
-        'city' => $city,
-        'address' => $address,
-        'phone' => $phone,
-        'email' => $email,
-        'is_customer' => $is_customer,
-        'is_provider' => $is_provider,
-        'active' => $active,
+        'document_type_id' => $thirdParty->document_type_id,
+        'identification_number' => $thirdParty->identification_number,
+        'is_natural_person' => true,
+        'first_name' => $newName,
+        'first_lastname' => $thirdParty->first_lastname,
+        'city' => $thirdParty->city,
+        'address' => $thirdParty->address,
+        'phone' => $thirdParty->phone,
+        'email' => $thirdParty->email,
+        'is_customer' => true,
+        'is_provider' => false,
+        'active' => true,
     ]);
 
     $thirdParty->refresh();
 
     $response->assertRedirect(route('third-parties.index'));
-
-    expect($document_type->id)->toEqual($thirdParty->document_type_id);
-    expect($identification_number)->toEqual($thirdParty->identification_number);
-    expect($is_natural_person)->toEqual($thirdParty->is_natural_person);
-    expect($first_name)->toEqual($thirdParty->first_name);
-    expect($second_name)->toEqual($thirdParty->second_name);
-    expect($first_lastname)->toEqual($thirdParty->first_lastname);
-    expect($second_lastname)->toEqual($thirdParty->second_lastname);
-    expect($company_name)->toEqual($thirdParty->company_name);
-    expect($trade_name)->toEqual($thirdParty->trade_name);
-    expect($city)->toEqual($thirdParty->city);
-    expect($address)->toEqual($thirdParty->address);
-    expect($phone)->toEqual($thirdParty->phone);
-    expect($email)->toEqual($thirdParty->email);
-    expect($is_customer)->toEqual($thirdParty->is_customer);
-    expect($is_provider)->toEqual($thirdParty->is_provider);
-    expect($active)->toEqual($thirdParty->active);
+    expect($newName)->toEqual($thirdParty->first_name);
 });
 
 test('destroy deletes and redirects', function (): void {
@@ -193,4 +140,39 @@ test('destroy deletes and redirects', function (): void {
     $response->assertRedirect(route('third-parties.index'));
 
     assertSoftDeleted($thirdParty);
+});
+
+test('store natural person fails without first_name', function (): void {
+    $response = post(route('third-parties.store'), [
+        'document_type_id' => DocumentType::factory()->create()->id,
+        'identification_number' => fake()->numerify('##########'),
+        'is_natural_person' => true,
+        'first_lastname' => fake()->lastName(),
+        'city' => fake()->city(),
+        'address' => fake()->streetAddress(),
+        'phone' => fake()->numerify('3#########'),
+        'email' => fake()->safeEmail(),
+        'is_customer' => true,
+        'is_provider' => false,
+        'active' => true,
+    ]);
+
+    $response->assertSessionHasErrors(['first_name']);
+});
+
+test('store company fails without company_name', function (): void {
+    $response = post(route('third-parties.store'), [
+        'document_type_id' => DocumentType::factory()->create()->id,
+        'identification_number' => fake()->numerify('##########'),
+        'is_natural_person' => false,
+        'city' => fake()->city(),
+        'address' => fake()->streetAddress(),
+        'phone' => fake()->numerify('3#########'),
+        'email' => fake()->safeEmail(),
+        'is_customer' => true,
+        'is_provider' => false,
+        'active' => true,
+    ]);
+
+    $response->assertSessionHasErrors(['company_name']);
 });

@@ -201,3 +201,49 @@ test('destroy deletes and redirects', function (): void {
 
     assertSoftDeleted($vehicle);
 });
+
+test('store fails when is_third_party is true without third_party_id', function (): void {
+    $response = post(route('vehicles.store'), [
+        'internal_code' => fake()->unique()->numerify('V-###'),
+        'plate' => strtoupper(fake()->bothify('???###')),
+        'mobile_number' => fake()->numerify('3#########'),
+        'brand' => 'Chevrolet',
+        'line' => 'NKR',
+        'model_year' => 2024,
+        'type' => 'bus',
+        'engine_number' => fake()->bothify('??#####??##'),
+        'chassis_number' => fake()->bothify('?????????????????'),
+        'capacity' => 20,
+        'city' => fake()->city(),
+        'is_third_party' => true,
+        'soat_due_date' => Carbon::now()->addYear()->toDateString(),
+        'rtm_due_date' => Carbon::now()->addYear()->toDateString(),
+        'operation_card_due_date' => Carbon::now()->addYear()->toDateString(),
+        'status' => 'active',
+    ]);
+
+    $response->assertSessionHasErrors(['third_party_id']);
+});
+
+test('store succeeds when is_third_party is false without third_party_id', function (): void {
+    $response = post(route('vehicles.store'), [
+        'internal_code' => fake()->unique()->numerify('V-###'),
+        'plate' => strtoupper(fake()->bothify('???###')),
+        'mobile_number' => fake()->numerify('3#########'),
+        'brand' => 'Toyota',
+        'line' => 'Coaster',
+        'model_year' => 2024,
+        'type' => 'buseta',
+        'engine_number' => fake()->bothify('??#####??##'),
+        'chassis_number' => fake()->bothify('?????????????????'),
+        'capacity' => 15,
+        'city' => fake()->city(),
+        'is_third_party' => false,
+        'soat_due_date' => Carbon::now()->addYear()->toDateString(),
+        'rtm_due_date' => Carbon::now()->addYear()->toDateString(),
+        'operation_card_due_date' => Carbon::now()->addYear()->toDateString(),
+        'status' => 'active',
+    ]);
+
+    $response->assertRedirect(route('vehicles.index'));
+});

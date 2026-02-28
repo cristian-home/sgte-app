@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
+use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
 
 class FuecController extends Controller
@@ -19,8 +20,11 @@ class FuecController extends Controller
     {
         Gate::authorize(Permission::VIEW_FUEC->value);
         $fuecs = QueryBuilder::for(Fuec::class)
-            ->allowedFilters([])
-            ->allowedSorts([])
+            ->allowedFilters([
+                AllowedFilter::exact('status'),
+                'consecutive_number',
+            ])
+            ->allowedSorts(['consecutive_number', 'generated_at'])
             ->get();
 
         return Inertia::render('fuecs/index', [

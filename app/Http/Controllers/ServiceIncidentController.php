@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
+use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
 
 class ServiceIncidentController extends Controller
@@ -19,8 +20,12 @@ class ServiceIncidentController extends Controller
     {
         Gate::authorize(Permission::VIEW_INCIDENTS->value);
         $serviceIncidents = QueryBuilder::for(ServiceIncident::class)
-            ->allowedFilters([])
-            ->allowedSorts([])
+            ->allowedFilters([
+                AllowedFilter::exact('incident_type'),
+                AllowedFilter::exact('is_driver_report'),
+                AllowedFilter::exact('affects_billing'),
+            ])
+            ->allowedSorts(['incident_type', 'reported_at'])
             ->get();
 
         return Inertia::render('service-incidents/index', [

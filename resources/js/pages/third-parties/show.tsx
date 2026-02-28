@@ -11,8 +11,11 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export default function ThirdPartiesShow({ thirdParty }: { thirdParty: any }) {
+export default function ThirdPartiesShow({
+    thirdParty,
+}: {
+    thirdParty: unknown;
+}) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Third-Parties Show" />

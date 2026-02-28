@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class ThirdPartyStoreRequest extends FormRequest
 {
@@ -22,20 +23,20 @@ class ThirdPartyStoreRequest extends FormRequest
         return [
             'document_type_id' => ['required', 'integer', 'exists:document_types,id'],
             'identification_number' => ['required', 'string', 'max:50'],
-            'is_natural_person' => ['required'],
-            'first_name' => ['nullable', 'string', 'max:100'],
+            'is_natural_person' => ['required', 'boolean'],
+            'first_name' => [Rule::when($this->boolean('is_natural_person'), ['required', 'string', 'max:100'], ['nullable', 'string', 'max:100'])],
             'second_name' => ['nullable', 'string', 'max:100'],
-            'first_lastname' => ['nullable', 'string', 'max:100'],
+            'first_lastname' => [Rule::when($this->boolean('is_natural_person'), ['required', 'string', 'max:100'], ['nullable', 'string', 'max:100'])],
             'second_lastname' => ['nullable', 'string', 'max:100'],
-            'company_name' => ['nullable', 'string', 'max:200'],
+            'company_name' => [Rule::when(! $this->boolean('is_natural_person'), ['required', 'string', 'max:200'], ['nullable', 'string', 'max:200'])],
             'trade_name' => ['nullable', 'string', 'max:200'],
             'city' => ['required', 'string', 'max:100'],
             'address' => ['required', 'string', 'max:255'],
             'phone' => ['required', 'string', 'max:50'],
             'email' => ['required', 'email', 'max:255'],
-            'is_customer' => ['required'],
-            'is_provider' => ['required'],
-            'active' => ['required'],
+            'is_customer' => ['required', 'boolean'],
+            'is_provider' => ['required', 'boolean'],
+            'active' => ['required', 'boolean'],
         ];
     }
 }

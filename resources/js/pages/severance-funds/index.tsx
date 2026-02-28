@@ -11,11 +11,10 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default function SeveranceFundsIndex({
     severanceFunds,
 }: {
-    severanceFunds: any;
+    severanceFunds: unknown;
 }) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>

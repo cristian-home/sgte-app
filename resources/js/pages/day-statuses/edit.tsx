@@ -11,8 +11,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export default function DayStatusesEdit({ dayStatus }: { dayStatus: any }) {
+export default function DayStatusesEdit({ dayStatus }: { dayStatus: unknown }) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Day-Statuses Edit" />

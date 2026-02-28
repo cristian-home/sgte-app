@@ -11,8 +11,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export default function ServicesEdit({ service }: { service: any }) {
+export default function ServicesEdit({ service }: { service: unknown }) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Services Edit" />

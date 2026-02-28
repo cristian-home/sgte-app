@@ -11,8 +11,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export default function FuecsEdit({ fuec }: { fuec: any }) {
+export default function FuecsEdit({ fuec }: { fuec: unknown }) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Fuecs Edit" />

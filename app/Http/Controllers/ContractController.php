@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
+use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
 
 class ContractController extends Controller
@@ -19,8 +20,13 @@ class ContractController extends Controller
     {
         Gate::authorize(Permission::VIEW_CONTRACTS->value);
         $contracts = QueryBuilder::for(Contract::class)
-            ->allowedFilters([])
-            ->allowedSorts([])
+            ->allowedFilters([
+                'contract_number',
+                'contract_object',
+                AllowedFilter::exact('is_generic'),
+                AllowedFilter::exact('active'),
+            ])
+            ->allowedSorts(['contract_number', 'start_date', 'end_date'])
             ->get();
 
         return Inertia::render('contracts/index', [
@@ -38,7 +44,18 @@ class ContractController extends Controller
     public function store(ContractStoreRequest $request): RedirectResponse
     {
         Gate::authorize(Permission::CREATE_CONTRACTS->value);
-        $contract = Contract::create($request->validated());
+
+        $data = $request->validated();
+
+        if ($request->boolean('is_generic') && empty($data['contract_number'])) {
+            $year = now()->year;
+            $sequence = Contract::query()
+                ->where('contract_number', 'like', "GEN-%-{$year}")
+                ->count() + 1;
+            $data['contract_number'] = sprintf('GEN-%04d-%d', $sequence, $year);
+        }
+
+        Contract::create($data);
 
         return redirect()->route('contracts.index');
     }

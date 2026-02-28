@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class VehicleUpdateRequest extends FormRequest
 {
@@ -31,8 +32,8 @@ class VehicleUpdateRequest extends FormRequest
             'chassis_number' => ['required', 'string', 'max:50'],
             'capacity' => ['required', 'integer'],
             'city' => ['required', 'string', 'max:100'],
-            'is_third_party' => ['required'],
-            'third_party_id' => ['nullable', 'integer', 'exists:third_parties,id'],
+            'is_third_party' => ['required', 'boolean'],
+            'third_party_id' => [Rule::when($this->boolean('is_third_party'), ['required', 'integer', 'exists:third_parties,id'], ['nullable', 'integer', 'exists:third_parties,id'])],
             'soat_due_date' => ['required', 'date'],
             'rtm_due_date' => ['required', 'date'],
             'operation_card_due_date' => ['required', 'date'],

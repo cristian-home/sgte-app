@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
+use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
 
 class ServiceController extends Controller
@@ -19,8 +20,13 @@ class ServiceController extends Controller
     {
         Gate::authorize(Permission::VIEW_SERVICES->value);
         $services = QueryBuilder::for(Service::class)
-            ->allowedFilters([])
-            ->allowedSorts([])
+            ->allowedFilters([
+                AllowedFilter::exact('service_date'),
+                'origin',
+                'destination',
+                AllowedFilter::exact('service_status'),
+            ])
+            ->allowedSorts(['service_date', 'unit_value', 'service_status'])
             ->get();
 
         return Inertia::render('services/index', [

@@ -11,8 +11,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export default function DriversIndex({ drivers }: { drivers: any }) {
+export default function DriversIndex({ drivers }: { drivers: unknown }) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Drivers Index" />

@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
+use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
 
 class DayStatusController extends Controller
@@ -19,8 +20,11 @@ class DayStatusController extends Controller
     {
         Gate::authorize(Permission::VIEW_DAY_SUMMARY->value);
         $dayStatuses = QueryBuilder::for(DayStatus::class)
-            ->allowedFilters([])
-            ->allowedSorts([])
+            ->allowedFilters([
+                AllowedFilter::exact('date'),
+                AllowedFilter::exact('status'),
+            ])
+            ->allowedSorts(['date', 'status'])
             ->get();
 
         return Inertia::render('day-statuses/index', [

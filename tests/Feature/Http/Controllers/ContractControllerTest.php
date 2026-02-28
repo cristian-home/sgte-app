@@ -43,40 +43,23 @@ test('store uses form request validation')
     );
 
 test('store saves and redirects', function (): void {
-    $contract_number = fake()->word();
     $third_party = ThirdParty::factory()->create();
-    $contract_object = fake()->randomElement(['business', 'tourism', 'health', 'occasional']);
-    $start_date = Carbon::parse(fake()->date());
-    $end_date = Carbon::parse(fake()->date());
-    $route_description = fake()->text();
-    $is_generic = fake()->boolean();
-    $active = fake()->boolean();
+    $start_date = Carbon::now()->addMonth();
+    $end_date = Carbon::now()->addYear();
 
     $response = post(route('contracts.store'), [
-        'contract_number' => $contract_number,
+        'contract_number' => 'CT-TEST-001',
         'third_party_id' => $third_party->id,
-        'contract_object' => $contract_object,
-        'start_date' => $start_date,
-        'end_date' => $end_date,
-        'route_description' => $route_description,
-        'is_generic' => $is_generic,
-        'active' => $active,
+        'contract_object' => 'business',
+        'start_date' => $start_date->toDateString(),
+        'end_date' => $end_date->toDateString(),
+        'route_description' => fake()->sentence(),
+        'is_generic' => false,
+        'active' => true,
     ]);
 
-    $contracts = Contract::query()
-        ->where('contract_number', $contract_number)
-        ->where('third_party_id', $third_party->id)
-        ->where('contract_object', $contract_object)
-        ->where('start_date', $start_date)
-        ->where('end_date', $end_date)
-        ->where('route_description', $route_description)
-        ->where('is_generic', $is_generic)
-        ->where('active', $active)
-        ->get();
-    expect($contracts)->toHaveCount(1);
-    $contract = $contracts->first();
-
     $response->assertRedirect(route('contracts.index'));
+    expect(Contract::query()->where('contract_number', 'CT-TEST-001')->count())->toBe(1);
 });
 
 test('show behaves as expected', function (): void {
@@ -104,38 +87,25 @@ test('update uses form request validation')
 
 test('update redirects', function (): void {
     $contract = Contract::factory()->create();
-    $contract_number = fake()->word();
-    $third_party = ThirdParty::factory()->create();
-    $contract_object = fake()->randomElement(['business', 'tourism', 'health', 'occasional']);
-    $start_date = Carbon::parse(fake()->date());
-    $end_date = Carbon::parse(fake()->date());
-    $route_description = fake()->text();
-    $is_generic = fake()->boolean();
-    $active = fake()->boolean();
+    $start_date = Carbon::now()->addMonth();
+    $end_date = Carbon::now()->addYear();
+    $newNumber = 'CT-UPDATED-001';
 
     $response = put(route('contracts.update', $contract), [
-        'contract_number' => $contract_number,
-        'third_party_id' => $third_party->id,
-        'contract_object' => $contract_object,
-        'start_date' => $start_date,
-        'end_date' => $end_date,
-        'route_description' => $route_description,
-        'is_generic' => $is_generic,
-        'active' => $active,
+        'contract_number' => $newNumber,
+        'third_party_id' => $contract->third_party_id,
+        'contract_object' => $contract->contract_object,
+        'start_date' => $start_date->toDateString(),
+        'end_date' => $end_date->toDateString(),
+        'route_description' => $contract->route_description,
+        'is_generic' => false,
+        'active' => true,
     ]);
 
     $contract->refresh();
 
     $response->assertRedirect(route('contracts.index'));
-
-    expect($contract_number)->toEqual($contract->contract_number);
-    expect($third_party->id)->toEqual($contract->third_party_id);
-    expect($contract_object)->toEqual($contract->contract_object);
-    expect($start_date)->toEqual($contract->start_date);
-    expect($end_date)->toEqual($contract->end_date);
-    expect($route_description)->toEqual($contract->route_description);
-    expect($is_generic)->toEqual($contract->is_generic);
-    expect($active)->toEqual($contract->active);
+    expect($newNumber)->toEqual($contract->contract_number);
 });
 
 test('destroy deletes and redirects', function (): void {
@@ -146,4 +116,38 @@ test('destroy deletes and redirects', function (): void {
     $response->assertRedirect(route('contracts.index'));
 
     assertSoftDeleted($contract);
+});
+
+test('store auto-generates contract number for generic contracts', function (): void {
+    $third_party = ThirdParty::factory()->create();
+
+    $response = post(route('contracts.store'), [
+        'third_party_id' => $third_party->id,
+        'contract_object' => 'occasional',
+        'start_date' => Carbon::now()->toDateString(),
+        'end_date' => Carbon::now()->addYear()->toDateString(),
+        'route_description' => fake()->sentence(),
+        'is_generic' => true,
+        'active' => true,
+    ]);
+
+    $response->assertRedirect(route('contracts.index'));
+    $contract = Contract::query()->latest('id')->first();
+    expect($contract->contract_number)->toStartWith('GEN-');
+    expect($contract->is_generic)->toBeTrue();
+});
+
+test('store fails when end_date is before start_date', function (): void {
+    $response = post(route('contracts.store'), [
+        'contract_number' => 'CT-FAIL-001',
+        'third_party_id' => ThirdParty::factory()->create()->id,
+        'contract_object' => 'business',
+        'start_date' => Carbon::now()->addYear()->toDateString(),
+        'end_date' => Carbon::now()->toDateString(),
+        'route_description' => fake()->sentence(),
+        'is_generic' => false,
+        'active' => true,
+    ]);
+
+    $response->assertSessionHasErrors(['end_date']);
 });

@@ -5,12 +5,14 @@ namespace App\Http\Controllers;
 use App\Enums\Permission;
 use App\Http\Requests\VehicleStoreRequest;
 use App\Http\Requests\VehicleUpdateRequest;
+use App\Models\ThirdParty;
 use App\Models\Vehicle;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
+use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
 
 class VehicleController extends Controller
@@ -19,12 +21,24 @@ class VehicleController extends Controller
     {
         Gate::authorize(Permission::VIEW_VEHICLES->value);
         $vehicles = QueryBuilder::for(Vehicle::class)
-            ->allowedFilters([])
-            ->allowedSorts([])
+            ->allowedFilters([
+                'internal_code',
+                'plate',
+                'brand',
+                AllowedFilter::exact('type'),
+                'city',
+                AllowedFilter::exact('is_third_party'),
+                AllowedFilter::exact('status'),
+            ])
+            ->allowedSorts(['internal_code', 'plate', 'model_year', 'city', 'status'])
             ->get();
 
         return Inertia::render('vehicles/index', [
             'vehicles' => $vehicles,
+            'thirdParties' => ThirdParty::query()
+                ->where('active', true)
+                ->where('is_provider', true)
+                ->get(['id', 'identification_number', 'first_name', 'first_lastname', 'company_name', 'is_natural_person']),
         ]);
     }
 
@@ -32,7 +46,12 @@ class VehicleController extends Controller
     {
         Gate::authorize(Permission::CREATE_VEHICLES->value);
 
-        return Inertia::render('vehicles/create');
+        return Inertia::render('vehicles/create', [
+            'thirdParties' => ThirdParty::query()
+                ->where('active', true)
+                ->where('is_provider', true)
+                ->get(['id', 'identification_number', 'first_name', 'first_lastname', 'company_name', 'is_natural_person']),
+        ]);
     }
 
     public function store(VehicleStoreRequest $request): RedirectResponse
@@ -58,6 +77,10 @@ class VehicleController extends Controller
 
         return Inertia::render('vehicles/edit', [
             'vehicle' => $vehicle,
+            'thirdParties' => ThirdParty::query()
+                ->where('active', true)
+                ->where('is_provider', true)
+                ->get(['id', 'identification_number', 'first_name', 'first_lastname', 'company_name', 'is_natural_person']),
         ]);
     }
 

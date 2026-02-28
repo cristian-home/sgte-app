@@ -11,8 +11,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export default function InvoicesIndex({ invoices }: { invoices: any }) {
+export default function InvoicesIndex({ invoices }: { invoices: unknown }) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Invoices Index" />

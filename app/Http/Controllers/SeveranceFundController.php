@@ -16,8 +16,8 @@ class SeveranceFundController extends Controller
     public function index(Request $request): Response
     {
         $severanceFunds = QueryBuilder::for(SeveranceFund::class)
-            ->allowedFilters([])
-            ->allowedSorts([])
+            ->allowedFilters(['code', 'name'])
+            ->allowedSorts(['code', 'name'])
             ->get();
 
         return Inertia::render('severance-funds/index', [

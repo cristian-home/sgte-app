@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
+use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
 
 class InvoiceController extends Controller
@@ -19,8 +20,11 @@ class InvoiceController extends Controller
     {
         Gate::authorize(Permission::VIEW_INVOICES->value);
         $invoices = QueryBuilder::for(Invoice::class)
-            ->allowedFilters([])
-            ->allowedSorts([])
+            ->allowedFilters([
+                'invoice_number',
+                AllowedFilter::exact('payment_status'),
+            ])
+            ->allowedSorts(['invoice_number', 'total_value', 'issue_date'])
             ->get();
 
         return Inertia::render('invoices/index', [
