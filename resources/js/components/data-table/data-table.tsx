@@ -1,6 +1,4 @@
 import {
-    type ColumnDef,
-    type SortingState,
     flexRender,
     getCoreRowModel,
     getFilteredRowModel,
@@ -17,8 +15,33 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { DataTablePagination } from './data-table-pagination';
+import { DataTableToolbar } from './data-table-toolbar';
 
-interface DataTableProps<TData, TValue> {
+import type {
+    ColumnDef,
+    SortingState,
+    Table as TanStackTable,
+} from '@tanstack/react-table';
+import type { FilterDefinition, PaginatedData } from '@/types';
+
+interface ServerSideProps<TData> {
+    table: TanStackTable<TData>;
+    paginatedData: PaginatedData<TData>;
+    search: string;
+    onSearchChange: (value: string) => void;
+    loading?: boolean;
+    onNavigate: (url: string) => void;
+    onPerPageChange: (perPage: string) => void;
+    searchPlaceholder?: string;
+    filters?: FilterDefinition[];
+    activeFilters?: Record<string, string[]>;
+    onFilterChange?: (name: string, values: string[]) => void;
+    onClearFilters?: () => void;
+    actions?: React.ReactNode;
+}
+
+interface ClientSideProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[];
     data: TData[];
     searchKey?: string;
@@ -26,17 +49,82 @@ interface DataTableProps<TData, TValue> {
     toolbar?: React.ReactNode;
 }
 
-export function DataTable<TData, TValue>({
+type DataTableProps<TData, TValue> =
+    | ServerSideProps<TData>
+    | ClientSideProps<TData, TValue>;
+
+function isServerSide<TData, TValue>(
+    props: DataTableProps<TData, TValue>,
+): props is ServerSideProps<TData> {
+    return 'table' in props;
+}
+
+export function DataTable<TData, TValue>(props: DataTableProps<TData, TValue>) {
+    if (isServerSide(props)) {
+        return <ServerSideDataTable {...props} />;
+    }
+
+    return <ClientSideDataTable {...props} />;
+}
+
+function ServerSideDataTable<TData>({
+    table,
+    paginatedData,
+    search,
+    onSearchChange,
+    loading = false,
+    onNavigate,
+    onPerPageChange,
+    searchPlaceholder = 'Buscar...',
+    filters,
+    activeFilters,
+    onFilterChange,
+    onClearFilters,
+    actions,
+}: ServerSideProps<TData>) {
+    'use no memo';
+
+    return (
+        <div className="space-y-4">
+            <DataTableToolbar
+                table={table}
+                search={search}
+                onSearchChange={onSearchChange}
+                searchPlaceholder={searchPlaceholder}
+                filters={filters}
+                activeFilters={activeFilters}
+                onFilterChange={onFilterChange}
+                onClearFilters={onClearFilters}
+                actions={actions}
+            />
+
+            <div
+                className={
+                    loading ? 'pointer-events-none opacity-50' : undefined
+                }
+            >
+                <DataTableBody table={table} />
+            </div>
+
+            <DataTablePagination
+                pagination={paginatedData}
+                onNavigate={onNavigate}
+                onPerPageChange={onPerPageChange}
+            />
+        </div>
+    );
+}
+
+function ClientSideDataTable<TData, TValue>({
     columns,
     data,
     searchKey,
     searchPlaceholder = 'Buscar...',
     toolbar,
-}: DataTableProps<TData, TValue>) {
+}: ClientSideProps<TData, TValue>) {
     const [sorting, setSorting] = useState<SortingState>([]);
     const [globalFilter, setGlobalFilter] = useState('');
 
-    // eslint-disable-next-line react-hooks/incompatible-library
     const table = useReactTable({
         data,
         columns,
@@ -74,52 +162,61 @@ export function DataTable<TData, TValue>({
                     {toolbar && <div className="ml-auto">{toolbar}</div>}
                 </div>
             )}
-            <div className="rounded-md border">
-                <Table>
-                    <TableHeader>
-                        {table.getHeaderGroups().map((headerGroup) => (
-                            <TableRow key={headerGroup.id}>
-                                {headerGroup.headers.map((header) => (
-                                    <TableHead key={header.id}>
-                                        {header.isPlaceholder
-                                            ? null
-                                            : flexRender(
-                                                  header.column.columnDef
-                                                      .header,
-                                                  header.getContext(),
-                                              )}
-                                    </TableHead>
+
+            <DataTableBody table={table} />
+        </div>
+    );
+}
+
+function DataTableBody<TData>({ table }: { table: TanStackTable<TData> }) {
+    'use no memo';
+    const columnCount = table.getAllColumns().length;
+
+    return (
+        <div className="rounded-md border">
+            <Table>
+                <TableHeader>
+                    {table.getHeaderGroups().map((headerGroup) => (
+                        <TableRow key={headerGroup.id}>
+                            {headerGroup.headers.map((header) => (
+                                <TableHead key={header.id}>
+                                    {header.isPlaceholder
+                                        ? null
+                                        : flexRender(
+                                              header.column.columnDef.header,
+                                              header.getContext(),
+                                          )}
+                                </TableHead>
+                            ))}
+                        </TableRow>
+                    ))}
+                </TableHeader>
+                <TableBody>
+                    {table.getRowModel().rows.length ? (
+                        table.getRowModel().rows.map((row) => (
+                            <TableRow key={row.id}>
+                                {row.getVisibleCells().map((cell) => (
+                                    <TableCell key={cell.id}>
+                                        {flexRender(
+                                            cell.column.columnDef.cell,
+                                            cell.getContext(),
+                                        )}
+                                    </TableCell>
                                 ))}
                             </TableRow>
-                        ))}
-                    </TableHeader>
-                    <TableBody>
-                        {table.getRowModel().rows.length ? (
-                            table.getRowModel().rows.map((row) => (
-                                <TableRow key={row.id}>
-                                    {row.getVisibleCells().map((cell) => (
-                                        <TableCell key={cell.id}>
-                                            {flexRender(
-                                                cell.column.columnDef.cell,
-                                                cell.getContext(),
-                                            )}
-                                        </TableCell>
-                                    ))}
-                                </TableRow>
-                            ))
-                        ) : (
-                            <TableRow>
-                                <TableCell
-                                    colSpan={columns.length}
-                                    className="h-24 text-center"
-                                >
-                                    Sin resultados.
-                                </TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </div>
+                        ))
+                    ) : (
+                        <TableRow>
+                            <TableCell
+                                colSpan={columnCount}
+                                className="h-24 text-center"
+                            >
+                                Sin resultados.
+                            </TableCell>
+                        </TableRow>
+                    )}
+                </TableBody>
+            </Table>
         </div>
     );
 }

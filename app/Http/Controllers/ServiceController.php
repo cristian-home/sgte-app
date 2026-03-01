@@ -6,6 +6,8 @@ use App\Enums\Permission;
 use App\Http\Requests\ServiceStoreRequest;
 use App\Http\Requests\ServiceUpdateRequest;
 use App\Models\Service;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -16,18 +18,28 @@ use Spatie\QueryBuilder\QueryBuilder;
 
 class ServiceController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request): Response|JsonResponse
     {
         Gate::authorize(Permission::VIEW_SERVICES->value);
+
         $services = QueryBuilder::for(Service::class)
+            ->with(['contract', 'vehicle', 'driver'])
+            ->allowedIncludes(['invoice'])
             ->allowedFilters([
+                AllowedFilter::callback('search', fn (Builder $query, $value) => $query->search($value)),
                 AllowedFilter::exact('service_date'),
                 'origin',
                 'destination',
                 AllowedFilter::exact('service_status'),
+                AllowedFilter::exact('payment_method'),
             ])
             ->allowedSorts(['service_date', 'unit_value', 'service_status'])
-            ->get();
+            ->paginate($request->perPage())
+            ->withQueryString();
+
+        if ($request->wantsJson()) {
+            return response()->json($services);
+        }
 
         return Inertia::render('services/index', [
             'services' => $services,

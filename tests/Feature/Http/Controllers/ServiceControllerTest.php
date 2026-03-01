@@ -9,11 +9,13 @@ use App\Models\Service;
 use App\Models\User;
 use App\Models\Vehicle;
 use Illuminate\Support\Carbon;
+use Inertia\Testing\AssertableInertia;
 use Spatie\Permission\Models\Role as SpatieRole;
 
 use function Pest\Laravel\assertSoftDeleted;
 use function Pest\Laravel\delete;
 use function Pest\Laravel\get;
+use function Pest\Laravel\getJson;
 use function Pest\Laravel\post;
 use function Pest\Laravel\put;
 
@@ -30,6 +32,125 @@ test('index behaves as expected', function (): void {
     $response = get(route('services.index'));
 
     $response->assertOk();
+});
+
+test('index returns paginated inertia response', function (): void {
+    Service::factory()->count(20)->create();
+
+    $response = get(route('services.index'));
+
+    $response->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->component('services/index')
+            ->has('services.data', 10)
+            ->has('services.links')
+            ->where('services.per_page', 10)
+    );
+});
+
+test('index respects per_page parameter', function (): void {
+    Service::factory()->count(10)->create();
+
+    $response = get(route('services.index', ['per_page' => 5]));
+
+    $response->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->has('services.data', 5)
+            ->where('services.per_page', 5)
+    );
+});
+
+test('index caps per_page at 100', function (): void {
+    Service::factory()->count(5)->create();
+
+    $response = get(route('services.index', ['per_page' => 500]));
+
+    $response->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->where('services.per_page', 100)
+    );
+});
+
+test('index filters by search term', function (): void {
+    Service::factory()->create(['origin' => 'Bogota', 'destination' => 'Cali', 'billing_group' => 'Grupo A']);
+    Service::factory()->create(['origin' => 'Medellin', 'destination' => 'Pereira', 'billing_group' => 'Grupo B']);
+
+    $response = get(route('services.index', ['filter[search]' => 'Bogota']));
+
+    $response->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->has('services.data', 1)
+            ->where('services.data.0.origin', 'Bogota')
+    );
+});
+
+test('index search is case insensitive', function (): void {
+    Service::factory()->create(['origin' => 'Bogota', 'destination' => 'Cali', 'billing_group' => null]);
+
+    $response = get(route('services.index', ['filter[search]' => 'bogota']));
+
+    $response->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->has('services.data', 1)
+    );
+});
+
+test('index search matches across multiple columns', function (): void {
+    Service::factory()->create(['origin' => 'Cali', 'destination' => 'Bogota']);
+    Service::factory()->create(['origin' => 'Medellin', 'destination' => 'Cali']);
+
+    $response = get(route('services.index', ['filter[search]' => 'Cali']));
+
+    $response->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->has('services.data', 2)
+    );
+});
+
+test('index combines search with other filters', function (): void {
+    Service::factory()->create(['origin' => 'Bogota', 'destination' => 'Cali', 'billing_group' => null, 'service_status' => 'open']);
+    Service::factory()->create(['origin' => 'Bogota', 'destination' => 'Cali', 'billing_group' => null, 'service_status' => 'closed']);
+
+    $response = get(route('services.index', [
+        'filter[search]' => 'Bogota',
+        'filter[service_status]' => 'open',
+    ]));
+
+    $response->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->has('services.data', 1)
+    );
+});
+
+test('index returns json when Accept header is application/json', function (): void {
+    Service::factory()->count(3)->create();
+
+    $response = getJson(route('services.index'));
+
+    $response->assertOk()
+        ->assertJsonCount(3, 'data')
+        ->assertJsonStructure([
+            'data',
+            'current_page',
+            'per_page',
+            'total',
+            'last_page',
+            'links',
+        ]);
+});
+
+test('index json respects filters and sorting', function (): void {
+    Service::factory()->create(['origin' => 'Bogota', 'destination' => 'Cali', 'billing_group' => null, 'service_status' => 'open']);
+    Service::factory()->create(['origin' => 'Medellin', 'destination' => 'Pereira', 'billing_group' => null, 'service_status' => 'closed']);
+
+    $response = getJson(route('services.index', [
+        'filter[search]' => 'Bogota',
+        'sort' => '-service_date',
+    ]));
+
+    $response->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.origin', 'Bogota');
 });
 
 test('create behaves as expected', function (): void {
@@ -197,4 +318,43 @@ test('destroy deletes and redirects', function (): void {
     $response->assertRedirect(route('services.index'));
 
     assertSoftDeleted($service);
+});
+
+test('index can filter services by service_status', function (): void {
+    Service::factory()->create(['service_status' => 'open']);
+    Service::factory()->create(['service_status' => 'closed']);
+
+    $response = get(route('services.index', ['filter[service_status]' => 'open']));
+
+    $response->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->has('services.data', 1)
+            ->where('services.data.0.service_status', 'open')
+    );
+});
+
+test('index can filter services by payment_method', function (): void {
+    Service::factory()->create(['payment_method' => 'cash']);
+    Service::factory()->create(['payment_method' => 'credit']);
+    Service::factory()->create(['payment_method' => 'transfer']);
+
+    $response = get(route('services.index', ['filter[payment_method]' => 'cash']));
+
+    $response->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->has('services.data', 1)
+            ->where('services.data.0.payment_method', 'cash')
+    );
+});
+
+test('index can filter services by multiple service_status values', function (): void {
+    Service::factory()->create(['service_status' => 'open']);
+    Service::factory()->create(['service_status' => 'closed']);
+
+    $response = get(route('services.index', ['filter[service_status]' => 'open,closed']));
+
+    $response->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->has('services.data', 2)
+    );
 });

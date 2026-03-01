@@ -1,0 +1,37 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\DB;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        if (DB::connection()->getDriverName() !== 'pgsql') {
+            return;
+        }
+
+        DB::statement('CREATE EXTENSION IF NOT EXISTS pg_trgm');
+
+        DB::statement('CREATE INDEX services_origin_trgm_idx ON services USING gin (origin gin_trgm_ops)');
+        DB::statement('CREATE INDEX services_destination_trgm_idx ON services USING gin (destination gin_trgm_ops)');
+        DB::statement('CREATE INDEX services_billing_group_trgm_idx ON services USING gin (billing_group gin_trgm_ops)');
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        if (DB::connection()->getDriverName() !== 'pgsql') {
+            return;
+        }
+
+        DB::statement('DROP INDEX IF EXISTS services_origin_trgm_idx');
+        DB::statement('DROP INDEX IF EXISTS services_destination_trgm_idx');
+        DB::statement('DROP INDEX IF EXISTS services_billing_group_trgm_idx');
+    }
+};

@@ -17,9 +17,9 @@ class ServiceFactory extends Factory
         $cities = ['Bogota', 'Medellin', 'Cali', 'Barranquilla', 'Cartagena', 'Bucaramanga', 'Pereira', 'Manizales', 'Ibague', 'Villavicencio'];
 
         return [
-            'contract_id' => Contract::factory(),
-            'vehicle_id' => Vehicle::factory(),
-            'driver_id' => Driver::factory(),
+            'contract_id' => Contract::inRandomOrder()->first()->id ?? Contract::factory(),
+            'vehicle_id' => Vehicle::inRandomOrder()->first()->id ?? Vehicle::factory(),
+            'driver_id' => Driver::inRandomOrder()->first()->id ?? Driver::factory(),
             'invoice_id' => null,
             'service_date' => fake()->dateTimeBetween('-1 month', '+1 month'),
             'origin' => fake()->randomElement($cities),

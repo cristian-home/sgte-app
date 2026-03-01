@@ -139,5 +139,7 @@ class ServiceSeeder extends Seeder
                 'service_status' => $s['service_status'],
             ]);
         }
+
+        Service::factory()->count(50)->create();
     }
 }

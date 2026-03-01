@@ -123,4 +123,17 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Pagination
+    |--------------------------------------------------------------------------
+    |
+    | Default number of items per page and the maximum allowed value.
+    |
+    */
+
+    'per_page' => (int) env('APP_PER_PAGE', 9),
+
+    'per_page_max' => (int) env('APP_PER_PAGE_MAX', 100),
+
 ];

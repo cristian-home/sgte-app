@@ -8,14 +8,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Laravel\Scout\Searchable;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
 class Service extends Model
 {
+    use Concerns\SearchesDatabase;
     use HasFactory, SoftDeletes;
-    use LogsActivity, Searchable;
+    use LogsActivity;
 
     /**
      * The attributes that are mass assignable.
@@ -96,38 +96,10 @@ class Service extends Model
     }
 
     /**
-     * Get the value used to index the model.
+     * @return array<int, string>
      */
-    public function getScoutKey(): mixed
+    public function searchableColumns(): array
     {
-        return $this->id;
-    }
-
-    /**
-     * Get the indexable data array for the model.
-     *
-     * @return array<string, mixed>
-     */
-    public function toSearchableArray(): array
-    {
-        return [
-            'id' => (string) $this->id,
-            'contract_id' => $this->contract_id,
-            'vehicle_id' => $this->vehicle_id,
-            'driver_id' => $this->driver_id,
-            'invoice_id' => $this->invoice_id,
-            'service_date' => $this->service_date,
-            'origin' => $this->origin,
-            'destination' => $this->destination,
-            'planned_start_time' => $this->planned_start_time,
-            'planned_duration' => $this->planned_duration,
-            'actual_start_time' => $this->actual_start_time,
-            'actual_end_time' => $this->actual_end_time,
-            'unit_value' => $this->unit_value,
-            'quantity' => $this->quantity,
-            'billing_group' => $this->billing_group,
-            'payment_method' => $this->payment_method,
-            'service_status' => $this->service_status,
-        ];
+        return ['origin', 'destination', 'billing_group'];
     }
 }

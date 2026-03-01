@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Enums\Role;
 use Carbon\CarbonImmutable;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -26,6 +27,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+        $this->configureMacros();
 
         // Super Admin User can bypass all authorization checks
         Gate::before(function ($user, $ability) {
@@ -36,6 +38,14 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Configure default behaviors for production-ready applications.
      */
+    protected function configureMacros(): void
+    {
+        Request::macro('perPage', fn (?int $default = null): int => min(
+            $this->integer('per_page', $default ?? config('app.per_page', 10)),
+            config('app.per_page_max', 100),
+        ));
+    }
+
     protected function configureDefaults(): void
     {
         Date::use(CarbonImmutable::class);
