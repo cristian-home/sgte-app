@@ -132,7 +132,7 @@ return [
     |
     */
 
-    'per_page' => (int) env('APP_PER_PAGE', 9),
+    'per_page' => (int) env('APP_PER_PAGE', 10),
 
     'per_page_max' => (int) env('APP_PER_PAGE_MAX', 100),
 
