@@ -7,6 +7,8 @@ Registro de decisiones arquitectonicas del proyecto SGTE.
 | ID | Titulo | Estado | Fecha |
 |----|--------|--------|-------|
 | ADR-001 | [Sistema de permisos en el frontend](ADR-001-frontend-permission-system.md) | Aceptado | 2026-02-26 |
+| ADR-002 | [Trait SearchesDatabase para busqueda avanzada](ADR-002-searches-database-trait.md) | Aceptado | 2026-03-02 |
+| ADR-003 | [Componente DataTable reutilizable](ADR-003-reusable-datatable-component.md) | Aceptado | 2026-03-02 |
 
 ## Formato
 

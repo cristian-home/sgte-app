@@ -26,7 +26,7 @@ class ServiceController extends Controller
             ->with(['contract', 'vehicle', 'driver'])
             ->allowedIncludes(['invoice'])
             ->allowedFilters([
-                AllowedFilter::callback('search', fn (Builder $query, $value) => $query->search($value)),
+                AllowedFilter::callback('search', fn (Builder $query, $value) => $query->searchWithRelevance($value)),
                 AllowedFilter::exact('service_date'),
                 'origin',
                 'destination',

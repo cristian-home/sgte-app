@@ -100,6 +100,6 @@ class Service extends Model
      */
     public function searchableColumns(): array
     {
-        return ['origin', 'destination', 'billing_group'];
+        return ['origin', 'destination', 'billing_group', ['driver.first_name', 'driver.first_lastname']];
     }
 }

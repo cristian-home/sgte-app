@@ -347,6 +347,49 @@ test('index can filter services by payment_method', function (): void {
     );
 });
 
+test('index search returns results for partial terms', function (): void {
+    Service::factory()->create(['origin' => 'Barranquilla', 'destination' => 'Cali', 'billing_group' => null]);
+    Service::factory()->create(['origin' => 'Bucaramanga', 'destination' => 'Medellin', 'billing_group' => null]);
+
+    $response = get(route('services.index', ['filter[search]' => 'Barran']));
+
+    $response->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->has('services.data', 1)
+            ->where('services.data.0.origin', 'Barranquilla')
+    );
+});
+
+test('index search matches related model fields via dot notation', function (): void {
+    $driverCarlos = Driver::factory()->create(['first_name' => 'Carlos', 'first_lastname' => 'Gomez']);
+    $driverMaria = Driver::factory()->create(['first_name' => 'Maria', 'first_lastname' => 'Lopez']);
+    Service::factory()->create(['driver_id' => $driverCarlos->id, 'origin' => 'Bogota', 'destination' => 'Cali', 'billing_group' => null]);
+    Service::factory()->create(['driver_id' => $driverMaria->id, 'origin' => 'Cali', 'destination' => 'Pereira', 'billing_group' => null]);
+
+    $response = get(route('services.index', ['filter[search]' => 'Carlos']));
+
+    $response->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->has('services.data', 1)
+            ->where('services.data.0.origin', 'Bogota')
+    );
+});
+
+test('index search matches composite related fields with full name', function (): void {
+    $driverCarlos = Driver::factory()->create(['first_name' => 'Carlos', 'first_lastname' => 'Gomez']);
+    $driverCarlosL = Driver::factory()->create(['first_name' => 'Carlos', 'first_lastname' => 'Lopez']);
+    Service::factory()->create(['driver_id' => $driverCarlos->id, 'origin' => 'Bogota', 'destination' => 'Cali', 'billing_group' => null]);
+    Service::factory()->create(['driver_id' => $driverCarlosL->id, 'origin' => 'Medellin', 'destination' => 'Pereira', 'billing_group' => null]);
+
+    $response = get(route('services.index', ['filter[search]' => 'Carlos Gomez']));
+
+    $response->assertInertia(
+        fn (AssertableInertia $page) => $page
+            ->has('services.data', 1)
+            ->where('services.data.0.origin', 'Bogota')
+    );
+});
+
 test('index can filter services by multiple service_status values', function (): void {
     Service::factory()->create(['service_status' => 'open']);
     Service::factory()->create(['service_status' => 'closed']);
