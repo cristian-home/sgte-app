@@ -26,6 +26,7 @@ class DatabaseSeeder extends Seeder
             InvoiceSeeder::class,
             DayStatusSeeder::class,
             ServiceSeeder::class,
+            IncidentTypeSeeder::class,
             ServiceIncidentSeeder::class,
             FuecSeeder::class,
             VehicleLocationSeeder::class,

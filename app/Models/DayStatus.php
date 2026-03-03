@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\DayStatusEnum;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -35,6 +36,7 @@ class DayStatus extends Model
         return [
             'id' => 'integer',
             'date' => 'date',
+            'status' => DayStatusEnum::class,
             'executor_id' => 'integer',
             'executed_at' => 'timestamp',
         ];

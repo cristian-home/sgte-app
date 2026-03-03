@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Enums\ServiceStatus;
+use App\Models\IncidentType;
 use App\Models\Service;
 use App\Models\ServiceIncident;
 use App\Models\User;
@@ -14,7 +16,7 @@ class ServiceIncidentSeeder extends Seeder
      */
     public function run(): void
     {
-        $services = Service::where('service_status', 'closed')->get();
+        $services = Service::where('service_status', ServiceStatus::Closed)->get();
         $registrar = User::first();
 
         if ($services->isEmpty() || ! $registrar) {
@@ -24,7 +26,7 @@ class ServiceIncidentSeeder extends Seeder
         $incidents = [
             [
                 'service_index' => 0,
-                'incident_type' => 'traffic',
+                'incident_type_code' => 'TRAFFIC',
                 'description' => 'Congestion vehicular en la Avenida NQS a la altura de la calle 26, retraso de 15 minutos',
                 'is_driver_report' => true,
                 'reported_at' => '2026-02-24 06:30:00',
@@ -33,7 +35,7 @@ class ServiceIncidentSeeder extends Seeder
             ],
             [
                 'service_index' => 1,
-                'incident_type' => 'delay',
+                'incident_type_code' => 'DELAY',
                 'description' => 'Inicio de ruta con 5 minutos de retraso por espera de estudiantes en el ultimo punto de recogida',
                 'is_driver_report' => true,
                 'reported_at' => '2026-02-24 05:50:00',
@@ -42,7 +44,7 @@ class ServiceIncidentSeeder extends Seeder
             ],
             [
                 'service_index' => 2,
-                'incident_type' => 'weather',
+                'incident_type_code' => 'WEATHER',
                 'description' => 'Lluvia fuerte en la via Bogota-Zipaquira, se redujo velocidad por seguridad',
                 'is_driver_report' => false,
                 'reported_at' => '2026-02-25 09:45:00',
@@ -53,10 +55,15 @@ class ServiceIncidentSeeder extends Seeder
 
         foreach ($incidents as $i) {
             $service = $services[$i['service_index'] % $services->count()];
+            $incidentType = IncidentType::where('code', $i['incident_type_code'])->first();
+
+            if (! $incidentType) {
+                continue;
+            }
 
             ServiceIncident::create([
                 'service_id' => $service->id,
-                'incident_type' => $i['incident_type'],
+                'incident_type_id' => $incidentType->id,
                 'description' => $i['description'],
                 'registrar_id' => $registrar->id,
                 'is_driver_report' => $i['is_driver_report'],

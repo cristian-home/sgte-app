@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\DayStatusEnum;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -12,13 +13,13 @@ class DayStatusFactory extends Factory
      */
     public function definition(): array
     {
-        $status = fake()->randomElement(['projected', 'executed']);
+        $status = fake()->randomElement(DayStatusEnum::cases());
 
         return [
             'date' => fake()->unique()->date(),
             'status' => $status,
-            'executor_id' => $status === 'executed' ? User::factory() : null,
-            'executed_at' => $status === 'executed' ? fake()->dateTime() : null,
+            'executor_id' => $status === DayStatusEnum::Executed ? User::factory() : null,
+            'executed_at' => $status === DayStatusEnum::Executed ? fake()->dateTime() : null,
         ];
     }
 }

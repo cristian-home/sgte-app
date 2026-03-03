@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\PaymentStatus;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -24,7 +25,7 @@ class InvoiceUpdateRequest extends FormRequest
             'invoice_number' => ['required', 'string', 'max:50', Rule::unique('invoices', 'invoice_number')->ignore($this->route('invoice'))],
             'total_value' => ['required', 'numeric', 'between:-9999999999.99,9999999999.99'],
             'issue_date' => ['required', 'date'],
-            'payment_status' => ['required', 'in:pending,paid,overdue'],
+            'payment_status' => ['required', Rule::enum(PaymentStatus::class)],
             'notes' => ['nullable', 'string'],
         ];
     }

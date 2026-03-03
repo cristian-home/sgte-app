@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\LicenseCategory;
 use App\Models\DocumentType;
 use App\Models\Driver;
 use App\Models\Eps;
@@ -43,7 +44,7 @@ class DriverSeeder extends Seeder
                 'address' => 'Calle 80 # 25-10',
                 'phone' => '3101112233',
                 'email' => 'carlos.martinez@correo.com',
-                'license_category' => 'C2',
+                'license_category' => LicenseCategory::C2->value,
                 'license_due_date' => '2027-06-15',
                 'eps_id' => $nuevaEps->id,
                 'pension_fund_id' => $porvenir->id,
@@ -62,7 +63,7 @@ class DriverSeeder extends Seeder
                 'address' => 'Carrera 15 # 60-30',
                 'phone' => '3204445566',
                 'email' => 'jorge.ramirez@correo.com',
-                'license_category' => 'C3',
+                'license_category' => LicenseCategory::C3->value,
                 'license_due_date' => '2028-03-20',
                 'eps_id' => $suraEps->id,
                 'pension_fund_id' => $proteccion->id,
@@ -81,7 +82,7 @@ class DriverSeeder extends Seeder
                 'address' => 'Calle 50 # 40-22',
                 'phone' => '3157778899',
                 'email' => 'luis.hernandez@correo.com',
-                'license_category' => 'C2',
+                'license_category' => LicenseCategory::C2->value,
                 'license_due_date' => '2027-11-10',
                 'eps_id' => $sanitas->id,
                 'pension_fund_id' => $colfondos->id,
@@ -100,7 +101,7 @@ class DriverSeeder extends Seeder
                 'address' => 'Avenida 68 # 12-45',
                 'phone' => '3189990011',
                 'email' => 'pedro.vargas@correo.com',
-                'license_category' => 'C1',
+                'license_category' => LicenseCategory::C1->value,
                 'license_due_date' => '2026-09-30',
                 'eps_id' => $saludTotal->id,
                 'pension_fund_id' => $oldMutual->id,
@@ -119,7 +120,7 @@ class DriverSeeder extends Seeder
                 'address' => 'Calle 45 # 28-17',
                 'phone' => '3162223344',
                 'email' => 'miguel.rojas@correo.com',
-                'license_category' => 'C3',
+                'license_category' => LicenseCategory::C3->value,
                 'license_due_date' => '2028-01-15',
                 'eps_id' => $coomeva->id,
                 'pension_fund_id' => $porvenir->id,

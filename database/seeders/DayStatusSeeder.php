@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\DayStatusEnum;
 use App\Models\DayStatus;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -18,31 +19,31 @@ class DayStatusSeeder extends Seeder
         $dayStatuses = [
             [
                 'date' => '2026-02-24',
-                'status' => 'executed',
+                'status' => DayStatusEnum::Executed->value,
                 'executor_id' => $executor?->id,
                 'executed_at' => '2026-02-24 18:00:00',
             ],
             [
                 'date' => '2026-02-25',
-                'status' => 'executed',
+                'status' => DayStatusEnum::Executed->value,
                 'executor_id' => $executor?->id,
                 'executed_at' => '2026-02-25 17:30:00',
             ],
             [
                 'date' => '2026-02-26',
-                'status' => 'executed',
+                'status' => DayStatusEnum::Executed->value,
                 'executor_id' => $executor?->id,
                 'executed_at' => '2026-02-26 18:15:00',
             ],
             [
                 'date' => '2026-02-27',
-                'status' => 'projected',
+                'status' => DayStatusEnum::Projected->value,
                 'executor_id' => null,
                 'executed_at' => null,
             ],
             [
                 'date' => '2026-02-28',
-                'status' => 'projected',
+                'status' => DayStatusEnum::Projected->value,
                 'executor_id' => null,
                 'executed_at' => null,
             ],

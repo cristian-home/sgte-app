@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\FuecStatus;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class FuecUpdateRequest extends FormRequest
 {
@@ -24,7 +26,7 @@ class FuecUpdateRequest extends FormRequest
             'consecutive_number' => ['required', 'integer'],
             'generated_at' => ['required'],
             'qr_code' => ['required', 'string', 'max:255'],
-            'status' => ['required', 'in:active,cancelled'],
+            'status' => ['required', Rule::enum(FuecStatus::class)],
             'pdf_url' => ['nullable', 'string', 'max:500'],
         ];
     }

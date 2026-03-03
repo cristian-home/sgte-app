@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\Permission;
 use App\Http\Requests\ServiceIncidentStoreRequest;
 use App\Http\Requests\ServiceIncidentUpdateRequest;
+use App\Models\IncidentType;
 use App\Models\ServiceIncident;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,11 +22,11 @@ class ServiceIncidentController extends Controller
         Gate::authorize(Permission::VIEW_INCIDENTS->value);
         $serviceIncidents = QueryBuilder::for(ServiceIncident::class)
             ->allowedFilters([
-                AllowedFilter::exact('incident_type'),
+                AllowedFilter::exact('incident_type_id'),
                 AllowedFilter::exact('is_driver_report'),
                 AllowedFilter::exact('affects_billing'),
             ])
-            ->allowedSorts(['incident_type', 'reported_at'])
+            ->allowedSorts(['incident_type_id', 'reported_at'])
             ->get();
 
         return Inertia::render('service-incidents/index', [
@@ -37,7 +38,9 @@ class ServiceIncidentController extends Controller
     {
         Gate::authorize(Permission::CREATE_INCIDENTS->value);
 
-        return Inertia::render('service-incidents/create');
+        return Inertia::render('service-incidents/create', [
+            'incidentTypes' => IncidentType::all(),
+        ]);
     }
 
     public function store(ServiceIncidentStoreRequest $request): RedirectResponse
@@ -63,6 +66,7 @@ class ServiceIncidentController extends Controller
 
         return Inertia::render('service-incidents/edit', [
             'serviceIncident' => $serviceIncident,
+            'incidentTypes' => IncidentType::all(),
         ]);
     }
 

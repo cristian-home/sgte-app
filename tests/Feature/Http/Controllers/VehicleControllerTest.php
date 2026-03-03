@@ -179,7 +179,7 @@ test('update redirects', function (): void {
     expect($brand)->toEqual($vehicle->brand);
     expect($line)->toEqual($vehicle->line);
     expect($model_year)->toEqual($vehicle->model_year);
-    expect($type)->toEqual($vehicle->type);
+    expect($type)->toEqual($vehicle->type->value);
     expect($engine_number)->toEqual($vehicle->engine_number);
     expect($chassis_number)->toEqual($vehicle->chassis_number);
     expect($capacity)->toEqual($vehicle->capacity);
@@ -189,7 +189,7 @@ test('update redirects', function (): void {
     expect($soat_due_date)->toEqual($vehicle->soat_due_date);
     expect($rtm_due_date)->toEqual($vehicle->rtm_due_date);
     expect($operation_card_due_date)->toEqual($vehicle->operation_card_due_date);
-    expect($status)->toEqual($vehicle->status);
+    expect($status)->toEqual($vehicle->status->value);
 });
 
 test('destroy deletes and redirects', function (): void {

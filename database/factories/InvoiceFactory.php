@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\PaymentStatus;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class InvoiceFactory extends Factory
@@ -15,7 +16,7 @@ class InvoiceFactory extends Factory
             'invoice_number' => fake()->unique()->numerify('FAC-####-2026'),
             'total_value' => fake()->randomFloat(2, 100000, 5000000),
             'issue_date' => fake()->dateTimeBetween('-3 months', 'now'),
-            'payment_status' => fake()->randomElement(['pending', 'paid', 'overdue']),
+            'payment_status' => fake()->randomElement(PaymentStatus::cases()),
             'notes' => fake()->optional()->sentence(),
         ];
     }

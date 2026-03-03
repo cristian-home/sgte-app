@@ -43,9 +43,10 @@ Implementar la interfaz del conductor para registro de tiempos reales, la gesti�
 
 ### 3.3 Tipos de novedad configurables
 
-- Tabla o configuración de tipos de novedad (seeder inicial)
-- Ejemplos: Retraso, Accidente, Cambio de ruta, Pasajero adicional, Cancelación parcial
-- Administrador puede agregar/editar tipos
+- Tabla catálogo `incident_types` (modelo `IncidentType`) con código, nombre, severidad y valor por defecto de afectación a facturación
+- Enum PHP `IncidentSeverity` (informational, minor, major) para clasificar la severidad
+- Seeder inicial con 7 tipos: Retraso, Accidente, Avería, Tráfico, Clima, Cliente No Presentado, Otro
+- Administrador puede agregar/editar tipos desde la interfaz sin cambios de código
 
 ### 3.4 Notificaciones por correo (REQ-013)
 

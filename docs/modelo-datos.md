@@ -181,21 +181,49 @@ Catálogo de Fondos de Cesantías de Colombia.
 
 ---
 
-## Tabla 7: NovedadServicio (NUEVA)
+## Tabla 1e: TipoNovedad
+
+Catálogo configurable de tipos de novedad/incidencia. Reemplaza el ENUM anterior para permitir gestión operativa sin cambios de código.
+
+| Campo                        | Tipo        | Descripción                                          |
+| ---------------------------- | ----------- | ---------------------------------------------------- |
+| id                           | BIGINT      | Primary Key                                          |
+| codigo                       | VARCHAR(10) | Código único (DELAY, ACCIDENT, BREAKDOWN, etc.)      |
+| nombre                       | VARCHAR(100)| Nombre en español (Retraso, Accidente, Avería, etc.) |
+| severidad                    | VARCHAR(20) | Severidad: informational, minor, major (ENUM PHP)    |
+| afecta_facturacion_por_defecto | BOOLEAN   | Valor por defecto para afecta_facturación            |
+| descripcion                  | TEXT        | Descripción opcional del tipo (nullable)             |
+| soft_delete                  | TIMESTAMP   | Soft delete para desactivar sin perder histórico     |
+
+Registros semilla:
+
+| Código    | Nombre                | Severidad     | Afecta Facturación |
+| --------- | --------------------- | ------------- | :----------------: |
+| DELAY     | Retraso               | minor         |         No         |
+| ACCIDENT  | Accidente             | major         |         Sí         |
+| BREAKDOWN | Avería                | major         |         Sí         |
+| TRAFFIC   | Tráfico               | informational |         No         |
+| WEATHER   | Clima                 | minor         |         No         |
+| NO_SHOW   | Cliente No Presentado | minor         |         Sí         |
+| OTHER     | Otro                  | informational |         No         |
+
+---
+
+## Tabla 7: NovedadServicio
 
 Registra novedades o incidencias de servicios.
 
-| Campo              | Tipo      | Descripción                            |
-| ------------------ | --------- | -------------------------------------- |
-| id                 | UUID      | Primary Key                            |
-| servicio_id        | UUID      | Foreign Key → Servicio                 |
-| tipo_novedad       | ENUM      | Tipo de novedad/incidencia             |
-| descripcion        | TEXT      | Descripción de la novedad              |
-| registrado_por     | UUID      | Foreign Key → Usuario (quién registró) |
-| es_conductor       | BOOLEAN   | Si fue registrado por conductor        |
-| fecha_registro     | TIMESTAMP | Fecha y hora del registro              |
-| afecta_facturacion | BOOLEAN   | Si afecta el valor de facturación      |
-| valor_adicional    | DECIMAL   | Valor adicional por la novedad         |
+| Campo              | Tipo      | Descripción                                |
+| ------------------ | --------- | ------------------------------------------ |
+| id                 | BIGINT    | Primary Key                                |
+| servicio_id        | BIGINT    | Foreign Key → Servicio                     |
+| tipo_novedad_id    | BIGINT    | Foreign Key → TipoNovedad (NOT NULL)       |
+| descripcion        | TEXT      | Descripción de la novedad                  |
+| registrado_por     | BIGINT    | Foreign Key → Usuario (quién registró)     |
+| es_conductor       | BOOLEAN   | Si fue registrado por conductor            |
+| fecha_registro     | TIMESTAMP | Fecha y hora del registro                  |
+| afecta_facturacion | BOOLEAN   | Si afecta el valor de facturación          |
+| valor_adicional    | DECIMAL   | Valor adicional por la novedad             |
 
 ---
 
@@ -309,6 +337,7 @@ Las siguientes tablas son creadas y gestionadas automáticamente por el framewor
 | Vehiculo      | Servicio          | One-to-Many                   |
 | Conductor     | Servicio          | One-to-Many                   |
 | Factura       | Servicio          | One-to-Many                   |
+| TipoNovedad   | NovedadServicio   | One-to-Many                   |
 | Servicio      | NovedadServicio   | One-to-Many                   |
 | Servicio      | FUEC              | One-to-One                    |
 | Vehiculo      | UbicacionVehiculo | One-to-Many                   |

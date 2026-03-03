@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\ContractObject;
 use App\Models\Contract;
 use App\Models\ThirdParty;
 use Illuminate\Database\Seeder;
@@ -18,7 +19,7 @@ class ContractSeeder extends Seeder
         $contractData = [
             [
                 'contract_number' => 'CT-0001-2026',
-                'contract_object' => 'health',
+                'contract_object' => ContractObject::Health->value,
                 'start_date' => '2026-01-01',
                 'end_date' => '2026-12-31',
                 'route_description' => 'Transporte de pacientes desde sus hogares hasta la Clinica San Rafael y regreso',
@@ -27,7 +28,7 @@ class ContractSeeder extends Seeder
             ],
             [
                 'contract_number' => 'CT-0002-2026',
-                'contract_object' => 'business',
+                'contract_object' => ContractObject::Business->value,
                 'start_date' => '2026-02-01',
                 'end_date' => '2027-01-31',
                 'route_description' => 'Transporte escolar ruta norte y ruta sur del Colegio del Rosario',
@@ -36,7 +37,7 @@ class ContractSeeder extends Seeder
             ],
             [
                 'contract_number' => 'CT-0003-2026',
-                'contract_object' => 'tourism',
+                'contract_object' => ContractObject::Tourism->value,
                 'start_date' => '2026-01-15',
                 'end_date' => '2026-12-15',
                 'route_description' => 'Traslado de huespedes del Hotel Dann Carlton a destinos turisticos en Bogota',
@@ -45,7 +46,7 @@ class ContractSeeder extends Seeder
             ],
             [
                 'contract_number' => 'CT-0004-2026',
-                'contract_object' => 'occasional',
+                'contract_object' => ContractObject::Occasional->value,
                 'start_date' => '2026-03-01',
                 'end_date' => '2027-02-28',
                 'route_description' => 'Servicios ocasionales de transporte especial bajo demanda',
@@ -54,7 +55,7 @@ class ContractSeeder extends Seeder
             ],
             [
                 'contract_number' => 'CT-0005-2025',
-                'contract_object' => 'health',
+                'contract_object' => ContractObject::Health->value,
                 'start_date' => '2025-06-01',
                 'end_date' => '2025-12-31',
                 'route_description' => 'Contrato anterior de transporte de pacientes - finalizado',

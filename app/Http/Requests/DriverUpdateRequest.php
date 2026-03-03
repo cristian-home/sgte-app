@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\LicenseCategory;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -31,7 +32,7 @@ class DriverUpdateRequest extends FormRequest
             'address' => ['required', 'string', 'max:255'],
             'phone' => ['required', 'string', 'max:50'],
             'email' => ['required', 'email', 'max:255'],
-            'license_category' => ['required', 'string', Rule::in(['C1', 'C2', 'C3'])],
+            'license_category' => ['required', 'string', Rule::enum(LicenseCategory::class)],
             'license_due_date' => ['required', 'date'],
             'eps_id' => ['required', 'integer', 'exists:eps,id'],
             'pension_fund_id' => ['required', 'integer', 'exists:pension_funds,id'],

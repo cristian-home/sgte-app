@@ -2,7 +2,10 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\PaymentMethod;
+use App\Enums\ServiceStatus;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class ServiceStoreRequest extends FormRequest
 {
@@ -34,8 +37,8 @@ class ServiceStoreRequest extends FormRequest
             'unit_value' => ['required', 'numeric', 'between:-9999999999.99,9999999999.99'],
             'quantity' => ['required', 'integer'],
             'billing_group' => ['nullable', 'string', 'max:50'],
-            'payment_method' => ['required', 'in:cash,credit,transfer'],
-            'service_status' => ['required', 'in:open,closed'],
+            'payment_method' => ['required', Rule::enum(PaymentMethod::class)],
+            'service_status' => ['required', Rule::enum(ServiceStatus::class)],
         ];
     }
 }

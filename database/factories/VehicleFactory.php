@@ -2,6 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Enums\VehicleStatus;
+use App\Enums\VehicleType;
 use App\Models\ThirdParty;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -21,7 +23,7 @@ class VehicleFactory extends Factory
             'brand' => fake()->randomElement(['Chevrolet', 'Toyota', 'Hyundai', 'Kia', 'Nissan', 'Mercedes-Benz']),
             'line' => fake()->randomElement(['NKR', 'NPR', 'Coaster', 'County', 'Pregio', 'Sprinter', 'Dyna']),
             'model_year' => fake()->numberBetween(2015, 2026),
-            'type' => fake()->randomElement(['bus', 'buseta', 'van', 'automobile']),
+            'type' => fake()->randomElement(VehicleType::cases()),
             'engine_number' => fake()->bothify('??#####??##'),
             'chassis_number' => fake()->bothify('?????????????????'),
             'capacity' => fake()->numberBetween(4, 40),
@@ -31,7 +33,7 @@ class VehicleFactory extends Factory
             'soat_due_date' => fake()->dateTimeBetween('+1 month', '+1 year'),
             'rtm_due_date' => fake()->dateTimeBetween('+1 month', '+1 year'),
             'operation_card_due_date' => fake()->dateTimeBetween('+1 month', '+2 years'),
-            'status' => fake()->randomElement(['active', 'active', 'active', 'maintenance', 'retired']),
+            'status' => fake()->randomElement([VehicleStatus::Active, VehicleStatus::Active, VehicleStatus::Active, VehicleStatus::Maintenance, VehicleStatus::Retired]),
         ];
     }
 }

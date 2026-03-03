@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\ContractObject;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -42,6 +43,7 @@ class Contract extends Model
         return [
             'id' => 'integer',
             'third_party_id' => 'integer',
+            'contract_object' => ContractObject::class,
             'start_date' => 'date',
             'end_date' => 'date',
             'is_generic' => 'boolean',

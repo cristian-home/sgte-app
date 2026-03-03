@@ -306,8 +306,8 @@ test('update redirects', function (): void {
     expect($unit_value)->toEqual($service->unit_value);
     expect($quantity)->toEqual($service->quantity);
     expect($billing_group)->toEqual($service->billing_group);
-    expect($payment_method)->toEqual($service->payment_method);
-    expect($service_status)->toEqual($service->service_status);
+    expect($payment_method)->toEqual($service->payment_method->value);
+    expect($service_status)->toEqual($service->service_status->value);
 });
 
 test('destroy deletes and redirects', function (): void {

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\PaymentStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -39,6 +40,7 @@ class Invoice extends Model
             'id' => 'integer',
             'total_value' => 'decimal:2',
             'issue_date' => 'date',
+            'payment_status' => PaymentStatus::class,
         ];
     }
 

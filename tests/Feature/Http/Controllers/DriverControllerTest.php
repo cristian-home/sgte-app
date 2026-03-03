@@ -186,7 +186,7 @@ test('update redirects', function (): void {
     expect($address)->toEqual($driver->address);
     expect($phone)->toEqual($driver->phone);
     expect($email)->toEqual($driver->email);
-    expect($license_category)->toEqual($driver->license_category);
+    expect($license_category)->toEqual($driver->license_category->value);
     expect($license_due_date)->toEqual($driver->license_due_date);
     expect($eps->id)->toEqual($driver->eps_id);
     expect($pension_fund->id)->toEqual($driver->pension_fund_id);

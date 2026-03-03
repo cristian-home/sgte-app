@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\IncidentType;
 use App\Models\Service;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -17,7 +18,7 @@ class ServiceIncidentFactory extends Factory
 
         return [
             'service_id' => Service::factory(),
-            'incident_type' => fake()->randomElement(['delay', 'accident', 'breakdown', 'traffic', 'weather', 'customer_no_show', 'other']),
+            'incident_type_id' => IncidentType::inRandomOrder()->first()->id ?? IncidentType::factory(),
             'description' => fake()->sentence(8),
             'registrar_id' => User::factory(),
             'is_driver_report' => fake()->boolean(),

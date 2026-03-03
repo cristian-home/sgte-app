@@ -108,7 +108,7 @@ test('update redirects', function (): void {
     $response->assertRedirect(route('day-statuses.index'));
 
     expect($date)->toEqual($dayStatus->date);
-    expect($status)->toEqual($dayStatus->status);
+    expect($status)->toEqual($dayStatus->status->value);
     expect($executor->id)->toEqual($dayStatus->executor_id);
     expect($executed_at->timestamp)->toEqual($dayStatus->executed_at);
 });

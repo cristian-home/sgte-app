@@ -2,6 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Enums\PaymentMethod;
+use App\Enums\ServiceStatus;
+use App\Enums\VehicleStatus;
 use App\Models\Contract;
 use App\Models\Driver;
 use App\Models\Invoice;
@@ -17,7 +20,7 @@ class ServiceSeeder extends Seeder
     public function run(): void
     {
         $contracts = Contract::where('active', true)->get();
-        $vehicles = Vehicle::where('status', 'active')->get();
+        $vehicles = Vehicle::where('status', VehicleStatus::Active)->get();
         $drivers = Driver::where('active', true)->get();
         $invoices = Invoice::all();
 
@@ -37,8 +40,8 @@ class ServiceSeeder extends Seeder
                 'unit_value' => 150000.00,
                 'quantity' => 1,
                 'billing_group' => 'Salud',
-                'payment_method' => 'credit',
-                'service_status' => 'closed',
+                'payment_method' => PaymentMethod::Credit->value,
+                'service_status' => ServiceStatus::Closed->value,
             ],
             [
                 'contract_index' => 1,
@@ -55,8 +58,8 @@ class ServiceSeeder extends Seeder
                 'unit_value' => 200000.00,
                 'quantity' => 1,
                 'billing_group' => 'Escolar',
-                'payment_method' => 'credit',
-                'service_status' => 'closed',
+                'payment_method' => PaymentMethod::Credit->value,
+                'service_status' => ServiceStatus::Closed->value,
             ],
             [
                 'contract_index' => 2,
@@ -73,8 +76,8 @@ class ServiceSeeder extends Seeder
                 'unit_value' => 450000.00,
                 'quantity' => 1,
                 'billing_group' => 'Turismo',
-                'payment_method' => 'transfer',
-                'service_status' => 'closed',
+                'payment_method' => PaymentMethod::Transfer->value,
+                'service_status' => ServiceStatus::Closed->value,
             ],
             [
                 'contract_index' => 3,
@@ -91,8 +94,8 @@ class ServiceSeeder extends Seeder
                 'unit_value' => 120000.00,
                 'quantity' => 1,
                 'billing_group' => null,
-                'payment_method' => 'cash',
-                'service_status' => 'open',
+                'payment_method' => PaymentMethod::Cash->value,
+                'service_status' => ServiceStatus::Open->value,
             ],
             [
                 'contract_index' => 0,
@@ -109,8 +112,8 @@ class ServiceSeeder extends Seeder
                 'unit_value' => 160000.00,
                 'quantity' => 2,
                 'billing_group' => 'Salud',
-                'payment_method' => 'credit',
-                'service_status' => 'open',
+                'payment_method' => PaymentMethod::Credit->value,
+                'service_status' => ServiceStatus::Open->value,
             ],
         ];
 

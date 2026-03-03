@@ -122,7 +122,7 @@ test('update redirects', function (): void {
     expect($consecutive_number)->toEqual($fuec->consecutive_number);
     expect($generated_at->timestamp)->toEqual($fuec->generated_at);
     expect($qr_code)->toEqual($fuec->qr_code);
-    expect($status)->toEqual($fuec->status);
+    expect($status)->toEqual($fuec->status->value);
     expect($pdf_url)->toEqual($fuec->pdf_url);
 });
 

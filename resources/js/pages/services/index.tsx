@@ -80,7 +80,7 @@ export default function ServicesIndex({
                     onClearFilters={clearFilters}
                     actions={
                         <Can permission={Permission.CREATE_SERVICES}>
-                            <Button asChild>
+                            <Button asChild size="sm">
                                 <Link href={services.create().url}>
                                     <Plus className="mr-2 size-4" />
                                     Crear Servicio

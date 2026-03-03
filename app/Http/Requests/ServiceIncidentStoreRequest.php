@@ -21,7 +21,7 @@ class ServiceIncidentStoreRequest extends FormRequest
     {
         return [
             'service_id' => ['required', 'integer', 'exists:services,id'],
-            'incident_type' => ['required', 'in:delay,accident,breakdown,traffic,weather,customer_no_show,other'],
+            'incident_type_id' => ['required', 'integer', 'exists:incident_types,id'],
             'description' => ['required', 'string'],
             'registrar_id' => ['required', 'integer', 'exists:users,id'],
             'is_driver_report' => ['required'],

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Http\Controllers;
 
+use App\Models\IncidentType;
 use App\Models\Service;
 use App\Models\ServiceIncident;
 use App\Models\User;
@@ -44,7 +45,7 @@ test('store uses form request validation')
 
 test('store saves and redirects', function (): void {
     $service = Service::factory()->create();
-    $incident_type = fake()->randomElement(['delay', 'accident', 'breakdown', 'traffic', 'weather', 'customer_no_show', 'other']);
+    $incidentType = IncidentType::factory()->create();
     $description = fake()->text();
     $registrar = User::factory()->create();
     $is_driver_report = fake()->boolean();
@@ -54,7 +55,7 @@ test('store saves and redirects', function (): void {
 
     $response = post(route('service-incidents.store'), [
         'service_id' => $service->id,
-        'incident_type' => $incident_type,
+        'incident_type_id' => $incidentType->id,
         'description' => $description,
         'registrar_id' => $registrar->id,
         'is_driver_report' => $is_driver_report,
@@ -65,7 +66,7 @@ test('store saves and redirects', function (): void {
 
     $serviceIncidents = ServiceIncident::query()
         ->where('service_id', $service->id)
-        ->where('incident_type', $incident_type)
+        ->where('incident_type_id', $incidentType->id)
         ->where('description', $description)
         ->where('registrar_id', $registrar->id)
         ->where('is_driver_report', $is_driver_report)
@@ -105,7 +106,7 @@ test('update uses form request validation')
 test('update redirects', function (): void {
     $serviceIncident = ServiceIncident::factory()->create();
     $service = Service::factory()->create();
-    $incident_type = fake()->randomElement(['delay', 'accident', 'breakdown', 'traffic', 'weather', 'customer_no_show', 'other']);
+    $incidentType = IncidentType::factory()->create();
     $description = fake()->text();
     $registrar = User::factory()->create();
     $is_driver_report = fake()->boolean();
@@ -115,7 +116,7 @@ test('update redirects', function (): void {
 
     $response = put(route('service-incidents.update', $serviceIncident), [
         'service_id' => $service->id,
-        'incident_type' => $incident_type,
+        'incident_type_id' => $incidentType->id,
         'description' => $description,
         'registrar_id' => $registrar->id,
         'is_driver_report' => $is_driver_report,
@@ -129,7 +130,7 @@ test('update redirects', function (): void {
     $response->assertRedirect(route('service-incidents.index'));
 
     expect($service->id)->toEqual($serviceIncident->service_id);
-    expect($incident_type)->toEqual($serviceIncident->incident_type);
+    expect($incidentType->id)->toEqual($serviceIncident->incident_type_id);
     expect($description)->toEqual($serviceIncident->description);
     expect($registrar->id)->toEqual($serviceIncident->registrar_id);
     expect($is_driver_report)->toEqual($serviceIncident->is_driver_report);

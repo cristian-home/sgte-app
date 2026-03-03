@@ -94,7 +94,7 @@ test('update redirects', function (): void {
     $response = put(route('contracts.update', $contract), [
         'contract_number' => $newNumber,
         'third_party_id' => $contract->third_party_id,
-        'contract_object' => $contract->contract_object,
+        'contract_object' => $contract->contract_object->value,
         'start_date' => $start_date->toDateString(),
         'end_date' => $end_date->toDateString(),
         'route_description' => $contract->route_description,

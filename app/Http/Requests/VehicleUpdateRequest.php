@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\VehicleStatus;
+use App\Enums\VehicleType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -27,7 +29,7 @@ class VehicleUpdateRequest extends FormRequest
             'brand' => ['required', 'string', 'max:50'],
             'line' => ['required', 'string', 'max:50'],
             'model_year' => ['required', 'integer'],
-            'type' => ['required', 'in:bus,buseta,van,automobile'],
+            'type' => ['required', Rule::enum(VehicleType::class)],
             'engine_number' => ['required', 'string', 'max:50'],
             'chassis_number' => ['required', 'string', 'max:50'],
             'capacity' => ['required', 'integer'],
@@ -37,7 +39,7 @@ class VehicleUpdateRequest extends FormRequest
             'soat_due_date' => ['required', 'date'],
             'rtm_due_date' => ['required', 'date'],
             'operation_card_due_date' => ['required', 'date'],
-            'status' => ['required', 'in:active,maintenance,retired'],
+            'status' => ['required', Rule::enum(VehicleStatus::class)],
         ];
     }
 }

@@ -2,6 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Enums\PaymentMethod;
+use App\Enums\ServiceStatus;
 use App\Models\Contract;
 use App\Models\Driver;
 use App\Models\Vehicle;
@@ -31,8 +33,8 @@ class ServiceFactory extends Factory
             'unit_value' => fake()->randomFloat(2, 50000, 500000),
             'quantity' => fake()->numberBetween(1, 5),
             'billing_group' => fake()->optional()->randomElement(['Grupo A', 'Grupo B', 'Grupo C']),
-            'payment_method' => fake()->randomElement(['cash', 'credit', 'transfer']),
-            'service_status' => fake()->randomElement(['open', 'closed']),
+            'payment_method' => fake()->randomElement(PaymentMethod::cases()),
+            'service_status' => fake()->randomElement(ServiceStatus::cases()),
         ];
     }
 }

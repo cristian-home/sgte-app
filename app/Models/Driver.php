@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\LicenseCategory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -54,6 +55,7 @@ class Driver extends Model
             'eps_id' => 'integer',
             'pension_fund_id' => 'integer',
             'severance_fund_id' => 'integer',
+            'license_category' => LicenseCategory::class,
             'license_due_date' => 'date',
             'has_social_security' => 'boolean',
             'active' => 'boolean',

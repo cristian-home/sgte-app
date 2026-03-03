@@ -782,13 +782,23 @@ entity "Servicio" as servicio {
   * estado_servicio : ENUM
 }
 
-entity "NovedadServicio" as novedad {
-  * id : UUID <<PK>>
+entity "TipoNovedad" as tipo_novedad {
+  * id : BIGINT <<PK>>
   --
-  * servicio_id : UUID <<FK>>
-  * tipo_novedad : ENUM
+  * codigo : VARCHAR(10) <<UNIQUE>>
+  * nombre : VARCHAR(100)
+  * severidad : VARCHAR(20)
+  * afecta_facturacion_defecto : BOOLEAN
+  descripcion : TEXT
+}
+
+entity "NovedadServicio" as novedad {
+  * id : BIGINT <<PK>>
+  --
+  * servicio_id : BIGINT <<FK>>
+  * tipo_novedad_id : BIGINT <<FK>>
   * descripcion : TEXT
-  * registrado_por : UUID <<FK>>
+  * registrado_por : BIGINT <<FK>>
   * es_conductor : BOOLEAN
   * fecha_registro : TIMESTAMP
   * afecta_facturacion : BOOLEAN
@@ -842,6 +852,7 @@ contrato ||--o{ servicio
 vehiculo ||--o{ servicio
 conductor ||--o{ servicio
 factura ||--o{ servicio
+tipo_novedad ||--o{ novedad
 servicio ||--o{ novedad
 servicio ||--o| fuec
 vehiculo ||--o{ ubicacion
@@ -861,6 +872,7 @@ vehiculo ||--o{ ubicacion
 | Vehiculo      | Servicio          | One-to-Many                   |
 | Conductor     | Servicio          | One-to-Many                   |
 | Factura       | Servicio          | One-to-Many                   |
+| TipoNovedad   | NovedadServicio   | One-to-Many                   |
 | Servicio      | NovedadServicio   | One-to-Many                   |
 | Servicio      | FUEC              | One-to-One                    |
 | Vehiculo      | UbicacionVehiculo | One-to-Many                   |

@@ -170,16 +170,27 @@ export type DayStatus = {
     executed_at: string | null;
 } & Timestamps;
 
+export type IncidentType = {
+    id: number;
+    code: string;
+    name: string;
+    severity: string;
+    affects_billing_default: boolean;
+    description: string | null;
+} & Timestamps &
+    SoftDeletes;
+
 export type ServiceIncident = {
     id: number;
     service_id: number;
-    incident_type: string;
+    incident_type_id: number;
     description: string;
     registrar_id: number | null;
     is_driver_report: boolean;
     reported_at: string | null;
     affects_billing: boolean;
     additional_value: string | null;
+    incident_type?: IncidentType;
     service?: Service;
 } & Timestamps;
 

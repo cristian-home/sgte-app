@@ -16,7 +16,7 @@ return new class extends Migration
         Schema::create('service_incidents', function (Blueprint $table) {
             $table->id();
             $table->foreignId('service_id')->constrained();
-            $table->enum('incident_type', ['delay', 'accident', 'breakdown', 'traffic', 'weather', 'customer_no_show', 'other']);
+            $table->foreignId('incident_type_id')->nullable(false)->constrained('incident_types');
             $table->text('description');
             $table->foreignId('registrar_id')->constrained('users');
             $table->boolean('is_driver_report')->default(false);

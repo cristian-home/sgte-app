@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\DayStatusEnum;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -22,7 +23,7 @@ class DayStatusUpdateRequest extends FormRequest
     {
         return [
             'date' => ['required', 'date', Rule::unique('day_statuses', 'date')->ignore($this->route('day_status'))],
-            'status' => ['required', 'in:projected,executed'],
+            'status' => ['required', Rule::enum(DayStatusEnum::class)],
             'executor_id' => ['nullable', 'integer', 'exists:users,id'],
             'executed_at' => ['nullable'],
         ];

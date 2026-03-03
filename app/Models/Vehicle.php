@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\VehicleStatus;
+use App\Enums\VehicleType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -50,11 +52,13 @@ class Vehicle extends Model
     {
         return [
             'id' => 'integer',
+            'type' => VehicleType::class,
             'is_third_party' => 'boolean',
             'third_party_id' => 'integer',
             'soat_due_date' => 'date',
             'rtm_due_date' => 'date',
             'operation_card_due_date' => 'date',
+            'status' => VehicleStatus::class,
         ];
     }
 

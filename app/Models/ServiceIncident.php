@@ -20,7 +20,7 @@ class ServiceIncident extends Model
      */
     protected $fillable = [
         'service_id',
-        'incident_type',
+        'incident_type_id',
         'description',
         'registrar_id',
         'is_driver_report',
@@ -39,12 +39,18 @@ class ServiceIncident extends Model
         return [
             'id' => 'integer',
             'service_id' => 'integer',
+            'incident_type_id' => 'integer',
             'registrar_id' => 'integer',
             'is_driver_report' => 'boolean',
             'reported_at' => 'timestamp',
             'affects_billing' => 'boolean',
             'additional_value' => 'decimal:2',
         ];
+    }
+
+    public function incidentType(): BelongsTo
+    {
+        return $this->belongsTo(IncidentType::class);
     }
 
     public function service(): BelongsTo
@@ -60,7 +66,7 @@ class ServiceIncident extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['id', 'service_id', 'incident_type', 'description', 'registrar_id', 'is_driver_report', 'reported_at', 'affects_billing', 'additional_value']);
+            ->logOnly(['id', 'service_id', 'incident_type_id', 'description', 'registrar_id', 'is_driver_report', 'reported_at', 'affects_billing', 'additional_value']);
     }
 
     /**
@@ -81,7 +87,7 @@ class ServiceIncident extends Model
         return [
             'id' => (string) $this->id,
             'service_id' => $this->service_id,
-            'incident_type' => $this->incident_type,
+            'incident_type_id' => $this->incident_type_id,
             'description' => $this->description,
             'registrar_id' => $this->registrar_id,
             'is_driver_report' => $this->is_driver_report,

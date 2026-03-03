@@ -115,7 +115,7 @@ test('update redirects', function (): void {
     expect($invoice_number)->toEqual($invoice->invoice_number);
     expect($total_value)->toEqual($invoice->total_value);
     expect($issue_date)->toEqual($invoice->issue_date);
-    expect($payment_status)->toEqual($invoice->payment_status);
+    expect($payment_status)->toEqual($invoice->payment_status->value);
     expect($notes)->toEqual($invoice->notes);
 });
 

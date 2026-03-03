@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\LicenseCategory;
 use App\Models\DocumentType;
 use App\Models\Eps;
 use App\Models\PensionFund;
@@ -26,7 +27,7 @@ class DriverFactory extends Factory
             'address' => fake()->streetAddress(),
             'phone' => fake()->numerify('3#########'),
             'email' => fake()->unique()->safeEmail(),
-            'license_category' => fake()->randomElement(['C1', 'C2', 'C3']),
+            'license_category' => fake()->randomElement(LicenseCategory::cases()),
             'license_due_date' => fake()->dateTimeBetween('+1 month', '+3 years'),
             'eps_id' => Eps::factory(),
             'pension_fund_id' => PensionFund::factory(),

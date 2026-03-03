@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Enums\VehicleStatus;
+use App\Enums\VehicleType;
 use App\Models\ThirdParty;
 use App\Models\Vehicle;
 use Illuminate\Database\Seeder;
@@ -23,7 +25,7 @@ class VehicleSeeder extends Seeder
                 'brand' => 'Chevrolet',
                 'line' => 'NKR',
                 'model_year' => 2022,
-                'type' => 'buseta',
+                'type' => VehicleType::Buseta->value,
                 'engine_number' => 'CHV2022NKR001',
                 'chassis_number' => '9GBNG5CD0N1234567',
                 'capacity' => 19,
@@ -33,7 +35,7 @@ class VehicleSeeder extends Seeder
                 'soat_due_date' => '2027-03-15',
                 'rtm_due_date' => '2027-06-20',
                 'operation_card_due_date' => '2028-01-10',
-                'status' => 'active',
+                'status' => VehicleStatus::Active->value,
             ],
             [
                 'internal_code' => 'V-002',
@@ -42,7 +44,7 @@ class VehicleSeeder extends Seeder
                 'brand' => 'Toyota',
                 'line' => 'Coaster',
                 'model_year' => 2023,
-                'type' => 'bus',
+                'type' => VehicleType::Bus->value,
                 'engine_number' => 'TYT2023CST002',
                 'chassis_number' => 'JTGFB518XJ1234568',
                 'capacity' => 30,
@@ -52,7 +54,7 @@ class VehicleSeeder extends Seeder
                 'soat_due_date' => '2027-05-10',
                 'rtm_due_date' => '2027-08-15',
                 'operation_card_due_date' => '2028-04-20',
-                'status' => 'active',
+                'status' => VehicleStatus::Active->value,
             ],
             [
                 'internal_code' => 'V-003',
@@ -61,7 +63,7 @@ class VehicleSeeder extends Seeder
                 'brand' => 'Hyundai',
                 'line' => 'County',
                 'model_year' => 2021,
-                'type' => 'buseta',
+                'type' => VehicleType::Buseta->value,
                 'engine_number' => 'HYD2021CNT003',
                 'chassis_number' => 'KMJHG51HPJU234569',
                 'capacity' => 25,
@@ -71,7 +73,7 @@ class VehicleSeeder extends Seeder
                 'soat_due_date' => '2027-01-20',
                 'rtm_due_date' => '2027-04-10',
                 'operation_card_due_date' => '2027-12-05',
-                'status' => 'active',
+                'status' => VehicleStatus::Active->value,
             ],
             [
                 'internal_code' => 'V-004',
@@ -80,7 +82,7 @@ class VehicleSeeder extends Seeder
                 'brand' => 'Mercedes-Benz',
                 'line' => 'Sprinter',
                 'model_year' => 2024,
-                'type' => 'van',
+                'type' => VehicleType::Van->value,
                 'engine_number' => 'MBZ2024SPR004',
                 'chassis_number' => 'WDB9066331S234570',
                 'capacity' => 15,
@@ -90,7 +92,7 @@ class VehicleSeeder extends Seeder
                 'soat_due_date' => '2027-07-25',
                 'rtm_due_date' => '2027-10-30',
                 'operation_card_due_date' => '2028-06-15',
-                'status' => 'active',
+                'status' => VehicleStatus::Active->value,
             ],
             [
                 'internal_code' => 'V-005',
@@ -99,7 +101,7 @@ class VehicleSeeder extends Seeder
                 'brand' => 'Kia',
                 'line' => 'Pregio',
                 'model_year' => 2020,
-                'type' => 'van',
+                'type' => VehicleType::Van->value,
                 'engine_number' => 'KIA2020PRG005',
                 'chassis_number' => 'KNCSD81126K234571',
                 'capacity' => 12,
@@ -109,7 +111,7 @@ class VehicleSeeder extends Seeder
                 'soat_due_date' => '2026-11-30',
                 'rtm_due_date' => '2027-02-28',
                 'operation_card_due_date' => '2027-09-15',
-                'status' => 'maintenance',
+                'status' => VehicleStatus::Maintenance->value,
             ],
         ];
 

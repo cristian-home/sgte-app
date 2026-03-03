@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\FuecStatus;
 use App\Models\Service;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -17,7 +18,7 @@ class FuecFactory extends Factory
             'consecutive_number' => fake()->unique()->numberBetween(1, 99999),
             'generated_at' => fake()->dateTimeBetween('-1 month', 'now'),
             'qr_code' => fake()->uuid(),
-            'status' => fake()->randomElement(['active', 'cancelled']),
+            'status' => fake()->randomElement(FuecStatus::cases()),
             'pdf_url' => fake()->optional()->url(),
         ];
     }
