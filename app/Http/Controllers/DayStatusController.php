@@ -74,7 +74,7 @@ class DayStatusController extends Controller
     {
         Gate::authorize(Permission::EXECUTE_DAY->value);
 
-        $services = Service::where('service_date', $dayStatus->date->format('Y-m-d'))
+        $services = Service::whereDate('service_date', $dayStatus->date)
             ->whereNull('deleted_at')
             ->get();
 

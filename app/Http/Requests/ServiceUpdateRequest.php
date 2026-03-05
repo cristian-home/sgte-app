@@ -18,7 +18,7 @@ class ServiceUpdateRequest extends ServiceStoreRequest
     public function authorize(): bool
     {
         $service = $this->route('service');
-        $dayStatus = DayStatus::where('date', $service->service_date->format('Y-m-d'))->first();
+        $dayStatus = DayStatus::whereDate('date', $service->service_date)->first();
 
         if ($dayStatus?->status === DayStatusEnum::Executed) {
             $user = $this->user();
@@ -40,7 +40,7 @@ class ServiceUpdateRequest extends ServiceStoreRequest
     public function rules(): array
     {
         $service = $this->route('service');
-        $dayStatus = DayStatus::where('date', $service->service_date->format('Y-m-d'))->first();
+        $dayStatus = DayStatus::whereDate('date', $service->service_date)->first();
 
         if ($dayStatus?->status !== DayStatusEnum::Executed) {
             return parent::rules();
@@ -68,7 +68,7 @@ class ServiceUpdateRequest extends ServiceStoreRequest
     public function after(): array
     {
         $service = $this->route('service');
-        $dayStatus = DayStatus::where('date', $service->service_date->format('Y-m-d'))->first();
+        $dayStatus = DayStatus::whereDate('date', $service->service_date)->first();
 
         if ($dayStatus?->status === DayStatusEnum::Executed) {
             $user = $this->user();
@@ -76,6 +76,14 @@ class ServiceUpdateRequest extends ServiceStoreRequest
             if (! $user->hasAnyRole([Role::ADMIN, Role::SUPER_ADMIN])) {
                 return [];
             }
+
+            // Admin on executed day: run contract/driver validation but NOT executed day restriction
+            return [
+                function ($validator): void {
+                    $this->validateContractCoversDate($validator);
+                    $this->validateDriverRequired($validator);
+                },
+            ];
         }
 
         return parent::after();

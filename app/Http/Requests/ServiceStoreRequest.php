@@ -95,7 +95,7 @@ class ServiceStoreRequest extends FormRequest
             return;
         }
 
-        $dayStatus = DayStatus::where('date', $this->input('service_date'))->first();
+        $dayStatus = DayStatus::whereDate('date', $this->input('service_date'))->first();
 
         if ($dayStatus?->status === DayStatusEnum::Executed) {
             $validator->errors()->add('service_date', 'No se pueden crear servicios en un día ejecutado.');

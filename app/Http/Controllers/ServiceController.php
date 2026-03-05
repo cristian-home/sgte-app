@@ -83,7 +83,7 @@ class ServiceController extends Controller
         ]);
         $service->loadCount('serviceIncidents');
 
-        $dayStatus = DayStatus::with('executor')->where('date', $service->service_date->format('Y-m-d'))->first();
+        $dayStatus = DayStatus::with('executor')->whereDate('date', $service->service_date)->first();
 
         return Inertia::render('services/show', [
             'service' => $service,
@@ -106,7 +106,7 @@ class ServiceController extends Controller
         ]);
         $service->loadCount('serviceIncidents');
 
-        $dayStatus = DayStatus::where('date', $service->service_date->format('Y-m-d'))->first();
+        $dayStatus = DayStatus::whereDate('date', $service->service_date)->first();
 
         return Inertia::render('services/edit', [
             'service' => $service,
@@ -125,7 +125,7 @@ class ServiceController extends Controller
 
         $service->update($validated);
 
-        $dayStatus = DayStatus::where('date', $service->service_date->format('Y-m-d'))->first();
+        $dayStatus = DayStatus::whereDate('date', $service->service_date)->first();
 
         if ($dayStatus?->status === DayStatusEnum::Executed && $justification) {
             activity()
@@ -145,7 +145,7 @@ class ServiceController extends Controller
     {
         Gate::authorize(Permission::DELETE_SERVICES->value);
 
-        $dayStatus = DayStatus::where('date', $service->service_date->format('Y-m-d'))->first();
+        $dayStatus = DayStatus::whereDate('date', $service->service_date)->first();
 
         if ($dayStatus?->status === DayStatusEnum::Executed) {
             if (! auth()->user()->hasAnyRole([Role::ADMIN, Role::SUPER_ADMIN])) {
