@@ -29,6 +29,7 @@ services:
             - typesense
             - minio
             - mailpit
+            - selenium
     pgsql:
         image: 'postgres:18-alpine'
         ports:
@@ -115,6 +116,14 @@ services:
         ports:
             - '${FORWARD_MAILPIT_PORT:-1025}:1025'
             - '${FORWARD_MAILPIT_DASHBOARD_PORT:-8025}:8025'
+        networks:
+            - sail
+    selenium:
+        image: 'selenium/standalone-chromium'
+        extra_hosts:
+            - 'host.docker.internal:host-gateway'
+        volumes:
+            - '/dev/shm:/dev/shm'
         networks:
             - sail
 networks:
