@@ -21,7 +21,7 @@ interface Vehicle {
     engine_number: string;
     chassis_number: string;
     capacity: number;
-    city: string;
+    municipality_id: number | null;
     is_third_party: boolean;
     third_party_id: number | null;
     soat_due_date: string;
@@ -53,7 +53,9 @@ export default function VehiclesEdit({
         engine_number: vehicle.engine_number,
         chassis_number: vehicle.chassis_number,
         capacity: String(vehicle.capacity),
-        city: vehicle.city,
+        municipality_id: vehicle.municipality_id
+            ? String(vehicle.municipality_id)
+            : '',
         is_third_party: vehicle.is_third_party,
         third_party_id: vehicle.third_party_id
             ? String(vehicle.third_party_id)

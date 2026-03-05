@@ -36,7 +36,7 @@ export default function VehicleCreateDialog({
         engine_number: '',
         chassis_number: '',
         capacity: '',
-        city: '',
+        municipality_id: '',
         is_third_party: false,
         third_party_id: '',
         soat_due_date: '',

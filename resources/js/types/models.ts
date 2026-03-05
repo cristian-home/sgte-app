@@ -7,6 +7,24 @@ export type SoftDeletes = {
     deleted_at: string | null;
 };
 
+export type Department = {
+    id: number;
+    code: string;
+    name: string;
+    municipalities?: Municipality[];
+} & Timestamps;
+
+export type Municipality = {
+    id: number;
+    department_id: number;
+    code: string;
+    name: string;
+    type: string;
+    latitude: string | null;
+    longitude: string | null;
+    department?: Department;
+} & Timestamps;
+
 export type DocumentType = {
     id: number;
     code: string;
@@ -48,7 +66,7 @@ export type ThirdParty = {
     second_lastname: string | null;
     company_name: string | null;
     trade_name: string | null;
-    city: string;
+    municipality_id: number | null;
     address: string | null;
     phone: string | null;
     email: string | null;
@@ -56,6 +74,7 @@ export type ThirdParty = {
     is_provider: boolean;
     active: boolean;
     document_type?: DocumentType;
+    municipality?: Municipality;
     vehicles?: Vehicle[];
     contracts?: Contract[];
 } & Timestamps &
@@ -73,7 +92,7 @@ export type Vehicle = {
     engine_number: string | null;
     chassis_number: string | null;
     capacity: number;
-    city: string;
+    municipality_id: number | null;
     is_third_party: boolean;
     third_party_id: number | null;
     soat_due_date: string | null;
@@ -81,6 +100,7 @@ export type Vehicle = {
     operation_card_due_date: string | null;
     status: string;
     third_party?: ThirdParty;
+    municipality?: Municipality;
     services?: Service[];
 } & Timestamps &
     SoftDeletes;
@@ -93,7 +113,7 @@ export type Driver = {
     second_name: string | null;
     first_lastname: string;
     second_lastname: string | null;
-    city: string;
+    municipality_id: number | null;
     address: string | null;
     phone: string | null;
     email: string | null;
@@ -105,6 +125,7 @@ export type Driver = {
     has_social_security: boolean;
     active: boolean;
     document_type?: DocumentType;
+    municipality?: Municipality;
     eps?: Eps;
     pension_fund?: PensionFund;
     severance_fund?: SeveranceFund;
@@ -144,8 +165,12 @@ export type Service = {
     driver_id: number | null;
     invoice_id: number | null;
     service_date: string;
-    origin: string;
-    destination: string;
+    origin_municipality_id: number | null;
+    origin_address: string | null;
+    origin_coordinates: string | null;
+    destination_municipality_id: number | null;
+    destination_address: string | null;
+    destination_coordinates: string | null;
     planned_start_time: string;
     planned_duration: number;
     actual_start_time: string | null;
