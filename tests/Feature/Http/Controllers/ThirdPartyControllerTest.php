@@ -3,6 +3,7 @@
 namespace Tests\Feature\Http\Controllers;
 
 use App\Models\DocumentType;
+use App\Models\Municipality;
 use App\Models\ThirdParty;
 use App\Models\User;
 use Spatie\Permission\Models\Role as SpatieRole;
@@ -32,6 +33,18 @@ test('create behaves as expected', function (): void {
     $response = get(route('third-parties.create'));
 
     $response->assertOk();
+});
+
+test('create page includes municipalities with department relation', function (): void {
+    $municipality = Municipality::factory()->create();
+
+    $response = get(route('third-parties.create'));
+
+    $response->assertOk();
+    $response->assertInertia(fn ($page) => $page
+        ->has('municipalities')
+        ->where('municipalities.0.department.id', $municipality->department_id)
+    );
 });
 
 test('store uses form request validation')
@@ -98,6 +111,18 @@ test('edit behaves as expected', function (): void {
     $response = get(route('third-parties.edit', $thirdParty));
 
     $response->assertOk();
+});
+
+test('edit page includes municipalities with department relation', function (): void {
+    $thirdParty = ThirdParty::factory()->create();
+    $municipality = Municipality::factory()->create();
+
+    $response = get(route('third-parties.edit', $thirdParty));
+
+    $response->assertOk();
+    $response->assertInertia(fn ($page) => $page
+        ->has('municipalities')
+    );
 });
 
 test('update uses form request validation')

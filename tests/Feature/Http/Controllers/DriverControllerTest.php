@@ -5,6 +5,7 @@ namespace Tests\Feature\Http\Controllers;
 use App\Models\DocumentType;
 use App\Models\Driver;
 use App\Models\Eps;
+use App\Models\Municipality;
 use App\Models\PensionFund;
 use App\Models\SeveranceFund;
 use App\Models\User;
@@ -36,6 +37,18 @@ test('create behaves as expected', function (): void {
     $response = get(route('drivers.create'));
 
     $response->assertOk();
+});
+
+test('create page includes municipalities with department relation', function (): void {
+    $municipality = Municipality::factory()->create();
+
+    $response = get(route('drivers.create'));
+
+    $response->assertOk();
+    $response->assertInertia(fn ($page) => $page
+        ->has('municipalities')
+        ->where('municipalities.0.department.id', $municipality->department_id)
+    );
 });
 
 test('store uses form request validation')
@@ -123,6 +136,18 @@ test('edit behaves as expected', function (): void {
     $response = get(route('drivers.edit', $driver));
 
     $response->assertOk();
+});
+
+test('edit page includes municipalities with department relation', function (): void {
+    $driver = Driver::factory()->create();
+    $municipality = Municipality::factory()->create();
+
+    $response = get(route('drivers.edit', $driver));
+
+    $response->assertOk();
+    $response->assertInertia(fn ($page) => $page
+        ->has('municipalities')
+    );
 });
 
 test('update uses form request validation')
