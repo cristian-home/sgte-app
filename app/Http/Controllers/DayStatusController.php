@@ -38,7 +38,7 @@ class DayStatusController extends Controller
             ->whereNull('deleted_at')
             ->groupBy('service_date')
             ->get()
-            ->keyBy(fn ($row): string => $row->service_date instanceof \Carbon\Carbon ? $row->service_date->format('Y-m-d') : (string) $row->service_date);
+            ->keyBy(fn ($row): string => $row->service_date instanceof \DateTimeInterface ? $row->service_date->format('Y-m-d') : (string) $row->service_date);
 
         return Inertia::render('day-statuses/index', [
             'dayStatuses' => $dayStatuses,
