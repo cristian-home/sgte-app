@@ -1,6 +1,9 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import ThirdPartyController from '@/actions/App/Http/Controllers/ThirdPartyController';
 import InputError from '@/components/input-error';
+import MunicipalityCombobox, {
+    type MunicipalityOption,
+} from '@/components/municipality-combobox';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -47,9 +50,11 @@ interface ThirdParty {
 export default function ThirdPartiesEdit({
     thirdParty,
     documentTypes,
+    municipalities,
 }: {
     thirdParty: ThirdParty;
     documentTypes: DocumentType[];
+    municipalities: MunicipalityOption[];
 }) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Terceros', href: thirdParties.index().url },
@@ -287,15 +292,14 @@ export default function ThirdPartiesEdit({
                                     <Label htmlFor="municipality_id">
                                         Municipio
                                     </Label>
-                                    <Input
+                                    <MunicipalityCombobox
                                         id="municipality_id"
+                                        municipalities={municipalities}
                                         value={data.municipality_id}
-                                        onChange={(e) =>
-                                            setData(
-                                                'municipality_id',
-                                                e.target.value,
-                                            )
+                                        onChange={(val) =>
+                                            setData('municipality_id', val)
                                         }
+                                        invalid={!!errors.municipality_id}
                                     />
                                     <InputError
                                         message={errors.municipality_id}
