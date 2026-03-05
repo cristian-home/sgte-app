@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Enums\Role;
+use App\Models\Service;
+use App\Observers\ServiceObserver;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
@@ -28,6 +30,8 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
         $this->configureMacros();
+
+        Service::observe(ServiceObserver::class);
 
         // Super Admin User can bypass all authorization checks
         Gate::before(function ($user, $ability) {

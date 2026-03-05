@@ -2,9 +2,11 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\DayStatusEnum;
 use App\Enums\PaymentMethod;
 use App\Enums\ServiceStatus;
 use App\Models\Contract;
+use App\Models\DayStatus;
 use App\Models\Vehicle;
 use App\Rules\NoScheduleConflict;
 use Illuminate\Foundation\Http\FormRequest;
@@ -80,10 +82,24 @@ class ServiceStoreRequest extends FormRequest
     {
         return [
             function ($validator): void {
+                $this->validateExecutedDayRestriction($validator);
                 $this->validateContractCoversDate($validator);
                 $this->validateDriverRequired($validator);
             },
         ];
+    }
+
+    protected function validateExecutedDayRestriction($validator): void
+    {
+        if (! $this->filled('service_date')) {
+            return;
+        }
+
+        $dayStatus = DayStatus::where('date', $this->input('service_date'))->first();
+
+        if ($dayStatus?->status === DayStatusEnum::Executed) {
+            $validator->errors()->add('service_date', 'No se pueden crear servicios en un día ejecutado.');
+        }
     }
 
     protected function validateContractCoversDate($validator): void

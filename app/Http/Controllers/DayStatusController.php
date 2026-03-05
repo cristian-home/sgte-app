@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\DayStatusEnum;
 use App\Enums\Permission;
+use App\Enums\ServiceStatus;
 use App\Http\Requests\DayStatusStoreRequest;
 use App\Http\Requests\DayStatusUpdateRequest;
 use App\Models\DayStatus;
+use App\Models\Service;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -65,6 +68,33 @@ class DayStatusController extends Controller
         $dayStatus->update($request->validated());
 
         return redirect()->route('day-statuses.index');
+    }
+
+    public function execute(Request $request, DayStatus $dayStatus): RedirectResponse
+    {
+        Gate::authorize(Permission::EXECUTE_DAY->value);
+
+        $services = Service::where('service_date', $dayStatus->date->format('Y-m-d'))
+            ->whereNull('deleted_at')
+            ->get();
+
+        if ($services->isEmpty()) {
+            return redirect()->back()->with('error', 'No se puede ejecutar un día sin servicios.');
+        }
+
+        $hasOpenServices = $services->contains(fn (Service $s) => $s->service_status !== ServiceStatus::Closed);
+
+        if ($hasOpenServices) {
+            return redirect()->back()->with('error', 'No se puede ejecutar el día. Existen servicios abiertos.');
+        }
+
+        $dayStatus->update([
+            'status' => DayStatusEnum::Executed,
+            'executor_id' => auth()->id(),
+            'executed_at' => now(),
+        ]);
+
+        return redirect()->back()->with('success', 'Día ejecutado correctamente.');
     }
 
     public function destroy(Request $request, DayStatus $dayStatus): RedirectResponse

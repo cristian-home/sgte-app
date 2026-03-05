@@ -21,6 +21,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('vehicles', App\Http\Controllers\VehicleController::class);
     Route::resource('contracts', App\Http\Controllers\ContractController::class);
     Route::resource('invoices', App\Http\Controllers\InvoiceController::class);
+    Route::post('day-statuses/{day_status}/execute', [App\Http\Controllers\DayStatusController::class, 'execute'])->name('day-statuses.execute');
     Route::resource('day-statuses', App\Http\Controllers\DayStatusController::class);
     Route::resource('services', App\Http\Controllers\ServiceController::class);
     Route::resource('service-incidents', App\Http\Controllers\ServiceIncidentController::class);
