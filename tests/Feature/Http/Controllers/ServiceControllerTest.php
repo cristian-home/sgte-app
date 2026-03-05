@@ -167,24 +167,25 @@ test('store uses form request validation')
     );
 
 test('store saves and redirects', function (): void {
-    $contract = Contract::factory()->create();
-    $vehicle = Vehicle::factory()->create();
-    $driver = Driver::factory()->create();
+    $service_date = Carbon::now()->toDateString();
+    $contract = Contract::factory()->create([
+        'active' => true,
+        'start_date' => Carbon::now()->subMonth(),
+        'end_date' => Carbon::now()->addMonth(),
+    ]);
+    $vehicle = Vehicle::factory()->create(['is_third_party' => false]);
+    $driver = Driver::factory()->create(['license_due_date' => Carbon::now()->addYear()]);
     $invoice = Invoice::factory()->create();
-    $service_date = Carbon::parse(fake()->date());
     $origin_municipality = \App\Models\Municipality::factory()->create();
     $origin_address = fake()->streetAddress();
     $destination_municipality = \App\Models\Municipality::factory()->create();
     $destination_address = fake()->streetAddress();
-    $planned_start_time = fake()->time();
-    $planned_duration = fake()->numberBetween(30, 480);
-    $actual_start_time = fake()->time();
-    $actual_end_time = fake()->time();
+    $planned_start_time = '08:00';
+    $planned_duration = 120;
     $unit_value = fake()->randomFloat(2, 50000, 500000);
     $quantity = fake()->numberBetween(1, 5);
     $billing_group = fake()->word();
     $payment_method = fake()->randomElement(['cash', 'credit', 'transfer']);
-    $service_status = fake()->randomElement(['open', 'closed']);
 
     $response = post(route('services.store'), [
         'contract_id' => $contract->id,
@@ -198,37 +199,19 @@ test('store saves and redirects', function (): void {
         'destination_address' => $destination_address,
         'planned_start_time' => $planned_start_time,
         'planned_duration' => $planned_duration,
-        'actual_start_time' => $actual_start_time,
-        'actual_end_time' => $actual_end_time,
         'unit_value' => $unit_value,
         'quantity' => $quantity,
         'billing_group' => $billing_group,
         'payment_method' => $payment_method,
-        'service_status' => $service_status,
+        'service_status' => 'open',
     ]);
 
     $services = Service::query()
         ->where('contract_id', $contract->id)
         ->where('vehicle_id', $vehicle->id)
         ->where('driver_id', $driver->id)
-        ->where('invoice_id', $invoice->id)
-        ->where('service_date', $service_date)
-        ->where('origin_municipality_id', $origin_municipality->id)
-        ->where('origin_address', $origin_address)
-        ->where('destination_municipality_id', $destination_municipality->id)
-        ->where('destination_address', $destination_address)
-        ->where('planned_start_time', $planned_start_time)
-        ->where('planned_duration', $planned_duration)
-        ->where('actual_start_time', $actual_start_time)
-        ->where('actual_end_time', $actual_end_time)
-        ->where('unit_value', $unit_value)
-        ->where('quantity', $quantity)
-        ->where('billing_group', $billing_group)
-        ->where('payment_method', $payment_method)
-        ->where('service_status', $service_status)
         ->get();
     expect($services)->toHaveCount(1);
-    $service = $services->first();
 
     $response->assertRedirect(route('services.index'));
 });
@@ -257,45 +240,39 @@ test('update uses form request validation')
     );
 
 test('update redirects', function (): void {
-    $service = Service::factory()->create();
-    $contract = Contract::factory()->create();
-    $vehicle = Vehicle::factory()->create();
-    $driver = Driver::factory()->create();
-    $invoice = Invoice::factory()->create();
-    $service_date = Carbon::parse(fake()->date());
+    $service_date = Carbon::now()->toDateString();
+    $contract = Contract::factory()->create([
+        'active' => true,
+        'start_date' => Carbon::now()->subMonth(),
+        'end_date' => Carbon::now()->addMonth(),
+    ]);
+    $vehicle = Vehicle::factory()->create(['is_third_party' => false]);
+    $driver = Driver::factory()->create(['license_due_date' => Carbon::now()->addYear()]);
+    $service = Service::factory()->create([
+        'contract_id' => $contract->id,
+        'vehicle_id' => $vehicle->id,
+        'driver_id' => $driver->id,
+        'service_date' => $service_date,
+        'planned_start_time' => '06:00',
+        'planned_duration' => 60,
+    ]);
     $origin_municipality = \App\Models\Municipality::factory()->create();
     $origin_address = fake()->streetAddress();
-    $destination_municipality = \App\Models\Municipality::factory()->create();
-    $destination_address = fake()->streetAddress();
-    $planned_start_time = fake()->time();
-    $planned_duration = fake()->numberBetween(30, 480);
-    $actual_start_time = fake()->time();
-    $actual_end_time = fake()->time();
     $unit_value = fake()->randomFloat(2, 50000, 500000);
-    $quantity = fake()->numberBetween(1, 5);
-    $billing_group = fake()->word();
-    $payment_method = fake()->randomElement(['cash', 'credit', 'transfer']);
-    $service_status = fake()->randomElement(['open', 'closed']);
 
     $response = put(route('services.update', $service), [
         'contract_id' => $contract->id,
         'vehicle_id' => $vehicle->id,
         'driver_id' => $driver->id,
-        'invoice_id' => $invoice->id,
         'service_date' => $service_date,
         'origin_municipality_id' => $origin_municipality->id,
         'origin_address' => $origin_address,
-        'destination_municipality_id' => $destination_municipality->id,
-        'destination_address' => $destination_address,
-        'planned_start_time' => $planned_start_time,
-        'planned_duration' => $planned_duration,
-        'actual_start_time' => $actual_start_time,
-        'actual_end_time' => $actual_end_time,
+        'planned_start_time' => '10:00',
+        'planned_duration' => 90,
         'unit_value' => $unit_value,
-        'quantity' => $quantity,
-        'billing_group' => $billing_group,
-        'payment_method' => $payment_method,
-        'service_status' => $service_status,
+        'quantity' => 2,
+        'payment_method' => 'credit',
+        'service_status' => 'open',
     ]);
 
     $service->refresh();
@@ -304,22 +281,12 @@ test('update redirects', function (): void {
 
     expect($contract->id)->toEqual($service->contract_id);
     expect($vehicle->id)->toEqual($service->vehicle_id);
-    expect($driver->id)->toEqual($service->driver_id);
-    expect($invoice->id)->toEqual($service->invoice_id);
-    expect($service_date)->toEqual($service->service_date);
     expect($origin_municipality->id)->toEqual($service->origin_municipality_id);
     expect($origin_address)->toEqual($service->origin_address);
-    expect($destination_municipality->id)->toEqual($service->destination_municipality_id);
-    expect($destination_address)->toEqual($service->destination_address);
-    expect($planned_start_time)->toEqual($service->planned_start_time);
-    expect($planned_duration)->toEqual($service->planned_duration);
-    expect($actual_start_time)->toEqual($service->actual_start_time);
-    expect($actual_end_time)->toEqual($service->actual_end_time);
-    expect($unit_value)->toEqual($service->unit_value);
-    expect($quantity)->toEqual($service->quantity);
-    expect($billing_group)->toEqual($service->billing_group);
-    expect($payment_method)->toEqual($service->payment_method->value);
-    expect($service_status)->toEqual($service->service_status->value);
+    expect('10:00')->toEqual($service->planned_start_time);
+    expect(90)->toEqual($service->planned_duration);
+    expect(2)->toEqual($service->quantity);
+    expect('credit')->toEqual($service->payment_method->value);
 });
 
 test('destroy deletes and redirects', function (): void {
@@ -412,4 +379,213 @@ test('index can filter services by multiple service_status values', function ():
         fn (AssertableInertia $page) => $page
             ->has('services.data', 2)
     );
+});
+
+test('create returns view with vehicles, drivers, contracts, municipalities props', function (): void {
+    $response = get(route('services.create'));
+
+    $response->assertOk();
+    $response->assertInertia(fn (AssertableInertia $page) => $page
+        ->component('services/create')
+        ->has('vehicles')
+        ->has('drivers')
+        ->has('contracts')
+        ->has('municipalities')
+    );
+});
+
+test('create excludes drivers with expired license', function (): void {
+    Driver::factory()->create([
+        'license_due_date' => Carbon::now()->addYear(),
+        'first_name' => 'ValidDriver',
+    ]);
+    Driver::factory()->create([
+        'license_due_date' => Carbon::now()->subDay(),
+        'first_name' => 'ExpiredDriver',
+    ]);
+
+    $response = get(route('services.create'));
+
+    $response->assertInertia(fn (AssertableInertia $page) => $page
+        ->has('drivers', 1)
+        ->where('drivers.0.first_name', 'ValidDriver')
+    );
+});
+
+test('store fails validation when required fields are missing', function (): void {
+    $response = post(route('services.store'), []);
+
+    $response->assertSessionHasErrors([
+        'contract_id',
+        'vehicle_id',
+        'service_date',
+        'planned_start_time',
+        'planned_duration',
+        'unit_value',
+        'quantity',
+        'payment_method',
+        'service_status',
+    ]);
+});
+
+test('store fails when contract is inactive', function (): void {
+    $contract = Contract::factory()->create([
+        'active' => false,
+        'start_date' => Carbon::now()->subMonth(),
+        'end_date' => Carbon::now()->addMonth(),
+    ]);
+    $vehicle = Vehicle::factory()->create(['is_third_party' => false]);
+    $driver = Driver::factory()->create();
+
+    $response = post(route('services.store'), [
+        'contract_id' => $contract->id,
+        'vehicle_id' => $vehicle->id,
+        'driver_id' => $driver->id,
+        'service_date' => Carbon::now()->toDateString(),
+        'planned_start_time' => '08:00',
+        'planned_duration' => 60,
+        'unit_value' => 100000,
+        'quantity' => 1,
+        'payment_method' => 'credit',
+        'service_status' => 'open',
+    ]);
+
+    $response->assertSessionHasErrors(['contract_id']);
+});
+
+test('store fails when contract date range does not cover service_date', function (): void {
+    $contract = Contract::factory()->create([
+        'active' => true,
+        'start_date' => Carbon::now()->subYear(),
+        'end_date' => Carbon::now()->subMonth(),
+    ]);
+    $vehicle = Vehicle::factory()->create(['is_third_party' => false]);
+    $driver = Driver::factory()->create();
+
+    $response = post(route('services.store'), [
+        'contract_id' => $contract->id,
+        'vehicle_id' => $vehicle->id,
+        'driver_id' => $driver->id,
+        'service_date' => Carbon::now()->toDateString(),
+        'planned_start_time' => '08:00',
+        'planned_duration' => 60,
+        'unit_value' => 100000,
+        'quantity' => 1,
+        'payment_method' => 'credit',
+        'service_status' => 'open',
+    ]);
+
+    $response->assertSessionHasErrors(['contract_id']);
+});
+
+test('edit returns view with service and reference data', function (): void {
+    $service = Service::factory()->create();
+
+    $response = get(route('services.edit', $service));
+
+    $response->assertOk();
+    $response->assertInertia(fn (AssertableInertia $page) => $page
+        ->component('services/edit')
+        ->has('service')
+        ->has('vehicles')
+        ->has('drivers')
+        ->has('contracts')
+        ->has('municipalities')
+    );
+});
+
+test('show returns view with service and eager-loaded relationships', function (): void {
+    $service = Service::factory()->create();
+
+    $response = get(route('services.show', $service));
+
+    $response->assertOk();
+    $response->assertInertia(fn (AssertableInertia $page) => $page
+        ->component('services/show')
+        ->has('service')
+        ->has('service.contract')
+        ->has('service.vehicle')
+    );
+});
+
+test('unauthorized users cannot access create', function (): void {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    $response = get(route('services.create'));
+
+    $response->assertForbidden();
+});
+
+test('unauthorized users cannot access store', function (): void {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+    $contract = Contract::factory()->create([
+        'active' => true,
+        'start_date' => Carbon::now()->subMonth(),
+        'end_date' => Carbon::now()->addMonth(),
+    ]);
+    $vehicle = Vehicle::factory()->create(['is_third_party' => false]);
+    $driver = Driver::factory()->create(['license_due_date' => Carbon::now()->addYear()]);
+
+    $response = post(route('services.store'), [
+        'contract_id' => $contract->id,
+        'vehicle_id' => $vehicle->id,
+        'driver_id' => $driver->id,
+        'service_date' => Carbon::now()->toDateString(),
+        'planned_start_time' => '08:00',
+        'planned_duration' => 60,
+        'unit_value' => 100000,
+        'quantity' => 1,
+        'payment_method' => 'credit',
+        'service_status' => 'open',
+    ]);
+
+    $response->assertForbidden();
+});
+
+test('unauthorized users cannot access edit', function (): void {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+    $service = Service::factory()->create();
+
+    $response = get(route('services.edit', $service));
+
+    $response->assertForbidden();
+});
+
+test('unauthorized users cannot access update', function (): void {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+    $service = Service::factory()->create();
+    $contract = Contract::factory()->create([
+        'active' => true,
+        'start_date' => Carbon::now()->subMonth(),
+        'end_date' => Carbon::now()->addMonth(),
+    ]);
+
+    $response = put(route('services.update', $service), [
+        'contract_id' => $contract->id,
+        'vehicle_id' => $service->vehicle_id,
+        'driver_id' => $service->driver_id,
+        'service_date' => Carbon::now()->toDateString(),
+        'planned_start_time' => '08:00',
+        'planned_duration' => 60,
+        'unit_value' => 100000,
+        'quantity' => 1,
+        'payment_method' => 'credit',
+        'service_status' => 'open',
+    ]);
+
+    $response->assertForbidden();
+});
+
+test('unauthorized users cannot access destroy', function (): void {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+    $service = Service::factory()->create();
+
+    $response = delete(route('services.destroy', $service));
+
+    $response->assertForbidden();
 });

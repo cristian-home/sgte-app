@@ -29,6 +29,7 @@ class ServiceStoreRequest extends FormRequest
             'contract_id' => ['required', 'integer', 'exists:contracts,id'],
             'vehicle_id' => ['required', 'integer', 'exists:vehicles,id'],
             'driver_id' => ['nullable', 'integer', 'exists:drivers,id'],
+            'invoice_id' => ['nullable', 'integer', 'exists:invoices,id'],
             'service_date' => ['required', 'date'],
             'origin_municipality_id' => ['nullable', 'integer', 'exists:municipalities,id'],
             'origin_address' => ['nullable', 'string', 'max:255'],
@@ -103,7 +104,10 @@ class ServiceStoreRequest extends FormRequest
 
         $serviceDate = $this->input('service_date');
 
-        if ($serviceDate < $contract->start_date->toDateString() || $serviceDate > $contract->end_date->toDateString()) {
+        $startDate = $contract->start_date instanceof \Illuminate\Support\Carbon ? $contract->start_date->toDateString() : (string) $contract->start_date;
+        $endDate = $contract->end_date instanceof \Illuminate\Support\Carbon ? $contract->end_date->toDateString() : (string) $contract->end_date;
+
+        if ($serviceDate < $startDate || $serviceDate > $endDate) {
             $validator->errors()->add('contract_id', 'La fecha del servicio no esta dentro del rango del contrato.');
         }
     }

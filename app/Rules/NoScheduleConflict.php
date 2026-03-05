@@ -20,12 +20,13 @@ class NoScheduleConflict implements ValidationRule
 
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        $newStart = Carbon::parse($this->serviceDate.' '.$this->plannedStartTime);
+        $dateOnly = Carbon::parse($this->serviceDate)->toDateString();
+        $newStart = Carbon::parse($dateOnly.' '.$this->plannedStartTime);
         $newEnd = $newStart->copy()->addMinutes($this->plannedDuration);
 
         $conflicts = Service::query()
             ->where($this->field, $this->fieldValue)
-            ->where('service_date', $this->serviceDate)
+            ->whereDate('service_date', $dateOnly)
             ->when($this->excludeServiceId, fn ($q) => $q->where('id', '!=', $this->excludeServiceId))
             ->get(['id', 'planned_start_time', 'planned_duration']);
 
