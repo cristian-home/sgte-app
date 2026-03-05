@@ -22,22 +22,28 @@ export default function ServicesCreate({
     drivers,
     contracts,
     municipalities,
+    prefill,
 }: {
     vehicles: VehicleOption[];
     drivers: DriverOption[];
     contracts: ContractOption[];
     municipalities: MunicipalityOption[];
+    prefill?: {
+        vehicle_id?: string;
+        planned_start_time?: string;
+        service_date?: string;
+    } | null;
 }) {
     const { data, setData, post, processing, errors } = useForm({
         contract_id: '',
-        vehicle_id: '',
+        vehicle_id: prefill?.vehicle_id ?? '',
         driver_id: '',
-        service_date: '',
+        service_date: prefill?.service_date ?? '',
         origin_municipality_id: '',
         origin_address: '',
         destination_municipality_id: '',
         destination_address: '',
-        planned_start_time: '',
+        planned_start_time: prefill?.planned_start_time ?? '',
         planned_duration: '',
         actual_start_time: '',
         actual_end_time: '',

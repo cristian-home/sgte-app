@@ -58,7 +58,12 @@ class ServiceController extends Controller
     {
         Gate::authorize(Permission::CREATE_SERVICES->value);
 
-        return Inertia::render('services/create', $this->formReferenceData());
+        $prefill = array_filter($request->only(['vehicle_id', 'planned_start_time', 'service_date']));
+
+        return Inertia::render('services/create', [
+            ...$this->formReferenceData(),
+            'prefill' => ! empty($prefill) ? $prefill : null,
+        ]);
     }
 
     public function store(ServiceStoreRequest $request): RedirectResponse
