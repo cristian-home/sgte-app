@@ -35,10 +35,12 @@ interface MonthDetailProps {
 }
 
 function getDayColorClass(status: string | undefined): string {
-    if (!status) return 'bg-neutral-200 dark:bg-neutral-800';
-    if (status === DayStatusEnum.Projected) return 'bg-orange-500/20';
-    if (status === DayStatusEnum.Executed) return 'bg-green-500/20';
-    return 'bg-neutral-200 dark:bg-neutral-800';
+    if (!status) return 'bg-neutral-100 dark:bg-neutral-800/40';
+    if (status === DayStatusEnum.Projected)
+        return 'bg-orange-100 dark:bg-orange-500/15';
+    if (status === DayStatusEnum.Executed)
+        return 'bg-green-100 dark:bg-green-500/15';
+    return 'bg-neutral-100 dark:bg-neutral-800/40';
 }
 
 function getDayDotClass(status: string | undefined): string {
