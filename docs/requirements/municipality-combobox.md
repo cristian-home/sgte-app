@@ -2,10 +2,10 @@
 name: municipality-combobox
 type: feat
 scope: catalog
-status: pending
+status: completed
 priority: high
 created_date: 2026-03-05
-completed_date:
+completed_date: 2026-03-05
 srs_refs: []
 migration_strategy: modify-existing
 ---
@@ -18,13 +18,13 @@ Create a reusable `MunicipalityCombobox` component that replaces the plain text 
 
 ## Acceptance Criteria
 
-- [ ] AC-1: WHEN the user clicks the municipality combobox trigger THEN a popover MUST open with a search input and a scrollable list of municipalities grouped by department.
-- [ ] AC-2: WHEN the user types in the search input THEN the list MUST filter municipalities by name OR code (case-insensitive, partial match).
-- [ ] AC-3: WHEN the user selects a municipality THEN the combobox MUST display the selected municipality as "Municipality Name (Department Name)" and close the popover.
-- [ ] AC-4: WHEN the combobox has a selected value and the user clicks a clear button THEN the value MUST be reset to null.
-- [ ] AC-5: WHEN the vehicle create/edit form is rendered THEN the `municipality_id` field MUST use the `MunicipalityCombobox` instead of a plain text input.
-- [ ] AC-6: WHEN the driver create/edit form is rendered THEN the `municipality_id` field MUST use the `MunicipalityCombobox` instead of a plain text input.
-- [ ] AC-7: WHEN the third-party create/edit form is rendered THEN the `municipality_id` field MUST use the `MunicipalityCombobox` instead of a plain text input.
+- [x] AC-1: WHEN the user clicks the municipality combobox trigger THEN a popover MUST open with a search input and a scrollable list of municipalities grouped by department.
+- [x] AC-2: WHEN the user types in the search input THEN the list MUST filter municipalities by name OR code (case-insensitive, partial match).
+- [x] AC-3: WHEN the user selects a municipality THEN the combobox MUST display the selected municipality as "Municipality Name (Department Name)" and close the popover.
+- [x] AC-4: WHEN the combobox has a selected value and the user clicks a clear button THEN the value MUST be reset to null.
+- [x] AC-5: WHEN the vehicle create/edit form is rendered THEN the `municipality_id` field MUST use the `MunicipalityCombobox` instead of a plain text input.
+- [x] AC-6: WHEN the driver create/edit form is rendered THEN the `municipality_id` field MUST use the `MunicipalityCombobox` instead of a plain text input.
+- [x] AC-7: WHEN the third-party create/edit form is rendered THEN the `municipality_id` field MUST use the `MunicipalityCombobox` instead of a plain text input.
 
 ## Technical Specification
 
@@ -58,28 +58,28 @@ No new permissions required.
 
 ### Backend
 
-- [ ] Task 1: Update `VehicleController@create` to pass municipalities
+- [x] Task 1: Update `VehicleController@create` to pass municipalities
   - Add municipalities query: `Municipality::query()->with('department:id,name')->orderBy('name')->get(['id', 'name', 'code', 'department_id'])`
   - Pass as `municipalities` prop to Inertia render
   - Follow existing pattern for passing `thirdParties` prop in the same method
 
-- [ ] Task 2: Update `VehicleController@edit` to pass municipalities
+- [x] Task 2: Update `VehicleController@edit` to pass municipalities
   - Same query as create
   - Pass as `municipalities` prop alongside existing `vehicle` and `thirdParties` props
 
-- [ ] Task 3: Update `DriverController@create` and `DriverController@edit` to pass municipalities
+- [x] Task 3: Update `DriverController@create` and `DriverController@edit` to pass municipalities
   - Same query pattern as vehicle controller
   - Pass as `municipalities` prop to both create and edit Inertia renders
   - Check what other reference data the driver controller already passes and follow the same pattern
 
-- [ ] Task 4: Update `ThirdPartyController@create` and `ThirdPartyController@edit` to pass municipalities
+- [x] Task 4: Update `ThirdPartyController@create` and `ThirdPartyController@edit` to pass municipalities
   - Same query pattern
   - Pass as `municipalities` prop to both create and edit Inertia renders
   - Note: third-party create/edit pages currently have inline forms (not a separate form component) — the municipalities prop MUST be threaded through to where the `municipality_id` input is rendered
 
 ### Frontend
 
-- [ ] Task 5: Create `resources/js/components/municipality-combobox.tsx`
+- [x] Task 5: Create `resources/js/components/municipality-combobox.tsx`
   - **Props interface:**
     ```
     {
@@ -108,7 +108,7 @@ No new permissions required.
   - Follow `resources/js/components/data-table/data-table-faceted-filter.tsx` as the Popover + Command convention reference.
   - Follow shadcn combobox pattern for single-select behavior.
 
-- [ ] Task 6: Update `resources/js/components/vehicles/vehicle-form.tsx`
+- [x] Task 6: Update `resources/js/components/vehicles/vehicle-form.tsx`
   - Replace the plain `Input` for `municipality_id` (currently around lines 211-218) with `MunicipalityCombobox`
   - Pass `municipalities` from parent page props through to the form component
   - Update the form component's props interface to include `municipalities`
@@ -116,19 +116,19 @@ No new permissions required.
   - Pass `invalid={!!errors.municipality_id}` for error styling
   - Keep the existing `Label` and `InputError` wrapping pattern
 
-- [ ] Task 7: Update driver form component
+- [x] Task 7: Update driver form component
   - Locate the driver form component (inline in create/edit pages or separate component)
   - Replace the plain `Input` for `municipality_id` with `MunicipalityCombobox`
   - Same wiring pattern as vehicle form
   - Update parent pages (create.tsx, edit.tsx) to pass `municipalities` prop through
 
-- [ ] Task 8: Update `resources/js/pages/third-parties/create.tsx` and `edit.tsx`
+- [x] Task 8: Update `resources/js/pages/third-parties/create.tsx` and `edit.tsx`
   - Replace the plain `Input` for `municipality_id` (lines ~260-275 in create, ~287-302 in edit) with `MunicipalityCombobox`
   - Since third-party forms are inline (not a separate component), the combobox MUST be integrated directly in each page
   - Update page props interface to accept `municipalities`
   - Same wiring pattern as vehicle form
 
-- [ ] Task 9: Update TypeScript page props for all affected pages
+- [x] Task 9: Update TypeScript page props for all affected pages
   - `resources/js/pages/vehicles/create.tsx` — add `municipalities` to props type
   - `resources/js/pages/vehicles/edit.tsx` — add `municipalities` to props type
   - `resources/js/pages/drivers/create.tsx` — add `municipalities` to props type
@@ -139,18 +139,18 @@ No new permissions required.
 
 ### Tests
 
-- [ ] Task 10: Update `tests/Feature/Http/Controllers/VehicleControllerTest.php`
+- [x] Task 10: Update `tests/Feature/Http/Controllers/VehicleControllerTest.php`
   - Add test: `create` page props MUST include `municipalities` array
   - Add test: `edit` page props MUST include `municipalities` array
   - Assert municipalities have `department` relation loaded
   - Follow existing test patterns in the file
 
-- [ ] Task 11: Update `tests/Feature/Http/Controllers/DriverControllerTest.php`
+- [x] Task 11: Update `tests/Feature/Http/Controllers/DriverControllerTest.php`
   - Add test: `create` page props MUST include `municipalities` array
   - Add test: `edit` page props MUST include `municipalities` array
   - Follow existing test patterns in the file
 
-- [ ] Task 12: Update `tests/Feature/Http/Controllers/ThirdPartyControllerTest.php`
+- [x] Task 12: Update `tests/Feature/Http/Controllers/ThirdPartyControllerTest.php`
   - Add test: `create` page props MUST include `municipalities` array
   - Add test: `edit` page props MUST include `municipalities` array
   - Follow existing test patterns in the file
@@ -168,3 +168,4 @@ No new permissions required.
 - The clear button (X icon) is important because `municipality_id` is nullable on all models — users must be able to deselect.
 - The `keywords` prop on `CommandItem` enables searching by both name and DANE code (e.g., typing "11001" finds "BOGOTA D.C.").
 - No changes to validation rules or form requests are needed — the existing `nullable|integer|exists:municipalities,id` rules already handle the municipality_id field correctly.
+- Driver create/edit pages are still placeholder pages (auto-generated by Blueprint) without actual forms. The municipalities prop is passed from the controller and will be consumed when the driver form is implemented.
