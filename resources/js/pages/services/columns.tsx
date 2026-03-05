@@ -53,9 +53,11 @@ export const columns: ColumnDef<Service, unknown>[] = [
         header: 'Ruta',
         cell: ({ row }) => (
             <div className="flex flex-col">
-                <span className="font-medium">{row.original.origin}</span>
+                <span className="font-medium">
+                    {row.original.origin_address ?? '—'}
+                </span>
                 <span className="text-xs text-muted-foreground">
-                    → {row.original.destination}
+                    → {row.original.destination_address ?? '—'}
                 </span>
             </div>
         ),

@@ -31,7 +31,7 @@ class ThirdParty extends Model
         'second_lastname',
         'company_name',
         'trade_name',
-        'city',
+        'municipality_id',
         'address',
         'phone',
         'email',
@@ -50,11 +50,17 @@ class ThirdParty extends Model
         return [
             'id' => 'integer',
             'document_type_id' => 'integer',
+            'municipality_id' => 'integer',
             'is_natural_person' => 'boolean',
             'is_customer' => 'boolean',
             'is_provider' => 'boolean',
             'active' => 'boolean',
         ];
+    }
+
+    public function municipality(): BelongsTo
+    {
+        return $this->belongsTo(Municipality::class);
     }
 
     public function documentType(): BelongsTo
@@ -75,7 +81,7 @@ class ThirdParty extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['id', 'document_type_id', 'identification_number', 'is_natural_person', 'first_name', 'second_name', 'first_lastname', 'second_lastname', 'company_name', 'trade_name', 'city', 'address', 'phone', 'email', 'is_customer', 'is_provider', 'active']);
+            ->logOnly(['id', 'document_type_id', 'identification_number', 'is_natural_person', 'first_name', 'second_name', 'first_lastname', 'second_lastname', 'company_name', 'trade_name', 'municipality_id', 'address', 'phone', 'email', 'is_customer', 'is_provider', 'active']);
     }
 
     /**
@@ -104,7 +110,7 @@ class ThirdParty extends Model
             'second_lastname' => $this->second_lastname,
             'company_name' => $this->company_name,
             'trade_name' => $this->trade_name,
-            'city' => $this->city,
+            'municipality_id' => $this->municipality_id,
             'address' => $this->address,
             'phone' => $this->phone,
             'email' => $this->email,

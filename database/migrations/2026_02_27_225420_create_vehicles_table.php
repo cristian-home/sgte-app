@@ -25,7 +25,7 @@ return new class extends Migration
             $table->string('engine_number', 50);
             $table->string('chassis_number', 50);
             $table->integer('capacity');
-            $table->string('city', 100);
+            $table->foreignId('municipality_id')->nullable()->constrained();
             $table->boolean('is_third_party')->default(false);
             $table->foreignId('third_party_id')->nullable()->constrained();
             $table->date('soat_due_date');

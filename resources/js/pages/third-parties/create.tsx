@@ -44,7 +44,7 @@ export default function ThirdPartiesCreate({
         second_lastname: '',
         company_name: '',
         trade_name: '',
-        city: '',
+        municipality_id: '',
         address: '',
         phone: '',
         email: '',
@@ -257,15 +257,22 @@ export default function ThirdPartiesCreate({
 
                             <div className="grid gap-4 md:grid-cols-2">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="city">Ciudad</Label>
+                                    <Label htmlFor="municipality_id">
+                                        Municipio
+                                    </Label>
                                     <Input
-                                        id="city"
-                                        value={data.city}
+                                        id="municipality_id"
+                                        value={data.municipality_id}
                                         onChange={(e) =>
-                                            setData('city', e.target.value)
+                                            setData(
+                                                'municipality_id',
+                                                e.target.value,
+                                            )
                                         }
                                     />
-                                    <InputError message={errors.city} />
+                                    <InputError
+                                        message={errors.municipality_id}
+                                    />
                                 </div>
                                 <div className="grid gap-2">
                                     <Label htmlFor="address">Direccion</Label>

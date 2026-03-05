@@ -24,7 +24,7 @@ return new class extends Migration
             $table->string('second_lastname', 100)->nullable();
             $table->string('company_name', 200)->nullable();
             $table->string('trade_name', 200)->nullable();
-            $table->string('city', 100);
+            $table->foreignId('municipality_id')->nullable()->constrained();
             $table->string('address', 255);
             $table->string('phone', 50);
             $table->string('email', 255);

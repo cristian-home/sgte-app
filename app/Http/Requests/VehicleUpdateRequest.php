@@ -33,7 +33,7 @@ class VehicleUpdateRequest extends FormRequest
             'engine_number' => ['required', 'string', 'max:50'],
             'chassis_number' => ['required', 'string', 'max:50'],
             'capacity' => ['required', 'integer'],
-            'city' => ['required', 'string', 'max:100'],
+            'municipality_id' => ['nullable', 'integer', 'exists:municipalities,id'],
             'is_third_party' => ['required', 'boolean'],
             'third_party_id' => [Rule::when($this->boolean('is_third_party'), ['required', 'integer', 'exists:third_parties,id'], ['nullable', 'integer', 'exists:third_parties,id'])],
             'soat_due_date' => ['required', 'date'],

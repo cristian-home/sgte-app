@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Enums\VehicleStatus;
 use App\Enums\VehicleType;
+use App\Models\Municipality;
 use App\Models\ThirdParty;
 use App\Models\Vehicle;
 use Illuminate\Database\Seeder;
@@ -17,6 +18,10 @@ class VehicleSeeder extends Seeder
     {
         $provider = ThirdParty::where('is_provider', true)->first();
 
+        $bogota = Municipality::where('code', '11001')->first();
+        $medellin = Municipality::where('code', '5001')->first();
+        $bucaramanga = Municipality::where('code', '68001')->first();
+
         $vehicles = [
             [
                 'internal_code' => 'V-001',
@@ -29,7 +34,7 @@ class VehicleSeeder extends Seeder
                 'engine_number' => 'CHV2022NKR001',
                 'chassis_number' => '9GBNG5CD0N1234567',
                 'capacity' => 19,
-                'city' => 'Bogota',
+                'municipality_id' => $bogota?->id,
                 'is_third_party' => false,
                 'third_party_id' => null,
                 'soat_due_date' => '2027-03-15',
@@ -48,7 +53,7 @@ class VehicleSeeder extends Seeder
                 'engine_number' => 'TYT2023CST002',
                 'chassis_number' => 'JTGFB518XJ1234568',
                 'capacity' => 30,
-                'city' => 'Bogota',
+                'municipality_id' => $bogota?->id,
                 'is_third_party' => false,
                 'third_party_id' => null,
                 'soat_due_date' => '2027-05-10',
@@ -67,7 +72,7 @@ class VehicleSeeder extends Seeder
                 'engine_number' => 'HYD2021CNT003',
                 'chassis_number' => 'KMJHG51HPJU234569',
                 'capacity' => 25,
-                'city' => 'Medellin',
+                'municipality_id' => $medellin?->id,
                 'is_third_party' => false,
                 'third_party_id' => null,
                 'soat_due_date' => '2027-01-20',
@@ -86,7 +91,7 @@ class VehicleSeeder extends Seeder
                 'engine_number' => 'MBZ2024SPR004',
                 'chassis_number' => 'WDB9066331S234570',
                 'capacity' => 15,
-                'city' => 'Bogota',
+                'municipality_id' => $bogota?->id,
                 'is_third_party' => false,
                 'third_party_id' => null,
                 'soat_due_date' => '2027-07-25',
@@ -105,7 +110,7 @@ class VehicleSeeder extends Seeder
                 'engine_number' => 'KIA2020PRG005',
                 'chassis_number' => 'KNCSD81126K234571',
                 'capacity' => 12,
-                'city' => 'Bucaramanga',
+                'municipality_id' => $bucaramanga?->id,
                 'is_third_party' => true,
                 'third_party_id' => $provider?->id,
                 'soat_due_date' => '2026-11-30',

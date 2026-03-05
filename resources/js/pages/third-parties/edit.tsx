@@ -35,7 +35,7 @@ interface ThirdParty {
     second_lastname: string | null;
     company_name: string | null;
     trade_name: string | null;
-    city: string;
+    municipality_id: number | null;
     address: string;
     phone: string;
     email: string;
@@ -69,7 +69,9 @@ export default function ThirdPartiesEdit({
         second_lastname: thirdParty.second_lastname ?? '',
         company_name: thirdParty.company_name ?? '',
         trade_name: thirdParty.trade_name ?? '',
-        city: thirdParty.city,
+        municipality_id: thirdParty.municipality_id
+            ? String(thirdParty.municipality_id)
+            : '',
         address: thirdParty.address,
         phone: thirdParty.phone,
         email: thirdParty.email,
@@ -282,15 +284,22 @@ export default function ThirdPartiesEdit({
 
                             <div className="grid gap-4 md:grid-cols-2">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="city">Ciudad</Label>
+                                    <Label htmlFor="municipality_id">
+                                        Municipio
+                                    </Label>
                                     <Input
-                                        id="city"
-                                        value={data.city}
+                                        id="municipality_id"
+                                        value={data.municipality_id}
                                         onChange={(e) =>
-                                            setData('city', e.target.value)
+                                            setData(
+                                                'municipality_id',
+                                                e.target.value,
+                                            )
                                         }
                                     />
-                                    <InputError message={errors.city} />
+                                    <InputError
+                                        message={errors.municipality_id}
+                                    />
                                 </div>
                                 <div className="grid gap-2">
                                     <Label htmlFor="address">Direccion</Label>

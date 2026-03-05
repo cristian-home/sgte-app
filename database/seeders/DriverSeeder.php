@@ -6,6 +6,7 @@ use App\Enums\LicenseCategory;
 use App\Models\DocumentType;
 use App\Models\Driver;
 use App\Models\Eps;
+use App\Models\Municipality;
 use App\Models\PensionFund;
 use App\Models\SeveranceFund;
 use Illuminate\Database\Seeder;
@@ -32,6 +33,10 @@ class DriverSeeder extends Seeder
         $sfColfondos = SeveranceFund::where('name', 'Colfondos')->first();
         $sfFna = SeveranceFund::where('name', 'FNA')->first();
 
+        $bogota = Municipality::where('code', '11001')->first();
+        $medellin = Municipality::where('code', '5001')->first();
+        $bucaramanga = Municipality::where('code', '68001')->first();
+
         $drivers = [
             [
                 'document_type_id' => $cc->id,
@@ -40,7 +45,7 @@ class DriverSeeder extends Seeder
                 'second_name' => 'Andres',
                 'first_lastname' => 'Martinez',
                 'second_lastname' => 'Lopez',
-                'city' => 'Bogota',
+                'municipality_id' => $bogota?->id,
                 'address' => 'Calle 80 # 25-10',
                 'phone' => '3101112233',
                 'email' => 'carlos.martinez@correo.com',
@@ -59,7 +64,7 @@ class DriverSeeder extends Seeder
                 'second_name' => 'Eduardo',
                 'first_lastname' => 'Ramirez',
                 'second_lastname' => 'Torres',
-                'city' => 'Bogota',
+                'municipality_id' => $bogota?->id,
                 'address' => 'Carrera 15 # 60-30',
                 'phone' => '3204445566',
                 'email' => 'jorge.ramirez@correo.com',
@@ -78,7 +83,7 @@ class DriverSeeder extends Seeder
                 'second_name' => 'Fernando',
                 'first_lastname' => 'Hernandez',
                 'second_lastname' => 'Diaz',
-                'city' => 'Medellin',
+                'municipality_id' => $medellin?->id,
                 'address' => 'Calle 50 # 40-22',
                 'phone' => '3157778899',
                 'email' => 'luis.hernandez@correo.com',
@@ -97,7 +102,7 @@ class DriverSeeder extends Seeder
                 'second_name' => null,
                 'first_lastname' => 'Vargas',
                 'second_lastname' => 'Castillo',
-                'city' => 'Bogota',
+                'municipality_id' => $bogota?->id,
                 'address' => 'Avenida 68 # 12-45',
                 'phone' => '3189990011',
                 'email' => 'pedro.vargas@correo.com',
@@ -116,7 +121,7 @@ class DriverSeeder extends Seeder
                 'second_name' => 'Angel',
                 'first_lastname' => 'Rojas',
                 'second_lastname' => 'Moreno',
-                'city' => 'Bucaramanga',
+                'municipality_id' => $bucaramanga?->id,
                 'address' => 'Calle 45 # 28-17',
                 'phone' => '3162223344',
                 'email' => 'miguel.rojas@correo.com',

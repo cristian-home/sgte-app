@@ -26,11 +26,11 @@ class VehicleController extends Controller
                 'plate',
                 'brand',
                 AllowedFilter::exact('type'),
-                'city',
+                AllowedFilter::exact('municipality_id'),
                 AllowedFilter::exact('is_third_party'),
                 AllowedFilter::exact('status'),
             ])
-            ->allowedSorts(['internal_code', 'plate', 'model_year', 'city', 'status'])
+            ->allowedSorts(['internal_code', 'plate', 'model_year', 'municipality_id', 'status'])
             ->get();
 
         return Inertia::render('vehicles/index', [

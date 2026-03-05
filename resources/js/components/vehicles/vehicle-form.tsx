@@ -30,7 +30,7 @@ export interface VehicleFormData {
     engine_number: string;
     chassis_number: string;
     capacity: string;
-    city: string;
+    municipality_id: string;
     is_third_party: boolean;
     third_party_id: string;
     soat_due_date: string;
@@ -205,16 +205,18 @@ export default function VehicleForm({
                 </div>
                 <div
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
-                    data-error={invalid('city')}
+                    data-error={invalid('municipality_id')}
                 >
-                    <Label htmlFor={id('city')}>Ciudad</Label>
+                    <Label htmlFor={id('municipality_id')}>Municipio</Label>
                     <Input
-                        id={id('city')}
-                        value={data.city}
-                        aria-invalid={invalid('city')}
-                        onChange={(e) => setData('city', e.target.value)}
+                        id={id('municipality_id')}
+                        value={data.municipality_id}
+                        aria-invalid={invalid('municipality_id')}
+                        onChange={(e) =>
+                            setData('municipality_id', e.target.value)
+                        }
                     />
-                    <InputError message={errors.city} />
+                    <InputError message={errors.municipality_id} />
                 </div>
             </div>
 

@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Enums\VehicleStatus;
 use App\Enums\VehicleType;
+use App\Models\Municipality;
 use App\Models\ThirdParty;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -27,7 +28,7 @@ class VehicleFactory extends Factory
             'engine_number' => fake()->bothify('??#####??##'),
             'chassis_number' => fake()->bothify('?????????????????'),
             'capacity' => fake()->numberBetween(4, 40),
-            'city' => fake()->city(),
+            'municipality_id' => Municipality::inRandomOrder()->first()?->id ?? Municipality::factory(),
             'is_third_party' => $isThirdParty,
             'third_party_id' => $isThirdParty ? ThirdParty::factory() : null,
             'soat_due_date' => fake()->dateTimeBetween('+1 month', '+1 year'),

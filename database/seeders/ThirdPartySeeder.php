@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\DocumentType;
+use App\Models\Municipality;
 use App\Models\ThirdParty;
 use Illuminate\Database\Seeder;
 
@@ -16,6 +17,10 @@ class ThirdPartySeeder extends Seeder
         $cc = DocumentType::where('code', 'CC')->first();
         $nit = DocumentType::where('code', 'NIT')->first();
 
+        $bogota = Municipality::where('code', '11001')->first();
+        $bucaramanga = Municipality::where('code', '68001')->first();
+        $medellin = Municipality::where('code', '5001')->first();
+
         $thirdParties = [
             [
                 'document_type_id' => $nit->id,
@@ -23,7 +28,7 @@ class ThirdPartySeeder extends Seeder
                 'is_natural_person' => false,
                 'company_name' => 'Clinica San Rafael S.A.S.',
                 'trade_name' => 'Clinica San Rafael',
-                'city' => 'Bogota',
+                'municipality_id' => $bogota?->id,
                 'address' => 'Calle 17 # 12-34',
                 'phone' => '3101234567',
                 'email' => 'contacto@clinicasanrafael.com',
@@ -37,7 +42,7 @@ class ThirdPartySeeder extends Seeder
                 'is_natural_person' => false,
                 'company_name' => 'Colegio Nuestra Senora del Rosario',
                 'trade_name' => 'Colegio del Rosario',
-                'city' => 'Bogota',
+                'municipality_id' => $bogota?->id,
                 'address' => 'Carrera 7 # 45-67',
                 'phone' => '3209876543',
                 'email' => 'admin@colegiorosario.edu.co',
@@ -51,7 +56,7 @@ class ThirdPartySeeder extends Seeder
                 'is_natural_person' => false,
                 'company_name' => 'Hotel Dann Carlton Bogota',
                 'trade_name' => 'Dann Carlton',
-                'city' => 'Bogota',
+                'municipality_id' => $bogota?->id,
                 'address' => 'Avenida 19 # 120-50',
                 'phone' => '3157654321',
                 'email' => 'reservas@danncarlton.com',
@@ -65,7 +70,7 @@ class ThirdPartySeeder extends Seeder
                 'is_natural_person' => false,
                 'company_name' => 'Transportes del Norte S.A.',
                 'trade_name' => 'Transnorte',
-                'city' => 'Bucaramanga',
+                'municipality_id' => $bucaramanga?->id,
                 'address' => 'Calle 36 # 15-20',
                 'phone' => '3178889999',
                 'email' => 'gerencia@transnorte.com',
@@ -81,7 +86,7 @@ class ThirdPartySeeder extends Seeder
                 'second_name' => 'Andres',
                 'first_lastname' => 'Gomez',
                 'second_lastname' => 'Pineda',
-                'city' => 'Medellin',
+                'municipality_id' => $medellin?->id,
                 'address' => 'Carrera 50 # 30-15',
                 'phone' => '3124567890',
                 'email' => 'ricardo.gomez@correo.com',
