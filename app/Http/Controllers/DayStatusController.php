@@ -14,24 +14,36 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
-use Spatie\QueryBuilder\AllowedFilter;
-use Spatie\QueryBuilder\QueryBuilder;
 
 class DayStatusController extends Controller
 {
     public function index(Request $request): Response
     {
         Gate::authorize(Permission::VIEW_DAY_SUMMARY->value);
-        $dayStatuses = QueryBuilder::for(DayStatus::class)
-            ->allowedFilters([
-                AllowedFilter::exact('date'),
-                AllowedFilter::exact('status'),
-            ])
-            ->allowedSorts(['date', 'status'])
-            ->get();
+
+        $request->validate([
+            'year' => ['sometimes', 'integer', 'between:2020,2099'],
+        ]);
+
+        $year = (int) $request->input('year', now()->year);
+
+        $dayStatuses = DayStatus::whereYear('date', $year)
+            ->with('executor:id,name')
+            ->get()
+            ->keyBy(fn (DayStatus $ds): string => $ds->date->format('Y-m-d'));
+
+        $serviceCounts = Service::query()
+            ->selectRaw("service_date, count(*) as total, sum(case when service_status = 'open' then 1 else 0 end) as open_count")
+            ->whereYear('service_date', $year)
+            ->whereNull('deleted_at')
+            ->groupBy('service_date')
+            ->get()
+            ->keyBy(fn ($row): string => $row->service_date instanceof \Carbon\Carbon ? $row->service_date->format('Y-m-d') : (string) $row->service_date);
 
         return Inertia::render('day-statuses/index', [
             'dayStatuses' => $dayStatuses,
+            'serviceCounts' => $serviceCounts,
+            'year' => $year,
         ]);
     }
 
