@@ -2,10 +2,10 @@
 name: annual-calendar
 type: feat
 scope: services
-status: pending
+status: completed
 priority: high
 created_date: 2026-03-05
-completed_date:
+completed_date: 2026-03-05
 srs_refs: ["REQ-001"]
 migration_strategy: modify-existing
 ---
@@ -18,15 +18,15 @@ Replace the current day-statuses index page stub with an interactive annual cale
 
 ## Acceptance Criteria
 
-- [ ] AC-1: WHEN the user navigates to `/day-statuses` THEN a 12-month annual calendar grid MUST be displayed for the current year.
-- [ ] AC-2: WHEN a day has no `DayStatus` record THEN it MUST be displayed with a neutral/black indicator (no services).
-- [ ] AC-3: WHEN a day has a `DayStatus` with `status = projected` THEN it MUST be displayed with an orange indicator.
-- [ ] AC-4: WHEN a day has a `DayStatus` with `status = executed` THEN it MUST be displayed with a green indicator.
-- [ ] AC-5: WHEN the user clicks a month in the annual view THEN the view MUST expand or navigate to show a detailed monthly view with individual day cells, each color-coded and showing the service count for that day.
-- [ ] AC-6: WHEN the user clicks a day in the monthly view THEN the browser MUST navigate to the services index filtered by that date (`/services?filter[service_date]={date}`).
-- [ ] AC-7: WHEN the user clicks the previous/next year navigation arrows THEN the calendar MUST update to show the selected year's data.
-- [ ] AC-8: WHEN the calendar is rendered THEN today's date MUST be visually highlighted (distinct border or ring) regardless of its status color.
-- [ ] AC-9: WHEN a user with the `driver` role attempts to access `/day-statuses` THEN access MUST be denied (403).
+- [x] AC-1: WHEN the user navigates to `/day-statuses` THEN a 12-month annual calendar grid MUST be displayed for the current year.
+- [x] AC-2: WHEN a day has no `DayStatus` record THEN it MUST be displayed with a neutral/black indicator (no services).
+- [x] AC-3: WHEN a day has a `DayStatus` with `status = projected` THEN it MUST be displayed with an orange indicator.
+- [x] AC-4: WHEN a day has a `DayStatus` with `status = executed` THEN it MUST be displayed with a green indicator.
+- [x] AC-5: WHEN the user clicks a month in the annual view THEN the view MUST expand or navigate to show a detailed monthly view with individual day cells, each color-coded and showing the service count for that day.
+- [x] AC-6: WHEN the user clicks a day in the monthly view THEN the browser MUST navigate to the services index filtered by that date (`/services?filter[service_date]={date}`).
+- [x] AC-7: WHEN the user clicks the previous/next year navigation arrows THEN the calendar MUST update to show the selected year's data.
+- [x] AC-8: WHEN the calendar is rendered THEN today's date MUST be visually highlighted (distinct border or ring) regardless of its status color.
+- [x] AC-9: WHEN a user with the `driver` role attempts to access `/day-statuses` THEN access MUST be denied (403).
 
 ## Technical Specification
 
@@ -65,7 +65,7 @@ No new permissions. Uses existing `VIEW_DAY_SUMMARY` permission to gate access.
 
 ### Backend
 
-- [ ] Task 1: Update `DayStatusController@index` to return calendar-optimized data
+- [x] Task 1: Update `DayStatusController@index` to return calendar-optimized data
   - Gate check: `Gate::authorize(Permission::VIEW_DAY_SUMMARY->value)`
   - Accept `year` query parameter (default: current year). Validate it is a 4-digit integer between 2020 and 2099.
   - Query all `DayStatus` records for the year: `DayStatus::whereYear('date', $year)->get(['id', 'date', 'status', 'executor_id', 'executed_at'])`
@@ -78,13 +78,13 @@ No new permissions. Uses existing `VIEW_DAY_SUMMARY` permission to gate access.
   - Pass to Inertia: `dayStatuses` (keyed collection), `serviceCounts` (keyed collection), `year` (integer)
   - Follow existing controller patterns for Inertia rendering
 
-- [ ] Task 2: Update `DayStatusController@index` to eager-load executor for tooltip display
+- [x] Task 2: Update `DayStatusController@index` to eager-load executor for tooltip display
   - Add `->with('executor:id,name')` to the DayStatus query so the frontend can show "Ejecutado por {name}" on hover for executed days
   - Only include executor data for executed day statuses to minimize payload
 
 ### Frontend
 
-- [ ] Task 3: Create the annual calendar grid component at `resources/js/components/calendar/annual-calendar.tsx`
+- [x] Task 3: Create the annual calendar grid component at `resources/js/components/calendar/annual-calendar.tsx`
   - **Props interface:**
     ```
     {
@@ -111,7 +111,7 @@ No new permissions. Uses existing `VIEW_DAY_SUMMARY` permission to gate access.
   - Use `useMemo` to pre-compute month data arrays and avoid re-renders
   - Follow Tailwind CSS v4 conventions and existing component patterns
 
-- [ ] Task 4: Create the monthly detail view component at `resources/js/components/calendar/month-detail.tsx`
+- [x] Task 4: Create the monthly detail view component at `resources/js/components/calendar/month-detail.tsx`
   - **Props interface:**
     ```
     {
@@ -137,7 +137,7 @@ No new permissions. Uses existing `VIEW_DAY_SUMMARY` permission to gate access.
   - Use `Card` component from shadcn for the container
   - Use `Tooltip` component for executed day hover info
 
-- [ ] Task 5: Replace `resources/js/pages/day-statuses/index.tsx` with the calendar implementation
+- [x] Task 5: Replace `resources/js/pages/day-statuses/index.tsx` with the calendar implementation
   - **Props** (from controller): `{ dayStatuses, serviceCounts, year }`
   - **State:** `selectedMonth: number | null` (null = annual view, number = month detail)
   - **Breadcrumbs:** `[{ title: 'Calendario', href: dayStatusesIndex().url }]`
@@ -152,13 +152,13 @@ No new permissions. Uses existing `VIEW_DAY_SUMMARY` permission to gate access.
   - **Permission:** Page is gated by `VIEW_DAY_SUMMARY` in the controller; no additional frontend permission check needed on the page itself (controller handles 403)
   - Follow `resources/js/pages/vehicles/index.tsx` as layout convention reference
 
-- [ ] Task 6: Update the sidebar navigation label for day-statuses
+- [x] Task 6: Update the sidebar navigation label for day-statuses
   - In `resources/js/components/app-sidebar.tsx` (or wherever the sidebar items are defined):
     - Change the label for the day-statuses link from "Estados del Día" (or current label) to "Calendario" to match the new calendar view
     - Keep the same route (`dayStatusesIndex()`)
     - Use `Calendar` icon from lucide-react (or keep existing icon if appropriate)
 
-- [ ] Task 7: Add Spanish locale configuration for date-fns
+- [x] Task 7: Add Spanish locale configuration for date-fns
   - Create `resources/js/lib/date-utils.ts` (or add to existing utils file if one exists)
   - Export a pre-configured `formatDate` helper that uses Spanish locale:
     ```
@@ -172,7 +172,7 @@ No new permissions. Uses existing `VIEW_DAY_SUMMARY` permission to gate access.
 
 ### Tests
 
-- [ ] Task 8: Create `tests/Feature/Http/Controllers/DayStatusCalendarTest.php` using `php artisan make:test --pest`
+- [x] Task 8: Create `tests/Feature/Http/Controllers/DayStatusCalendarTest.php` using `php artisan make:test --pest`
   - Test: index returns `dayStatuses` and `serviceCounts` props for the current year
   - Test: index with `?year=2025` returns data filtered to 2025
   - Test: index with invalid year parameter falls back to current year or returns validation error
@@ -184,7 +184,7 @@ No new permissions. Uses existing `VIEW_DAY_SUMMARY` permission to gate access.
   - Use factories to create DayStatus records and Services for specific dates
   - Follow `tests/Feature/Http/Controllers/VehicleControllerTest.php` as convention reference
 
-- [ ] Task 9: Update existing DayStatus controller tests (if any) to account for the new index response format
+- [x] Task 9: Update existing DayStatus controller tests (if any) to account for the new index response format
   - Check `tests/Feature/Http/Controllers/DayStatusControllerTest.php` for existing tests
   - Update assertions to match new prop structure (`dayStatuses` as keyed collection, `serviceCounts`, `year`)
   - Ensure no regressions in existing test coverage
@@ -195,12 +195,12 @@ No new permissions. Uses existing `VIEW_DAY_SUMMARY` permission to gate access.
 
 Dusk browser tests in `tests/Browser/`. Use super admin credentials from `env('SUPER_ADMIN_USER')` / `env('SUPER_ADMIN_PASSWORD')`. Run `php artisan migrate:fresh --seed --no-interaction` before tests that need a clean database.
 
-- [ ] Navigate to `/day-statuses` and verify the 12-month annual calendar grid is displayed
-- [ ] Verify today's date is highlighted with a distinct ring/border
-- [ ] Click a month card and verify the monthly detail view expands with day cells
-- [ ] Click a day cell in the monthly view and verify navigation to `/services?filter[service_date]={date}`
-- [ ] Click the year navigation arrows and verify the calendar updates to the new year
-- [ ] Verify color-coded day indicators: black (no services), orange (projected), green (executed)
+- [x] Navigate to `/day-statuses` and verify the 12-month annual calendar grid is displayed
+- [x] Verify today's date is highlighted with a distinct ring/border
+- [x] Click a month card and verify the monthly detail view expands with day cells
+- [x] Click a day cell in the monthly view and verify navigation to `/services?filter[service_date]={date}`
+- [x] Click the year navigation arrows and verify the calendar updates to the new year
+- [x] Verify color-coded day indicators: black (no services), orange (projected), green (executed)
 
 ## Dependencies
 

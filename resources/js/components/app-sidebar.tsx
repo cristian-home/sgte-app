@@ -62,7 +62,7 @@ const navGroups: NavGroup[] = [
                 permission: Permission.VIEW_SERVICES,
             },
             {
-                title: 'Estado del Día',
+                title: 'Calendario',
                 href: dayStatusesIndex(),
                 permission: Permission.VIEW_DAY_SUMMARY,
             },

@@ -21,11 +21,17 @@ beforeEach(function (): void {
 });
 
 test('index behaves as expected', function (): void {
-    $dayStatuses = DayStatus::factory()->count(3)->create();
+    DayStatus::factory()->count(3)->create();
 
     $response = get(route('day-statuses.index'));
 
     $response->assertOk();
+    $response->assertInertia(fn ($page) => $page
+        ->component('day-statuses/index')
+        ->has('dayStatuses')
+        ->has('serviceCounts')
+        ->has('year')
+    );
 });
 
 test('create behaves as expected', function (): void {
