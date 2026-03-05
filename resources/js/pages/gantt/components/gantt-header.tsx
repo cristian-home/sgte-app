@@ -1,23 +1,19 @@
 import { router } from '@inertiajs/react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { index as ganttIndex } from '@/actions/App/Http/Controllers/GanttController';
+import MunicipalityCombobox, {
+    type MunicipalityOption,
+} from '@/components/municipality-combobox';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import type { DayStatus, Municipality } from '@/types/models';
+import type { DayStatus } from '@/types/models';
 
 interface GanttHeaderProps {
     date: string;
     municipalityId: number | null;
-    municipalities: Pick<Municipality, 'id' | 'name'>[];
+    municipalities: MunicipalityOption[];
     dayStatus: DayStatus | null;
     canCreateServices: boolean;
 }
@@ -114,26 +110,15 @@ export default function GanttHeader({
                 </span>
 
                 <div className="ml-auto flex items-center gap-3">
-                    <Select
-                        value={municipalityId?.toString() ?? 'all'}
-                        onValueChange={(val) =>
-                            navigate(date, val === 'all' ? null : Number(val))
+                    <MunicipalityCombobox
+                        municipalities={municipalities}
+                        value={municipalityId}
+                        onChange={(val) =>
+                            navigate(date, val ? Number(val) : null)
                         }
-                    >
-                        <SelectTrigger className="h-8 w-50">
-                            <SelectValue placeholder="Municipio" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">
-                                Todos los municipios
-                            </SelectItem>
-                            {municipalities.map((m) => (
-                                <SelectItem key={m.id} value={m.id.toString()}>
-                                    {m.name}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                        placeholder="Todos los municipios"
+                        className="w-60"
+                    />
 
                     {dayStatus && (
                         <Badge

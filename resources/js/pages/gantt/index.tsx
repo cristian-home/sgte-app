@@ -1,9 +1,10 @@
 import { Head } from '@inertiajs/react';
 import { useMemo } from 'react';
 import { index as ganttIndex } from '@/actions/App/Http/Controllers/GanttController';
+import { type MunicipalityOption } from '@/components/municipality-combobox';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import type { DayStatus, Municipality, Service, Vehicle } from '@/types/models';
+import type { DayStatus, Service, Vehicle } from '@/types/models';
 import GanttHeader from './components/gantt-header';
 import HourlyGrid from './components/hourly-grid';
 
@@ -15,7 +16,7 @@ interface Props {
     vehicles: Vehicle[];
     services: Service[];
     dayStatus: DayStatus | null;
-    municipalities: Pick<Municipality, 'id' | 'name'>[];
+    municipalities: MunicipalityOption[];
     date: string;
     municipalityId: number | null;
     canCreateServices: boolean;

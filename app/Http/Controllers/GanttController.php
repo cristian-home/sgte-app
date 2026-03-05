@@ -56,8 +56,9 @@ class GanttController extends Controller
             ->first();
 
         $municipalities = Municipality::query()
+            ->with('department:id,name')
             ->orderBy('name')
-            ->get(['id', 'name']);
+            ->get(['id', 'name', 'code', 'department_id']);
 
         return Inertia::render('gantt/index', [
             'vehicles' => $vehicles,
