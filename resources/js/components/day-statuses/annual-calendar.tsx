@@ -66,6 +66,7 @@ export default function AnnualCalendar({
                     variant="ghost"
                     size="icon"
                     onClick={() => onYearChange(year - 1)}
+                    data-dusk="prev-year"
                 >
                     <ChevronLeft className="size-5" />
                 </Button>
@@ -74,6 +75,7 @@ export default function AnnualCalendar({
                     variant="ghost"
                     size="icon"
                     onClick={() => onYearChange(year + 1)}
+                    data-dusk="next-year"
                 >
                     <ChevronRight className="size-5" />
                 </Button>
@@ -86,6 +88,7 @@ export default function AnnualCalendar({
                         type="button"
                         onClick={() => onMonthClick(month)}
                         className="rounded-xl border p-3 text-left transition-colors hover:bg-accent"
+                        data-dusk={`month-${month}`}
                     >
                         <div className="mb-1 flex items-baseline justify-between">
                             <span className="text-sm font-semibold">

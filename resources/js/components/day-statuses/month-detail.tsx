@@ -108,6 +108,7 @@ export default function MonthDetail({
                                 <button
                                     type="button"
                                     onClick={() => onDayClick(day.dateKey)}
+                                    data-dusk={`day-${day.dateKey}`}
                                     className={cn(
                                         'flex h-16 w-full flex-col items-center justify-center gap-0.5 rounded-lg p-1 transition-colors hover:opacity-80',
                                         bgClass,
