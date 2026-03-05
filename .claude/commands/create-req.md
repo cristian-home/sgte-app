@@ -44,6 +44,7 @@ Based on the user's description, analyze what information is needed and ask clar
 - What are the inputs and outputs?
 - Are there edge cases or error scenarios to handle?
 - Does it interact with existing modules? How?
+- Which parts need UI verification (Laravel Dusk) and which need API verification (curl)?
 
 ### 1.3 Technical Details
 
@@ -134,6 +135,7 @@ Before writing, verify:
 - [ ] Migration strategy is explicitly stated with reasoning
 - [ ] Dependencies are listed (or explicitly "None")
 - [ ] No ambiguous language — avoid "should", "maybe", "consider"; use "MUST", "SHALL", "WILL"
+- [ ] Verification section specifies Dusk tests for UI features and curl commands for API endpoints
 
 ### Task Granularity Guide
 
@@ -144,6 +146,10 @@ Tasks must be detailed enough for autonomous implementation. Each task should:
 - Include validation rules for form requests
 - Include specific test scenarios for test tasks
 - Reference existing files to follow as convention examples
+
+Requirements MUST include a **Verification** section specifying:
+- **UI features**: Laravel Dusk browser tests in `tests/Browser/`. Super admin credentials from `env('SUPER_ADMIN_USER')` / `env('SUPER_ADMIN_PASSWORD')`. Run `php artisan migrate:fresh --seed --no-interaction` when a clean database is needed.
+- **API endpoints**: curl commands to test responses. Same credentials for authentication.
 
 **Example of a GOOD task:**
 ```

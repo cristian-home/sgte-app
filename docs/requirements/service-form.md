@@ -245,6 +245,19 @@ No new permissions. Existing permissions used:
   - Test store succeeds when `service_status = closed` and both actual times are provided
   - Test store succeeds when `service_status = open` and actual times are null
 
+## Verification
+
+### UI (Laravel Dusk)
+
+Dusk browser tests in `tests/Browser/`. Use super admin credentials from `env('SUPER_ADMIN_USER')` / `env('SUPER_ADMIN_PASSWORD')`. Run `php artisan migrate:fresh --seed --no-interaction` before tests that need a clean database.
+
+- [x] Navigate to `/services/create` and verify all form sections are displayed (Datos del Servicio, Origen y Destino, Horarios, Facturacion)
+- [x] Select a third-party vehicle and verify the driver field is hidden and provider info is displayed
+- [x] Select a non-third-party vehicle and verify the driver field is visible and required
+- [x] Submit the form with valid data and verify redirect to services index with success message
+- [x] Navigate to `/services/{id}` and verify all fields are displayed in read-only format
+- [x] Navigate to `/services/{id}/edit` and verify the form is pre-populated with service data
+
 ## Dependencies
 
 - `departments-municipalities-catalog` (completed) — provides Municipality model and FK columns on services table

@@ -189,6 +189,19 @@ No new permissions. Uses existing `VIEW_DAY_SUMMARY` permission to gate access.
   - Update assertions to match new prop structure (`dayStatuses` as keyed collection, `serviceCounts`, `year`)
   - Ensure no regressions in existing test coverage
 
+## Verification
+
+### UI (Laravel Dusk)
+
+Dusk browser tests in `tests/Browser/`. Use super admin credentials from `env('SUPER_ADMIN_USER')` / `env('SUPER_ADMIN_PASSWORD')`. Run `php artisan migrate:fresh --seed --no-interaction` before tests that need a clean database.
+
+- [ ] Navigate to `/day-statuses` and verify the 12-month annual calendar grid is displayed
+- [ ] Verify today's date is highlighted with a distinct ring/border
+- [ ] Click a month card and verify the monthly detail view expands with day cells
+- [ ] Click a day cell in the monthly view and verify navigation to `/services?filter[service_date]={date}`
+- [ ] Click the year navigation arrows and verify the calendar updates to the new year
+- [ ] Verify color-coded day indicators: black (no services), orange (projected), green (executed)
+
 ## Dependencies
 
 - `day-status-logic` (pending) — provides auto-created DayStatus records when services are created, and the executed state. Without this, the calendar would only show black (no data) days.

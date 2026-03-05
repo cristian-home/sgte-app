@@ -284,6 +284,23 @@ No new permissions. Uses existing:
   - Test: services for soft-deleted records are excluded
   - Use factories with multiple municipalities and vehicles
 
+## Verification
+
+### UI (Laravel Dusk)
+
+Dusk browser tests in `tests/Browser/`. Use super admin credentials from `env('SUPER_ADMIN_USER')` / `env('SUPER_ADMIN_PASSWORD')`. Run `php artisan migrate:fresh --seed --no-interaction` before tests that need a clean database.
+
+- [ ] Navigate to `/gantt` and verify the Gantt chart is displayed with vehicles on the Y-axis and hours on the X-axis
+- [ ] Verify service bars are displayed at correct time positions for vehicles with services
+- [ ] Click an empty cell and verify navigation to the service create page with pre-populated vehicle/time/date
+- [ ] Click a service bar and verify navigation to the service edit page
+- [ ] Verify blocked vehicles (expired documents) display "BLOQ." label and gray styling
+- [ ] Verify vehicles with documents expiring within 15 days display "Prec." warning
+- [ ] Select a municipality in the filter and verify only matching vehicles are shown
+- [ ] Click previous/next day navigation and verify the Gantt reloads with the new date
+- [ ] Verify third-party vehicles display "3ro" label in the sidebar
+- [ ] Verify executed day displays "Dia Ejecutado" banner and disables empty-cell clicks
+
 ## Dependencies
 
 - `service-form` (pending) — provides the service create/edit pages that the Gantt navigates to

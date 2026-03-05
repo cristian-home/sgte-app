@@ -82,6 +82,26 @@ Specify which approach and why.
 
 - [ ] Task 5: description
 
+## Verification
+
+### UI (Laravel Dusk)
+
+Dusk browser tests in `tests/Browser/`. Use super admin credentials from `env('SUPER_ADMIN_USER')` / `env('SUPER_ADMIN_PASSWORD')`. Run `php artisan migrate:fresh --seed --no-interaction` before tests that need a clean database.
+
+- [ ] Scenario 1: Navigate to page X and verify element Y is visible
+- [ ] Scenario 2: Fill form and verify submission succeeds
+
+### API (curl)
+
+curl commands to verify API endpoints. Use the same super admin credentials for authentication.
+
+```bash
+# Example: verify endpoint returns expected data
+curl -s -X GET http://localhost/api/example \
+  -H "Accept: application/json" \
+  -b cookies.txt
+```
+
 ## Dependencies
 
 List any prerequisite requirements, packages, or features that must exist before this can be implemented.

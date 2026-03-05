@@ -224,6 +224,19 @@ No new pages. Changes are to existing service form behavior (read-only states, j
   - Test: accounting user attempts to update `service_date` on executed day — field is ignored/rejected
   - Use factories with accounting role user and executed DayStatus
 
+## Verification
+
+### Backend (Pest Tests)
+
+This requirement is backend logic only (no new UI pages). Verification is covered entirely by the Pest feature tests in Tasks 12-15. Key scenarios:
+
+- ServiceObserver auto-creates/deletes DayStatus records
+- Execute Day action enforces all-services-closed precondition
+- Service locking by role on executed days (operator blocked, accounting billing-only, admin with justification)
+- Activity log records justification for admin edits on executed days
+
+No Dusk or curl verification is needed — all behavior is exercised through the Pest test suite.
+
 ## Dependencies
 
 - `service-form` (pending) — provides the service create/edit form that this requirement adds locking behavior to

@@ -266,6 +266,31 @@ No new permissions. Uses existing:
   - Test: export with `?date=` missing or invalid returns validation error
   - Use factories to create services with known data and assert CSV content
 
+## Verification
+
+### UI (Laravel Dusk)
+
+Dusk browser tests in `tests/Browser/`. Use super admin credentials from `env('SUPER_ADMIN_USER')` / `env('SUPER_ADMIN_PASSWORD')`. Run `php artisan migrate:fresh --seed --no-interaction` before tests that need a clean database.
+
+- [ ] Navigate to `/day-summary` and verify the services table is displayed with all expected columns
+- [ ] Verify the executive summary section displays correct aggregated stats (total, closed, open, with incidents, third-party)
+- [ ] Verify third-party vehicles display provider name with "3ro" badge in the Conductor/Proveedor column
+- [ ] Verify services with incidents display a warning badge with count
+- [ ] Click a service row and verify navigation to the service show page
+- [ ] Click previous/next day navigation and verify the page reloads with the new date
+- [ ] Verify "Ejecutar Dia" button is disabled when open services exist, with tooltip
+- [ ] Verify "Ejecutar Dia" button works when all services are closed (day transitions to executed)
+- [ ] Verify executed day displays green "EJECUTADO" banner with executor name and timestamp
+
+### API (curl)
+
+```bash
+# Verify CSV export downloads correctly
+curl -s -o /dev/null -w "%{http_code}" -X GET "http://localhost/day-summary/export?date=2026-03-05" \
+  -b cookies.txt
+# Expected: 200 with Content-Type: text/csv
+```
+
 ## Dependencies
 
 - `service-form` (pending) — provides the service show page that row clicks navigate to
