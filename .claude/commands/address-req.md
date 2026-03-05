@@ -102,7 +102,7 @@ For each task in the requirement document:
 1. Update the frontmatter `status` from `pending` to `completed`.
 2. Add `completed_date` to the frontmatter.
 3. Ensure all task checkboxes are checked.
-4. Commit: `docs($ARGUMENTS): ✅ mark requirement as completed`
+4. Commit: `docs($ARGUMENTS): ✅ mark requirement as completests/Browser/screenshotsted`
 
 ## PHASE 5: End-to-End Verification
 
