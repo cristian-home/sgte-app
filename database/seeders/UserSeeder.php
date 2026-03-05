@@ -16,8 +16,8 @@ class UserSeeder extends Seeder
         // Super Admin user
         $superAdminUser = User::factory()->create([
             'name' => 'Super Admin User',
-            'email' => 'superadmin@example.com',
-            'password' => bcrypt('password'),
+            'email' => env('SUPER_ADMIN_USER', 'superadmin@example.com'),
+            'password' => bcrypt(env('SUPER_ADMIN_PASSWORD', 'password')),
         ]);
 
         // Admin user
