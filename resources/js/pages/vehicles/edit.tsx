@@ -1,5 +1,6 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import VehicleController from '@/actions/App/Http/Controllers/VehicleController';
+import { type MunicipalityOption } from '@/components/municipality-combobox';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import VehicleForm, {
@@ -32,9 +33,11 @@ interface Vehicle {
 
 export default function VehiclesEdit({
     vehicle,
+    municipalities,
     thirdParties,
 }: {
     vehicle: Vehicle;
+    municipalities: MunicipalityOption[];
     thirdParties: ThirdPartyOption[];
 }) {
     const breadcrumbs: BreadcrumbItem[] = [
@@ -85,6 +88,7 @@ export default function VehiclesEdit({
                                 data={data}
                                 setData={setData}
                                 errors={errors}
+                                municipalities={municipalities}
                                 thirdParties={thirdParties}
                             />
 

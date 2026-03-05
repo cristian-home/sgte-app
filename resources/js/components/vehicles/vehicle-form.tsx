@@ -1,4 +1,7 @@
 import InputError from '@/components/input-error';
+import MunicipalityCombobox, {
+    type MunicipalityOption,
+} from '@/components/municipality-combobox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -53,6 +56,7 @@ interface VehicleFormProps {
         value: VehicleFormData[K],
     ) => void;
     errors: Partial<Record<keyof VehicleFormData, string>>;
+    municipalities: MunicipalityOption[];
     thirdParties: ThirdPartyOption[];
     idPrefix?: string;
 }
@@ -61,6 +65,7 @@ export default function VehicleForm({
     data,
     setData,
     errors,
+    municipalities,
     thirdParties,
     idPrefix = '',
 }: VehicleFormProps) {
@@ -208,13 +213,12 @@ export default function VehicleForm({
                     data-error={invalid('municipality_id')}
                 >
                     <Label htmlFor={id('municipality_id')}>Municipio</Label>
-                    <Input
+                    <MunicipalityCombobox
                         id={id('municipality_id')}
+                        municipalities={municipalities}
                         value={data.municipality_id}
-                        aria-invalid={invalid('municipality_id')}
-                        onChange={(e) =>
-                            setData('municipality_id', e.target.value)
-                        }
+                        onChange={(val) => setData('municipality_id', val)}
+                        invalid={!!errors.municipality_id}
                     />
                     <InputError message={errors.municipality_id} />
                 </div>

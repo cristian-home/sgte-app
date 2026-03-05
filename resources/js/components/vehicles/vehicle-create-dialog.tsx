@@ -1,5 +1,6 @@
 import { useForm } from '@inertiajs/react';
 import VehicleController from '@/actions/App/Http/Controllers/VehicleController';
+import { type MunicipalityOption } from '@/components/municipality-combobox';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -17,12 +18,14 @@ import VehicleForm, {
 interface VehicleCreateDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    municipalities: MunicipalityOption[];
     thirdParties: ThirdPartyOption[];
 }
 
 export default function VehicleCreateDialog({
     open,
     onOpenChange,
+    municipalities,
     thirdParties,
 }: VehicleCreateDialogProps) {
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -81,6 +84,7 @@ export default function VehicleCreateDialog({
                             data={data}
                             setData={setData}
                             errors={errors}
+                            municipalities={municipalities}
                             thirdParties={thirdParties}
                             idPrefix="dlg"
                         />
