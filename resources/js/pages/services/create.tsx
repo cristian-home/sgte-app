@@ -46,6 +46,7 @@ export default function ServicesCreate({
         billing_group: '',
         payment_method: 'credit',
         service_status: 'open',
+        justification: '',
     });
 
     function submit(e: React.FormEvent) {

@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\DayStatusEnum;
 use App\Enums\Permission;
+use App\Enums\Role;
 use App\Enums\VehicleStatus;
 use App\Http\Requests\ServiceStoreRequest;
 use App\Http\Requests\ServiceUpdateRequest;
 use App\Models\Contract;
+use App\Models\DayStatus;
 use App\Models\Driver;
 use App\Models\Municipality;
 use App\Models\Service;
@@ -80,14 +83,19 @@ class ServiceController extends Controller
         ]);
         $service->loadCount('serviceIncidents');
 
+        $dayStatus = DayStatus::with('executor')->whereDate('date', $service->service_date)->first();
+
         return Inertia::render('services/show', [
             'service' => $service,
+            'dayStatus' => $dayStatus,
         ]);
     }
 
     public function edit(Request $request, Service $service): Response
     {
-        Gate::authorize(Permission::UPDATE_PROJECTED_SERVICES->value);
+        if (Gate::none([Permission::UPDATE_PROJECTED_SERVICES->value, Permission::UPDATE_EXECUTED_SERVICES->value])) {
+            abort(403);
+        }
 
         $service->load([
             'contract',
@@ -98,16 +106,41 @@ class ServiceController extends Controller
         ]);
         $service->loadCount('serviceIncidents');
 
+        $dayStatus = DayStatus::whereDate('date', $service->service_date)->first();
+
         return Inertia::render('services/edit', [
             'service' => $service,
+            'dayStatus' => $dayStatus,
+            'canEditExecuted' => auth()->user()->can(Permission::UPDATE_EXECUTED_SERVICES->value),
+            'isAdmin' => auth()->user()->hasAnyRole([Role::ADMIN, Role::SUPER_ADMIN]),
             ...$this->formReferenceData(),
         ]);
     }
 
     public function update(ServiceUpdateRequest $request, Service $service): RedirectResponse
     {
-        Gate::authorize(Permission::UPDATE_PROJECTED_SERVICES->value);
-        $service->update($request->validated());
+        if (Gate::none([Permission::UPDATE_PROJECTED_SERVICES->value, Permission::UPDATE_EXECUTED_SERVICES->value])) {
+            abort(403);
+        }
+
+        $validated = $request->validated();
+        $justification = $validated['justification'] ?? null;
+        unset($validated['justification']);
+
+        $service->update($validated);
+
+        $dayStatus = DayStatus::whereDate('date', $service->service_date)->first();
+
+        if ($dayStatus?->status === DayStatusEnum::Executed && $justification) {
+            activity()
+                ->performedOn($service)
+                ->causedBy(auth()->user())
+                ->withProperties([
+                    'justification' => $justification,
+                    'edited_on_executed_day' => true,
+                ])
+                ->log('Servicio editado en día ejecutado');
+        }
 
         return redirect()->route('services.index');
     }
@@ -115,6 +148,15 @@ class ServiceController extends Controller
     public function destroy(Request $request, Service $service): RedirectResponse
     {
         Gate::authorize(Permission::DELETE_SERVICES->value);
+
+        $dayStatus = DayStatus::whereDate('date', $service->service_date)->first();
+
+        if ($dayStatus?->status === DayStatusEnum::Executed) {
+            if (! auth()->user()->hasAnyRole([Role::ADMIN, Role::SUPER_ADMIN])) {
+                abort(403);
+            }
+        }
+
         $service->delete();
 
         return redirect()->route('services.index');

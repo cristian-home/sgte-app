@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
 import services from '@/routes/services';
 import { type BreadcrumbItem } from '@/types';
+import type { DayStatus } from '@/types/models';
 
 interface Service {
     id: number;
@@ -40,17 +41,26 @@ export default function ServicesEdit({
     drivers,
     contracts,
     municipalities,
+    dayStatus,
+    canEditExecuted,
+    isAdmin,
 }: {
     service: Service;
     vehicles: VehicleOption[];
     drivers: DriverOption[];
     contracts: ContractOption[];
     municipalities: MunicipalityOption[];
+    dayStatus?: DayStatus | null;
+    canEditExecuted?: boolean;
+    isAdmin?: boolean;
 }) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Servicios', href: services.index().url },
         { title: 'Editar', href: ServiceController.edit(service.id).url },
     ];
+
+    const isExecutedDay = dayStatus?.status === 'executed';
+    const isFullyLocked = isExecutedDay && !canEditExecuted && !isAdmin;
 
     const { data, setData, put, processing, errors } = useForm({
         contract_id: String(service.contract_id),
@@ -74,6 +84,7 @@ export default function ServicesEdit({
         billing_group: service.billing_group ?? '',
         payment_method: service.payment_method,
         service_status: service.service_status,
+        justification: '',
     });
 
     function submit(e: React.FormEvent) {
@@ -101,18 +112,33 @@ export default function ServicesEdit({
                                 municipalities={municipalities}
                                 incidentCount={service.service_incidents_count}
                                 mode="edit"
+                                dayStatus={dayStatus}
+                                canEditExecuted={canEditExecuted}
+                                isAdmin={isAdmin}
                             />
 
-                            <div className="flex items-center gap-4">
-                                <Button type="submit" disabled={processing}>
-                                    Actualizar
-                                </Button>
-                                <Link href={services.index().url}>
-                                    <Button type="button" variant="outline">
-                                        Cancelar
+                            {!isFullyLocked && (
+                                <div className="flex items-center gap-4">
+                                    <Button type="submit" disabled={processing}>
+                                        Actualizar
                                     </Button>
-                                </Link>
-                            </div>
+                                    <Link href={services.index().url}>
+                                        <Button type="button" variant="outline">
+                                            Cancelar
+                                        </Button>
+                                    </Link>
+                                </div>
+                            )}
+
+                            {isFullyLocked && (
+                                <div className="flex items-center gap-4">
+                                    <Link href={services.index().url}>
+                                        <Button type="button" variant="outline">
+                                            Volver
+                                        </Button>
+                                    </Link>
+                                </div>
+                            )}
                         </form>
                     </CardContent>
                 </Card>
