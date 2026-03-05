@@ -24,7 +24,7 @@ class DriverFactory extends Factory
             'second_name' => fake()->optional()->firstName(),
             'first_lastname' => fake()->lastName(),
             'second_lastname' => fake()->optional()->lastName(),
-            'municipality_id' => Municipality::factory(),
+            'municipality_id' => Municipality::inRandomOrder()->first()?->id ?? Municipality::factory(),
             'address' => fake()->streetAddress(),
             'phone' => fake()->numerify('3#########'),
             'email' => fake()->unique()->safeEmail(),

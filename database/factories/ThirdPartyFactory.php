@@ -25,7 +25,7 @@ class ThirdPartyFactory extends Factory
             'second_lastname' => $isNatural ? fake()->optional()->lastName() : null,
             'company_name' => ! $isNatural ? fake()->company() : null,
             'trade_name' => ! $isNatural ? fake()->optional()->companySuffix() : null,
-            'municipality_id' => Municipality::factory(),
+            'municipality_id' => Municipality::inRandomOrder()->first()?->id ?? Municipality::factory(),
             'address' => fake()->streetAddress(),
             'phone' => fake()->numerify('3#########'),
             'email' => fake()->unique()->safeEmail(),
