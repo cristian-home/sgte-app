@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use App\Models\Department;
 use App\Models\Municipality;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Storage;
 
 class DepartmentAndMunicipalitySeeder extends Seeder
 {
@@ -14,7 +13,7 @@ class DepartmentAndMunicipalitySeeder extends Seeder
      */
     public function run(): void
     {
-        $csvPath = Storage::disk('local')->path('municipalities_data.csv');
+        $csvPath = database_path('data/municipalities_data.csv');
         $handle = fopen($csvPath, 'r');
 
         // Skip the single header row
