@@ -2,10 +2,10 @@
 name: daily-gantt
 type: feat
 scope: services
-status: pending
+status: completed
 priority: high
 created_date: 2026-03-05
-completed_date:
+completed_date: 2026-03-05
 srs_refs: ["REQ-002"]
 migration_strategy: modify-existing
 ---
@@ -18,17 +18,17 @@ Implement the daily Gantt fleet planner — the primary planning interface for d
 
 ## Acceptance Criteria
 
-- [ ] AC-1: WHEN the user navigates to the Gantt page for a specific date THEN all fleet vehicles with `status = active` MUST be displayed on the Y-axis, each as a row with the vehicle plate visible in the sidebar.
-- [ ] AC-2: WHEN the Gantt is rendered THEN the X-axis MUST display hours from 06:00 to 22:00, with each hour as a column.
-- [ ] AC-3: WHEN a vehicle has services on the selected date THEN horizontal bars MUST be displayed at the correct time position, with width proportional to `planned_duration`. If `actual_start_time` and `actual_end_time` exist, a secondary indicator MUST show actual duration.
-- [ ] AC-4: WHEN the user clicks an empty cell in the Gantt THEN the browser MUST navigate to the service create page with `vehicle_id` and `planned_start_time` pre-populated from the click position, and `service_date` set to the Gantt's current date.
-- [ ] AC-5: WHEN the user clicks a service bar THEN the browser MUST navigate to the service edit page for that service.
-- [ ] AC-6: WHEN a vehicle has ANY expired document (`soat_due_date < today` OR `rtm_due_date < today` OR `operation_card_due_date < today`) THEN the vehicle row MUST be rendered in gray with a "BLOQ." label, and clicking empty cells in that row MUST be disabled (no service creation allowed).
-- [ ] AC-7: WHEN a vehicle has a document expiring within 15 days THEN the sidebar MUST display a warning indicator ("Prec.") next to the vehicle plate.
-- [ ] AC-8: WHEN the user selects a municipality in the filter dropdown THEN only vehicles with `municipality_id` matching the selected municipality MUST be displayed.
-- [ ] AC-9: WHEN the user clicks the previous/next day navigation arrows THEN the Gantt MUST reload with data for the new date.
-- [ ] AC-10: WHEN a vehicle has `is_third_party = true` THEN the sidebar MUST display a "3ro" label next to the vehicle plate.
-- [ ] AC-11: WHEN the Gantt date corresponds to an executed day THEN a banner MUST display "Día Ejecutado" and empty-cell click (new service creation) MUST be disabled.
+- [x] AC-1: WHEN the user navigates to the Gantt page for a specific date THEN all fleet vehicles with `status = active` MUST be displayed on the Y-axis, each as a row with the vehicle plate visible in the sidebar.
+- [x] AC-2: WHEN the Gantt is rendered THEN the X-axis MUST display hours from 06:00 to 22:00, with each hour as a column.
+- [x] AC-3: WHEN a vehicle has services on the selected date THEN horizontal bars MUST be displayed at the correct time position, with width proportional to `planned_duration`. If `actual_start_time` and `actual_end_time` exist, a secondary indicator MUST show actual duration.
+- [x] AC-4: WHEN the user clicks an empty cell in the Gantt THEN the browser MUST navigate to the service create page with `vehicle_id` and `planned_start_time` pre-populated from the click position, and `service_date` set to the Gantt's current date.
+- [x] AC-5: WHEN the user clicks a service bar THEN the browser MUST navigate to the service edit page for that service.
+- [x] AC-6: WHEN a vehicle has ANY expired document (`soat_due_date < today` OR `rtm_due_date < today` OR `operation_card_due_date < today`) THEN the vehicle row MUST be rendered in gray with a "BLOQ." label, and clicking empty cells in that row MUST be disabled (no service creation allowed).
+- [x] AC-7: WHEN a vehicle has a document expiring within 15 days THEN the sidebar MUST display a warning indicator ("Prec.") next to the vehicle plate.
+- [x] AC-8: WHEN the user selects a municipality in the filter dropdown THEN only vehicles with `municipality_id` matching the selected municipality MUST be displayed.
+- [x] AC-9: WHEN the user clicks the previous/next day navigation arrows THEN the Gantt MUST reload with data for the new date.
+- [x] AC-10: WHEN a vehicle has `is_third_party = true` THEN the sidebar MUST display a "3ro" label next to the vehicle plate.
+- [x] AC-11: WHEN the Gantt date corresponds to an executed day THEN a banner MUST display "Día Ejecutado" and empty-cell click (new service creation) MUST be disabled.
 
 ## Technical Specification
 
@@ -75,7 +75,7 @@ No new permissions. Uses existing:
 
 ### Backend
 
-- [ ] Task 1: Create `GanttController` using `php artisan make:controller GanttController --no-interaction`
+- [x] Task 1: Create `GanttController` using `php artisan make:controller GanttController --no-interaction`
   - **`index` method:**
     - Gate check: `Gate::authorize(Permission::VIEW_SERVICES->value)`
     - Accept `date` query parameter (default: today). Validate it is a valid date format (`Y-m-d`).
@@ -101,11 +101,11 @@ No new permissions. Uses existing:
     - Pass to Inertia: `vehicles`, `services`, `dayStatus`, `municipalities`, `date`, `canCreateServices` (boolean from `Gate::allows(Permission::CREATE_SERVICES->value)`)
   - Follow existing controller patterns for Inertia rendering
 
-- [ ] Task 2: Register the Gantt route in `routes/web.php`
+- [x] Task 2: Register the Gantt route in `routes/web.php`
   - Add `Route::get('gantt', [GanttController::class, 'index'])->name('gantt.index')` inside the authenticated route group
   - Apply `['auth', 'verified']` middleware
 
-- [ ] Task 3: Add Gantt link to the sidebar navigation
+- [x] Task 3: Add Gantt link to the sidebar navigation
   - In `resources/js/components/app-sidebar.tsx`:
     - Import the Gantt controller action: `import GanttController from '@/actions/App/Http/Controllers/GanttController'`
     - Add a "Planificador Gantt" item in the "Producción" section, below "Calendario"
@@ -115,7 +115,7 @@ No new permissions. Uses existing:
 
 ### Frontend
 
-- [ ] Task 4: Create `resources/js/components/gantt/vehicle-sidebar-item.tsx` — custom sidebar row component
+- [x] Task 4: Create `resources/js/components/gantt/vehicle-sidebar-item.tsx` — custom sidebar row component
   - **Props:**
     ```
     {
@@ -140,7 +140,7 @@ No new permissions. Uses existing:
   - Use `Tooltip` component from shadcn for document expiry details
   - Use `Badge` component from shadcn for status labels
 
-- [ ] Task 5: Create `resources/js/components/gantt/service-bar.tsx` — custom feature bar component
+- [x] Task 5: Create `resources/js/components/gantt/service-bar.tsx` — custom feature bar component
   - **Props:**
     ```
     {
@@ -164,7 +164,7 @@ No new permissions. Uses existing:
     - Status: Abierto/Cerrado
   - Integrate with `GanttFeatureItemCard` pattern from kibo-ui Gantt component
 
-- [ ] Task 6: Create `resources/js/pages/gantt/index.tsx` — the main Gantt page
+- [x] Task 6: Create `resources/js/pages/gantt/index.tsx` — the main Gantt page
   - **Props** (from controller):
     ```
     {
@@ -228,7 +228,7 @@ No new permissions. Uses existing:
     - Used to convert `planned_start_time` into Gantt-compatible Date positions
   - Follow kibo-ui Gantt usage patterns and existing page layout conventions
 
-- [ ] Task 7: Update `ServiceController@create` to accept pre-populated query params
+- [x] Task 7: Update `ServiceController@create` to accept pre-populated query params
   - Read optional query parameters: `vehicle_id`, `planned_start_time`, `service_date`
   - Pass them as `prefill` prop to Inertia render:
     ```php
@@ -240,7 +240,7 @@ No new permissions. Uses existing:
     ```
   - The service create page (from `service-form` requirement) MUST use these prefill values to initialize the `useForm` defaults when present
 
-- [ ] Task 8: Update `resources/js/pages/services/create.tsx` to use prefill data
+- [x] Task 8: Update `resources/js/pages/services/create.tsx` to use prefill data
   - Accept `prefill` prop: `{ vehicle_id?: string; planned_start_time?: string; service_date?: string }`
   - When initializing `useForm`, use prefill values as defaults if provided:
     ```
@@ -253,7 +253,7 @@ No new permissions. Uses existing:
     ```
   - This enables the Gantt → Create Service flow with pre-populated vehicle and time
 
-- [ ] Task 9: Create `resources/js/lib/gantt-utils.ts` — utility functions for Gantt data transformation
+- [x] Task 9: Create `resources/js/lib/gantt-utils.ts` — utility functions for Gantt data transformation
   - `parseTimeToDate(dateStr: string, timeStr: string): Date` — combines date string and time string into Date object
   - `servicesToGanttFeatures(services: Service[], date: string): GanttFeature[]` — transforms Service array into GanttFeature array
   - `computeVehicleDocStatus(vehicle: Vehicle): { isBlocked: boolean; hasWarning: boolean; expiredDocs: string[] }` — determines vehicle document status
@@ -261,7 +261,7 @@ No new permissions. Uses existing:
 
 ### Tests
 
-- [ ] Task 10: Create `tests/Feature/Http/Controllers/GanttControllerTest.php` using `php artisan make:test --pest`
+- [x] Task 10: Create `tests/Feature/Http/Controllers/GanttControllerTest.php` using `php artisan make:test --pest`
   - Test: index returns `vehicles`, `services`, `dayStatus`, `municipalities`, `date`, `canCreateServices` props
   - Test: index with `?date=2026-03-10` returns services filtered to that date
   - Test: index without date param defaults to today
@@ -277,7 +277,7 @@ No new permissions. Uses existing:
   - Use factories to create vehicles with specific document dates and services on specific dates
   - Follow `tests/Feature/Http/Controllers/VehicleControllerTest.php` as convention reference
 
-- [ ] Task 11: Create `tests/Feature/Http/Controllers/GanttControllerFilterTest.php` using `php artisan make:test --pest`
+- [x] Task 11: Create `tests/Feature/Http/Controllers/GanttControllerFilterTest.php` using `php artisan make:test --pest`
   - Test: municipality filter returns only vehicles with matching `municipality_id`
   - Test: municipality filter does NOT affect services (all services for the date are returned regardless of vehicle municipality — the frontend handles mapping)
   - Test: invalid municipality_id is handled gracefully (empty result or validation error)
@@ -290,16 +290,16 @@ No new permissions. Uses existing:
 
 Dusk browser tests in `tests/Browser/`. Use super admin credentials from `env('SUPER_ADMIN_USER')` / `env('SUPER_ADMIN_PASSWORD')`. Run `php artisan migrate:fresh --seed --no-interaction` before tests that need a clean database.
 
-- [ ] Navigate to `/gantt` and verify the Gantt chart is displayed with vehicles on the Y-axis and hours on the X-axis
-- [ ] Verify service bars are displayed at correct time positions for vehicles with services
-- [ ] Click an empty cell and verify navigation to the service create page with pre-populated vehicle/time/date
-- [ ] Click a service bar and verify navigation to the service edit page
-- [ ] Verify blocked vehicles (expired documents) display "BLOQ." label and gray styling
-- [ ] Verify vehicles with documents expiring within 15 days display "Prec." warning
-- [ ] Select a municipality in the filter and verify only matching vehicles are shown
-- [ ] Click previous/next day navigation and verify the Gantt reloads with the new date
-- [ ] Verify third-party vehicles display "3ro" label in the sidebar
-- [ ] Verify executed day displays "Dia Ejecutado" banner and disables empty-cell clicks
+- [x] Navigate to `/gantt` and verify the Gantt chart is displayed with vehicles on the Y-axis and hours on the X-axis
+- [x] Verify service bars are displayed at correct time positions for vehicles with services
+- [x] Click an empty cell and verify navigation to the service create page with pre-populated vehicle/time/date
+- [x] Click a service bar and verify navigation to the service edit page
+- [x] Verify blocked vehicles (expired documents) display "BLOQ." label and gray styling
+- [x] Verify vehicles with documents expiring within 15 days display "Prec." warning
+- [x] Select a municipality in the filter and verify only matching vehicles are shown
+- [x] Click previous/next day navigation and verify the Gantt reloads with the new date
+- [x] Verify third-party vehicles display "3ro" label in the sidebar
+- [x] Verify executed day displays "Dia Ejecutado" banner and disables empty-cell clicks
 
 ## Dependencies
 
