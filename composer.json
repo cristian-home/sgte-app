@@ -19,6 +19,7 @@
         "laravel/scout": "^10.24",
         "laravel/tinker": "^2.11.1",
         "laravel/wayfinder": "^0.1.14",
+        "league/flysystem-aws-s3-v3": "^3.32",
         "spatie/laravel-activitylog": "^4.12.1",
         "spatie/laravel-medialibrary": "^11.21",
         "spatie/laravel-permission": "^7.2.3",
