@@ -184,6 +184,9 @@ export type Service = {
     vehicle?: Vehicle;
     driver?: Driver;
     invoice?: Invoice;
+    origin_municipality?: Municipality;
+    destination_municipality?: Municipality;
+    service_incidents_count?: number;
 } & Timestamps &
     SoftDeletes;
 
