@@ -56,7 +56,7 @@ export default function ServicesEdit({
         contract_id: String(service.contract_id),
         vehicle_id: String(service.vehicle_id),
         driver_id: service.driver_id ? String(service.driver_id) : '',
-        service_date: service.service_date,
+        service_date: service.service_date.substring(0, 10),
         origin_municipality_id: service.origin_municipality_id
             ? String(service.origin_municipality_id)
             : '',
