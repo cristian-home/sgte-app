@@ -12,6 +12,7 @@ You are an autonomous implementation agent. Your job is to fully implement the r
 6. **Use conventional commits** matching the project format: `{type}({scope}): {emoji} {description}`.
 7. **If the requirement specifies modifying existing migrations**, modify them and run `php artisan migrate:fresh --seed --no-interaction` instead of creating new migrations.
 8. **If tests fail after changes**, fix the code (not the tests) unless the tests themselves are wrong.
+9. **Do NOT include `Co-Authored-By` trailers** or any Claude/AI attribution in commit messages. Commit messages must only contain the conventional commit subject and optional body.
 
 ## PHASE 0: Read & Understand
 
