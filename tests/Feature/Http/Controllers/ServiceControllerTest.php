@@ -72,20 +72,20 @@ test('index caps per_page at 100', function (): void {
 });
 
 test('index filters by search term', function (): void {
-    Service::factory()->create(['origin' => 'Bogota', 'destination' => 'Cali', 'billing_group' => 'Grupo A']);
-    Service::factory()->create(['origin' => 'Medellin', 'destination' => 'Pereira', 'billing_group' => 'Grupo B']);
+    Service::factory()->create(['origin_address' => 'Bogota', 'destination_address' => 'Cali', 'billing_group' => 'Grupo A']);
+    Service::factory()->create(['origin_address' => 'Medellin', 'destination_address' => 'Pereira', 'billing_group' => 'Grupo B']);
 
     $response = get(route('services.index', ['filter[search]' => 'Bogota']));
 
     $response->assertInertia(
         fn (AssertableInertia $page) => $page
             ->has('services.data', 1)
-            ->where('services.data.0.origin', 'Bogota')
+            ->where('services.data.0.origin_address', 'Bogota')
     );
 });
 
 test('index search is case insensitive', function (): void {
-    Service::factory()->create(['origin' => 'Bogota', 'destination' => 'Cali', 'billing_group' => null]);
+    Service::factory()->create(['origin_address' => 'Bogota', 'destination_address' => 'Cali', 'billing_group' => null]);
 
     $response = get(route('services.index', ['filter[search]' => 'bogota']));
 
@@ -96,8 +96,8 @@ test('index search is case insensitive', function (): void {
 });
 
 test('index search matches across multiple columns', function (): void {
-    Service::factory()->create(['origin' => 'Cali', 'destination' => 'Bogota']);
-    Service::factory()->create(['origin' => 'Medellin', 'destination' => 'Cali']);
+    Service::factory()->create(['origin_address' => 'Cali', 'destination_address' => 'Bogota']);
+    Service::factory()->create(['origin_address' => 'Medellin', 'destination_address' => 'Cali']);
 
     $response = get(route('services.index', ['filter[search]' => 'Cali']));
 
@@ -108,8 +108,8 @@ test('index search matches across multiple columns', function (): void {
 });
 
 test('index combines search with other filters', function (): void {
-    Service::factory()->create(['origin' => 'Bogota', 'destination' => 'Cali', 'billing_group' => null, 'service_status' => 'open']);
-    Service::factory()->create(['origin' => 'Bogota', 'destination' => 'Cali', 'billing_group' => null, 'service_status' => 'closed']);
+    Service::factory()->create(['origin_address' => 'Bogota', 'destination_address' => 'Cali', 'billing_group' => null, 'service_status' => 'open']);
+    Service::factory()->create(['origin_address' => 'Bogota', 'destination_address' => 'Cali', 'billing_group' => null, 'service_status' => 'closed']);
 
     $response = get(route('services.index', [
         'filter[search]' => 'Bogota',
@@ -140,8 +140,8 @@ test('index returns json when Accept header is application/json', function (): v
 });
 
 test('index json respects filters and sorting', function (): void {
-    Service::factory()->create(['origin' => 'Bogota', 'destination' => 'Cali', 'billing_group' => null, 'service_status' => 'open']);
-    Service::factory()->create(['origin' => 'Medellin', 'destination' => 'Pereira', 'billing_group' => null, 'service_status' => 'closed']);
+    Service::factory()->create(['origin_address' => 'Bogota', 'destination_address' => 'Cali', 'billing_group' => null, 'service_status' => 'open']);
+    Service::factory()->create(['origin_address' => 'Medellin', 'destination_address' => 'Pereira', 'billing_group' => null, 'service_status' => 'closed']);
 
     $response = getJson(route('services.index', [
         'filter[search]' => 'Bogota',
@@ -150,7 +150,7 @@ test('index json respects filters and sorting', function (): void {
 
     $response->assertOk()
         ->assertJsonCount(1, 'data')
-        ->assertJsonPath('data.0.origin', 'Bogota');
+        ->assertJsonPath('data.0.origin_address', 'Bogota');
 });
 
 test('create behaves as expected', function (): void {
@@ -172,8 +172,10 @@ test('store saves and redirects', function (): void {
     $driver = Driver::factory()->create();
     $invoice = Invoice::factory()->create();
     $service_date = Carbon::parse(fake()->date());
-    $origin = fake()->word();
-    $destination = fake()->word();
+    $origin_municipality = \App\Models\Municipality::factory()->create();
+    $origin_address = fake()->streetAddress();
+    $destination_municipality = \App\Models\Municipality::factory()->create();
+    $destination_address = fake()->streetAddress();
     $planned_start_time = fake()->time();
     $planned_duration = fake()->numberBetween(30, 480);
     $actual_start_time = fake()->time();
@@ -190,8 +192,10 @@ test('store saves and redirects', function (): void {
         'driver_id' => $driver->id,
         'invoice_id' => $invoice->id,
         'service_date' => $service_date,
-        'origin' => $origin,
-        'destination' => $destination,
+        'origin_municipality_id' => $origin_municipality->id,
+        'origin_address' => $origin_address,
+        'destination_municipality_id' => $destination_municipality->id,
+        'destination_address' => $destination_address,
         'planned_start_time' => $planned_start_time,
         'planned_duration' => $planned_duration,
         'actual_start_time' => $actual_start_time,
@@ -209,8 +213,10 @@ test('store saves and redirects', function (): void {
         ->where('driver_id', $driver->id)
         ->where('invoice_id', $invoice->id)
         ->where('service_date', $service_date)
-        ->where('origin', $origin)
-        ->where('destination', $destination)
+        ->where('origin_municipality_id', $origin_municipality->id)
+        ->where('origin_address', $origin_address)
+        ->where('destination_municipality_id', $destination_municipality->id)
+        ->where('destination_address', $destination_address)
         ->where('planned_start_time', $planned_start_time)
         ->where('planned_duration', $planned_duration)
         ->where('actual_start_time', $actual_start_time)
@@ -257,8 +263,10 @@ test('update redirects', function (): void {
     $driver = Driver::factory()->create();
     $invoice = Invoice::factory()->create();
     $service_date = Carbon::parse(fake()->date());
-    $origin = fake()->word();
-    $destination = fake()->word();
+    $origin_municipality = \App\Models\Municipality::factory()->create();
+    $origin_address = fake()->streetAddress();
+    $destination_municipality = \App\Models\Municipality::factory()->create();
+    $destination_address = fake()->streetAddress();
     $planned_start_time = fake()->time();
     $planned_duration = fake()->numberBetween(30, 480);
     $actual_start_time = fake()->time();
@@ -275,8 +283,10 @@ test('update redirects', function (): void {
         'driver_id' => $driver->id,
         'invoice_id' => $invoice->id,
         'service_date' => $service_date,
-        'origin' => $origin,
-        'destination' => $destination,
+        'origin_municipality_id' => $origin_municipality->id,
+        'origin_address' => $origin_address,
+        'destination_municipality_id' => $destination_municipality->id,
+        'destination_address' => $destination_address,
         'planned_start_time' => $planned_start_time,
         'planned_duration' => $planned_duration,
         'actual_start_time' => $actual_start_time,
@@ -297,8 +307,10 @@ test('update redirects', function (): void {
     expect($driver->id)->toEqual($service->driver_id);
     expect($invoice->id)->toEqual($service->invoice_id);
     expect($service_date)->toEqual($service->service_date);
-    expect($origin)->toEqual($service->origin);
-    expect($destination)->toEqual($service->destination);
+    expect($origin_municipality->id)->toEqual($service->origin_municipality_id);
+    expect($origin_address)->toEqual($service->origin_address);
+    expect($destination_municipality->id)->toEqual($service->destination_municipality_id);
+    expect($destination_address)->toEqual($service->destination_address);
     expect($planned_start_time)->toEqual($service->planned_start_time);
     expect($planned_duration)->toEqual($service->planned_duration);
     expect($actual_start_time)->toEqual($service->actual_start_time);
@@ -348,45 +360,45 @@ test('index can filter services by payment_method', function (): void {
 });
 
 test('index search returns results for partial terms', function (): void {
-    Service::factory()->create(['origin' => 'Barranquilla', 'destination' => 'Cali', 'billing_group' => null]);
-    Service::factory()->create(['origin' => 'Bucaramanga', 'destination' => 'Medellin', 'billing_group' => null]);
+    Service::factory()->create(['origin_address' => 'Barranquilla', 'destination_address' => 'Cali', 'billing_group' => null]);
+    Service::factory()->create(['origin_address' => 'Bucaramanga', 'destination_address' => 'Medellin', 'billing_group' => null]);
 
     $response = get(route('services.index', ['filter[search]' => 'Barran']));
 
     $response->assertInertia(
         fn (AssertableInertia $page) => $page
             ->has('services.data', 1)
-            ->where('services.data.0.origin', 'Barranquilla')
+            ->where('services.data.0.origin_address', 'Barranquilla')
     );
 });
 
 test('index search matches related model fields via dot notation', function (): void {
     $driverCarlos = Driver::factory()->create(['first_name' => 'Carlos', 'first_lastname' => 'Gomez']);
     $driverMaria = Driver::factory()->create(['first_name' => 'Maria', 'first_lastname' => 'Lopez']);
-    Service::factory()->create(['driver_id' => $driverCarlos->id, 'origin' => 'Bogota', 'destination' => 'Cali', 'billing_group' => null]);
-    Service::factory()->create(['driver_id' => $driverMaria->id, 'origin' => 'Cali', 'destination' => 'Pereira', 'billing_group' => null]);
+    Service::factory()->create(['driver_id' => $driverCarlos->id, 'origin_address' => 'Bogota', 'destination_address' => 'Cali', 'billing_group' => null]);
+    Service::factory()->create(['driver_id' => $driverMaria->id, 'origin_address' => 'Cali', 'destination_address' => 'Pereira', 'billing_group' => null]);
 
     $response = get(route('services.index', ['filter[search]' => 'Carlos']));
 
     $response->assertInertia(
         fn (AssertableInertia $page) => $page
             ->has('services.data', 1)
-            ->where('services.data.0.origin', 'Bogota')
+            ->where('services.data.0.origin_address', 'Bogota')
     );
 });
 
 test('index search matches composite related fields with full name', function (): void {
     $driverCarlos = Driver::factory()->create(['first_name' => 'Carlos', 'first_lastname' => 'Gomez']);
     $driverCarlosL = Driver::factory()->create(['first_name' => 'Carlos', 'first_lastname' => 'Lopez']);
-    Service::factory()->create(['driver_id' => $driverCarlos->id, 'origin' => 'Bogota', 'destination' => 'Cali', 'billing_group' => null]);
-    Service::factory()->create(['driver_id' => $driverCarlosL->id, 'origin' => 'Medellin', 'destination' => 'Pereira', 'billing_group' => null]);
+    Service::factory()->create(['driver_id' => $driverCarlos->id, 'origin_address' => 'Bogota', 'destination_address' => 'Cali', 'billing_group' => null]);
+    Service::factory()->create(['driver_id' => $driverCarlosL->id, 'origin_address' => 'Medellin', 'destination_address' => 'Pereira', 'billing_group' => null]);
 
     $response = get(route('services.index', ['filter[search]' => 'Carlos Gomez']));
 
     $response->assertInertia(
         fn (AssertableInertia $page) => $page
             ->has('services.data', 1)
-            ->where('services.data.0.origin', 'Bogota')
+            ->where('services.data.0.origin_address', 'Bogota')
     );
 });
 

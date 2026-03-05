@@ -52,7 +52,7 @@ test('store saves and redirects', function (): void {
     $second_name = fake()->word();
     $first_lastname = fake()->word();
     $second_lastname = fake()->word();
-    $city = fake()->city();
+    $municipality = \App\Models\Municipality::factory()->create();
     $address = fake()->word();
     $phone = fake()->phoneNumber();
     $email = fake()->safeEmail();
@@ -71,7 +71,7 @@ test('store saves and redirects', function (): void {
         'second_name' => $second_name,
         'first_lastname' => $first_lastname,
         'second_lastname' => $second_lastname,
-        'city' => $city,
+        'municipality_id' => $municipality->id,
         'address' => $address,
         'phone' => $phone,
         'email' => $email,
@@ -91,7 +91,7 @@ test('store saves and redirects', function (): void {
         ->where('second_name', $second_name)
         ->where('first_lastname', $first_lastname)
         ->where('second_lastname', $second_lastname)
-        ->where('city', $city)
+        ->where('municipality_id', $municipality->id)
         ->where('address', $address)
         ->where('phone', $phone)
         ->where('email', $email)
@@ -140,7 +140,7 @@ test('update redirects', function (): void {
     $second_name = fake()->word();
     $first_lastname = fake()->word();
     $second_lastname = fake()->word();
-    $city = fake()->city();
+    $municipality = \App\Models\Municipality::factory()->create();
     $address = fake()->word();
     $phone = fake()->phoneNumber();
     $email = fake()->safeEmail();
@@ -159,7 +159,7 @@ test('update redirects', function (): void {
         'second_name' => $second_name,
         'first_lastname' => $first_lastname,
         'second_lastname' => $second_lastname,
-        'city' => $city,
+        'municipality_id' => $municipality->id,
         'address' => $address,
         'phone' => $phone,
         'email' => $email,
@@ -182,7 +182,7 @@ test('update redirects', function (): void {
     expect($second_name)->toEqual($driver->second_name);
     expect($first_lastname)->toEqual($driver->first_lastname);
     expect($second_lastname)->toEqual($driver->second_lastname);
-    expect($city)->toEqual($driver->city);
+    expect($municipality->id)->toEqual($driver->municipality_id);
     expect($address)->toEqual($driver->address);
     expect($phone)->toEqual($driver->phone);
     expect($email)->toEqual($driver->email);
@@ -211,7 +211,7 @@ test('store fails with invalid license category', function (): void {
         'identification_number' => fake()->numerify('##########'),
         'first_name' => fake()->firstName(),
         'first_lastname' => fake()->lastName(),
-        'city' => fake()->city(),
+        'municipality_id' => \App\Models\Municipality::factory()->create()->id,
         'address' => fake()->streetAddress(),
         'phone' => fake()->numerify('3#########'),
         'email' => fake()->safeEmail(),
@@ -233,7 +233,7 @@ test('store fails with expired license date', function (): void {
         'identification_number' => fake()->numerify('##########'),
         'first_name' => fake()->firstName(),
         'first_lastname' => fake()->lastName(),
-        'city' => fake()->city(),
+        'municipality_id' => \App\Models\Municipality::factory()->create()->id,
         'address' => fake()->streetAddress(),
         'phone' => fake()->numerify('3#########'),
         'email' => fake()->safeEmail(),
@@ -257,7 +257,7 @@ test('update allows past license date for existing drivers', function (): void {
         'identification_number' => $driver->identification_number,
         'first_name' => $driver->first_name,
         'first_lastname' => $driver->first_lastname,
-        'city' => $driver->city,
+        'municipality_id' => $driver->municipality_id,
         'address' => $driver->address,
         'phone' => $driver->phone,
         'email' => $driver->email,

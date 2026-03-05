@@ -53,7 +53,7 @@ test('store saves and redirects', function (): void {
     $engine_number = fake()->word();
     $chassis_number = fake()->word();
     $capacity = fake()->numberBetween(4, 40);
-    $city = fake()->city();
+    $municipality = \App\Models\Municipality::factory()->create();
     $is_third_party = fake()->boolean();
     $third_party = ThirdParty::factory()->create();
     $soat_due_date = Carbon::parse(fake()->date());
@@ -72,7 +72,7 @@ test('store saves and redirects', function (): void {
         'engine_number' => $engine_number,
         'chassis_number' => $chassis_number,
         'capacity' => $capacity,
-        'city' => $city,
+        'municipality_id' => $municipality->id,
         'is_third_party' => $is_third_party,
         'third_party_id' => $third_party->id,
         'soat_due_date' => $soat_due_date,
@@ -92,7 +92,7 @@ test('store saves and redirects', function (): void {
         ->where('engine_number', $engine_number)
         ->where('chassis_number', $chassis_number)
         ->where('capacity', $capacity)
-        ->where('city', $city)
+        ->where('municipality_id', $municipality->id)
         ->where('is_third_party', $is_third_party)
         ->where('third_party_id', $third_party->id)
         ->where('soat_due_date', $soat_due_date)
@@ -141,7 +141,7 @@ test('update redirects', function (): void {
     $engine_number = fake()->word();
     $chassis_number = fake()->word();
     $capacity = fake()->numberBetween(4, 40);
-    $city = fake()->city();
+    $municipality = \App\Models\Municipality::factory()->create();
     $is_third_party = fake()->boolean();
     $third_party = ThirdParty::factory()->create();
     $soat_due_date = Carbon::parse(fake()->date());
@@ -160,7 +160,7 @@ test('update redirects', function (): void {
         'engine_number' => $engine_number,
         'chassis_number' => $chassis_number,
         'capacity' => $capacity,
-        'city' => $city,
+        'municipality_id' => $municipality->id,
         'is_third_party' => $is_third_party,
         'third_party_id' => $third_party->id,
         'soat_due_date' => $soat_due_date,
@@ -183,7 +183,7 @@ test('update redirects', function (): void {
     expect($engine_number)->toEqual($vehicle->engine_number);
     expect($chassis_number)->toEqual($vehicle->chassis_number);
     expect($capacity)->toEqual($vehicle->capacity);
-    expect($city)->toEqual($vehicle->city);
+    expect($municipality->id)->toEqual($vehicle->municipality_id);
     expect($is_third_party)->toEqual($vehicle->is_third_party);
     expect($third_party->id)->toEqual($vehicle->third_party_id);
     expect($soat_due_date)->toEqual($vehicle->soat_due_date);
@@ -214,7 +214,7 @@ test('store fails when is_third_party is true without third_party_id', function 
         'engine_number' => fake()->bothify('??#####??##'),
         'chassis_number' => fake()->bothify('?????????????????'),
         'capacity' => 20,
-        'city' => fake()->city(),
+        'municipality_id' => \App\Models\Municipality::factory()->create()->id,
         'is_third_party' => true,
         'soat_due_date' => Carbon::now()->addYear()->toDateString(),
         'rtm_due_date' => Carbon::now()->addYear()->toDateString(),
@@ -237,7 +237,7 @@ test('store succeeds when is_third_party is false without third_party_id', funct
         'engine_number' => fake()->bothify('??#####??##'),
         'chassis_number' => fake()->bothify('?????????????????'),
         'capacity' => 15,
-        'city' => fake()->city(),
+        'municipality_id' => \App\Models\Municipality::factory()->create()->id,
         'is_third_party' => false,
         'soat_due_date' => Carbon::now()->addYear()->toDateString(),
         'rtm_due_date' => Carbon::now()->addYear()->toDateString(),
