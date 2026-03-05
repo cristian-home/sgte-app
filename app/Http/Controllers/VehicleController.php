@@ -40,6 +40,10 @@ class VehicleController extends Controller
                 ->where('active', true)
                 ->where('is_provider', true)
                 ->get(['id', 'identification_number', 'first_name', 'first_lastname', 'company_name', 'is_natural_person']),
+            'municipalities' => Municipality::query()
+                ->with('department:id,name')
+                ->orderBy('name')
+                ->get(['id', 'name', 'code', 'department_id']),
         ]);
     }
 

@@ -1,6 +1,7 @@
 import { Head } from '@inertiajs/react';
 import { PlusIcon } from 'lucide-react';
 import { useState } from 'react';
+import { type MunicipalityOption } from '@/components/municipality-combobox';
 import { Button } from '@/components/ui/button';
 import VehicleCreateDialog from '@/components/vehicles/vehicle-create-dialog';
 import AppLayout from '@/layouts/app-layout';
@@ -25,9 +26,11 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function VehiclesIndex({
     vehicles: vehicleList,
+    municipalities,
     thirdParties,
 }: {
     vehicles: unknown;
+    municipalities: MunicipalityOption[];
     thirdParties: ThirdPartyOption[];
 }) {
     const [createOpen, setCreateOpen] = useState(false);
@@ -53,6 +56,7 @@ export default function VehiclesIndex({
             <VehicleCreateDialog
                 open={createOpen}
                 onOpenChange={setCreateOpen}
+                municipalities={municipalities}
                 thirdParties={thirdParties}
             />
         </AppLayout>
