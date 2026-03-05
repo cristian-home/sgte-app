@@ -104,7 +104,34 @@ For each task in the requirement document:
 3. Ensure all task checkboxes are checked.
 4. Commit: `docs($ARGUMENTS): ✅ mark requirement as completed`
 
-## PHASE 5: Final Verification
+## PHASE 5: End-to-End Verification
+
+After all implementation and unit/feature tests pass, verify the functionality works end-to-end:
+
+### UI Features (Laravel Dusk)
+
+If the requirement involves UI pages or components, write and run Laravel Dusk browser tests to verify the user-facing behavior:
+
+1. Ensure the database is seeded: `php artisan migrate:fresh --seed --no-interaction`
+2. Write Dusk tests in `tests/Browser/` that exercise the implemented UI flows.
+3. Use the super admin credentials from environment variables:
+   - Email: `env('SUPER_ADMIN_USER')`
+   - Password: `env('SUPER_ADMIN_PASSWORD')`
+4. Run Dusk tests: `php artisan dusk --filter=RelevantTest`
+5. If Dusk tests fail, fix the code and re-run.
+
+### API Endpoints (curl)
+
+If the requirement involves API routes, verify them with `curl`:
+
+1. Ensure the database is seeded: `php artisan migrate:fresh --seed --no-interaction`
+2. Authenticate as super admin using the credentials from environment variables:
+   - Email: `env('SUPER_ADMIN_USER')`
+   - Password: `env('SUPER_ADMIN_PASSWORD')`
+3. Use `curl` to hit the API endpoints and verify responses (status codes, JSON structure, data).
+4. If responses are unexpected, fix the code and re-test.
+
+### Static Analysis & Build
 
 Run the full verification pipeline:
 
