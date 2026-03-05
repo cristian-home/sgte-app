@@ -1,4 +1,4 @@
-import { router } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
 import { Can } from '@/components/can';
 import {
     DataTableColumnHeader,
@@ -45,7 +45,14 @@ export const columns: ColumnDef<Service, unknown>[] = [
         header: ({ column }) => (
             <DataTableColumnHeader column={column} title="Fecha" />
         ),
-        cell: ({ row }) => formatDate(row.original.service_date),
+        cell: ({ row }) => (
+            <Link
+                href={services.show(row.original.id).url}
+                className="text-primary hover:underline"
+            >
+                {formatDate(row.original.service_date)}
+            </Link>
+        ),
     },
     {
         id: 'route',
