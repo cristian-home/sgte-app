@@ -1,9 +1,10 @@
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Info, Lock, ShieldAlert } from 'lucide-react';
 import { useMemo } from 'react';
 import InputError from '@/components/input-error';
 import MunicipalityCombobox, {
     type MunicipalityOption,
 } from '@/components/municipality-combobox';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,6 +23,7 @@ import {
 } from '@/components/ui/tooltip';
 import { PaymentMethod, PaymentMethodLabel } from '@/enums/PaymentMethod';
 import { ServiceStatus, ServiceStatusLabel } from '@/enums/ServiceStatus';
+import type { DayStatus } from '@/types/models';
 
 export interface VehicleOption {
     id: number;
@@ -79,6 +81,7 @@ export interface ServiceFormData {
     billing_group: string;
     payment_method: string;
     service_status: string;
+    justification: string;
 }
 
 function thirdPartyLabel(tp: ThirdPartyOption): string {
@@ -110,6 +113,9 @@ interface ServiceFormProps {
     municipalities: MunicipalityOption[];
     incidentCount?: number;
     mode: 'create' | 'edit';
+    dayStatus?: DayStatus | null;
+    canEditExecuted?: boolean;
+    isAdmin?: boolean;
 }
 
 export default function ServiceForm({
@@ -122,9 +128,29 @@ export default function ServiceForm({
     municipalities,
     incidentCount,
     mode,
+    dayStatus,
+    canEditExecuted,
+    isAdmin,
 }: ServiceFormProps) {
     const invalid = (field: keyof ServiceFormData) =>
         errors[field] ? true : undefined;
+
+    const isExecutedDay = dayStatus?.status === 'executed';
+    const isFullyLocked = isExecutedDay && !canEditExecuted && !isAdmin;
+    const isBillingOnly = isExecutedDay && canEditExecuted && !isAdmin;
+    const isAdminEdit = isExecutedDay && isAdmin;
+
+    const billingFields = new Set([
+        'billing_group',
+        'unit_value',
+        'quantity',
+        'payment_method',
+    ]);
+    const isFieldDisabled = (field: string) => {
+        if (isFullyLocked) return true;
+        if (isBillingOnly) return !billingFields.has(field);
+        return false;
+    };
 
     const selectedVehicle = useMemo(
         () => vehicles.find((v) => v.id === Number(data.vehicle_id)) ?? null,
@@ -159,6 +185,39 @@ export default function ServiceForm({
 
     return (
         <>
+            {isFullyLocked && (
+                <Alert variant="destructive">
+                    <Lock className="size-4" />
+                    <AlertTitle>Día ejecutado</AlertTitle>
+                    <AlertDescription>
+                        Este día está ejecutado. No se pueden modificar los
+                        servicios.
+                    </AlertDescription>
+                </Alert>
+            )}
+
+            {isBillingOnly && (
+                <Alert>
+                    <Info className="size-4" />
+                    <AlertTitle>Día ejecutado</AlertTitle>
+                    <AlertDescription>
+                        Día ejecutado. Solo puede modificar los campos de
+                        facturación.
+                    </AlertDescription>
+                </Alert>
+            )}
+
+            {isAdminEdit && (
+                <Alert>
+                    <ShieldAlert className="size-4" />
+                    <AlertTitle>Día ejecutado</AlertTitle>
+                    <AlertDescription>
+                        Está editando un servicio en un día ejecutado. Se
+                        requiere justificación.
+                    </AlertDescription>
+                </Alert>
+            )}
+
             {/* Datos del Servicio */}
             <div className="space-y-1">
                 <div className="flex items-center gap-2">
@@ -187,6 +246,7 @@ export default function ServiceForm({
                         type="date"
                         value={data.service_date}
                         aria-invalid={invalid('service_date')}
+                        disabled={isFieldDisabled('service_date')}
                         onChange={(e) =>
                             setData('service_date', e.target.value)
                         }
@@ -201,6 +261,7 @@ export default function ServiceForm({
                     <Select
                         value={data.contract_id}
                         onValueChange={(value) => setData('contract_id', value)}
+                        disabled={isFieldDisabled('contract_id')}
                     >
                         <SelectTrigger
                             id="contract_id"
@@ -231,6 +292,7 @@ export default function ServiceForm({
                         onValueChange={(value) =>
                             setData('service_status', value)
                         }
+                        disabled={isFieldDisabled('service_status')}
                     >
                         <SelectTrigger
                             id="service_status"
@@ -269,6 +331,7 @@ export default function ServiceForm({
                                 setData('driver_id', '');
                             }
                         }}
+                        disabled={isFieldDisabled('vehicle_id')}
                     >
                         <SelectTrigger
                             id="vehicle_id"
@@ -323,6 +386,7 @@ export default function ServiceForm({
                             onValueChange={(value) =>
                                 setData('driver_id', value)
                             }
+                            disabled={isFieldDisabled('driver_id')}
                         >
                             <SelectTrigger
                                 id="driver_id"
@@ -363,6 +427,7 @@ export default function ServiceForm({
                             setData('origin_municipality_id', val)
                         }
                         invalid={!!errors.origin_municipality_id}
+                        disabled={isFieldDisabled('origin_municipality_id')}
                     />
                     <InputError message={errors.origin_municipality_id} />
                 </div>
@@ -375,6 +440,7 @@ export default function ServiceForm({
                         id="origin_address"
                         value={data.origin_address}
                         aria-invalid={invalid('origin_address')}
+                        disabled={isFieldDisabled('origin_address')}
                         onChange={(e) =>
                             setData('origin_address', e.target.value)
                         }
@@ -399,6 +465,9 @@ export default function ServiceForm({
                             setData('destination_municipality_id', val)
                         }
                         invalid={!!errors.destination_municipality_id}
+                        disabled={isFieldDisabled(
+                            'destination_municipality_id',
+                        )}
                     />
                     <InputError message={errors.destination_municipality_id} />
                 </div>
@@ -413,6 +482,7 @@ export default function ServiceForm({
                         id="destination_address"
                         value={data.destination_address}
                         aria-invalid={invalid('destination_address')}
+                        disabled={isFieldDisabled('destination_address')}
                         onChange={(e) =>
                             setData('destination_address', e.target.value)
                         }
@@ -437,6 +507,7 @@ export default function ServiceForm({
                         type="time"
                         value={data.planned_start_time}
                         aria-invalid={invalid('planned_start_time')}
+                        disabled={isFieldDisabled('planned_start_time')}
                         onChange={(e) =>
                             setData('planned_start_time', e.target.value)
                         }
@@ -455,6 +526,7 @@ export default function ServiceForm({
                         type="number"
                         value={data.planned_duration}
                         aria-invalid={invalid('planned_duration')}
+                        disabled={isFieldDisabled('planned_duration')}
                         onChange={(e) =>
                             setData('planned_duration', e.target.value)
                         }
@@ -476,6 +548,7 @@ export default function ServiceForm({
                         type="time"
                         value={data.actual_start_time}
                         aria-invalid={invalid('actual_start_time')}
+                        disabled={isFieldDisabled('actual_start_time')}
                         onChange={(e) =>
                             setData('actual_start_time', e.target.value)
                         }
@@ -494,6 +567,7 @@ export default function ServiceForm({
                         type="time"
                         value={data.actual_end_time}
                         aria-invalid={invalid('actual_end_time')}
+                        disabled={isFieldDisabled('actual_end_time')}
                         onChange={(e) =>
                             setData('actual_end_time', e.target.value)
                         }
@@ -522,6 +596,7 @@ export default function ServiceForm({
                         id="billing_group"
                         value={data.billing_group}
                         aria-invalid={invalid('billing_group')}
+                        disabled={isFieldDisabled('billing_group')}
                         onChange={(e) =>
                             setData('billing_group', e.target.value)
                         }
@@ -539,6 +614,7 @@ export default function ServiceForm({
                         step="0.01"
                         value={data.unit_value}
                         aria-invalid={invalid('unit_value')}
+                        disabled={isFieldDisabled('unit_value')}
                         onChange={(e) => setData('unit_value', e.target.value)}
                     />
                     <InputError message={errors.unit_value} />
@@ -553,6 +629,7 @@ export default function ServiceForm({
                         type="number"
                         value={data.quantity}
                         aria-invalid={invalid('quantity')}
+                        disabled={isFieldDisabled('quantity')}
                         onChange={(e) => setData('quantity', e.target.value)}
                     />
                     <InputError message={errors.quantity} />
@@ -567,6 +644,7 @@ export default function ServiceForm({
                         onValueChange={(value) =>
                             setData('payment_method', value)
                         }
+                        disabled={isFieldDisabled('payment_method')}
                     >
                         <SelectTrigger
                             id="payment_method"
@@ -587,6 +665,32 @@ export default function ServiceForm({
                     <InputError message={errors.payment_method} />
                 </div>
             </div>
+
+            {isAdminEdit && (
+                <>
+                    <h3 className="text-lg font-semibold">
+                        Justificación del cambio
+                    </h3>
+                    <div
+                        className="group/field grid gap-2"
+                        data-error={invalid('justification')}
+                    >
+                        <Label htmlFor="justification">
+                            Justificación del cambio *
+                        </Label>
+                        <textarea
+                            id="justification"
+                            className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                            value={data.justification}
+                            placeholder="Explique el motivo de la modificación..."
+                            onChange={(e) =>
+                                setData('justification', e.target.value)
+                            }
+                        />
+                        <InputError message={errors.justification} />
+                    </div>
+                </>
+            )}
         </>
     );
 }

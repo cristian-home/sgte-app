@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import { Can } from '@/components/can';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +11,18 @@ import AppLayout from '@/layouts/app-layout';
 import services from '@/routes/services';
 import { type BreadcrumbItem } from '@/types';
 import type { Service } from '@/types/models';
+
+interface DayStatusWithExecutor {
+    id: number;
+    date: string;
+    status: string;
+    executor_id: number | null;
+    executed_at: string | null;
+    executor?: {
+        id: number;
+        name: string;
+    } | null;
+}
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Servicios', href: services.index().url },
@@ -29,6 +42,16 @@ function formatDate(date: string): string {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
+    }).format(new Date(date));
+}
+
+function formatDateTime(date: string): string {
+    return new Intl.DateTimeFormat('es-CO', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
     }).format(new Date(date));
 }
 
@@ -66,7 +89,13 @@ function Field({
     );
 }
 
-export default function ServicesShow({ service }: { service: Service }) {
+export default function ServicesShow({
+    service,
+    dayStatus,
+}: {
+    service: Service;
+    dayStatus?: DayStatusWithExecutor | null;
+}) {
     const driverName = service.driver
         ? `${service.driver.first_name} ${service.driver.first_lastname}`
         : '—';
@@ -104,6 +133,29 @@ export default function ServicesShow({ service }: { service: Service }) {
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-8">
+                        {dayStatus?.status === 'executed' && (
+                            <Alert>
+                                <AlertTitle>
+                                    <Badge variant="secondary">
+                                        Día Ejecutado
+                                    </Badge>
+                                </AlertTitle>
+                                <AlertDescription>
+                                    Ejecutado por{' '}
+                                    {dayStatus.executor?.name ?? 'Usuario'} el{' '}
+                                    {dayStatus.executed_at
+                                        ? formatDateTime(
+                                              new Date(
+                                                  Number(
+                                                      dayStatus.executed_at,
+                                                  ) * 1000,
+                                              ).toISOString(),
+                                          )
+                                        : '—'}
+                                </AlertDescription>
+                            </Alert>
+                        )}
+
                         {/* Datos del Servicio */}
                         <div>
                             <h3 className="mb-4 text-lg font-semibold">
