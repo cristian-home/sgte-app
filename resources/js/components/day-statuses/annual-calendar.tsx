@@ -101,11 +101,11 @@ export default function AnnualCalendar({
                             )}
                         </div>
 
-                        <div className="grid grid-cols-7 gap-px">
+                        <div className="grid grid-cols-7 gap-0.5">
                             {WEEKDAY_NAMES_ES.map((d) => (
                                 <div
                                     key={d}
-                                    className="text-center text-[9px] text-muted-foreground"
+                                    className="flex size-4 items-center justify-center text-[8px] leading-none text-muted-foreground"
                                 >
                                     {d.charAt(0)}
                                 </div>
@@ -146,12 +146,14 @@ export default function AnnualCalendar({
                                             <TooltipTrigger asChild>
                                                 <div
                                                     className={cn(
-                                                        'size-4 rounded-sm',
+                                                        'flex size-4 items-center justify-center rounded-sm text-[7px] leading-none font-medium text-white',
                                                         colorClass,
                                                         day.isToday &&
                                                             'ring-2 ring-primary',
                                                     )}
-                                                />
+                                                >
+                                                    {day.date.getDate()}
+                                                </div>
                                             </TooltipTrigger>
                                             <TooltipContent>
                                                 {tooltipLines.map((line) => (
