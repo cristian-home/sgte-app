@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { index as contractsIndex } from '@/actions/App/Http/Controllers/ContractController';
 import { index as dayStatusesIndex } from '@/actions/App/Http/Controllers/DayStatusController';
+import { index as ganttIndex } from '@/actions/App/Http/Controllers/GanttController';
 import { index as documentTypesIndex } from '@/actions/App/Http/Controllers/DocumentTypeController';
 import { index as driversIndex } from '@/actions/App/Http/Controllers/DriverController';
 import { index as epsIndex } from '@/actions/App/Http/Controllers/EpsController';
@@ -59,6 +60,11 @@ const navGroups: NavGroup[] = [
             {
                 title: 'Servicios',
                 href: servicesIndex(),
+                permission: Permission.VIEW_SERVICES,
+            },
+            {
+                title: 'Planificador',
+                href: ganttIndex(),
                 permission: Permission.VIEW_SERVICES,
             },
             {
