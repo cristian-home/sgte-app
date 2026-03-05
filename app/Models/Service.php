@@ -30,8 +30,12 @@ class Service extends Model
         'driver_id',
         'invoice_id',
         'service_date',
-        'origin',
-        'destination',
+        'origin_municipality_id',
+        'origin_address',
+        'origin_coordinates',
+        'destination_municipality_id',
+        'destination_address',
+        'destination_coordinates',
         'planned_start_time',
         'planned_duration',
         'actual_start_time',
@@ -55,6 +59,8 @@ class Service extends Model
             'contract_id' => 'integer',
             'vehicle_id' => 'integer',
             'driver_id' => 'integer',
+            'origin_municipality_id' => 'integer',
+            'destination_municipality_id' => 'integer',
             'invoice_id' => 'integer',
             'service_date' => 'date',
             'unit_value' => 'decimal:2',
@@ -71,6 +77,16 @@ class Service extends Model
     public function vehicle(): BelongsTo
     {
         return $this->belongsTo(Vehicle::class);
+    }
+
+    public function originMunicipality(): BelongsTo
+    {
+        return $this->belongsTo(Municipality::class, 'origin_municipality_id');
+    }
+
+    public function destinationMunicipality(): BelongsTo
+    {
+        return $this->belongsTo(Municipality::class, 'destination_municipality_id');
     }
 
     public function driver(): BelongsTo
@@ -96,7 +112,7 @@ class Service extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['id', 'contract_id', 'vehicle_id', 'driver_id', 'invoice_id', 'service_date', 'origin', 'destination', 'planned_start_time', 'planned_duration', 'actual_start_time', 'actual_end_time', 'unit_value', 'quantity', 'billing_group', 'payment_method', 'service_status']);
+            ->logOnly(['id', 'contract_id', 'vehicle_id', 'driver_id', 'invoice_id', 'service_date', 'origin_municipality_id', 'origin_address', 'origin_coordinates', 'destination_municipality_id', 'destination_address', 'destination_coordinates', 'planned_start_time', 'planned_duration', 'actual_start_time', 'actual_end_time', 'unit_value', 'quantity', 'billing_group', 'payment_method', 'service_status']);
     }
 
     /**
@@ -104,6 +120,6 @@ class Service extends Model
      */
     public function searchableColumns(): array
     {
-        return ['origin', 'destination', 'billing_group', ['driver.first_name', 'driver.first_lastname']];
+        return ['origin_address', 'destination_address', 'billing_group', ['driver.first_name', 'driver.first_lastname']];
     }
 }

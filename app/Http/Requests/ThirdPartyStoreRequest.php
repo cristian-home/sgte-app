@@ -30,7 +30,7 @@ class ThirdPartyStoreRequest extends FormRequest
             'second_lastname' => ['nullable', 'string', 'max:100'],
             'company_name' => [Rule::when(! $this->boolean('is_natural_person'), ['required', 'string', 'max:200'], ['nullable', 'string', 'max:200'])],
             'trade_name' => ['nullable', 'string', 'max:200'],
-            'city' => ['required', 'string', 'max:100'],
+            'municipality_id' => ['nullable', 'integer', 'exists:municipalities,id'],
             'address' => ['required', 'string', 'max:255'],
             'phone' => ['required', 'string', 'max:50'],
             'email' => ['required', 'email', 'max:255'],

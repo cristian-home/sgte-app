@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\DocumentType;
+use App\Models\Municipality;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class ThirdPartyFactory extends Factory
@@ -24,7 +25,7 @@ class ThirdPartyFactory extends Factory
             'second_lastname' => $isNatural ? fake()->optional()->lastName() : null,
             'company_name' => ! $isNatural ? fake()->company() : null,
             'trade_name' => ! $isNatural ? fake()->optional()->companySuffix() : null,
-            'city' => fake()->city(),
+            'municipality_id' => Municipality::factory(),
             'address' => fake()->streetAddress(),
             'phone' => fake()->numerify('3#########'),
             'email' => fake()->unique()->safeEmail(),

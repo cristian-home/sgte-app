@@ -5,6 +5,7 @@ namespace Database\Factories;
 use App\Enums\LicenseCategory;
 use App\Models\DocumentType;
 use App\Models\Eps;
+use App\Models\Municipality;
 use App\Models\PensionFund;
 use App\Models\SeveranceFund;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -23,7 +24,7 @@ class DriverFactory extends Factory
             'second_name' => fake()->optional()->firstName(),
             'first_lastname' => fake()->lastName(),
             'second_lastname' => fake()->optional()->lastName(),
-            'city' => fake()->city(),
+            'municipality_id' => Municipality::factory(),
             'address' => fake()->streetAddress(),
             'phone' => fake()->numerify('3#########'),
             'email' => fake()->unique()->safeEmail(),

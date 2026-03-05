@@ -8,6 +8,7 @@ use App\Enums\VehicleStatus;
 use App\Models\Contract;
 use App\Models\Driver;
 use App\Models\Invoice;
+use App\Models\Municipality;
 use App\Models\Service;
 use App\Models\Vehicle;
 use Illuminate\Database\Seeder;
@@ -24,6 +25,9 @@ class ServiceSeeder extends Seeder
         $drivers = Driver::where('active', true)->get();
         $invoices = Invoice::all();
 
+        $bogota = Municipality::where('code', '11001')->first();
+        $zipaquira = Municipality::where('code', '25899')->first();
+
         $services = [
             [
                 'contract_index' => 0,
@@ -31,8 +35,10 @@ class ServiceSeeder extends Seeder
                 'driver_index' => 0,
                 'invoice_index' => 0,
                 'service_date' => '2026-02-24',
-                'origin' => 'Bogota - Barrio Kennedy',
-                'destination' => 'Clinica San Rafael - Calle 17',
+                'origin_municipality_id' => $bogota?->id,
+                'origin_address' => 'Barrio Kennedy',
+                'destination_municipality_id' => $bogota?->id,
+                'destination_address' => 'Clinica San Rafael - Calle 17',
                 'planned_start_time' => '06:00',
                 'planned_duration' => 60,
                 'actual_start_time' => '06:05',
@@ -49,8 +55,10 @@ class ServiceSeeder extends Seeder
                 'driver_index' => 1,
                 'invoice_index' => 1,
                 'service_date' => '2026-02-24',
-                'origin' => 'Bogota - Calle 170',
-                'destination' => 'Colegio del Rosario - Carrera 7',
+                'origin_municipality_id' => $bogota?->id,
+                'origin_address' => 'Calle 170',
+                'destination_municipality_id' => $bogota?->id,
+                'destination_address' => 'Colegio del Rosario - Carrera 7',
                 'planned_start_time' => '05:30',
                 'planned_duration' => 90,
                 'actual_start_time' => '05:35',
@@ -67,8 +75,10 @@ class ServiceSeeder extends Seeder
                 'driver_index' => 2,
                 'invoice_index' => 2,
                 'service_date' => '2026-02-25',
-                'origin' => 'Hotel Dann Carlton - Av 19',
-                'destination' => 'Catedral de Sal - Zipaquira',
+                'origin_municipality_id' => $bogota?->id,
+                'origin_address' => 'Hotel Dann Carlton - Av 19',
+                'destination_municipality_id' => $zipaquira?->id,
+                'destination_address' => 'Catedral de Sal',
                 'planned_start_time' => '08:00',
                 'planned_duration' => 240,
                 'actual_start_time' => '08:10',
@@ -85,8 +95,10 @@ class ServiceSeeder extends Seeder
                 'driver_index' => 3,
                 'invoice_index' => null,
                 'service_date' => '2026-02-27',
-                'origin' => 'Bogota - Aeropuerto El Dorado',
-                'destination' => 'Bogota - Centro Empresarial Salitre',
+                'origin_municipality_id' => $bogota?->id,
+                'origin_address' => 'Aeropuerto El Dorado',
+                'destination_municipality_id' => $bogota?->id,
+                'destination_address' => 'Centro Empresarial Salitre',
                 'planned_start_time' => '14:00',
                 'planned_duration' => 45,
                 'actual_start_time' => null,
@@ -103,8 +115,10 @@ class ServiceSeeder extends Seeder
                 'driver_index' => 4,
                 'invoice_index' => null,
                 'service_date' => '2026-02-28',
-                'origin' => 'Bogota - Suba',
-                'destination' => 'Clinica San Rafael - Calle 17',
+                'origin_municipality_id' => $bogota?->id,
+                'origin_address' => 'Suba',
+                'destination_municipality_id' => $bogota?->id,
+                'destination_address' => 'Clinica San Rafael - Calle 17',
                 'planned_start_time' => '07:00',
                 'planned_duration' => 75,
                 'actual_start_time' => null,
@@ -129,8 +143,10 @@ class ServiceSeeder extends Seeder
                 'driver_id' => $driver->id,
                 'invoice_id' => $invoice?->id,
                 'service_date' => $s['service_date'],
-                'origin' => $s['origin'],
-                'destination' => $s['destination'],
+                'origin_municipality_id' => $s['origin_municipality_id'],
+                'origin_address' => $s['origin_address'],
+                'destination_municipality_id' => $s['destination_municipality_id'],
+                'destination_address' => $s['destination_address'],
                 'planned_start_time' => $s['planned_start_time'],
                 'planned_duration' => $s['planned_duration'],
                 'actual_start_time' => $s['actual_start_time'],

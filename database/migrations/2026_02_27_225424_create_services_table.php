@@ -20,8 +20,12 @@ return new class extends Migration
             $table->foreignId('driver_id')->nullable()->constrained();
             $table->foreignId('invoice_id')->nullable()->constrained();
             $table->date('service_date');
-            $table->string('origin', 255);
-            $table->string('destination', 255);
+            $table->foreignId('origin_municipality_id')->nullable()->constrained('municipalities');
+            $table->string('origin_address', 255)->nullable();
+            $table->string('origin_coordinates', 50)->nullable();
+            $table->foreignId('destination_municipality_id')->nullable()->constrained('municipalities');
+            $table->string('destination_address', 255)->nullable();
+            $table->string('destination_coordinates', 50)->nullable();
             $table->time('planned_start_time');
             $table->integer('planned_duration');
             $table->time('actual_start_time')->nullable();

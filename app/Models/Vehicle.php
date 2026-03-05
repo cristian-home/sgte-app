@@ -34,7 +34,7 @@ class Vehicle extends Model
         'engine_number',
         'chassis_number',
         'capacity',
-        'city',
+        'municipality_id',
         'is_third_party',
         'third_party_id',
         'soat_due_date',
@@ -53,6 +53,7 @@ class Vehicle extends Model
         return [
             'id' => 'integer',
             'type' => VehicleType::class,
+            'municipality_id' => 'integer',
             'is_third_party' => 'boolean',
             'third_party_id' => 'integer',
             'soat_due_date' => 'date',
@@ -60,6 +61,11 @@ class Vehicle extends Model
             'operation_card_due_date' => 'date',
             'status' => VehicleStatus::class,
         ];
+    }
+
+    public function municipality(): BelongsTo
+    {
+        return $this->belongsTo(Municipality::class);
     }
 
     public function thirdParty(): BelongsTo
@@ -80,7 +86,7 @@ class Vehicle extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['id', 'internal_code', 'plate', 'mobile_number', 'brand', 'line', 'model_year', 'type', 'engine_number', 'chassis_number', 'capacity', 'city', 'is_third_party', 'third_party_id', 'soat_due_date', 'rtm_due_date', 'operation_card_due_date', 'status']);
+            ->logOnly(['id', 'internal_code', 'plate', 'mobile_number', 'brand', 'line', 'model_year', 'type', 'engine_number', 'chassis_number', 'capacity', 'municipality_id', 'is_third_party', 'third_party_id', 'soat_due_date', 'rtm_due_date', 'operation_card_due_date', 'status']);
     }
 
     /**
@@ -110,7 +116,7 @@ class Vehicle extends Model
             'engine_number' => $this->engine_number,
             'chassis_number' => $this->chassis_number,
             'capacity' => $this->capacity,
-            'city' => $this->city,
+            'municipality_id' => $this->municipality_id,
             'is_third_party' => $this->is_third_party,
             'third_party_id' => $this->third_party_id,
             'soat_due_date' => $this->soat_due_date,

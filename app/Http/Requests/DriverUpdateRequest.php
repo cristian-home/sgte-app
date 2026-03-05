@@ -28,7 +28,7 @@ class DriverUpdateRequest extends FormRequest
             'second_name' => ['nullable', 'string', 'max:100'],
             'first_lastname' => ['required', 'string', 'max:100'],
             'second_lastname' => ['nullable', 'string', 'max:100'],
-            'city' => ['required', 'string', 'max:100'],
+            'municipality_id' => ['nullable', 'integer', 'exists:municipalities,id'],
             'address' => ['required', 'string', 'max:255'],
             'phone' => ['required', 'string', 'max:50'],
             'email' => ['required', 'email', 'max:255'],

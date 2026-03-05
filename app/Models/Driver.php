@@ -29,7 +29,7 @@ class Driver extends Model
         'second_name',
         'first_lastname',
         'second_lastname',
-        'city',
+        'municipality_id',
         'address',
         'phone',
         'email',
@@ -52,6 +52,7 @@ class Driver extends Model
         return [
             'id' => 'integer',
             'document_type_id' => 'integer',
+            'municipality_id' => 'integer',
             'eps_id' => 'integer',
             'pension_fund_id' => 'integer',
             'severance_fund_id' => 'integer',
@@ -60,6 +61,11 @@ class Driver extends Model
             'has_social_security' => 'boolean',
             'active' => 'boolean',
         ];
+    }
+
+    public function municipality(): BelongsTo
+    {
+        return $this->belongsTo(Municipality::class);
     }
 
     public function documentType(): BelongsTo
@@ -90,7 +96,7 @@ class Driver extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['id', 'document_type_id', 'identification_number', 'first_name', 'second_name', 'first_lastname', 'second_lastname', 'city', 'address', 'phone', 'email', 'license_category', 'license_due_date', 'eps_id', 'pension_fund_id', 'severance_fund_id', 'has_social_security', 'active']);
+            ->logOnly(['id', 'document_type_id', 'identification_number', 'first_name', 'second_name', 'first_lastname', 'second_lastname', 'municipality_id', 'address', 'phone', 'email', 'license_category', 'license_due_date', 'eps_id', 'pension_fund_id', 'severance_fund_id', 'has_social_security', 'active']);
     }
 
     /**
@@ -116,7 +122,7 @@ class Driver extends Model
             'second_name' => $this->second_name,
             'first_lastname' => $this->first_lastname,
             'second_lastname' => $this->second_lastname,
-            'city' => $this->city,
+            'municipality_id' => $this->municipality_id,
             'address' => $this->address,
             'phone' => $this->phone,
             'email' => $this->email,

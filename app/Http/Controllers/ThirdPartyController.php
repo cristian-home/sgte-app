@@ -27,12 +27,12 @@ class ThirdPartyController extends Controller
                 'first_name',
                 'first_lastname',
                 'company_name',
-                'city',
+                AllowedFilter::exact('municipality_id'),
                 AllowedFilter::exact('is_customer'),
                 AllowedFilter::exact('is_provider'),
                 AllowedFilter::exact('active'),
             ])
-            ->allowedSorts(['first_name', 'first_lastname', 'company_name', 'city', 'active'])
+            ->allowedSorts(['first_name', 'first_lastname', 'company_name', 'municipality_id', 'active'])
             ->get();
 
         return Inertia::render('third-parties/index', [

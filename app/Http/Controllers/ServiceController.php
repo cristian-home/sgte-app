@@ -28,8 +28,8 @@ class ServiceController extends Controller
             ->allowedFilters([
                 AllowedFilter::callback('search', fn (Builder $query, $value) => $query->searchWithRelevance($value)),
                 AllowedFilter::exact('service_date'),
-                'origin',
-                'destination',
+                AllowedFilter::exact('origin_municipality_id'),
+                AllowedFilter::exact('destination_municipality_id'),
                 AllowedFilter::exact('service_status'),
                 AllowedFilter::exact('payment_method'),
             ])

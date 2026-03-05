@@ -24,11 +24,11 @@ class DriverController extends Controller
                 'identification_number',
                 'first_name',
                 'first_lastname',
-                'city',
+                AllowedFilter::exact('municipality_id'),
                 AllowedFilter::exact('license_category'),
                 AllowedFilter::exact('active'),
             ])
-            ->allowedSorts(['first_name', 'first_lastname', 'city', 'license_due_date', 'active'])
+            ->allowedSorts(['first_name', 'first_lastname', 'municipality_id', 'license_due_date', 'active'])
             ->get();
 
         return Inertia::render('drivers/index', [
