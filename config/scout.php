@@ -199,7 +199,7 @@ return [
                     ],
                 ],
                 'search-parameters' => [
-                    'query_by' => 'name,email'
+                    'query_by' => 'name,email',
                 ],
             ],
         ],
