@@ -28,4 +28,5 @@ yarn-error.log
 /.zed
 /test-draft.yaml
 /.blueprint
-/.claude
+/.claude/*
+!/.claude/commands/
