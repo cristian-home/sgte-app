@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\Permission;
 use App\Http\Requests\VehicleStoreRequest;
 use App\Http\Requests\VehicleUpdateRequest;
+use App\Models\Municipality;
 use App\Models\ThirdParty;
 use App\Models\Vehicle;
 use Illuminate\Http\RedirectResponse;
@@ -51,6 +52,10 @@ class VehicleController extends Controller
                 ->where('active', true)
                 ->where('is_provider', true)
                 ->get(['id', 'identification_number', 'first_name', 'first_lastname', 'company_name', 'is_natural_person']),
+            'municipalities' => Municipality::query()
+                ->with('department:id,name')
+                ->orderBy('name')
+                ->get(['id', 'name', 'code', 'department_id']),
         ]);
     }
 
@@ -81,6 +86,10 @@ class VehicleController extends Controller
                 ->where('active', true)
                 ->where('is_provider', true)
                 ->get(['id', 'identification_number', 'first_name', 'first_lastname', 'company_name', 'is_natural_person']),
+            'municipalities' => Municipality::query()
+                ->with('department:id,name')
+                ->orderBy('name')
+                ->get(['id', 'name', 'code', 'department_id']),
         ]);
     }
 

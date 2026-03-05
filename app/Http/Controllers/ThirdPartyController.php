@@ -6,6 +6,7 @@ use App\Enums\Permission;
 use App\Http\Requests\ThirdPartyStoreRequest;
 use App\Http\Requests\ThirdPartyUpdateRequest;
 use App\Models\DocumentType;
+use App\Models\Municipality;
 use App\Models\ThirdParty;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -46,6 +47,10 @@ class ThirdPartyController extends Controller
 
         return Inertia::render('third-parties/create', [
             'documentTypes' => DocumentType::all(['id', 'code', 'name']),
+            'municipalities' => Municipality::query()
+                ->with('department:id,name')
+                ->orderBy('name')
+                ->get(['id', 'name', 'code', 'department_id']),
         ]);
     }
 
@@ -73,6 +78,10 @@ class ThirdPartyController extends Controller
         return Inertia::render('third-parties/edit', [
             'thirdParty' => $thirdParty,
             'documentTypes' => DocumentType::all(['id', 'code', 'name']),
+            'municipalities' => Municipality::query()
+                ->with('department:id,name')
+                ->orderBy('name')
+                ->get(['id', 'name', 'code', 'department_id']),
         ]);
     }
 

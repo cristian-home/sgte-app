@@ -6,6 +6,7 @@ use App\Enums\Permission;
 use App\Http\Requests\DriverStoreRequest;
 use App\Http\Requests\DriverUpdateRequest;
 use App\Models\Driver;
+use App\Models\Municipality;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -40,7 +41,12 @@ class DriverController extends Controller
     {
         Gate::authorize(Permission::CREATE_DRIVERS->value);
 
-        return Inertia::render('drivers/create');
+        return Inertia::render('drivers/create', [
+            'municipalities' => Municipality::query()
+                ->with('department:id,name')
+                ->orderBy('name')
+                ->get(['id', 'name', 'code', 'department_id']),
+        ]);
     }
 
     public function store(DriverStoreRequest $request): RedirectResponse
@@ -66,6 +72,10 @@ class DriverController extends Controller
 
         return Inertia::render('drivers/edit', [
             'driver' => $driver,
+            'municipalities' => Municipality::query()
+                ->with('department:id,name')
+                ->orderBy('name')
+                ->get(['id', 'name', 'code', 'department_id']),
         ]);
     }
 
