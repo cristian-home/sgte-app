@@ -2,10 +2,10 @@
 name: service-form
 type: feat
 scope: services
-status: pending
+status: completed
 priority: high
 created_date: 2026-03-05
-completed_date:
+completed_date: 2026-03-05
 srs_refs: ["REQ-003"]
 migration_strategy: modify-existing
 ---
@@ -18,18 +18,18 @@ Implement the full service form (create + edit) and a read-only detail view (sho
 
 ## Acceptance Criteria
 
-- [ ] AC-1: WHEN the user selects a vehicle with `is_third_party = true` THEN the driver field MUST be hidden, `driver_id` MUST be set to `null`, and the associated provider (vehicle's `thirdParty`) MUST be displayed as read-only info.
-- [ ] AC-2: WHEN the user selects a vehicle with `is_third_party = false` THEN the driver field MUST be visible and required.
-- [ ] AC-3: WHEN a service is submitted with a vehicle that already has an overlapping service on the same `service_date` (time ranges overlap based on `planned_start_time` + `planned_duration`) THEN validation MUST fail with a specific error message indicating the conflict.
-- [ ] AC-4: WHEN a service is submitted with a driver that already has an overlapping service on the same `service_date` THEN validation MUST fail with a specific error message indicating the conflict.
-- [ ] AC-5: WHEN the driver dropdown is populated THEN drivers with `license_due_date < today` MUST be excluded from the selectable options.
-- [ ] AC-6: WHEN the user selects a driver that has `eps_id = null` OR `pension_fund_id = null` THEN a warning message MUST be displayed, but the selection MUST still be allowed.
-- [ ] AC-7: WHEN the contract dropdown is populated THEN only contracts with `active = true` AND `start_date <= service_date` AND `end_date >= service_date` MUST be shown.
-- [ ] AC-8: WHEN the create form is submitted with valid data THEN a new Service record MUST be created and the user MUST be redirected to the services index.
-- [ ] AC-9: WHEN the edit form is submitted with valid data THEN the Service record MUST be updated and the user MUST be redirected to the services index.
-- [ ] AC-10: WHEN the show page is accessed THEN all service fields MUST be displayed in read-only format with related entity details (contract, vehicle, driver, municipalities).
-- [ ] AC-11: WHEN the edit or show page is accessed for a service with incidents THEN a badge MUST display the count of related `serviceIncidents`.
-- [ ] AC-12: WHEN the service_status is changed to `closed` THEN `actual_start_time` and `actual_end_time` MUST be required.
+- [x] AC-1: WHEN the user selects a vehicle with `is_third_party = true` THEN the driver field MUST be hidden, `driver_id` MUST be set to `null`, and the associated provider (vehicle's `thirdParty`) MUST be displayed as read-only info.
+- [x] AC-2: WHEN the user selects a vehicle with `is_third_party = false` THEN the driver field MUST be visible and required.
+- [x] AC-3: WHEN a service is submitted with a vehicle that already has an overlapping service on the same `service_date` (time ranges overlap based on `planned_start_time` + `planned_duration`) THEN validation MUST fail with a specific error message indicating the conflict.
+- [x] AC-4: WHEN a service is submitted with a driver that already has an overlapping service on the same `service_date` THEN validation MUST fail with a specific error message indicating the conflict.
+- [x] AC-5: WHEN the driver dropdown is populated THEN drivers with `license_due_date < today` MUST be excluded from the selectable options.
+- [x] AC-6: WHEN the user selects a driver that has `eps_id = null` OR `pension_fund_id = null` THEN a warning message MUST be displayed, but the selection MUST still be allowed.
+- [x] AC-7: WHEN the contract dropdown is populated THEN only contracts with `active = true` AND `start_date <= service_date` AND `end_date >= service_date` MUST be shown.
+- [x] AC-8: WHEN the create form is submitted with valid data THEN a new Service record MUST be created and the user MUST be redirected to the services index.
+- [x] AC-9: WHEN the edit form is submitted with valid data THEN the Service record MUST be updated and the user MUST be redirected to the services index.
+- [x] AC-10: WHEN the show page is accessed THEN all service fields MUST be displayed in read-only format with related entity details (contract, vehicle, driver, municipalities).
+- [x] AC-11: WHEN the edit or show page is accessed for a service with incidents THEN a badge MUST display the count of related `serviceIncidents`.
+- [x] AC-12: WHEN the service_status is changed to `closed` THEN `actual_start_time` and `actual_end_time` MUST be required.
 
 ## Technical Specification
 
@@ -84,7 +84,7 @@ No new permissions. Existing permissions used:
 
 ### Backend
 
-- [ ] Task 1: Update `ServiceController@create` to pass reference data for the form
+- [x] Task 1: Update `ServiceController@create` to pass reference data for the form
   - Gate check: `Permission::CREATE_SERVICES`
   - Pass `vehicles` — all active vehicles with `thirdParty` relationship eager-loaded: `Vehicle::query()->where('status', VehicleStatus::Active)->with('thirdParty:id,identification_number,first_name,first_lastname,company_name,is_natural_person')->get(['id', 'plate', 'is_third_party', 'third_party_id'])`
   - Pass `drivers` — all drivers with valid license (`license_due_date >= today`), include `eps_id` and `pension_fund_id` for social security warning: `Driver::query()->where('license_due_date', '>=', now()->toDateString())->get(['id', 'first_name', 'first_lastname', 'document_number', 'license_due_date', 'eps_id', 'pension_fund_id'])`
@@ -92,35 +92,35 @@ No new permissions. Existing permissions used:
   - Pass `municipalities` — all municipalities with department: `Municipality::query()->with('department:id,name')->get(['id', 'name', 'department_id'])`
   - Follow `VehicleController@create` as convention reference
 
-- [ ] Task 2: Update `ServiceController@edit` to pass reference data and the service
+- [x] Task 2: Update `ServiceController@edit` to pass reference data and the service
   - Gate check: `Permission::UPDATE_PROJECTED_SERVICES`
   - Eager-load service relationships: `contract`, `vehicle.thirdParty`, `driver`, `originMunicipality.department`, `destinationMunicipality.department`
   - Load incident count: `$service->loadCount('serviceIncidents')`
   - Pass same reference data as create (vehicles, drivers, contracts, municipalities)
   - Follow `VehicleController@edit` as convention reference
 
-- [ ] Task 3: Update `ServiceController@show` to pass the service with all relationships
+- [x] Task 3: Update `ServiceController@show` to pass the service with all relationships
   - Gate check: `Permission::VIEW_SERVICES`
   - Eager-load: `contract.thirdParty`, `vehicle.thirdParty`, `driver`, `originMunicipality.department`, `destinationMunicipality.department`, `invoice`
   - Load incident count: `$service->loadCount('serviceIncidents')`
   - Follow existing show page patterns
 
-- [ ] Task 4: Update `ServiceController@store` to use Gate check
+- [x] Task 4: Update `ServiceController@store` to use Gate check
   - Add `Gate::authorize(Permission::CREATE_SERVICES->value)` if not already present
   - Ensure redirect goes to `services.index` with success flash message
 
-- [ ] Task 5: Update `ServiceController@update` to use correct Gate check
+- [x] Task 5: Update `ServiceController@update` to use correct Gate check
   - Add `Gate::authorize(Permission::UPDATE_PROJECTED_SERVICES->value)`
   - Ensure redirect goes to `services.index` with success flash message
 
-- [ ] Task 6: Create custom validation rule `App\Rules\NoScheduleConflict`
+- [x] Task 6: Create custom validation rule `App\Rules\NoScheduleConflict`
   - Constructor accepts: `string $field` (`vehicle_id` or `driver_id`), `int $fieldValue`, `string $serviceDate`, `string $plannedStartTime`, `int $plannedDuration`, `?int $excludeServiceId` (for edit)
   - Rule logic: Query `services` table for records matching the same `$field` value and `service_date`, excluding the current service (if editing) and soft-deleted records
   - Calculate time overlap: A conflict exists when `existing_start < new_end AND new_start < existing_end` where end = start + duration in minutes
   - Return failure message: "El {vehículo|conductor} ya tiene un servicio asignado en este horario ({HH:MM} - {HH:MM})."
   - Follow `app/Rules/` directory for existing rule patterns (create directory if it doesn't exist)
 
-- [ ] Task 7: Update `ServiceStoreRequest` validation rules
+- [x] Task 7: Update `ServiceStoreRequest` validation rules
   - `contract_id`: required, integer, exists:contracts,id — add custom validation to ensure contract is active and covers the service_date (use `Rule::when` or `after` hook)
   - `vehicle_id`: required, integer, exists:vehicles,id — add `NoScheduleConflict` rule
   - `driver_id`: Change to conditionally required — `required_unless:is_third_party_vehicle,true` (or use `after` validation hook to check vehicle's `is_third_party` flag); when provided, validate `exists:drivers,id` and `NoScheduleConflict` rule
@@ -130,13 +130,13 @@ No new permissions. Existing permissions used:
   - Keep all other existing rules unchanged
   - Follow `VehicleStoreRequest` as convention reference for conditional rules
 
-- [ ] Task 8: Update `ServiceUpdateRequest` validation rules
+- [x] Task 8: Update `ServiceUpdateRequest` validation rules
   - Same rules as `ServiceStoreRequest` but pass `$this->route('service')->id` as `excludeServiceId` to `NoScheduleConflict` rule
   - Follow `VehicleUpdateRequest` as convention reference
 
 ### Frontend
 
-- [ ] Task 9: Create `resources/js/components/services/service-form.tsx` — reusable form component
+- [x] Task 9: Create `resources/js/components/services/service-form.tsx` — reusable form component
   - Props interface: `{ data, setData, errors, vehicles, drivers, contracts, municipalities, incidentCount?, mode: 'create' | 'edit' }`
   - Layout: Grid with sections — "Datos del Servicio", "Origen y Destino", "Horarios", "Facturación"
   - **Section: Datos del Servicio**
@@ -165,7 +165,7 @@ No new permissions. Existing permissions used:
   - **Incidents badge** (edit mode only): Show badge with `incidentCount` next to section header or page title, linking to incidents list filtered by this service (if route exists)
   - Follow `resources/js/components/vehicles/vehicle-form.tsx` as convention reference for layout, grid, error display, and conditional field patterns
 
-- [ ] Task 10: Implement `resources/js/pages/services/create.tsx`
+- [x] Task 10: Implement `resources/js/pages/services/create.tsx`
   - Props: `{ vehicles, drivers, contracts, municipalities }` (from controller)
   - Initialize `useForm` with default values: empty strings for text/select, empty string for date, `'open'` for service_status, `'credit'` for payment_method, `'1'` for quantity
   - Breadcrumbs: Servicios (index) > Crear
@@ -174,7 +174,7 @@ No new permissions. Existing permissions used:
   - Use `<Can permission={Permission.CREATE_SERVICES}>` if needed for conditional UI elements
   - Follow `resources/js/pages/vehicles/create.tsx` as convention reference
 
-- [ ] Task 11: Implement `resources/js/pages/services/edit.tsx`
+- [x] Task 11: Implement `resources/js/pages/services/edit.tsx`
   - Props: `{ service, vehicles, drivers, contracts, municipalities }` (from controller)
   - Initialize `useForm` with service data, casting IDs to strings as per vehicle edit pattern
   - Include `service_incidents_count` from loaded count for incidents badge
@@ -183,7 +183,7 @@ No new permissions. Existing permissions used:
   - Cancel: Link to `services.index().url`
   - Follow `resources/js/pages/vehicles/edit.tsx` as convention reference
 
-- [ ] Task 12: Implement `resources/js/pages/services/show.tsx`
+- [x] Task 12: Implement `resources/js/pages/services/show.tsx`
   - Props: `{ service }` (from controller, with all relationships eager-loaded)
   - Read-only layout using Card components with labeled fields in a grid
   - Display related entity names (not IDs): contract number, vehicle plate, driver full name, municipality names with department
@@ -196,19 +196,19 @@ No new permissions. Existing permissions used:
   - Breadcrumbs: Servicios (index) > Ver
   - Follow existing show page patterns and use Card/grid layout
 
-- [ ] Task 13: Update `resources/js/types/models.ts` if needed
+- [x] Task 13: Update `resources/js/types/models.ts` if needed
   - Ensure `Vehicle` type includes `is_third_party` and `third_party_id` with optional `thirdParty?: ThirdParty`
   - Ensure `Driver` type includes `eps_id`, `pension_fund_id`, `license_due_date`
   - Ensure `Service` type includes optional relationship types for `originMunicipality`, `destinationMunicipality` with nested `department`
   - Add `service_incidents_count?: number` to Service type (for withCount)
 
-- [ ] Task 14: Update `resources/js/pages/services/columns.tsx` — add link to show page
+- [x] Task 14: Update `resources/js/pages/services/columns.tsx` — add link to show page
   - Make the service date or a "Ver" action link to `ServiceController.show(service.id).url`
   - Ensure edit action links to `ServiceController.edit(service.id).url`
 
 ### Tests
 
-- [ ] Task 15: Create `tests/Feature/Http/Controllers/ServiceControllerTest.php` using `php artisan make:test --pest`
+- [x] Task 15: Create `tests/Feature/Http/Controllers/ServiceControllerTest.php` using `php artisan make:test --pest`
   - Test `create` returns view with vehicles, drivers, contracts, municipalities props
   - Test `create` excludes drivers with expired license from drivers prop
   - Test `store` creates a service with valid data and redirects
@@ -222,7 +222,7 @@ No new permissions. Existing permissions used:
   - Test unauthorized users cannot access create/store/edit/update/destroy
   - Use factories for all model creation; follow `tests/Feature/Http/Controllers/VehicleControllerTest.php` as convention reference
 
-- [ ] Task 16: Create `tests/Feature/Rules/NoScheduleConflictTest.php` using `php artisan make:test --pest`
+- [x] Task 16: Create `tests/Feature/Rules/NoScheduleConflictTest.php` using `php artisan make:test --pest`
   - Test no conflict when vehicle has no other services on the date
   - Test conflict detected when vehicle has overlapping service (partial overlap start)
   - Test conflict detected when vehicle has overlapping service (partial overlap end)
@@ -233,13 +233,13 @@ No new permissions. Existing permissions used:
   - Test driver conflict detection (same scenarios as vehicle)
   - Use `RefreshDatabase` trait and Service factory
 
-- [ ] Task 17: Create `tests/Feature/Http/Controllers/ServiceControllerCod18Test.php` using `php artisan make:test --pest`
+- [x] Task 17: Create `tests/Feature/Http/Controllers/ServiceControllerCod18Test.php` using `php artisan make:test --pest`
   - Test store succeeds without driver_id when vehicle is third-party (`is_third_party = true`)
   - Test store fails without driver_id when vehicle is NOT third-party
   - Test store sets driver_id to null when vehicle is third-party even if driver_id is provided
   - Use factories with appropriate states for third-party vehicles
 
-- [ ] Task 18: Create `tests/Feature/Http/Controllers/ServiceControllerStatusTest.php` using `php artisan make:test --pest`
+- [x] Task 18: Create `tests/Feature/Http/Controllers/ServiceControllerStatusTest.php` using `php artisan make:test --pest`
   - Test store fails when `service_status = closed` and `actual_start_time` is missing
   - Test store fails when `service_status = closed` and `actual_end_time` is missing
   - Test store succeeds when `service_status = closed` and both actual times are provided
