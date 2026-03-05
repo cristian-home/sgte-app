@@ -119,6 +119,10 @@ class ServiceController extends Controller
 
     public function update(ServiceUpdateRequest $request, Service $service): RedirectResponse
     {
+        if (Gate::none([Permission::UPDATE_PROJECTED_SERVICES->value, Permission::UPDATE_EXECUTED_SERVICES->value])) {
+            abort(403);
+        }
+
         $validated = $request->validated();
         $justification = $validated['justification'] ?? null;
         unset($validated['justification']);
