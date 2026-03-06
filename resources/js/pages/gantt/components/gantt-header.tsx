@@ -1,5 +1,6 @@
 import { router } from '@inertiajs/react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { index as daySummaryIndex } from '@/actions/App/Http/Controllers/DaySummaryController';
 import { index as ganttIndex } from '@/actions/App/Http/Controllers/GanttController';
 import MunicipalityCombobox, {
     type MunicipalityOption,
@@ -110,6 +111,11 @@ export default function GanttHeader({
                 </span>
 
                 <div className="ml-auto flex items-center gap-3">
+                    <Button variant="outline" size="sm" className="h-8" asChild>
+                        <a href={daySummaryIndex({ query: { date } }).url}>
+                            Resumen
+                        </a>
+                    </Button>
                     <MunicipalityCombobox
                         municipalities={municipalities}
                         value={municipalityId}
