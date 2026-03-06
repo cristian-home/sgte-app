@@ -508,6 +508,24 @@ test('show returns view with service and eager-loaded relationships', function (
     );
 });
 
+test('show returns service with service incidents and their relationships', function (): void {
+    $service = Service::factory()->create();
+    \App\Models\ServiceIncident::factory()->count(2)->create([
+        'service_id' => $service->id,
+    ]);
+
+    $response = get(route('services.show', $service));
+
+    $response->assertOk();
+    $response->assertInertia(fn (AssertableInertia $page) => $page
+        ->component('services/show')
+        ->has('service.service_incidents', 2)
+        ->has('service.service_incidents.0.incident_type')
+        ->has('service.service_incidents.0.registrar')
+        ->where('service.service_incidents_count', 2)
+    );
+});
+
 test('unauthorized users cannot access create', function (): void {
     $user = User::factory()->create();
     $this->actingAs($user);
