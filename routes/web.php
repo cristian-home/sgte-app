@@ -13,6 +13,8 @@ require __DIR__.'/settings.php';
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('gantt', [App\Http\Controllers\GanttController::class, 'index'])->name('gantt.index');
+    Route::get('day-summary/export', [App\Http\Controllers\DaySummaryController::class, 'export'])->name('day-summary.export');
+    Route::get('day-summary', [App\Http\Controllers\DaySummaryController::class, 'index'])->name('day-summary.index');
     Route::resource('document-types', App\Http\Controllers\DocumentTypeController::class);
     Route::resource('eps', App\Http\Controllers\EpsController::class);
     Route::resource('pension-funds', App\Http\Controllers\PensionFundController::class);
