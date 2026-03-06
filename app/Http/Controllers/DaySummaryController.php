@@ -24,7 +24,7 @@ class DaySummaryController extends Controller
 
         $date = $request->query('date', now()->format('Y-m-d'));
 
-        $services = Service::where('service_date', $date)
+        $services = Service::whereDate('service_date', $date)
             ->whereNull('deleted_at')
             ->with([
                 'vehicle:id,plate,is_third_party,third_party_id',
@@ -37,7 +37,7 @@ class DaySummaryController extends Controller
             ->orderBy('planned_start_time')
             ->get();
 
-        $dayStatus = DayStatus::where('date', $date)->with('executor:id,name')->first();
+        $dayStatus = DayStatus::whereDate('date', $date)->with('executor:id,name')->first();
 
         $summary = [
             'total' => $services->count(),
@@ -66,7 +66,7 @@ class DaySummaryController extends Controller
 
         $date = $request->query('date');
 
-        $services = Service::where('service_date', $date)
+        $services = Service::whereDate('service_date', $date)
             ->whereNull('deleted_at')
             ->with([
                 'vehicle:id,plate,is_third_party,third_party_id',
