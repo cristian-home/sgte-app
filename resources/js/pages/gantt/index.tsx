@@ -4,9 +4,9 @@ import { index as ganttIndex } from '@/actions/App/Http/Controllers/GanttControl
 import { type MunicipalityOption } from '@/components/municipality-combobox';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import type { DayStatus, Service, Vehicle } from '@/types/models';
 import GanttHeader from './components/gantt-header';
 import HourlyGrid from './components/hourly-grid';
+import type { DayStatus, Service, Vehicle } from '@/types/models';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Planificador Gantt', href: ganttIndex().url },

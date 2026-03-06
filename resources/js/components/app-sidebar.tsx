@@ -11,12 +11,12 @@ import {
     Wrench,
 } from 'lucide-react';
 import { index as contractsIndex } from '@/actions/App/Http/Controllers/ContractController';
-import { index as dayStatusesIndex } from '@/actions/App/Http/Controllers/DayStatusController';
-import { index as ganttIndex } from '@/actions/App/Http/Controllers/GanttController';
+import { calendar as dayStatusesCalendar } from '@/actions/App/Http/Controllers/DayStatusController';
 import { index as documentTypesIndex } from '@/actions/App/Http/Controllers/DocumentTypeController';
 import { index as driversIndex } from '@/actions/App/Http/Controllers/DriverController';
 import { index as epsIndex } from '@/actions/App/Http/Controllers/EpsController';
 import { index as fuecsIndex } from '@/actions/App/Http/Controllers/FuecController';
+import { index as ganttIndex } from '@/actions/App/Http/Controllers/GanttController';
 import { index as invoicesIndex } from '@/actions/App/Http/Controllers/InvoiceController';
 import { index as pensionFundsIndex } from '@/actions/App/Http/Controllers/PensionFundController';
 import { index as servicesIndex } from '@/actions/App/Http/Controllers/ServiceController';
@@ -69,7 +69,7 @@ const navGroups: NavGroup[] = [
             },
             {
                 title: 'Calendario',
-                href: dayStatusesIndex(),
+                href: dayStatusesCalendar(new Date().getFullYear()),
                 permission: Permission.VIEW_DAY_SUMMARY,
             },
             {

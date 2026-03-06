@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import { X } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -31,7 +31,10 @@ interface MonthDetailProps {
     dayStatuses: Record<string, DayStatusEntry>;
     serviceCounts: Record<string, ServiceCountEntry>;
     onDayClick: (dateKey: string) => void;
-    onClose: () => void;
+    onPrevMonth: () => void;
+    onNextMonth: () => void;
+    onBackToYear: () => void;
+    selectedDate: string | null;
 }
 
 function getDayColorClass(status: string | undefined): string {
@@ -56,7 +59,10 @@ export default function MonthDetail({
     dayStatuses,
     serviceCounts,
     onDayClick,
-    onClose,
+    onPrevMonth,
+    onNextMonth,
+    onBackToYear,
+    selectedDate,
 }: MonthDetailProps) {
     const weeks = getWeeksOfMonth(year, month);
 
@@ -64,12 +70,34 @@ export default function MonthDetail({
         <Card>
             <CardHeader>
                 <CardTitle>
-                    {MONTH_NAMES_ES[month]} {year}
+                    <button
+                        type="button"
+                        onClick={onBackToYear}
+                        data-dusk="back-to-year"
+                        className="transition-colors hover:text-primary"
+                    >
+                        {MONTH_NAMES_ES[month]} {year}
+                    </button>
                 </CardTitle>
                 <CardAction>
-                    <Button variant="ghost" size="icon" onClick={onClose}>
-                        <X className="size-4" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={onPrevMonth}
+                            data-dusk="prev-month"
+                        >
+                            <ChevronLeft className="size-4" />
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={onNextMonth}
+                            data-dusk="next-month"
+                        >
+                            <ChevronRight className="size-4" />
+                        </Button>
+                    </div>
                 </CardAction>
             </CardHeader>
             <CardContent>
@@ -100,6 +128,7 @@ export default function MonthDetail({
                             const sc = serviceCounts[day.dateKey];
                             const bgClass = getDayColorClass(ds?.status);
                             const dotClass = getDayDotClass(ds?.status);
+                            const isSelected = selectedDate === day.dateKey;
 
                             const isExecuted =
                                 ds?.status === DayStatusEnum.Executed;
@@ -115,6 +144,8 @@ export default function MonthDetail({
                                         'flex h-16 w-full flex-col items-center justify-center gap-0.5 rounded-lg p-1 transition-colors hover:opacity-80',
                                         bgClass,
                                         day.isToday && 'ring-2 ring-primary',
+                                        isSelected &&
+                                            'ring-2 ring-blue-500 dark:ring-blue-400',
                                     )}
                                 >
                                     <span className="text-sm font-medium">

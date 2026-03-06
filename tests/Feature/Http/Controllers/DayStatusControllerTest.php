@@ -20,18 +20,10 @@ beforeEach(function (): void {
     $this->actingAs($user);
 });
 
-test('index behaves as expected', function (): void {
-    DayStatus::factory()->count(3)->create();
-
+test('index redirects to calendar', function (): void {
     $response = get(route('day-statuses.index'));
 
-    $response->assertOk();
-    $response->assertInertia(fn ($page) => $page
-        ->component('day-statuses/index')
-        ->has('dayStatuses')
-        ->has('serviceCounts')
-        ->has('year')
-    );
+    $response->assertRedirect(route('day-statuses.calendar', ['year' => now()->year]));
 });
 
 test('create behaves as expected', function (): void {

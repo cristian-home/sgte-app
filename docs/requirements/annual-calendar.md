@@ -14,17 +14,18 @@ migration_strategy: modify-existing
 
 ## Description
 
-Replace the current day-statuses index page stub with an interactive annual calendar view. The calendar displays 12 months in a grid, with each day color-coded by its operational status: black (no services), orange (projected — at least one open service), green (executed — all services closed and day locked). Users can click a month to expand a detailed day view, and click a day to navigate to the services for that date. This is the primary navigation entry point for dispatchers to access daily operations.
+Replace the current day-statuses index page stub with an interactive annual calendar view. The calendar displays 12 months in a grid, with each day color-coded by its operational status: black (no services), orange (projected — at least one open service), green (executed — all services closed and day locked). Navigation is entirely path-based: `/day-statuses/{year}` for the annual view, `/day-statuses/{year}/{month}` for the month detail. Users can click a month to drill into a detailed monthly view with prev/next month arrows, and click a day to load the day's services inline below the calendar. This is the primary navigation entry point for dispatchers to access daily operations.
 
 ## Acceptance Criteria
 
-- [x] AC-1: WHEN the user navigates to `/day-statuses` THEN a 12-month annual calendar grid MUST be displayed for the current year.
+- [x] AC-1: WHEN the user navigates to `/day-statuses` THEN the browser MUST redirect to `/day-statuses/{currentYear}` and display a 12-month annual calendar grid.
 - [x] AC-2: WHEN a day has no `DayStatus` record THEN it MUST be displayed with a neutral/black indicator (no services).
 - [x] AC-3: WHEN a day has a `DayStatus` with `status = projected` THEN it MUST be displayed with an orange indicator.
 - [x] AC-4: WHEN a day has a `DayStatus` with `status = executed` THEN it MUST be displayed with a green indicator.
-- [x] AC-5: WHEN the user clicks a month in the annual view THEN the view MUST expand or navigate to show a detailed monthly view with individual day cells, each color-coded and showing the service count for that day.
-- [x] AC-6: WHEN the user clicks a day in the monthly view THEN the browser MUST navigate to the services index filtered by that date (`/services?filter[service_date]={date}`).
-- [x] AC-7: WHEN the user clicks the previous/next year navigation arrows THEN the calendar MUST update to show the selected year's data.
+- [x] AC-5: WHEN the user clicks a month in the annual view THEN the browser MUST navigate to `/day-statuses/{year}/{month}` showing a detailed monthly view with individual day cells, each color-coded and showing the service count for that day.
+- [x] AC-6: WHEN the user clicks a day in the monthly view THEN the day's services MUST be loaded inline below the calendar (URL becomes `/day-statuses/{year}/{month}?selectedDay={day}`). The browser MUST NOT navigate away from the calendar page.
+- [x] AC-7: WHEN the user clicks the previous/next year navigation arrows THEN the calendar MUST navigate to `/day-statuses/{newYear}`.
+- [x] AC-7b: WHEN the user clicks the previous/next month arrows in the month detail THEN the browser MUST navigate to the adjacent month URL, handling year boundaries (e.g., prev from January navigates to `/day-statuses/{year-1}/12`).
 - [x] AC-8: WHEN the calendar is rendered THEN today's date MUST be visually highlighted (distinct border or ring) regardless of its status color.
 - [x] AC-9: WHEN a user with the `driver` role attempts to access `/day-statuses` THEN access MUST be denied (403).
 
@@ -40,11 +41,13 @@ No new enums. Uses existing `DayStatusEnum` (`projected`, `executed`).
 
 ### Routes
 
-No new routes. The existing resource route `GET /day-statuses` (index) is repurposed to serve the calendar view. A `year` query parameter is added for year navigation.
+Two new explicit routes are added before the existing resource route. The resource `index` action now redirects to the calendar. Route constraints enforce valid years (2020-2099) and months (1-12).
 
 | Method | URI | Controller Action | Middleware | Name |
 |--------|-----|-------------------|------------|------|
-| GET | /day-statuses?year=2026 | DayStatusController@index | auth, verified | day-statuses.index |
+| GET | /day-statuses | DayStatusController@index | auth, verified | day-statuses.index (redirects to calendar) |
+| GET | /day-statuses/{year} | DayStatusController@calendar | auth, verified | day-statuses.calendar |
+| GET | /day-statuses/{year}/{month}?selectedDay={day} | DayStatusController@calendarMonth | auth, verified | day-statuses.calendar-month |
 
 ### Permissions
 
@@ -55,32 +58,24 @@ No new permissions. Uses existing `VIEW_DAY_SUMMARY` permission to gate access.
 | Page | Component Path | Description |
 |------|---------------|-------------|
 | Calendar Index | `resources/js/pages/day-statuses/index.tsx` | Annual calendar view (replaces current stub) |
-| Month Detail | Inline or modal within index | Expanded month view with day cells |
+| Month Detail | Inline within index | Expanded month view with prev/next arrows and day cells |
+| Day Services | Inline within index | Service table loaded below the calendar when a day is clicked |
 
 ## Migration Strategy
 
-- **modify-existing**: No database changes. The controller index method is updated to return structured data, and the frontend index page is replaced with the calendar component.
+- **modify-existing**: No database changes. Two new controller methods (`calendar`, `calendarMonth`) serve path-based URLs. The existing `index` method redirects. The frontend index page is replaced with the calendar component.
 
 ## Tasks
 
 ### Backend
 
-- [x] Task 1: Update `DayStatusController@index` to return calendar-optimized data
-  - Gate check: `Gate::authorize(Permission::VIEW_DAY_SUMMARY->value)`
-  - Accept `year` query parameter (default: current year). Validate it is a 4-digit integer between 2020 and 2099.
-  - Query all `DayStatus` records for the year: `DayStatus::whereYear('date', $year)->get(['id', 'date', 'status', 'executor_id', 'executed_at'])`
-  - Query service counts per date for the year: `Service::whereYear('service_date', $year)->whereNull('deleted_at')->selectRaw('service_date, count(*) as total, sum(case when service_status = ? then 1 else 0 end) as open_count', ['open'])->groupBy('service_date')->get()` — returns date, total services, and open service count
-  - Transform data into a keyed map for efficient frontend lookup:
-    ```php
-    $dayStatuses = $dayStatuses->keyBy(fn ($ds) => $ds->date->format('Y-m-d'));
-    $serviceCounts = $serviceCounts->keyBy('service_date');
-    ```
-  - Pass to Inertia: `dayStatuses` (keyed collection), `serviceCounts` (keyed collection), `year` (integer)
-  - Follow existing controller patterns for Inertia rendering
-
-- [x] Task 2: Update `DayStatusController@index` to eager-load executor for tooltip display
-  - Add `->with('executor:id,name')` to the DayStatus query so the frontend can show "Ejecutado por {name}" on hover for executed days
-  - Only include executor data for executed day statuses to minimize payload
+- [x] Task 1: Add path-based routes and refactor `DayStatusController`
+  - Add `GET /day-statuses/{year}` (`calendar`) and `GET /day-statuses/{year}/{month}` (`calendarMonth`) routes with `where` constraints before the resource route
+  - Refactor `index()` to redirect to `day-statuses.calendar` with current year
+  - `calendar(int $year)`: Gate check, query DayStatus + ServiceCounts for the year, render `day-statuses/index` with `month: null`
+  - `calendarMonth(Request, int $year, int $month)`: Same year data plus optional `selectedDay` query param. When present, constructs the full date from year/month/day and queries services with `contract:id,contract_number`, `vehicle:id,plate`, `driver:id,first_name,first_lastname` relations, ordered by `planned_start_time`
+  - Shared `calendarData(int $year)` private method extracts common queries (DayStatus + ServiceCounts keyed by date)
+  - Eager-load `executor:id,name` on DayStatus for tooltip display
 
 ### Frontend
 
@@ -106,12 +101,12 @@ No new permissions. Uses existing `VIEW_DAY_SUMMARY` permission to gate access.
       - Today → additional `ring-2 ring-primary` highlight
     - Summary below month name: total services count for the month (sum of serviceCounts for all days in month)
   - Year navigation: `ChevronLeft` and `ChevronRight` icons from lucide-react flanking the year number
-  - Year change triggers Inertia visit to `day-statuses.index` with `year` query parameter: `router.get(route, { year: newYear }, { preserveState: true })`
+  - Year change triggers Inertia visit to `/day-statuses/{newYear}` using Wayfinder `calendar()` action
   - Use `date-fns` functions: `startOfMonth`, `endOfMonth`, `eachDayOfInterval`, `getDay`, `format`, `isSameDay`, `isToday`
   - Use `useMemo` to pre-compute month data arrays and avoid re-renders
   - Follow Tailwind CSS v4 conventions and existing component patterns
 
-- [x] Task 4: Create the monthly detail view component at `resources/js/components/calendar/month-detail.tsx`
+- [x] Task 4: Create the monthly detail view component at `resources/js/components/day-statuses/month-detail.tsx`
   - **Props interface:**
     ```
     {
@@ -119,44 +114,55 @@ No new permissions. Uses existing `VIEW_DAY_SUMMARY` permission to gate access.
       month: number  // 0-indexed (0 = January)
       dayStatuses: Record<string, ...>  // same as annual calendar
       serviceCounts: Record<string, ...>
-      onDayClick: (date: string) => void
-      onClose: () => void
+      onDayClick: (dateKey: string) => void
+      onPrevMonth: () => void
+      onNextMonth: () => void
+      onBackToYear: () => void
+      selectedDate: string | null
     }
     ```
-  - **Layout:** Full-width card/dialog showing the expanded month
-  - Header: Month name + Year, close button (X icon)
+  - **Layout:** Full-width card showing the expanded month
+  - Header: Clickable month name + year (navigates back to annual view via `onBackToYear`), ChevronLeft/ChevronRight buttons for prev/next month navigation
   - Grid: 7 columns (Lun, Mar, Mié, Jue, Vie, Sáb, Dom — Spanish weekday abbreviations, week starts on Monday)
   - Each day cell displays:
     - Day number
     - Color indicator (same scheme: black/orange/green)
-    - Service count badge (e.g., "5 servicios" or just the number)
-    - For executed days: small check icon or "Ejecutado" tooltip on hover showing executor name and timestamp
-  - Day cells are clickable — triggers `onDayClick(dateString)` which navigates to services filtered by date
-  - Days outside the current month (padding) are displayed dimmed/muted
+    - Service count badge (e.g., "5 serv.")
+    - For executed days: "Ejecutado" tooltip on hover showing executor name and timestamp
+  - Day cells are clickable — triggers `onDayClick(dateKey)` which loads services inline below the calendar
+  - Selected day highlighted with `ring-2 ring-blue-500`
   - Today highlighted with `ring-2 ring-primary`
+  - Days outside the current month (padding) are displayed dimmed/muted
   - Use `Card` component from shadcn for the container
   - Use `Tooltip` component for executed day hover info
 
 - [x] Task 5: Replace `resources/js/pages/day-statuses/index.tsx` with the calendar implementation
-  - **Props** (from controller): `{ dayStatuses, serviceCounts, year }`
-  - **State:** `selectedMonth: number | null` (null = annual view, number = month detail)
-  - **Breadcrumbs:** `[{ title: 'Calendario', href: dayStatusesIndex().url }]`
+  - **Props** (from controller): `{ dayStatuses, serviceCounts, year, month, selectedDate, dayServices }`
+  - **No local state** — the server `month` prop (null = annual, 1-12 = month detail) is the source of truth, driven by the URL path
+  - **Breadcrumbs:** `[{ title: 'Calendario', href: calendar(year).url }]`
   - **Page title:** `<Head title="Calendario" />`
   - **Layout:** `AppLayout` wrapper
   - **Rendering logic:**
-    - When `selectedMonth` is null: render `AnnualCalendar` component
-    - When `selectedMonth` is set: render `MonthDetail` component alongside or replacing the annual view
-  - **Month click handler:** `setSelectedMonth(month)` to expand month detail
-  - **Day click handler:** Navigate using Inertia router to services index with date filter: `router.get(servicesIndex().url, { 'filter[service_date]': dateString })`
-  - **Year change handler:** Inertia visit with new year parameter, reset selectedMonth to null
-  - **Permission:** Page is gated by `VIEW_DAY_SUMMARY` in the controller; no additional frontend permission check needed on the page itself (controller handles 403)
-  - Follow `resources/js/pages/vehicles/index.tsx` as layout convention reference
+    - When `month` is null: render `AnnualCalendar` component
+    - When `month` is set: render `MonthDetail` + optionally `DayServicesTable` below when `selectedDate` and `dayServices` are present
+  - **Month click handler:** Navigate to `/day-statuses/{year}/{month+1}` using Wayfinder `calendarMonth()` action
+  - **Day click handler:** Navigate to same month URL with `?selectedDay={day}` query param — loads services inline
+  - **Prev/next month handlers:** Navigate to adjacent month URL, handling year boundaries (month 1 → year-1/12, month 12 → year+1/1)
+  - **Year change handler:** Navigate to `/day-statuses/{newYear}` using Wayfinder `calendar()` action
+  - **Permission:** Page is gated by `VIEW_DAY_SUMMARY` in the controller
 
-- [x] Task 6: Update the sidebar navigation label for day-statuses
-  - In `resources/js/components/app-sidebar.tsx` (or wherever the sidebar items are defined):
-    - Change the label for the day-statuses link from "Estados del Día" (or current label) to "Calendario" to match the new calendar view
-    - Keep the same route (`dayStatusesIndex()`)
-    - Use `Calendar` icon from lucide-react (or keep existing icon if appropriate)
+- [x] Task 5b: Create `resources/js/components/day-statuses/day-services-table.tsx`
+  - Simple read-only table showing services for the selected day
+  - Columns: Hora, Ruta (origin → destination), Vehiculo (plate), Conductor, Valor, Estado
+  - Each route cell links to the service detail page via Wayfinder `servicesShow()` action
+  - Empty state: "No hay servicios para este dia."
+  - Uses `components/ui/table` primitives and formatting patterns from `pages/services/columns.tsx`
+
+- [x] Task 6: Update the sidebar navigation link for day-statuses
+  - In `resources/js/components/app-sidebar.tsx`:
+    - Label: "Calendario"
+    - Route: `dayStatusesCalendar(new Date().getFullYear())` (Wayfinder `calendar` action)
+    - Icon: `Calendar` from lucide-react
 
 - [x] Task 7: Add Spanish locale configuration for date-fns
   - Create `resources/js/lib/date-utils.ts` (or add to existing utils file if one exists)
@@ -195,11 +201,14 @@ No new permissions. Uses existing `VIEW_DAY_SUMMARY` permission to gate access.
 
 Dusk browser tests in `tests/Browser/`. Use super admin credentials from `env('SUPER_ADMIN_USER')` / `env('SUPER_ADMIN_PASSWORD')`. Run `php artisan migrate:fresh --seed --no-interaction` before tests that need a clean database.
 
-- [x] Navigate to `/day-statuses` and verify the 12-month annual calendar grid is displayed
+- [x] Navigate to `/day-statuses` and verify redirect to `/day-statuses/{year}` with 12-month annual calendar grid
 - [x] Verify today's date is highlighted with a distinct ring/border
-- [x] Click a month card and verify the monthly detail view expands with day cells
-- [x] Click a day cell in the monthly view and verify navigation to `/services?filter[service_date]={date}`
-- [x] Click the year navigation arrows and verify the calendar updates to the new year
+- [x] Click a month card and verify navigation to `/day-statuses/{year}/{month}` with monthly detail view
+- [x] Verify month detail has prev/next month arrow buttons
+- [x] Click next/prev month arrows and verify URL and content update, including year boundary handling
+- [x] Click month title and verify navigation back to annual view
+- [x] Click a day cell in the monthly view and verify services load inline below the calendar (no page navigation)
+- [x] Click the year navigation arrows and verify the calendar navigates to `/day-statuses/{newYear}`
 - [x] Verify color-coded day indicators: black (no services), orange (projected), green (executed)
 
 ## Dependencies
@@ -209,8 +218,8 @@ Dusk browser tests in `tests/Browser/`. Use super admin credentials from `env('S
 ## Notes
 
 - **No external calendar library is used.** The calendar is a custom React component built with date-fns (already installed v4.1.0) and Tailwind CSS. This avoids adding a heavy dependency like FullCalendar for what is essentially a colored grid.
-- **Day click navigates to services index** filtered by date. When the `daily-gantt` and `day-summary` requirements are implemented, the navigation target will be updated to link to the Gantt or Summary page instead. For now, the services index with `filter[service_date]` provides immediate value.
-- **The annual view is the default.** Monthly detail is shown inline (expanded card or modal) when a month is clicked, with a close button to return to the annual grid. This avoids separate page loads for drill-down.
+- **Day click loads services inline** below the month calendar. The URL becomes `/day-statuses/{year}/{month}?selectedDay={day}`. The controller reconstructs the full date from the path params + day query param and returns `dayServices` to the frontend.
+- **Navigation is path-based.** `/day-statuses` redirects to `/day-statuses/{year}` (annual view). Clicking a month navigates to `/day-statuses/{year}/{month}` (month detail with prev/next arrows). The month title is clickable to return to the annual grid.
 - **Service counts are aggregated server-side** with a single GROUP BY query to avoid N+1 issues. The frontend receives pre-computed totals per date.
 - **Week starts on Monday** (Colombian/European convention) in the monthly detail grid.
 - **The `day-statuses/create`, `edit`, `show` pages** are auto-generated stubs that will NOT be modified in this requirement. Direct CRUD of DayStatus records is not a user workflow — day statuses are managed automatically (via observer) and through the "Execute Day" action.

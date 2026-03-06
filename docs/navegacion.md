@@ -97,10 +97,13 @@ Login --> Dashboard
 
 state "Producción (Dashboard)" as Dashboard {
   [*] --> CalendarioAnual
-  CalendarioAnual --> VistaMes : Doble click\nen mes
-  VistaMes --> VistaDia : Click en día
-  VistaDia --> GanttDiario
-  VistaDia --> ResumenDia
+  CalendarioAnual --> VistaMes : Click en mes\n(/day-statuses/{year}/{month})
+  VistaMes --> VistaMes : Prev/Next mes\n(flechas)
+  VistaMes --> CalendarioAnual : Click titulo mes\n(/day-statuses/{year})
+  VistaMes --> ServiciosDia : Click en dia\n(?selectedDay={day})
+  ServiciosDia --> GanttDiario : Link a servicio
+  VistaMes --> GanttDiario
+  VistaMes --> ResumenDia
 }
 
 state "Planificador Gantt" as GanttDiario {
@@ -166,10 +169,11 @@ title Flujo Operativo Principal
 
 |Calendario|
 start
-:Ver calendario anual\n(12 meses con colores de estado);
-:Doble click en un mes;
-:Ver vista mensual\n(días con indicadores);
-:Click en un día;
+:Ver calendario anual\n(/day-statuses/{year}\n12 meses con colores de estado);
+:Click en un mes;
+:Ver vista mensual\n(/day-statuses/{year}/{month}\ndías con indicadores,\nflechas prev/next mes);
+:Click en un día\n(?selectedDay={day});
+:Ver servicios del día\n(tabla inline bajo calendario);
 
 |Día Seleccionado|
 if (¿Qué vista?) then (Planificador)
@@ -348,9 +352,11 @@ Login --> DashboardContable
 
 state "Dashboard (Lectura)" as DashboardContable {
   [*] --> CalendarioAnual
-  CalendarioAnual --> VistaMes : Doble click\nen mes
-  VistaMes --> VistaDia : Click en día
-  VistaDia --> ResumenDiaRO : Ver resumen
+  CalendarioAnual --> VistaMes : Click en mes\n(/day-statuses/{year}/{month})
+  VistaMes --> VistaMes : Prev/Next mes
+  VistaMes --> CalendarioAnual : Click titulo mes
+  VistaMes --> ServiciosDiaRO : Click en dia\n(?selectedDay={day})
+  ServiciosDiaRO --> ResumenDiaRO : Ver resumen
 }
 
 state "Resumen del Día (lectura)" as ResumenDiaRO {

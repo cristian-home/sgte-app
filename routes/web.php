@@ -22,6 +22,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('vehicles', App\Http\Controllers\VehicleController::class);
     Route::resource('contracts', App\Http\Controllers\ContractController::class);
     Route::resource('invoices', App\Http\Controllers\InvoiceController::class);
+    Route::get('day-statuses/{year}/{month}', [App\Http\Controllers\DayStatusController::class, 'calendarMonth'])
+        ->name('day-statuses.calendar-month')
+        ->where(['year' => '20[2-9][0-9]', 'month' => '[1-9]|1[0-2]']);
+    Route::get('day-statuses/{year}', [App\Http\Controllers\DayStatusController::class, 'calendar'])
+        ->name('day-statuses.calendar')
+        ->where('year', '20[2-9][0-9]');
     Route::post('day-statuses/{day_status}/execute', [App\Http\Controllers\DayStatusController::class, 'execute'])->name('day-statuses.execute');
     Route::resource('day-statuses', App\Http\Controllers\DayStatusController::class);
     Route::resource('services', App\Http\Controllers\ServiceController::class);

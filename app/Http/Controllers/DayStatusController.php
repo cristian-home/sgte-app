@@ -17,16 +17,50 @@ use Inertia\Response;
 
 class DayStatusController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(): RedirectResponse
+    {
+        return redirect()->route('day-statuses.calendar', ['year' => now()->year]);
+    }
+
+    public function calendar(int $year): Response
     {
         Gate::authorize(Permission::VIEW_DAY_SUMMARY->value);
 
-        $request->validate([
-            'year' => ['sometimes', 'integer', 'between:2020,2099'],
+        return Inertia::render('day-statuses/index', [
+            ...$this->calendarData($year),
+            'month' => null,
+            'selectedDate' => null,
+            'dayServices' => null,
         ]);
+    }
 
-        $year = (int) $request->input('year', now()->year);
+    public function calendarMonth(Request $request, int $year, int $month): Response
+    {
+        Gate::authorize(Permission::VIEW_DAY_SUMMARY->value);
 
+        $selectedDay = $request->query('selectedDay');
+        $selectedDate = null;
+        $dayServices = null;
+
+        if ($selectedDay) {
+            $selectedDate = sprintf('%d-%02d-%02d', $year, $month, (int) $selectedDay);
+            $dayServices = Service::query()
+                ->with(['contract:id,contract_number', 'vehicle:id,plate', 'driver:id,first_name,first_lastname'])
+                ->whereDate('service_date', $selectedDate)
+                ->orderBy('planned_start_time')
+                ->get();
+        }
+
+        return Inertia::render('day-statuses/index', [
+            ...$this->calendarData($year),
+            'month' => $month,
+            'selectedDate' => $selectedDate,
+            'dayServices' => $dayServices,
+        ]);
+    }
+
+    private function calendarData(int $year): array
+    {
         $dayStatuses = DayStatus::whereYear('date', $year)
             ->with('executor:id,name')
             ->get()
@@ -40,11 +74,11 @@ class DayStatusController extends Controller
             ->get()
             ->keyBy(fn ($row): string => $row->service_date instanceof \DateTimeInterface ? $row->service_date->format('Y-m-d') : (string) $row->service_date);
 
-        return Inertia::render('day-statuses/index', [
+        return [
             'dayStatuses' => $dayStatuses,
             'serviceCounts' => $serviceCounts,
             'year' => $year,
-        ]);
+        ];
     }
 
     public function create(Request $request): Response

@@ -5,7 +5,6 @@ import {
     edit as servicesEdit,
 } from '@/actions/App/Http/Controllers/ServiceController';
 import { cn } from '@/lib/utils';
-import type { Service, Vehicle } from '@/types/models';
 import {
     computeVehicleDocStatus,
     formatHour,
@@ -16,6 +15,7 @@ import {
 } from '../gantt-utils';
 import ServiceBar from './service-bar';
 import VehicleSidebarItem from './vehicle-sidebar-item';
+import type { Service, Vehicle } from '@/types/models';
 
 interface HourlyGridProps {
     vehicles: Vehicle[];

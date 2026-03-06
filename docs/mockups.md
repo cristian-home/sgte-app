@@ -149,8 +149,9 @@ El indicador `<` marca la vista activa. Footer con usuario y configuracion.
 └────────────────────────┴─────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Notas:** Doble click en mes abre vista mensual. Dias en color: Negro (vacio),
+**Notas:** Click en mes navega a `/day-statuses/{year}/{month}` (vista mensual). Dias en color: Negro (vacio),
 Naranja (proyectado), Verde (ejecutado). Grid de 5 meses por fila + 2 en la ultima.
+URL: `/day-statuses/{year}` — flechas de ano cambian el path, no query params.
 
 ---
 
@@ -160,7 +161,7 @@ Naranja (proyectado), Verde (ejecutado). Grid de 5 meses por fila + 2 en la ulti
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
 │  [=] SGTE                                                       [Buscar] [Tema] [Notif] [Admin]  │
 ├────────────────────────┬─────────────────────────────────────────────────────────────────────────┤
-│                        │ Octubre 2025                                       [<- Volver al Ano]   │
+│                        │ [<] Octubre 2025 [>]                               [Titulo = volver]    │
 │                        │ ═══════════════════════════════════════════════════════════════════════ │
 │                        │                                                                         │
 │                        │ ┌─────────────────────────────────────────────────────────────────────┐ │
@@ -192,12 +193,23 @@ Naranja (proyectado), Verde (ejecutado). Grid de 5 meses por fila + 2 en la ulti
 │                        │                                                                         │
 │                        │  Leyenda: ###### = Sin datos    @@@@@@ = Proyectado    ###### = Ejec.   │
 │                        │                                                                         │
-│                        │  Click en dia -> Opciones: [Planificador Gantt] [Resumen del Dia]       │
+│                        │  Click en dia -> Carga servicios del dia inline (ver abajo)            │
+│                        │                                                                         │
+│                        │  ┌─────────────────────────────────────────────────────────────────────┐ │
+│                        │  │ Servicios del 2025-10-15                                            │ │
+│                        │  │ ─────────────────────────────────────────────────────────────────── │ │
+│                        │  │ Hora   Ruta                    Vehiculo  Conductor   Valor  Estado  │ │
+│                        │  │ 06:00  Bogota -> Chia          ABC-123   Perez J.    $80k   Abierto │ │
+│                        │  │ 08:30  Bogota -> Zipaquira     DEF-456   Lopez M.   $120k   Cerrado │ │
+│                        │  │ 14:00  Chia -> Bogota          GHI-789   Garcia R.   $95k   Abierto │ │
+│                        │  └─────────────────────────────────────────────────────────────────────┘ │
 │                        │                                                                         │
 └────────────────────────┴─────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Notas:** Click en dia muestra opciones: Gantt o Resumen. Colores indican estado del dia.
+**Notas:** Click en dia carga los servicios del dia inline debajo del calendario (no navega a otra pagina).
+URL: `/day-statuses/{year}/{month}?selectedDay={day}`. Flechas `[<]` `[>]` navegan al mes anterior/siguiente.
+Click en el titulo del mes (ej. "Octubre 2025") vuelve a la vista anual. Colores indican estado del dia.
 
 ---
 
