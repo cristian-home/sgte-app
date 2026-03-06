@@ -148,7 +148,11 @@ Tasks must be detailed enough for autonomous implementation. Each task should:
 - Reference existing files to follow as convention examples
 
 Requirements MUST include a **Verification** section specifying:
-- **UI features**: Laravel Dusk browser tests in `tests/Browser/`. Super admin credentials from `env('SUPER_ADMIN_USER')` / `env('SUPER_ADMIN_PASSWORD')`. Run `php artisan migrate:fresh --seed --no-interaction` when a clean database is needed.
+- **UI features**: Laravel Dusk browser tests in `tests/Browser/`. Super admin credentials from `env('SUPER_ADMIN_USER')` / `env('SUPER_ADMIN_PASSWORD')`. Run `php artisan migrate:fresh --seed --no-interaction` when a clean database is needed. Dusk tests MUST verify **visual consistency** — not just functional flows:
+  - Assert no error messages, exceptions, or error banners are visible on the page.
+  - Assert key UI elements (headings, labels, buttons, tables, form fields) are present with the expected text.
+  - Assert layout correctness (correct columns in tables, correct fields in forms, data in the right sections).
+  - Take screenshots at key steps for visual review.
 - **API endpoints**: curl commands to test responses. Same credentials for authentication.
 
 **Example of a GOOD task:**

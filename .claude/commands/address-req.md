@@ -110,15 +110,20 @@ After all implementation and unit/feature tests pass, verify the functionality w
 
 ### UI Features (Laravel Dusk)
 
-If the requirement involves UI pages or components, write and run Laravel Dusk browser tests to verify the user-facing behavior:
+If the requirement involves UI pages or components, write and run Laravel Dusk browser tests to verify both functional behavior and visual correctness:
 
 1. Ensure the database is seeded: `php artisan migrate:fresh --seed --no-interaction`
 2. Write Dusk tests in `tests/Browser/` that exercise the implemented UI flows.
 3. Use the super admin credentials from environment variables:
    - Email: `env('SUPER_ADMIN_USER')`
    - Password: `env('SUPER_ADMIN_PASSWORD')`
-4. Run Dusk tests: `php artisan dusk --filter=RelevantTest`
-5. If Dusk tests fail, fix the code and re-run.
+4. Each Dusk test MUST verify **visual consistency** in addition to functional behavior:
+   - **No errors on screen**: Assert that no exception messages, stack traces, or error banners are visible on the page.
+   - **Key UI elements are visible and correct**: Assert that headings, labels, buttons, tables, and form fields are present and display the expected text.
+   - **Layout makes sense**: Assert that data is rendered in the correct sections (e.g., a table has the expected columns, a form has the expected fields).
+   - **Take screenshots** (`$browser->screenshot('descriptive-name')`) at key steps so visual output can be reviewed. Screenshots are saved to `tests/Browser/screenshots/`.
+5. Run Dusk tests: `php artisan dusk --filter=RelevantTest`
+6. If Dusk tests fail, fix the code and re-run.
 
 ### API Endpoints (curl)
 
