@@ -187,6 +187,7 @@ export type Service = {
     origin_municipality?: Municipality;
     destination_municipality?: Municipality;
     service_incidents_count?: number;
+    service_incidents?: ServiceIncident[];
 } & Timestamps &
     SoftDeletes;
 
@@ -219,6 +220,7 @@ export type ServiceIncident = {
     affects_billing: boolean;
     additional_value: string | null;
     incident_type?: IncidentType;
+    registrar?: { id: number; name: string; email: string };
     service?: Service;
 } & Timestamps;
 

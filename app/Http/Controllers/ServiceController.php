@@ -85,6 +85,8 @@ class ServiceController extends Controller
             'originMunicipality.department',
             'destinationMunicipality.department',
             'invoice',
+            'serviceIncidents.incidentType',
+            'serviceIncidents.registrar',
         ]);
         $service->loadCount('serviceIncidents');
 
