@@ -73,7 +73,7 @@ class IncidentType extends Model
             'id' => (string) $this->id,
             'code' => $this->code,
             'name' => $this->name,
-            'severity' => $this->severity,
+            'severity' => $this->severity?->value,
             'description' => $this->description,
         ];
     }

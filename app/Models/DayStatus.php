@@ -70,10 +70,10 @@ class DayStatus extends Model
     {
         return [
             'id' => (string) $this->id,
-            'date' => $this->date,
-            'status' => $this->status,
+            'date' => $this->date?->toDateString(),
+            'status' => $this->status?->value,
             'executor_id' => $this->executor_id,
-            'executed_at' => $this->executed_at,
+            'executed_at' => $this->executed_at !== null ? date('c', $this->executed_at) : null,
         ];
     }
 }

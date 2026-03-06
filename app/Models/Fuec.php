@@ -72,10 +72,10 @@ class Fuec extends Model
         return [
             'id' => (string) $this->id,
             'service_id' => $this->service_id,
-            'consecutive_number' => $this->consecutive_number,
-            'generated_at' => $this->generated_at,
+            'consecutive_number' => (string) $this->consecutive_number,
+            'generated_at' => $this->generated_at !== null ? date('c', $this->generated_at) : null,
             'qr_code' => $this->qr_code,
-            'status' => $this->status,
+            'status' => $this->status?->value,
             'pdf_url' => $this->pdf_url,
         ];
     }

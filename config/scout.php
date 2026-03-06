@@ -184,22 +184,253 @@ return [
             \App\Models\User::class => [
                 'collection-schema' => [
                     'fields' => [
-                        [
-                            'name' => 'id',
-                            'type' => 'string',
-                        ],
-                        [
-                            'name' => 'name',
-                            'type' => 'string',
-                        ],
-                        [
-                            'name' => 'email',
-                            'type' => 'string',
-                        ],
+                        ['name' => 'id', 'type' => 'string'],
+                        ['name' => 'name', 'type' => 'string'],
+                        ['name' => 'email', 'type' => 'string'],
                     ],
                 ],
                 'search-parameters' => [
                     'query_by' => 'name,email',
+                ],
+            ],
+            \App\Models\DocumentType::class => [
+                'collection-schema' => [
+                    'fields' => [
+                        ['name' => 'id', 'type' => 'string'],
+                        ['name' => 'code', 'type' => 'string'],
+                        ['name' => 'name', 'type' => 'string'],
+                        ['name' => 'is_natural_person', 'type' => 'bool'],
+                        ['name' => 'is_legal_person', 'type' => 'bool'],
+                    ],
+                ],
+                'search-parameters' => [
+                    'query_by' => 'code,name',
+                ],
+            ],
+            \App\Models\Eps::class => [
+                'collection-schema' => [
+                    'fields' => [
+                        ['name' => 'id', 'type' => 'string'],
+                        ['name' => 'code', 'type' => 'string'],
+                        ['name' => 'name', 'type' => 'string'],
+                    ],
+                ],
+                'search-parameters' => [
+                    'query_by' => 'code,name',
+                ],
+            ],
+            \App\Models\PensionFund::class => [
+                'collection-schema' => [
+                    'fields' => [
+                        ['name' => 'id', 'type' => 'string'],
+                        ['name' => 'code', 'type' => 'string'],
+                        ['name' => 'name', 'type' => 'string'],
+                    ],
+                ],
+                'search-parameters' => [
+                    'query_by' => 'code,name',
+                ],
+            ],
+            \App\Models\SeveranceFund::class => [
+                'collection-schema' => [
+                    'fields' => [
+                        ['name' => 'id', 'type' => 'string'],
+                        ['name' => 'code', 'type' => 'string'],
+                        ['name' => 'name', 'type' => 'string'],
+                    ],
+                ],
+                'search-parameters' => [
+                    'query_by' => 'code,name',
+                ],
+            ],
+            \App\Models\IncidentType::class => [
+                'collection-schema' => [
+                    'fields' => [
+                        ['name' => 'id', 'type' => 'string'],
+                        ['name' => 'code', 'type' => 'string'],
+                        ['name' => 'name', 'type' => 'string'],
+                        ['name' => 'severity', 'type' => 'string'],
+                        ['name' => 'description', 'type' => 'string', 'optional' => true],
+                    ],
+                ],
+                'search-parameters' => [
+                    'query_by' => 'code,name',
+                ],
+            ],
+            \App\Models\ThirdParty::class => [
+                'collection-schema' => [
+                    'fields' => [
+                        ['name' => 'id', 'type' => 'string'],
+                        ['name' => 'document_type_id', 'type' => 'int32'],
+                        ['name' => 'identification_number', 'type' => 'string'],
+                        ['name' => 'is_natural_person', 'type' => 'bool'],
+                        ['name' => 'first_name', 'type' => 'string', 'optional' => true],
+                        ['name' => 'second_name', 'type' => 'string', 'optional' => true],
+                        ['name' => 'first_lastname', 'type' => 'string', 'optional' => true],
+                        ['name' => 'second_lastname', 'type' => 'string', 'optional' => true],
+                        ['name' => 'company_name', 'type' => 'string', 'optional' => true],
+                        ['name' => 'trade_name', 'type' => 'string', 'optional' => true],
+                        ['name' => 'municipality_id', 'type' => 'int32', 'optional' => true],
+                        ['name' => 'address', 'type' => 'string', 'optional' => true],
+                        ['name' => 'phone', 'type' => 'string', 'optional' => true],
+                        ['name' => 'email', 'type' => 'string', 'optional' => true],
+                        ['name' => 'is_customer', 'type' => 'bool'],
+                        ['name' => 'is_provider', 'type' => 'bool'],
+                        ['name' => 'active', 'type' => 'bool'],
+                    ],
+                ],
+                'search-parameters' => [
+                    'query_by' => 'identification_number,first_name,first_lastname,company_name,trade_name,email',
+                ],
+            ],
+            \App\Models\Driver::class => [
+                'collection-schema' => [
+                    'fields' => [
+                        ['name' => 'id', 'type' => 'string'],
+                        ['name' => 'document_type_id', 'type' => 'int32'],
+                        ['name' => 'identification_number', 'type' => 'string'],
+                        ['name' => 'first_name', 'type' => 'string'],
+                        ['name' => 'second_name', 'type' => 'string', 'optional' => true],
+                        ['name' => 'first_lastname', 'type' => 'string'],
+                        ['name' => 'second_lastname', 'type' => 'string', 'optional' => true],
+                        ['name' => 'municipality_id', 'type' => 'int32', 'optional' => true],
+                        ['name' => 'address', 'type' => 'string', 'optional' => true],
+                        ['name' => 'phone', 'type' => 'string', 'optional' => true],
+                        ['name' => 'email', 'type' => 'string', 'optional' => true],
+                        ['name' => 'license_category', 'type' => 'string', 'optional' => true],
+                        ['name' => 'license_due_date', 'type' => 'string', 'optional' => true],
+                        ['name' => 'eps_id', 'type' => 'int32', 'optional' => true],
+                        ['name' => 'pension_fund_id', 'type' => 'int32', 'optional' => true],
+                        ['name' => 'severance_fund_id', 'type' => 'int32', 'optional' => true],
+                        ['name' => 'has_social_security', 'type' => 'bool'],
+                        ['name' => 'active', 'type' => 'bool'],
+                    ],
+                ],
+                'search-parameters' => [
+                    'query_by' => 'identification_number,first_name,first_lastname,email',
+                ],
+            ],
+            \App\Models\Vehicle::class => [
+                'collection-schema' => [
+                    'fields' => [
+                        ['name' => 'id', 'type' => 'string'],
+                        ['name' => 'internal_code', 'type' => 'string'],
+                        ['name' => 'plate', 'type' => 'string'],
+                        ['name' => 'mobile_number', 'type' => 'string', 'optional' => true],
+                        ['name' => 'brand', 'type' => 'string', 'optional' => true],
+                        ['name' => 'line', 'type' => 'string', 'optional' => true],
+                        ['name' => 'model_year', 'type' => 'int32', 'optional' => true],
+                        ['name' => 'type', 'type' => 'string', 'optional' => true],
+                        ['name' => 'engine_number', 'type' => 'string', 'optional' => true],
+                        ['name' => 'chassis_number', 'type' => 'string', 'optional' => true],
+                        ['name' => 'capacity', 'type' => 'int32', 'optional' => true],
+                        ['name' => 'municipality_id', 'type' => 'int32', 'optional' => true],
+                        ['name' => 'is_third_party', 'type' => 'bool'],
+                        ['name' => 'third_party_id', 'type' => 'int32', 'optional' => true],
+                        ['name' => 'soat_due_date', 'type' => 'string', 'optional' => true],
+                        ['name' => 'rtm_due_date', 'type' => 'string', 'optional' => true],
+                        ['name' => 'operation_card_due_date', 'type' => 'string', 'optional' => true],
+                        ['name' => 'status', 'type' => 'string'],
+                    ],
+                ],
+                'search-parameters' => [
+                    'query_by' => 'internal_code,plate,brand,line',
+                ],
+            ],
+            \App\Models\Contract::class => [
+                'collection-schema' => [
+                    'fields' => [
+                        ['name' => 'id', 'type' => 'string'],
+                        ['name' => 'contract_number', 'type' => 'string'],
+                        ['name' => 'third_party_id', 'type' => 'int32'],
+                        ['name' => 'contract_object', 'type' => 'string', 'optional' => true],
+                        ['name' => 'start_date', 'type' => 'string', 'optional' => true],
+                        ['name' => 'end_date', 'type' => 'string', 'optional' => true],
+                        ['name' => 'route_description', 'type' => 'string', 'optional' => true],
+                        ['name' => 'is_generic', 'type' => 'bool'],
+                        ['name' => 'active', 'type' => 'bool'],
+                    ],
+                ],
+                'search-parameters' => [
+                    'query_by' => 'contract_number,contract_object,route_description',
+                ],
+            ],
+            \App\Models\Invoice::class => [
+                'collection-schema' => [
+                    'fields' => [
+                        ['name' => 'id', 'type' => 'string'],
+                        ['name' => 'invoice_number', 'type' => 'string'],
+                        ['name' => 'total_value', 'type' => 'float'],
+                        ['name' => 'issue_date', 'type' => 'string', 'optional' => true],
+                        ['name' => 'payment_status', 'type' => 'string'],
+                        ['name' => 'notes', 'type' => 'string', 'optional' => true],
+                    ],
+                ],
+                'search-parameters' => [
+                    'query_by' => 'invoice_number,notes',
+                ],
+            ],
+            \App\Models\DayStatus::class => [
+                'collection-schema' => [
+                    'fields' => [
+                        ['name' => 'id', 'type' => 'string'],
+                        ['name' => 'date', 'type' => 'string'],
+                        ['name' => 'status', 'type' => 'string'],
+                        ['name' => 'executor_id', 'type' => 'int32', 'optional' => true],
+                        ['name' => 'executed_at', 'type' => 'string', 'optional' => true],
+                    ],
+                ],
+                'search-parameters' => [
+                    'query_by' => 'date,status',
+                ],
+            ],
+            \App\Models\Fuec::class => [
+                'collection-schema' => [
+                    'fields' => [
+                        ['name' => 'id', 'type' => 'string'],
+                        ['name' => 'service_id', 'type' => 'int32'],
+                        ['name' => 'consecutive_number', 'type' => 'string'],
+                        ['name' => 'generated_at', 'type' => 'string', 'optional' => true],
+                        ['name' => 'qr_code', 'type' => 'string', 'optional' => true],
+                        ['name' => 'status', 'type' => 'string'],
+                        ['name' => 'pdf_url', 'type' => 'string', 'optional' => true],
+                    ],
+                ],
+                'search-parameters' => [
+                    'query_by' => 'consecutive_number,status',
+                ],
+            ],
+            \App\Models\ServiceIncident::class => [
+                'collection-schema' => [
+                    'fields' => [
+                        ['name' => 'id', 'type' => 'string'],
+                        ['name' => 'service_id', 'type' => 'int32'],
+                        ['name' => 'incident_type_id', 'type' => 'int32'],
+                        ['name' => 'description', 'type' => 'string', 'optional' => true],
+                        ['name' => 'registrar_id', 'type' => 'int32', 'optional' => true],
+                        ['name' => 'is_driver_report', 'type' => 'bool'],
+                        ['name' => 'reported_at', 'type' => 'string', 'optional' => true],
+                        ['name' => 'affects_billing', 'type' => 'bool'],
+                        ['name' => 'additional_value', 'type' => 'float', 'optional' => true],
+                    ],
+                ],
+                'search-parameters' => [
+                    'query_by' => 'description',
+                ],
+            ],
+            \App\Models\VehicleLocation::class => [
+                'collection-schema' => [
+                    'fields' => [
+                        ['name' => 'id', 'type' => 'string'],
+                        ['name' => 'vehicle_id', 'type' => 'int32'],
+                        ['name' => 'recorded_at', 'type' => 'string', 'optional' => true],
+                        ['name' => 'latitude', 'type' => 'float'],
+                        ['name' => 'longitude', 'type' => 'float'],
+                        ['name' => 'is_manual', 'type' => 'bool'],
+                    ],
+                ],
+                'search-parameters' => [
+                    'query_by' => 'recorded_at',
                 ],
             ],
         ],

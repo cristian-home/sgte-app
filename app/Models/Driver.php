@@ -127,7 +127,7 @@ class Driver extends Model
             'phone' => $this->phone,
             'email' => $this->email,
             'license_category' => $this->license_category,
-            'license_due_date' => $this->license_due_date,
+            'license_due_date' => $this->license_due_date?->toDateString(),
             'eps_id' => $this->eps_id,
             'pension_fund_id' => $this->pension_fund_id,
             'severance_fund_id' => $this->severance_fund_id,

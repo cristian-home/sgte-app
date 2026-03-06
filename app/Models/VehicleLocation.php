@@ -72,9 +72,9 @@ class VehicleLocation extends Model
         return [
             'id' => (string) $this->id,
             'vehicle_id' => $this->vehicle_id,
-            'recorded_at' => $this->recorded_at,
-            'latitude' => $this->latitude,
-            'longitude' => $this->longitude,
+            'recorded_at' => $this->recorded_at !== null ? date('c', $this->recorded_at) : null,
+            'latitude' => (float) $this->latitude,
+            'longitude' => (float) $this->longitude,
             'is_manual' => $this->is_manual,
         ];
     }

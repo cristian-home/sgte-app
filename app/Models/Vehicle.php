@@ -112,17 +112,17 @@ class Vehicle extends Model
             'brand' => $this->brand,
             'line' => $this->line,
             'model_year' => $this->model_year,
-            'type' => $this->type,
+            'type' => $this->type?->value,
             'engine_number' => $this->engine_number,
             'chassis_number' => $this->chassis_number,
             'capacity' => $this->capacity,
             'municipality_id' => $this->municipality_id,
             'is_third_party' => $this->is_third_party,
             'third_party_id' => $this->third_party_id,
-            'soat_due_date' => $this->soat_due_date,
-            'rtm_due_date' => $this->rtm_due_date,
-            'operation_card_due_date' => $this->operation_card_due_date,
-            'status' => $this->status,
+            'soat_due_date' => $this->soat_due_date?->toDateString(),
+            'rtm_due_date' => $this->rtm_due_date?->toDateString(),
+            'operation_card_due_date' => $this->operation_card_due_date?->toDateString(),
+            'status' => $this->status?->value,
         ];
     }
 }

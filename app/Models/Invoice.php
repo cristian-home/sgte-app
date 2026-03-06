@@ -73,9 +73,9 @@ class Invoice extends Model
         return [
             'id' => (string) $this->id,
             'invoice_number' => $this->invoice_number,
-            'total_value' => $this->total_value,
-            'issue_date' => $this->issue_date,
-            'payment_status' => $this->payment_status,
+            'total_value' => (float) $this->total_value,
+            'issue_date' => $this->issue_date?->toDateString(),
+            'payment_status' => $this->payment_status?->value,
             'notes' => $this->notes,
         ];
     }

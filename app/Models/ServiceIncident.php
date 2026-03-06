@@ -91,9 +91,9 @@ class ServiceIncident extends Model
             'description' => $this->description,
             'registrar_id' => $this->registrar_id,
             'is_driver_report' => $this->is_driver_report,
-            'reported_at' => $this->reported_at,
+            'reported_at' => $this->reported_at !== null ? date('c', $this->reported_at) : null,
             'affects_billing' => $this->affects_billing,
-            'additional_value' => $this->additional_value,
+            'additional_value' => $this->additional_value !== null ? (float) $this->additional_value : null,
         ];
     }
 }
