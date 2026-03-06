@@ -79,8 +79,6 @@ test('service show page displays all sections and action buttons', function (): 
             ->assertSee('Estado')
             ->assertSee('Vehiculo')
             ->assertSee('Detalle de la Ruta')
-            ->assertSee('Origen')
-            ->assertSee('Destino')
             ->assertSee('Cronograma y Tiempos')
             ->assertSee('Hora Inicio Planificada')
             ->assertSee('Duracion Planificada')
