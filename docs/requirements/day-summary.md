@@ -272,15 +272,15 @@ No new permissions. Uses existing:
 
 Dusk browser tests in `tests/Browser/`. Use super admin credentials from `env('SUPER_ADMIN_USER')` / `env('SUPER_ADMIN_PASSWORD')`. Run `php artisan migrate:fresh --seed --no-interaction` before tests that need a clean database.
 
-- [ ] Navigate to `/day-summary` and verify the services table is displayed with all expected columns
-- [ ] Verify the executive summary section displays correct aggregated stats (total, closed, open, with incidents, third-party)
-- [ ] Verify third-party vehicles display provider name with "3ro" badge in the Conductor/Proveedor column
-- [ ] Verify services with incidents display a warning badge with count
-- [ ] Click a service row and verify navigation to the service show page
-- [ ] Click previous/next day navigation and verify the page reloads with the new date
-- [ ] Verify "Ejecutar Dia" button is disabled when open services exist, with tooltip
-- [ ] Verify "Ejecutar Dia" button works when all services are closed (day transitions to executed)
-- [ ] Verify executed day displays green "EJECUTADO" banner with executor name and timestamp
+- [x] Navigate to `/day-summary` and verify the services table is displayed with all expected columns
+- [x] Verify the executive summary section displays correct aggregated stats (total, closed, open, with incidents, third-party)
+- [x] Verify third-party vehicles display provider name with "3ro" badge in the Conductor/Proveedor column
+- [x] Verify services with incidents display a warning badge with count
+- [x] Click a service row and verify navigation to the service show page
+- [x] Click previous/next day navigation and verify the page reloads with the new date
+- [x] Verify "Ejecutar Dia" button is disabled when open services exist, with tooltip
+- [x] Verify "Ejecutar Dia" button works when all services are closed (day transitions to executed)
+- [x] Verify executed day displays green "EJECUTADO" banner with executor name and timestamp
 
 ### API (curl)
 
