@@ -2,10 +2,10 @@
 name: day-summary
 type: feat
 scope: services
-status: pending
+status: completed
 priority: high
 created_date: 2026-03-05
-completed_date:
+completed_date: 2026-03-06
 srs_refs: ["REQ-008"]
 migration_strategy: modify-existing
 ---
@@ -18,16 +18,16 @@ Implement the Day Summary page — a consolidated view of all services for a spe
 
 ## Acceptance Criteria
 
-- [ ] AC-1: WHEN the user navigates to the day summary for a specific date THEN a table MUST display all services for that date with columns: Placa, Conductor/Proveedor, Horario, Cliente, Estado, Novedades.
-- [ ] AC-2: WHEN a service's vehicle has `is_third_party = true` THEN the "Conductor/Proveedor" column MUST display the provider name (from `vehicle.thirdParty`) instead of the driver name, with a "3ro" badge.
-- [ ] AC-3: WHEN a service has related `serviceIncidents` THEN the "Novedades" column MUST display a warning badge with the incident count (e.g., "2 Nov"). WHEN there are no incidents THEN it MUST display "—".
-- [ ] AC-4: WHEN the page is rendered THEN an executive summary section MUST display: total services, closed services count, open services count, services with incidents count, and third-party vehicle count.
-- [ ] AC-5: WHEN all services for the date have `service_status = closed` THEN the "Ejecutar Día" button MUST be enabled. WHEN at least one service is open THEN the button MUST be disabled with a tooltip: "Para ejecutar el día, todos los servicios deben estar cerrados."
-- [ ] AC-6: WHEN the user clicks "Ejecutar Día" THEN the system MUST call the `day-statuses/{id}/execute` endpoint (from `day-status-logic`). On success, the page MUST refresh showing the day as "EJECUTADO" with the executor name and timestamp.
-- [ ] AC-7: WHEN the day status is `executed` THEN the page MUST display a green "EJECUTADO" banner with "Ejecutado por {name} el {date}" and the "Ejecutar Día" button MUST be hidden.
-- [ ] AC-8: WHEN the user clicks the "Exportar CSV" button THEN the browser MUST download a CSV file with the day's service data.
-- [ ] AC-9: WHEN the user clicks the previous/next day navigation arrows THEN the page MUST reload with data for the new date.
-- [ ] AC-10: WHEN the user clicks a service row in the table THEN the browser MUST navigate to the service show page.
+- [x] AC-1: WHEN the user navigates to the day summary for a specific date THEN a table MUST display all services for that date with columns: Placa, Conductor/Proveedor, Horario, Cliente, Estado, Novedades.
+- [x] AC-2: WHEN a service's vehicle has `is_third_party = true` THEN the "Conductor/Proveedor" column MUST display the provider name (from `vehicle.thirdParty`) instead of the driver name, with a "3ro" badge.
+- [x] AC-3: WHEN a service has related `serviceIncidents` THEN the "Novedades" column MUST display a warning badge with the incident count (e.g., "2 Nov"). WHEN there are no incidents THEN it MUST display "—".
+- [x] AC-4: WHEN the page is rendered THEN an executive summary section MUST display: total services, closed services count, open services count, services with incidents count, and third-party vehicle count.
+- [x] AC-5: WHEN all services for the date have `service_status = closed` THEN the "Ejecutar Día" button MUST be enabled. WHEN at least one service is open THEN the button MUST be disabled with a tooltip: "Para ejecutar el día, todos los servicios deben estar cerrados."
+- [x] AC-6: WHEN the user clicks "Ejecutar Día" THEN the system MUST call the `day-statuses/{id}/execute` endpoint (from `day-status-logic`). On success, the page MUST refresh showing the day as "EJECUTADO" with the executor name and timestamp.
+- [x] AC-7: WHEN the day status is `executed` THEN the page MUST display a green "EJECUTADO" banner with "Ejecutado por {name} el {date}" and the "Ejecutar Día" button MUST be hidden.
+- [x] AC-8: WHEN the user clicks the "Exportar CSV" button THEN the browser MUST download a CSV file with the day's service data.
+- [x] AC-9: WHEN the user clicks the previous/next day navigation arrows THEN the page MUST reload with data for the new date.
+- [x] AC-10: WHEN the user clicks a service row in the table THEN the browser MUST navigate to the service show page.
 
 ## Technical Specification
 
@@ -73,7 +73,7 @@ No new permissions. Uses existing:
 
 ### Backend
 
-- [ ] Task 1: Create `DaySummaryController` using `php artisan make:controller DaySummaryController --no-interaction`
+- [x] Task 1: Create `DaySummaryController` using `php artisan make:controller DaySummaryController --no-interaction`
   - **`index` method:**
     - Gate check: `Gate::authorize(Permission::VIEW_DAY_SUMMARY->value)`
     - Accept `date` query parameter (default: today). Validate as valid date format (`Y-m-d`).
@@ -105,7 +105,7 @@ No new permissions. Uses existing:
       ```
     - Pass to Inertia: `services`, `dayStatus`, `summary`, `date`, `canExecuteDay` (boolean from `Gate::allows(Permission::EXECUTE_DAY->value)`)
 
-- [ ] Task 2: Add `export` method to `DaySummaryController`
+- [x] Task 2: Add `export` method to `DaySummaryController`
   - Gate check: `Gate::authorize(Permission::VIEW_DAY_SUMMARY->value)`
   - Accept `date` query parameter (required, valid date)
   - Query same service data as index method
@@ -140,7 +140,7 @@ No new permissions. Uses existing:
     ```
   - No external package needed — uses Laravel's built-in streaming response
 
-- [ ] Task 3: Register routes in `routes/web.php`
+- [x] Task 3: Register routes in `routes/web.php`
   - Add inside the authenticated route group:
     ```php
     Route::get('day-summary/export', [DaySummaryController::class, 'export'])->name('day-summary.export');
@@ -151,7 +151,7 @@ No new permissions. Uses existing:
 
 ### Frontend
 
-- [ ] Task 4: Create `resources/js/pages/day-summary/index.tsx` — main summary page
+- [x] Task 4: Create `resources/js/pages/day-summary/index.tsx` — main summary page
   - **Props** (from controller):
     ```
     {
@@ -205,7 +205,7 @@ No new permissions. Uses existing:
       - Use `Download` icon from lucide-react
   - Follow existing page layout patterns from `resources/js/pages/services/index.tsx`
 
-- [ ] Task 5: Create `resources/js/pages/day-summary/columns.tsx` — table column definitions
+- [x] Task 5: Create `resources/js/pages/day-summary/columns.tsx` — table column definitions
   - **Columns:**
     1. **Placa** — `service.vehicle.plate`; if `vehicle.is_third_party`, append small blue "3ro" badge
     2. **Conductor/Proveedor** — conditional display:
@@ -225,7 +225,7 @@ No new permissions. Uses existing:
   - Use `ColumnDef` from `@tanstack/react-table`
   - Follow `resources/js/pages/services/columns.tsx` as convention reference for formatters and badge patterns
 
-- [ ] Task 6: Add Day Summary link to the sidebar navigation
+- [x] Task 6: Add Day Summary link to the sidebar navigation
   - In `resources/js/components/app-sidebar.tsx`:
     - Import the DaySummary controller action
     - Add a "Resumen del Día" item in the "Producción" section, below "Planificador Gantt"
@@ -233,14 +233,14 @@ No new permissions. Uses existing:
     - Gate by `Permission.VIEW_DAY_SUMMARY`
     - After adding the route, run Wayfinder generation to create the TypeScript action file
 
-- [ ] Task 7: Update Gantt page header to link to Day Summary
+- [x] Task 7: Update Gantt page header to link to Day Summary
   - In `resources/js/pages/gantt/index.tsx` (from `daily-gantt` requirement):
     - The "Resumen" tab in the header MUST link to `/day-summary?date={date}` instead of the temporary services index target
     - This creates bidirectional navigation: Gantt ↔ Day Summary for the same date
 
 ### Tests
 
-- [ ] Task 8: Create `tests/Feature/Http/Controllers/DaySummaryControllerTest.php` using `php artisan make:test --pest`
+- [x] Task 8: Create `tests/Feature/Http/Controllers/DaySummaryControllerTest.php` using `php artisan make:test --pest`
   - Test: index returns `services`, `dayStatus`, `summary`, `date`, `canExecuteDay` props
   - Test: index with `?date=2026-03-10` returns services filtered to that date
   - Test: index without date param defaults to today
@@ -255,7 +255,7 @@ No new permissions. Uses existing:
   - Use factories to create services with various statuses and incident counts
   - Follow `tests/Feature/Http/Controllers/VehicleControllerTest.php` as convention reference
 
-- [ ] Task 9: Create `tests/Feature/Http/Controllers/DaySummaryExportTest.php` using `php artisan make:test --pest`
+- [x] Task 9: Create `tests/Feature/Http/Controllers/DaySummaryExportTest.php` using `php artisan make:test --pest`
   - Test: export returns a CSV file with correct Content-Type header (`text/csv`)
   - Test: export filename matches pattern `resumen-dia-{date}.csv`
   - Test: CSV contains header row with expected column names
