@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+set -e
+
+# Run storage link (idempotent)
+php artisan storage:link --no-interaction 2>/dev/null || true
+
+# Run migrations
+php artisan migrate --force --no-interaction
+
+# Start Supervisor (manages octane, horizon, reverb, ssr)
+exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
