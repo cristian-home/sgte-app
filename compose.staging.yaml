@@ -1,0 +1,136 @@
+# =============================================================================
+# SGTE Staging Compose — Supporting Services
+#
+# This file provides the infrastructure services for staging deployment.
+# The main application service is managed by Dokploy, which builds from
+# docker/production/Dockerfile and connects to the 'sgte' network.
+#
+# Usage:
+#   docker compose -f compose.staging.yaml up -d
+#
+# To connect the Dokploy-managed app container, configure it to use the
+# 'sgte' external network and point environment variables to these services
+# (e.g., DB_HOST=pgsql, REDIS_HOST=redis, etc.).
+# =============================================================================
+
+# # App service reference (managed by Dokploy — uncomment for local testing)
+# services:
+#   app:
+#     build:
+#       context: .
+#       dockerfile: docker/production/Dockerfile
+#     ports:
+#       - '${APP_PORT:-8000}:8000'
+#       - '${REVERB_PORT:-8080}:8080'
+#     environment:
+#       APP_ENV: staging
+#       APP_DEBUG: false
+#     networks:
+#       - sgte
+#     depends_on:
+#       - pgsql
+#       - redis
+#       - typesense
+#       - minio
+#       - mailpit
+
+services:
+    pgsql:
+        image: 'postgres:18-alpine'
+        ports:
+            - '${FORWARD_DB_PORT:-5432}:5432'
+        environment:
+            PGPASSWORD: '${DB_PASSWORD:-secret}'
+            POSTGRES_DB: '${DB_DATABASE}'
+            POSTGRES_USER: '${DB_USERNAME}'
+            POSTGRES_PASSWORD: '${DB_PASSWORD:-secret}'
+        volumes:
+            - 'sgte-pgsql:/var/lib/postgresql'
+        networks:
+            - sgte
+        healthcheck:
+            test:
+                - CMD
+                - pg_isready
+                - '-q'
+                - '-d'
+                - '${DB_DATABASE}'
+                - '-U'
+                - '${DB_USERNAME}'
+            retries: 3
+            timeout: 5s
+    redis:
+        image: 'redis:alpine'
+        ports:
+            - '${FORWARD_REDIS_PORT:-6379}:6379'
+        volumes:
+            - 'sgte-redis:/data'
+        networks:
+            - sgte
+        healthcheck:
+            test:
+                - CMD
+                - redis-cli
+                - ping
+            retries: 3
+            timeout: 5s
+    typesense:
+        image: 'typesense/typesense:27.1'
+        ports:
+            - '${FORWARD_TYPESENSE_PORT:-8108}:8108'
+        environment:
+            TYPESENSE_DATA_DIR: '${TYPESENSE_DATA_DIR:-/typesense-data}'
+            TYPESENSE_API_KEY: '${TYPESENSE_API_KEY:-xyz}'
+            TYPESENSE_ENABLE_CORS: '${TYPESENSE_ENABLE_CORS:-true}'
+        volumes:
+            - 'sgte-typesense:/typesense-data'
+        networks:
+            - sgte
+        healthcheck:
+            test:
+                - CMD
+                - bash
+                - '-c'
+                - 'exec 3<>/dev/tcp/localhost/8108 && printf ''GET /health HTTP/1.1\r\nConnection: close\r\n\r\n'' >&3 && head -n1 <&3 | grep ''200'' && exec 3>&-'
+            retries: 5
+            timeout: 7s
+    minio:
+        image: 'minio/minio:latest'
+        ports:
+            - '${FORWARD_MINIO_PORT:-9000}:9000'
+            - '${FORWARD_MINIO_CONSOLE_PORT:-8900}:8900'
+        environment:
+            MINIO_ROOT_USER: sail
+            MINIO_ROOT_PASSWORD: password
+        volumes:
+            - 'sgte-minio:/data'
+        networks:
+            - sgte
+        command: 'minio server /data --console-address ":8900"'
+        healthcheck:
+            test:
+                - CMD
+                - mc
+                - ready
+                - local
+            retries: 3
+            timeout: 5s
+    mailpit:
+        image: 'axllent/mailpit:latest'
+        ports:
+            - '${FORWARD_MAILPIT_PORT:-1025}:1025'
+            - '${FORWARD_MAILPIT_DASHBOARD_PORT:-8025}:8025'
+        networks:
+            - sgte
+networks:
+    sgte:
+        driver: bridge
+volumes:
+    sgte-pgsql:
+        driver: local
+    sgte-redis:
+        driver: local
+    sgte-typesense:
+        driver: local
+    sgte-minio:
+        driver: local
