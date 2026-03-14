@@ -1,40 +1,39 @@
 # =============================================================================
-# SGTE Staging Compose — Supporting Services
+# SGTE Staging Compose — Infrastructure Services
 #
-# This file provides the infrastructure services for staging deployment.
-# The main application service is managed by Dokploy, which builds from
-# docker/production/Dockerfile and connects to the 'sgte' network.
+# This file provides the infrastructure services for staging/production.
+# Dokploy manages the app container separately (see docs/deployment.md).
 #
-# Usage:
-#   docker compose -f compose.staging.yaml up -d
+# Local testing (builds and runs the app alongside infrastructure):
+#   docker compose -f compose.staging.yaml --profile local --env-file .env.stg up -d --build
 #
-# To connect the Dokploy-managed app container, configure it to use the
-# 'sgte' external network and point environment variables to these services
-# (e.g., DB_HOST=pgsql, REDIS_HOST=redis, etc.).
+# Infrastructure only (for Dokploy — paste this file as-is):
+#   docker compose -f compose.staging.yaml --env-file .env.stg up -d
 # =============================================================================
 
-# # App service reference (managed by Dokploy — uncomment for local testing)
-# services:
-#   app:
-#     build:
-#       context: .
-#       dockerfile: docker/production/Dockerfile
-#     ports:
-#       - '${APP_PORT:-8000}:8000'
-#       - '${REVERB_PORT:-8080}:8080'
-#     environment:
-#       APP_ENV: staging
-#       APP_DEBUG: false
-#     networks:
-#       - sgte
-#     depends_on:
-#       - pgsql
-#       - redis
-#       - typesense
-#       - minio
-#       - mailpit
-
 services:
+    app:
+      profiles: [local]
+      build:
+        context: .
+        dockerfile: docker/production/Dockerfile
+      ports:
+        - '${APP_PORT:-8000}:8000'
+        - '${REVERB_PORT:-8080}:8080'
+      env_file: .env.staging
+      networks:
+        - sgte
+      depends_on:
+        pgsql:
+          condition: service_healthy
+        redis:
+          condition: service_healthy
+        typesense:
+          condition: service_healthy
+        minio:
+          condition: service_healthy
+        mailpit:
+          condition: service_started
     pgsql:
         image: 'postgres:18-alpine'
         ports:

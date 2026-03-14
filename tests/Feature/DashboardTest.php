@@ -2,11 +2,6 @@
 
 use App\Enums\Role;
 use App\Models\User;
-use Database\Seeders\RolesAndPermissionsSeeder;
-
-beforeEach(function () {
-    $this->seed(RolesAndPermissionsSeeder::class);
-});
 
 test('guests are redirected to the login page', function () {
     $response = $this->get(route('dashboard'));

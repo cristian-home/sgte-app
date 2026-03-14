@@ -3,11 +3,6 @@
 use App\Enums\Permission;
 use App\Enums\Role;
 use App\Models\User;
-use Database\Seeders\RolesAndPermissionsSeeder;
-
-beforeEach(function () {
-    $this->seed(RolesAndPermissionsSeeder::class);
-});
 
 test('authenticated user receives their permissions and roles via inertia', function () {
     $user = User::factory()->create();

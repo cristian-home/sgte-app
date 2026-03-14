@@ -9,12 +9,10 @@ use App\Models\Service;
 use App\Models\User;
 use App\Models\Vehicle;
 use Inertia\Testing\AssertableInertia;
-use Spatie\Permission\Models\Role as SpatieRole;
 
 use function Pest\Laravel\get;
 
 beforeEach(function (): void {
-    SpatieRole::create(['name' => 'super_admin', 'guard_name' => 'web']);
     $user = User::factory()->create();
     $user->assignRole('super_admin');
     $this->actingAs($user);

@@ -4,9 +4,9 @@
 
 1. [Overview](#overview)
 2. [Architecture](#architecture)
-3. [What Was Done](#what-was-done)
-4. [Local Testing](#local-testing)
-5. [Dokploy Deployment](#dokploy-deployment)
+3. [Local Testing](#local-testing)
+4. [Dokploy Deployment](#dokploy-deployment)
+5. [CI/CD (GitHub Actions)](#cicd-github-actions)
 6. [Environment Variables](#environment-variables)
 7. [Deployment Lifecycle](#deployment-lifecycle)
 8. [Troubleshooting](#troubleshooting)
@@ -58,39 +58,44 @@ Supporting services (PostgreSQL, Redis, Typesense, MinIO, Mailpit) run as separa
 
 ### Docker Image — Multi-Stage Build
 
-The production Dockerfile (`docker/production/Dockerfile`) uses three stages:
+The production Dockerfile (`docker/production/Dockerfile`) uses four stages:
 
-1. **node:24-alpine** — Installs npm dependencies and runs `npm run build:ssr` to produce `public/build/` (client assets) and `bootstrap/ssr/` (SSR bundle).
-2. **composer:latest** — Installs PHP dependencies with `--no-dev` (no dev packages).
-3. **dunglas/frankenphp** — Final image with PHP extensions, Node.js runtime (for SSR), Supervisor, application code, and cached config/routes/views.
+1. **composer:latest** — Installs PHP dependencies with `--no-dev --ignore-platform-reqs`.
+2. **dunglas/frankenphp (base)** — Shared base with PHP extensions, Node.js, and Supervisor.
+3. **base (build)** — Copies source + vendor, runs `npm ci && npm run build:ssr`. The Wayfinder Vite plugin needs PHP to generate TypeScript route functions, which is why the frontend build cannot use a standalone Node image.
+4. **base (production)** — Final image with application code, vendor, built assets, and cached views/events.
+
+### Entrypoint (`start-container`)
+
+The entrypoint runs at container startup (not at build time) because it needs runtime environment variables:
+
+1. `php artisan config:cache` — caches config with actual env vars
+2. `php artisan route:cache` — caches routes
+3. `php artisan storage:link` — creates public storage symlink (idempotent)
+4. `php artisan migrate --force` — runs pending migrations
+5. `supervisord` — starts all four processes
+
+### SSR Configuration
+
+Vite SSR is configured with `ssr.noExternal: true` in `vite.config.ts`, which bundles all dependencies (React, Inertia, etc.) into the SSR output. This eliminates the need for `node_modules` at runtime — only the Node.js binary is required.
+
+### Compression
+
+FrankenPHP/Caddy compresses all HTTP responses (HTML, JSON, JS, CSS) automatically via the `encode zstd br gzip` directive in Octane's Caddyfile. Compression is negotiated per-request based on the client's `Accept-Encoding` header, with priority: Zstandard > Brotli > Gzip. No additional configuration is needed.
 
 ---
 
-## What Was Done
-
-### New Files
+## Files
 
 | File | Description |
 |------|-------------|
-| `docker/production/Dockerfile` | Multi-stage production build |
+| `docker/production/Dockerfile` | Multi-stage production build (4 stages) |
 | `docker/production/supervisord.conf` | Supervisor config (4 processes) |
-| `docker/production/start-container` | Entrypoint: migrations + supervisor |
-| `compose.staging.yaml` | PostgreSQL, Redis, Typesense, MinIO, Mailpit |
+| `docker/production/start-container` | Entrypoint: config cache + migrations + supervisor |
+| `compose.staging.yaml` | Infrastructure services + app (via `local` profile) |
 | `.dockerignore` | Excludes dev artifacts from build context |
 | `config/octane.php` | Octane configuration (server: frankenphp) |
-
-### Modified Files
-
-| File | Change |
-|------|--------|
-| `composer.json` | Added `laravel/octane` to `require` |
-| `composer.lock` | Updated lockfile |
-
-### What Was NOT Changed
-
-- `docker/8.5/` — Sail dev container remains untouched
-- `compose.yaml` — Dev compose remains untouched
-- No database migrations, no route changes, no frontend changes
+| `.env.stg` | Environment variables for local testing (gitignored) |
 
 ---
 
@@ -98,84 +103,71 @@ The production Dockerfile (`docker/production/Dockerfile`) uses three stages:
 
 ### Prerequisites
 
-You need Docker installed on your **host machine** (not inside the Sail container). These commands run from the project root on your host.
+Docker installed on the **host machine** (not inside the Sail container). All commands run from the project root.
 
-### 1. Build the Image
+### 1. Create the Environment File
 
 ```bash
-docker build -f docker/production/Dockerfile -t sgte-app:latest .
+cp .env.stg.example .env.stg   # or create manually
 ```
 
-This takes a few minutes the first time (downloading base images, installing extensions). Subsequent builds use cached layers.
+See [Environment Variables](#environment-variables) for the full reference. Key values for local testing:
 
-### 2. Start Supporting Services
+- `DB_HOST=pgsql`, `REDIS_HOST=redis`, `TYPESENSE_HOST=typesense` (compose service names)
+- `DB_PASSWORD=secret` (must match the compose pgsql service)
+- `APP_KEY=base64:...` (generate with `php artisan key:generate --show`)
+
+### 2. Start Everything
 
 ```bash
-# Create a .env file for staging (copy and adjust)
-cp .env.example .env.staging
-
-# Edit .env.staging with staging values (see Environment Variables section below)
-
-# Start supporting services
-docker compose -f compose.staging.yaml --env-file .env.staging up -d
+docker compose -f compose.staging.yaml --profile local --env-file .env.stg up -d --build
 ```
 
-Wait for services to be healthy:
+This single command:
+- Builds the production image from `docker/production/Dockerfile`
+- Starts all infrastructure services (pgsql, redis, typesense, minio, mailpit)
+- Waits for services to be healthy before starting the app
+- Starts the app container with env vars from `.env.stg`
+- Runs migrations automatically via the entrypoint
+
+Subsequent runs without code changes can omit `--build`:
 
 ```bash
-docker compose -f compose.staging.yaml ps
+docker compose -f compose.staging.yaml --profile local --env-file .env.stg up -d
 ```
 
-### 3. Run the App Container
+### 3. Verify
 
 ```bash
-docker run --rm -d \
-  --name sgte-app \
-  --network sgte_sgte \
-  -p 8000:8000 \
-  -p 8080:8080 \
-  --env-file .env.staging \
-  sgte-app:latest
-```
-
-### 4. Verify
-
-```bash
-# Check health endpoint
+# Health endpoint (expected: 200)
 curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/up
-# Expected: 200
 
-# Check all supervisor processes are running
-docker exec sgte-app supervisorctl status
+# All supervisor processes running
+docker exec sgte-app-app-1 supervisorctl status
 # Expected:
 #   horizon    RUNNING   pid ...
 #   octane     RUNNING   pid ...
 #   reverb     RUNNING   pid ...
 #   ssr        RUNNING   pid ...
 
-# Check application logs
-docker logs sgte-app --tail 50
+# Application logs
+docker compose -f compose.staging.yaml logs app --tail 50
 
 # Access the app in browser
 open http://localhost:8000
 ```
 
-### 5. Stop Everything
+### 4. Stop Everything
 
 ```bash
-docker stop sgte-app
-docker compose -f compose.staging.yaml down
+docker compose -f compose.staging.yaml --profile local --env-file .env.stg down
 ```
 
-### Full Local Test with Compose (Alternative)
-
-Uncomment the `app` service in `compose.staging.yaml` and run:
+To also remove volumes (database data, redis, etc.):
 
 ```bash
-docker compose -f compose.staging.yaml --env-file .env.staging up -d --build
+docker compose -f compose.staging.yaml --profile local --env-file .env.stg down -v
 ```
-
-This builds and starts everything in one command.
 
 ---
 
@@ -187,8 +179,8 @@ In Dokploy, create a **Compose** project for the infrastructure services:
 
 1. Go to **Projects** > **Create Project** (e.g., "SGTE Infrastructure")
 2. Add a **Compose** service
-3. Paste the contents of `compose.staging.yaml`
-4. Set the required environment variables (see below)
+3. Paste the contents of `compose.staging.yaml` as-is — the `app` service has `profiles: [local]` so Dokploy will skip it automatically
+4. Set the required environment variables (see [Environment Variables](#environment-variables))
 5. Deploy
 
 ### Step 2: Set Up the Application
@@ -233,23 +225,102 @@ If WebSocket connections need to be accessible externally:
 
 Click **Deploy**. Dokploy will:
 1. Clone the repo
-2. Build the Docker image (multi-stage)
+2. Build the Docker image (4-stage multi-stage build)
 3. Start the container
-4. The entrypoint runs migrations automatically
+4. The entrypoint caches config/routes, runs migrations, then starts Supervisor
 5. Supervisor starts all four processes
+
+---
+
+## CI/CD (GitHub Actions)
+
+### Option A: Dokploy Auto-Deploy (Simplest)
+
+Dokploy can connect directly to your GitHub repository and auto-deploy on every push — no GitHub Actions needed:
+
+1. In Dokploy, go to the app service > **Deployments**
+2. Enable the GitHub webhook
+3. Every push to the configured branch triggers a build + deploy
+
+This is the simplest option but provides no test gating — a push with failing tests will still deploy.
+
+### Option B: GitHub Actions + Dokploy Webhook (Recommended)
+
+Run your test suite first, and only deploy if tests pass. The workflow triggers Dokploy's API to redeploy. The Docker build happens on your VPS (not in CI), keeping GitHub Actions minutes low.
+
+#### Setup
+
+1. In Dokploy, go to **Settings** > **API/Tokens** and create an API token
+2. In your Dokploy app settings, copy the **Application ID** (visible in the URL or General tab)
+3. In GitHub, go to **Settings** > **Secrets and variables** > **Actions** and add:
+   - `DOKPLOY_URL` — your Dokploy instance URL (e.g., `https://dokploy.example.com`)
+   - `DOKPLOY_TOKEN` — the API token from step 1
+   - `DOKPLOY_APP_ID` — the application ID from step 2
+
+#### Workflow
+
+The deploy workflow (`.github/workflows/deploy-staging.yml`) uses `workflow_run` to trigger after the existing `tests` and `linter` workflows succeed — no need to duplicate test steps:
+
+```yaml
+name: deploy-staging
+
+on:
+  workflow_run:
+    workflows: [tests, linter]
+    types: [completed]
+    branches: [develop]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'develop'
+
+    steps:
+      - name: Trigger Dokploy deployment
+        run: |
+          curl -sSf -X POST "${{ secrets.DOKPLOY_URL }}/api/application.redeploy" \
+            -H "Authorization: Bearer ${{ secrets.DOKPLOY_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"applicationId": "${{ secrets.DOKPLOY_APP_ID }}"}'
+```
+
+#### How It Works
+
+```
+Push to develop
+      │
+      ├──▶ tests workflow (Pest on PHP 8.5)
+      ├──▶ linter workflow (Pint + Prettier + ESLint)
+      │
+      ▼ both pass
+┌──────────────────┐         ┌─────────────────┐
+│  deploy-staging   │────────▶│  Dokploy webhook │
+│  (workflow_run)   │         │  Build + Deploy  │
+└──────────────────┘         └─────────────────┘
+      │ either fails
+      ▼
+  No deployment
+```
+
+- **Tests (PHP 8.5) and linting run in existing CI workflows** (already configured)
+- **Deploy workflow triggers only after both succeed** via `workflow_run`
+- **Docker build runs on your VPS** via Dokploy (keeps CI minutes and costs low)
+- The deploy job itself takes ~5 seconds (a single API call)
 
 ---
 
 ## Environment Variables
 
-### Minimal `.env.staging` Example
+### Minimal `.env.stg` Example (Local Testing)
 
 ```env
 APP_NAME=SGTE
 APP_ENV=staging
 APP_KEY=base64:GENERATE_WITH_php_artisan_key_generate
 APP_DEBUG=false
-APP_URL=https://staging.sgte.example.com
+APP_URL=http://localhost:8000
 
 APP_LOCALE=es
 APP_FALLBACK_LOCALE=es
@@ -259,7 +330,7 @@ BCRYPT_ROUNDS=12
 
 LOG_CHANNEL=stack
 LOG_STACK=single
-LOG_LEVEL=warning
+LOG_LEVEL=debug
 
 # Database — hostname matches compose service name
 DB_CONNECTION=pgsql
@@ -267,7 +338,7 @@ DB_HOST=pgsql
 DB_PORT=5432
 DB_DATABASE=sgte
 DB_USERNAME=sail
-DB_PASSWORD=CHANGE_THIS_IN_PRODUCTION
+DB_PASSWORD=secret
 
 # Session, Queue, Cache — use Redis in staging/production
 SESSION_DRIVER=redis
@@ -284,39 +355,39 @@ REDIS_PORT=6379
 # Storage — MinIO (S3-compatible)
 FILESYSTEM_DISK=s3
 AWS_ACCESS_KEY_ID=sail
-AWS_SECRET_ACCESS_KEY=CHANGE_THIS_IN_PRODUCTION
+AWS_SECRET_ACCESS_KEY=password
 AWS_DEFAULT_REGION=us-east-1
 AWS_BUCKET=sgte
 AWS_ENDPOINT=http://minio:9000
-AWS_URL=https://staging.sgte.example.com/storage
+AWS_URL=http://localhost:9000/sgte
 AWS_USE_PATH_STYLE_ENDPOINT=true
 
 MEDIA_DISK=media
 
-# Mail — Mailpit for staging, real SMTP for production
+# Mail — Mailpit for staging
 MAIL_MAILER=smtp
 MAIL_HOST=mailpit
 MAIL_PORT=1025
 MAIL_USERNAME=null
 MAIL_PASSWORD=null
-MAIL_FROM_ADDRESS="noreply@sgte.example.com"
+MAIL_FROM_ADDRESS="noreply@sgte.local"
 MAIL_FROM_NAME="${APP_NAME}"
 
 # Search — Typesense
 SCOUT_DRIVER=typesense
-SCOUT_QUEUE=true
+SCOUT_QUEUE=false
 TYPESENSE_HOST=typesense
 TYPESENSE_PORT=8108
 TYPESENSE_PROTOCOL=http
-TYPESENSE_API_KEY=CHANGE_THIS_IN_PRODUCTION
+TYPESENSE_API_KEY=xyz
 
 # WebSockets — Reverb
 REVERB_APP_ID=sgte-app-id
-REVERB_APP_KEY=CHANGE_THIS_IN_PRODUCTION
-REVERB_APP_SECRET=CHANGE_THIS_IN_PRODUCTION
-REVERB_HOST=ws.staging.sgte.example.com
-REVERB_PORT=443
-REVERB_SCHEME=https
+REVERB_APP_KEY=sgte-app-key
+REVERB_APP_SECRET=sgte-app-secret
+REVERB_HOST=localhost
+REVERB_PORT=8080
+REVERB_SCHEME=http
 
 VITE_REVERB_APP_KEY="${REVERB_APP_KEY}"
 VITE_REVERB_HOST="${REVERB_HOST}"
@@ -326,22 +397,23 @@ VITE_REVERB_SCHEME="${REVERB_SCHEME}"
 VITE_APP_NAME="${APP_NAME}"
 
 # Super Admin (for seeding)
-SUPER_ADMIN_USER="admin@sgte.example.com"
-SUPER_ADMIN_PASSWORD=CHANGE_THIS_IN_PRODUCTION
+SUPER_ADMIN_USER="admin@sgte.local"
+SUPER_ADMIN_PASSWORD=password
 ```
 
-### Key Differences from Development
+### Key Differences: Local vs Staging/Production
 
-| Variable | Development | Staging/Production |
+| Variable | Local Testing | Staging/Production |
 |----------|-------------|-------------------|
-| `APP_ENV` | `local` | `staging` / `production` |
-| `APP_DEBUG` | `true` | `false` |
-| `SESSION_DRIVER` | `database` | `redis` |
-| `QUEUE_CONNECTION` | `redis` | `redis` |
-| `CACHE_STORE` | `redis` | `redis` |
-| `SCOUT_QUEUE` | `false` | `true` |
+| `APP_URL` | `http://localhost:8000` | `https://staging.sgte.example.com` |
+| `APP_DEBUG` | `false` | `false` |
 | `LOG_LEVEL` | `debug` | `warning` |
-| `BCRYPT_ROUNDS` | `12` | `12` |
+| `DB_PASSWORD` | `secret` | Strong unique password |
+| `SCOUT_QUEUE` | `false` | `true` |
+| `AWS_URL` | `http://localhost:9000/sgte` | `https://staging.sgte.example.com/storage` |
+| `REVERB_HOST` | `localhost` | `ws.staging.sgte.example.com` |
+| `REVERB_PORT` | `8080` | `443` |
+| `REVERB_SCHEME` | `http` | `https` |
 
 ---
 
@@ -351,13 +423,16 @@ SUPER_ADMIN_PASSWORD=CHANGE_THIS_IN_PRODUCTION
 
 ```
 1. Push code to repository (develop branch for staging)
-2. Dokploy detects the push (webhook or manual trigger)
+2. CI runs tests → on success, triggers Dokploy webhook
 3. Dokploy builds the Docker image:
-   ├── Stage 1: npm ci + npm run build:ssr
-   ├── Stage 2: composer install --no-dev
-   └── Stage 3: Copy into frankenphp image + cache config/routes/views
+   ├── Stage 1: composer install --no-dev
+   ├── Stage 2: Base frankenphp image with PHP extensions + Node.js
+   ├── Stage 3: npm ci + npm run build:ssr (with PHP for Wayfinder)
+   └── Stage 4: Production image with built assets + view/event cache
 4. Dokploy starts the new container
 5. start-container entrypoint runs:
+   ├── php artisan config:cache (with runtime env vars)
+   ├── php artisan route:cache
    ├── php artisan storage:link
    ├── php artisan migrate --force
    └── supervisord starts (octane, horizon, reverb, ssr)
@@ -369,12 +444,13 @@ SUPER_ADMIN_PASSWORD=CHANGE_THIS_IN_PRODUCTION
 
 ```
 1. Developer pushes code changes
-2. Dokploy rebuilds the image (cached layers speed this up)
-3. New container starts → runs migrations → starts processes
-4. Dokploy performs zero-downtime swap:
+2. CI runs tests → triggers Dokploy on success
+3. Dokploy rebuilds the image (cached layers speed this up)
+4. New container starts → caches config → runs migrations → starts processes
+5. Dokploy performs zero-downtime swap:
    ├── New container receives traffic
    └── Old container drains and stops
-5. Horizon gracefully terminates (stopwaitsecs=3600 allows jobs to finish)
+6. Horizon gracefully terminates (stopwaitsecs=3600 allows jobs to finish)
 ```
 
 ### Rollback
@@ -399,6 +475,22 @@ For destructive migrations (dropping columns/tables), consider:
 1. Deploy the code change without the destructive migration
 2. Verify everything works
 3. Deploy the destructive migration separately
+
+### Database Seeding
+
+Reference data and default users are handled by **data migrations**, not seeders. This means `php artisan migrate --force` is the only command needed — no separate seeding step.
+
+| Environment | Command | What runs |
+|-------------|---------|-----------|
+| **Production** | `migrate --force` (auto on boot) | Reference data migration (roles, permissions, departments, document types, EPS, pension/severance funds, incident types) + 5 default users |
+| **Staging** | `migrate --force` (auto on boot) | Same as production + demo data migration (third parties, drivers, vehicles, contracts, invoices, services) |
+| **Development** | `migrate:fresh --seed` | Both data migrations + `DatabaseSeeder` (additional demo data via factories) |
+
+**Default users** (created by data migration, one per role):
+- Super admin: credentials from `SUPER_ADMIN_USER`/`SUPER_ADMIN_PASSWORD` env vars (defaults: `superadmin@sgte.app` / `password`)
+- Admin (`admin@sgte.app`), Operator (`operator@sgte.app`), Driver (`driver@sgte.app`), Accounting (`accounting@sgte.app`)
+
+**Adding new reference data**: create a new migration (e.g., `php artisan make:migration add_vandalism_incident_type`). It runs once on the next deploy via `migrate --force`.
 
 ### Monitoring & Health
 
@@ -427,68 +519,69 @@ The current setup runs all processes in a single container. For future scaling:
 
 ```bash
 # Check container logs
-docker logs sgte-app
+docker compose -f compose.staging.yaml logs app --tail 100
 
 # Common issues:
 # - Missing APP_KEY → run: php artisan key:generate --show
 # - Database unreachable → verify DB_HOST matches compose service name
 # - Permission errors → verify storage/ and bootstrap/cache/ are writable
+# - Config cache with wrong values → entrypoint should re-cache on every start
 ```
 
 ### Processes crashing
 
 ```bash
 # Check individual process status
-docker exec sgte-app supervisorctl status
+docker exec sgte-app-app-1 supervisorctl status
 
 # Restart a specific process
-docker exec sgte-app supervisorctl restart octane
+docker exec sgte-app-app-1 supervisorctl restart octane
 
 # Check process-specific logs
-docker exec sgte-app supervisorctl tail octane stderr
+docker exec sgte-app-app-1 supervisorctl tail octane stderr
 ```
 
 ### Migration failures
 
 ```bash
 # Run migrations manually
-docker exec sgte-app php artisan migrate --force
+docker exec sgte-app-app-1 php artisan migrate --force
 
 # Check migration status
-docker exec sgte-app php artisan migrate:status
+docker exec sgte-app-app-1 php artisan migrate:status
 ```
 
 ### SSR not working
 
 ```bash
 # Check if Node.js is available
-docker exec sgte-app node --version
+docker exec sgte-app-app-1 node --version
 
 # Check if SSR bundle exists
-docker exec sgte-app ls -la bootstrap/ssr/
+docker exec sgte-app-app-1 ls -la bootstrap/ssr/
 
 # Restart SSR process
-docker exec sgte-app supervisorctl restart ssr
+docker exec sgte-app-app-1 supervisorctl restart ssr
 ```
 
 ### Cache issues after deployment
 
 ```bash
 # Clear all caches
-docker exec sgte-app php artisan optimize:clear
+docker exec sgte-app-app-1 php artisan optimize:clear
 
 # Rebuild caches
-docker exec sgte-app php artisan optimize
+docker exec sgte-app-app-1 php artisan optimize
 ```
 
-### PHP 8.5 Note
+### Database credential issues
 
-The production Dockerfile currently uses `dunglas/frankenphp:latest-php8.4-bookworm` because PHP 8.5 is not yet available in the FrankenPHP Docker images. When a `php8.5` tag becomes available, update line 27 of `docker/production/Dockerfile`:
+PostgreSQL only sets credentials on first volume initialization. If credentials change after the volume was created, you must recreate the volume:
 
-```dockerfile
-# Change from:
-FROM dunglas/frankenphp:latest-php8.4-bookworm AS production
-
-# Change to:
-FROM dunglas/frankenphp:latest-php8.5-bookworm AS production
+```bash
+docker compose -f compose.staging.yaml --profile local --env-file .env.stg stop pgsql
+docker compose -f compose.staging.yaml --profile local --env-file .env.stg rm -f pgsql
+docker volume rm sgte-app_sgte-pgsql
+docker compose -f compose.staging.yaml --profile local --env-file .env.stg up -d
 ```
+

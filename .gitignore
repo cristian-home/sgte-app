@@ -14,6 +14,7 @@
 .env
 .env.backup
 .env.production
+.env.staging
 .env.dusk.local
 .phpactor.json
 .phpunit.result.cache

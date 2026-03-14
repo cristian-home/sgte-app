@@ -15,7 +15,6 @@ use Spatie\Permission\Models\Role as SpatieRole;
 use function Pest\Laravel\get;
 
 beforeEach(function (): void {
-    SpatieRole::create(['name' => 'super_admin', 'guard_name' => 'web']);
     $user = User::factory()->create();
     $user->assignRole('super_admin');
     $this->actingAs($user);
@@ -146,8 +145,8 @@ test('canExecuteDay is true for user with EXECUTE_DAY permission', function (): 
 });
 
 test('canExecuteDay is false for user without EXECUTE_DAY permission', function (): void {
-    SpatiePermission::create(['name' => 'day-summary.view', 'guard_name' => 'web']);
-    $role = SpatieRole::create(['name' => 'viewer', 'guard_name' => 'web']);
+    SpatiePermission::firstOrCreate(['name' => 'day-summary.view', 'guard_name' => 'web']);
+    $role = SpatieRole::firstOrCreate(['name' => 'viewer', 'guard_name' => 'web']);
     $role->givePermissionTo('day-summary.view');
     $user = User::factory()->create();
     $user->assignRole('viewer');

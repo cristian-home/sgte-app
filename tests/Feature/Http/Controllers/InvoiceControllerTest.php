@@ -5,7 +5,6 @@ namespace Tests\Feature\Http\Controllers;
 use App\Models\Invoice;
 use App\Models\User;
 use Illuminate\Support\Carbon;
-use Spatie\Permission\Models\Role as SpatieRole;
 
 use function Pest\Laravel\assertSoftDeleted;
 use function Pest\Laravel\delete;
@@ -14,7 +13,6 @@ use function Pest\Laravel\post;
 use function Pest\Laravel\put;
 
 beforeEach(function (): void {
-    SpatieRole::create(['name' => 'super_admin', 'guard_name' => 'web']);
     $user = User::factory()->create();
     $user->assignRole('super_admin');
     $this->actingAs($user);

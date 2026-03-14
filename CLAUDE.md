@@ -76,6 +76,19 @@ Wayfinder auto-generates TypeScript route functions in `resources/js/actions/` (
 
 Services in `compose.yaml`: PostgreSQL 18, Redis, Typesense (search), MinIO (S3 storage), Mailpit (email testing), Reverb (WebSockets).
 
+### Production Docker & Deployment
+
+- Production Dockerfile: `docker/production/Dockerfile` (4-stage: composer → base frankenphp → build → production).
+- Staging compose: `compose.staging.yaml` — infrastructure services + app via `profiles: [local]`.
+- Local testing: `docker compose -f compose.staging.yaml --profile local --env-file .env.stg up -d --build`
+- Deployment target: Dokploy (VPS). See `docs/deployment.md` for full guide.
+
+### CI/CD
+
+- `.github/workflows/tests.yml` — Pest tests (PHP 8.5, SQLite in-memory).
+- `.github/workflows/lint.yml` — Pint + Prettier + ESLint.
+- `.github/workflows/deploy-staging.yml` — Triggers Dokploy redeployment after tests + linter pass on `develop`.
+
 ### Testing
 
 - Pest 4 with RefreshDatabase on Feature tests (`tests/Pest.php`).

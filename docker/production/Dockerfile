@@ -1,30 +1,17 @@
 # =============================================================================
-# Stage 1: Build frontend assets
-# =============================================================================
-FROM node:24-alpine AS node
-
-WORKDIR /app
-
-COPY package.json package-lock.json ./
-RUN npm ci
-
-COPY . .
-RUN npm run build:ssr
-
-# =============================================================================
-# Stage 2: Install PHP dependencies
+# Stage 1: Install PHP dependencies
 # =============================================================================
 FROM composer:latest AS composer
 
 WORKDIR /app
 
 COPY composer.json composer.lock ./
-RUN composer install --no-dev --no-scripts --no-interaction --prefer-dist --optimize-autoloader
+RUN composer install --no-dev --no-scripts --no-interaction --prefer-dist --optimize-autoloader --ignore-platform-reqs
 
 # =============================================================================
-# Stage 3: Production image
+# Stage 2: Base image with PHP extensions and Node.js
 # =============================================================================
-FROM dunglas/frankenphp:latest-php8.4-bookworm AS production
+FROM dunglas/frankenphp:1-php8.5-trixie AS base
 
 # Install PHP extensions
 RUN install-php-extensions \
@@ -41,9 +28,10 @@ RUN install-php-extensions \
     curl \
     igbinary \
     msgpack \
-    imagick
+    imagick \
+    exif
 
-# Install Node.js runtime (for Inertia SSR) and Supervisor
+# Install Node.js runtime and Supervisor
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         supervisor \
@@ -54,6 +42,26 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
+# =============================================================================
+# Stage 3: Build frontend assets (requires PHP for Wayfinder route generation)
+# =============================================================================
+FROM base AS build
+
+WORKDIR /app
+
+# Copy application source code and PHP dependencies
+COPY . .
+COPY --from=composer /app/vendor ./vendor
+
+# Install npm dependencies and build frontend assets
+# Wayfinder Vite plugin runs `php artisan wayfinder:generate` during build
+RUN npm ci && npm run build:ssr
+
+# =============================================================================
+# Stage 4: Production image
+# =============================================================================
+FROM base AS production
+
 WORKDIR /app
 
 # Copy application source code
@@ -62,9 +70,9 @@ COPY . .
 # Copy vendor from composer stage
 COPY --from=composer /app/vendor ./vendor
 
-# Copy built frontend assets from node stage
-COPY --from=node /app/public/build ./public/build
-COPY --from=node /app/bootstrap/ssr ./bootstrap/ssr
+# Copy built frontend assets from build stage
+COPY --from=build /app/public/build ./public/build
+COPY --from=build /app/bootstrap/ssr ./bootstrap/ssr
 
 # Copy production config files
 COPY docker/production/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
@@ -79,10 +87,8 @@ RUN mkdir -p \
     storage/framework/views \
     bootstrap/cache
 
-# Cache config, routes, views, and events
-RUN php artisan config:cache \
-    && php artisan route:cache \
-    && php artisan view:cache \
+# Cache views and events (these don't depend on runtime env vars)
+RUN php artisan view:cache \
     && php artisan event:cache
 
 # Create non-root user

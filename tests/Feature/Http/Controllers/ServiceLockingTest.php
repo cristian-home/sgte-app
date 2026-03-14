@@ -8,7 +8,6 @@ use App\Models\Driver;
 use App\Models\Service;
 use App\Models\User;
 use App\Models\Vehicle;
-use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Support\Carbon;
 use Spatie\Activitylog\Models\Activity;
 
@@ -17,8 +16,6 @@ use function Pest\Laravel\post;
 use function Pest\Laravel\put;
 
 beforeEach(function (): void {
-    $this->seed(RolesAndPermissionsSeeder::class);
-
     $this->serviceDate = Carbon::today()->toDateString();
 
     $this->contract = Contract::factory()->create([

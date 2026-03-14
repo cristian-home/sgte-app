@@ -21,12 +21,10 @@ describe('Production Docker Files', function () {
         $dockerfile = file_get_contents(base_path('docker/production/Dockerfile'));
 
         expect($dockerfile)
-            ->toContain('FROM node:')
             ->toContain('FROM composer:')
             ->toContain('FROM dunglas/frankenphp:')
             ->toContain('npm run build:ssr')
-            ->toContain('composer install --no-dev')
-            ->toContain('config:cache');
+            ->toContain('composer install --no-dev');
     });
 
     test('supervisord.conf contains all four programs', function () {

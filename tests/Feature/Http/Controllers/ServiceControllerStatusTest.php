@@ -5,12 +5,10 @@ use App\Models\Driver;
 use App\Models\User;
 use App\Models\Vehicle;
 use Illuminate\Support\Carbon;
-use Spatie\Permission\Models\Role as SpatieRole;
 
 use function Pest\Laravel\post;
 
 beforeEach(function (): void {
-    SpatieRole::create(['name' => 'super_admin', 'guard_name' => 'web']);
     $user = User::factory()->create();
     $user->assignRole('super_admin');
     $this->actingAs($user);

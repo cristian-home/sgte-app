@@ -21,6 +21,9 @@ export default defineConfig({
             formVariants: true,
         }),
     ],
+    ssr: {
+        noExternal: true,
+    },
     esbuild: {
         jsx: 'automatic',
     },

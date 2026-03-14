@@ -5,13 +5,11 @@ use App\Enums\ServiceStatus;
 use App\Models\DayStatus;
 use App\Models\Service;
 use App\Models\User;
-use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Support\Carbon;
 
 use function Pest\Laravel\post;
 
 beforeEach(function (): void {
-    $this->seed(RolesAndPermissionsSeeder::class);
     $user = User::factory()->create();
     $user->assignRole('admin');
     $this->actingAs($user);

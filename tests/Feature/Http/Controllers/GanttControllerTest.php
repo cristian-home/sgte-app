@@ -19,7 +19,6 @@ use Spatie\Permission\Models\Role as SpatieRole;
 use function Pest\Laravel\get;
 
 beforeEach(function (): void {
-    SpatieRole::create(['name' => 'super_admin', 'guard_name' => 'web']);
     $user = User::factory()->create();
     $user->assignRole('super_admin');
     $this->actingAs($user);
@@ -186,7 +185,7 @@ test('canCreateServices is true for super admin', function (): void {
 
 test('canCreateServices is false for user without create permission', function (): void {
     $role = SpatieRole::create(['name' => 'viewer', 'guard_name' => 'web']);
-    $permission = Permission::create(['name' => PermissionEnum::VIEW_SERVICES->value, 'guard_name' => 'web']);
+    $permission = Permission::firstOrCreate(['name' => PermissionEnum::VIEW_SERVICES->value, 'guard_name' => 'web']);
     $role->givePermissionTo($permission);
 
     $user = User::factory()->create();
