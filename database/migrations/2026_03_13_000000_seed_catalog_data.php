@@ -15,29 +15,39 @@ use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Permission as SpatiePermission;
 use Spatie\Permission\Models\Role as SpatieRole;
 
+/**
+ * Catalog data migration — runs in ALL environments (including production and testing).
+ *
+ * Seeds:
+ * - Roles & permissions (mandatory for authorization)
+ * - Super Admin user (mandatory for initial access)
+ * - Document types, EPS, pension/severance funds, incident types (business catalogs)
+ * - Departments & municipalities (DIVIPOLA geographic catalog)
+ *
+ * All operations use firstOrCreate to be idempotent and safe to re-run.
+ */
 return new class extends Migration
 {
     public function up(): void
     {
         $this->seedRolesAndPermissions();
-        $this->seedDefaultUsers();
-
-        // Catalog data is skipped in testing to avoid conflicts with factories
-        if (app()->environment('testing')) {
-            return;
-        }
-
-        $this->seedDepartmentsAndMunicipalities();
+        $this->seedSuperAdmin();
         $this->seedDocumentTypes();
         $this->seedEps();
         $this->seedPensionFunds();
         $this->seedSeveranceFunds();
         $this->seedIncidentTypes();
+
+        // Geographic data is large (~1122 municipalities). Skip in testing
+        // where factories create their own Municipality/Department records.
+        if (! app()->environment('testing')) {
+            $this->seedDepartmentsAndMunicipalities();
+        }
     }
 
     public function down(): void
     {
-        // Reference data should not be rolled back.
+        // Catalog data should not be rolled back.
     }
 
     private function seedRolesAndPermissions(): void
@@ -99,6 +109,10 @@ return new class extends Migration
             Permission::CREATE_USERS,
             Permission::UPDATE_USERS,
             Permission::DELETE_USERS,
+            Permission::VIEW_INCIDENT_TYPES,
+            Permission::CREATE_INCIDENT_TYPES,
+            Permission::UPDATE_INCIDENT_TYPES,
+            Permission::DELETE_INCIDENT_TYPES,
             Permission::RECEIVE_NOTIFICATIONS,
         ]));
 
@@ -160,6 +174,32 @@ return new class extends Migration
             Permission::VIEW_REPORTS,
             Permission::RECEIVE_NOTIFICATIONS,
         ]));
+    }
+
+    private function seedSuperAdmin(): void
+    {
+        $email = env('SUPER_ADMIN_USER');
+        $password = env('SUPER_ADMIN_PASSWORD');
+
+        if (app()->environment('production') && (empty($email) || empty($password))) {
+            throw new \RuntimeException(
+                'SUPER_ADMIN_USER and SUPER_ADMIN_PASSWORD must be set in production.'
+            );
+        }
+
+        $user = User::firstOrCreate(
+            ['email' => $email ?: 'superadmin@sgte.app'],
+            [
+                'name' => 'Super Admin',
+                'password' => Hash::make($password ?: 'password'),
+            ],
+        );
+
+        if ($user->wasRecentlyCreated) {
+            $user->forceFill(['email_verified_at' => now()])->save();
+        }
+
+        $user->assignRole(Role::SUPER_ADMIN);
     }
 
     private function seedDepartmentsAndMunicipalities(): void
@@ -298,60 +338,6 @@ return new class extends Migration
                 ['code' => $type['code']],
                 $type,
             );
-        }
-    }
-
-    private function seedDefaultUsers(): void
-    {
-        $defaultPassword = Hash::make('password');
-
-        $users = [
-            [
-                'email' => env('SUPER_ADMIN_USER', 'superadmin@sgte.app'),
-                'name' => 'Super Admin',
-                'password' => Hash::make(env('SUPER_ADMIN_PASSWORD', 'password')),
-                'role' => Role::SUPER_ADMIN,
-            ],
-            [
-                'email' => 'admin@sgte.app',
-                'name' => 'Admin User',
-                'password' => $defaultPassword,
-                'role' => Role::ADMIN,
-            ],
-            [
-                'email' => 'operator@sgte.app',
-                'name' => 'Operator User',
-                'password' => $defaultPassword,
-                'role' => Role::OPERATOR,
-            ],
-            [
-                'email' => 'driver@sgte.app',
-                'name' => 'Driver User',
-                'password' => $defaultPassword,
-                'role' => Role::DRIVER,
-            ],
-            [
-                'email' => 'accounting@sgte.app',
-                'name' => 'Accounting User',
-                'password' => $defaultPassword,
-                'role' => Role::ACCOUNTING,
-            ],
-        ];
-
-        foreach ($users as $userData) {
-            $user = User::firstOrCreate(
-                ['email' => $userData['email']],
-                [
-                    'name' => $userData['name'],
-                    'password' => $userData['password'],
-                ],
-            );
-
-            if ($user->wasRecentlyCreated) {
-                $user->forceFill(['email_verified_at' => now()])->save();
-            }
-
-            $user->assignRole($userData['role']);
         }
     }
 };

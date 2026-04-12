@@ -16,6 +16,10 @@ class ServiceIncidentSeeder extends Seeder
      */
     public function run(): void
     {
+        if (ServiceIncident::query()->exists()) {
+            return;
+        }
+
         $services = Service::where('service_status', ServiceStatus::Closed)->get();
         $registrar = User::first();
 

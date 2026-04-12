@@ -33,7 +33,7 @@ test('index returns inertia page with eps', function (): void {
     $response->assertInertia(
         fn (\Inertia\Testing\AssertableInertia $page) => $page
             ->component('eps/index')
-            ->has('eps', 5)
+            ->has('eps', 13)
     );
 });
 

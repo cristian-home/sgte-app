@@ -5,68 +5,49 @@ namespace Database\Seeders;
 use App\Enums\Role;
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class UserSeeder extends Seeder
 {
     /**
-     * Run the database seeds.
+     * Seed additional operator and driver users for local development testing.
+     *
+     * Reference users (super admin, admin, operator, driver, accounting) are
+     * owned by the catalog and initialization migrations — this seeder only
+     * adds extra role-bound users to exercise multi-user scenarios locally.
      */
     public function run(): void
     {
-        // Super Admin user
-        $superAdminUser = User::factory()->create([
-            'name' => 'Super Admin User',
-            'email' => env('SUPER_ADMIN_USER', 'superadmin@example.com'),
-            'password' => bcrypt(env('SUPER_ADMIN_PASSWORD', 'password')),
-        ]);
+        $defaultPassword = Hash::make('password');
 
-        // Admin user
-        $adminUser = User::factory()->create([
-            'name' => 'Admin User',
-            'email' => 'admin@example.com',
-            'password' => bcrypt('password'),
-        ]);
+        for ($i = 1; $i <= 3; $i++) {
+            $user = User::firstOrCreate(
+                ['email' => "operator{$i}@sgte.app"],
+                [
+                    'name' => "Operator User {$i}",
+                    'password' => $defaultPassword,
+                ],
+            );
 
-        // Operator users
-        $operatorUsers = User::factory(5)->sequence(
-            fn ($sequence) => [
-                'name' => 'Operator User '.($sequence->index + 1),
-                'password' => bcrypt('password'),
-            ]
-        )->create();
-
-        // Driver users
-        $driverUsers = User::factory(5)->sequence(
-            fn ($sequence) => [
-                'name' => 'Driver User '.($sequence->index + 1),
-                'email_verified_at' => null,
-                'password' => bcrypt('password'),
-            ]
-        )->create();
-
-        // Accounting users
-        $accountingUsers = User::factory(5)->sequence(
-            fn ($sequence) => [
-                'name' => 'Accounting User '.($sequence->index + 1),
-                'email_verified_at' => null,
-                'password' => bcrypt('password'),
-            ]
-        )->create();
-
-        $superAdminUser->assignRole(Role::SUPER_ADMIN);
-
-        $adminUser->assignRole(Role::ADMIN);
-
-        foreach ($operatorUsers as $operatorUser) {
-            $operatorUser->assignRole(Role::OPERATOR);
+            if ($user->wasRecentlyCreated) {
+                $user->forceFill(['email_verified_at' => now()])->save();
+                $user->assignRole(Role::OPERATOR);
+            }
         }
 
-        foreach ($driverUsers as $driverUser) {
-            $driverUser->assignRole(Role::DRIVER);
-        }
+        for ($i = 1; $i <= 3; $i++) {
+            $user = User::firstOrCreate(
+                ['email' => "driver{$i}@sgte.app"],
+                [
+                    'name' => "Driver User {$i}",
+                    'password' => $defaultPassword,
+                ],
+            );
 
-        foreach ($accountingUsers as $accountingUser) {
-            $accountingUser->assignRole(Role::ACCOUNTING);
+            if ($user->wasRecentlyCreated) {
+                $user->forceFill(['email_verified_at' => now()])->save();
+                $user->assignRole(Role::DRIVER);
+            }
         }
     }
 }

@@ -34,7 +34,7 @@ test('index returns inertia page with incident types', function (): void {
     $response->assertInertia(
         fn (\Inertia\Testing\AssertableInertia $page) => $page
             ->component('incident-types/index')
-            ->has('incidentTypes', 5)
+            ->has('incidentTypes', 12)
     );
 });
 

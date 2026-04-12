@@ -33,7 +33,7 @@ test('index returns inertia page with pension funds', function (): void {
     $response->assertInertia(
         fn (\Inertia\Testing\AssertableInertia $page) => $page
             ->component('pension-funds/index')
-            ->has('pensionFunds', 5)
+            ->has('pensionFunds', 10)
     );
 });
 

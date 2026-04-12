@@ -33,7 +33,7 @@ test('index returns inertia page with document types', function (): void {
     $response->assertInertia(
         fn (\Inertia\Testing\AssertableInertia $page) => $page
             ->component('document-types/index')
-            ->has('documentTypes', 5)
+            ->has('documentTypes', 10)
     );
 });
 

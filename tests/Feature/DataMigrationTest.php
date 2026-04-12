@@ -11,14 +11,17 @@ test('data migration creates roles and permissions', function (): void {
     expect(SpatiePermission::count())->toBe(count(Permission::cases()));
 });
 
-test('data migration creates one user per role', function (): void {
-    expect(User::count())->toBe(5);
+test('catalog migration creates super admin user', function (): void {
+    $superAdmin = User::role(Role::SUPER_ADMIN->value)->first();
 
-    foreach (Role::cases() as $role) {
-        expect(User::role($role->value)->count())->toBe(1);
-    }
+    expect($superAdmin)->not->toBeNull();
+    expect($superAdmin->email_verified_at)->not->toBeNull();
 });
 
-test('data migration creates verified users', function (): void {
-    expect(User::whereNotNull('email_verified_at')->count())->toBe(5);
+test('catalog migration does not create non-admin users in testing', function (): void {
+    // In testing, only the super admin is created by the catalog migration.
+    // Reference users (admin, operator, driver, accounting) are only created
+    // by the demo migration which skips in testing environment.
+    expect(User::count())->toBe(1);
+    expect(User::role(Role::SUPER_ADMIN->value)->count())->toBe(1);
 });

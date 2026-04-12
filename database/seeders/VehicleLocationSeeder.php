@@ -13,6 +13,10 @@ class VehicleLocationSeeder extends Seeder
      */
     public function run(): void
     {
+        if (VehicleLocation::query()->exists()) {
+            return;
+        }
+
         $vehicles = Vehicle::where('status', 'active')->get();
 
         if ($vehicles->isEmpty()) {

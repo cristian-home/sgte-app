@@ -20,6 +20,10 @@ class ServiceSeeder extends Seeder
      */
     public function run(): void
     {
+        if (Service::query()->exists()) {
+            return;
+        }
+
         $contracts = Contract::where('active', true)->get();
         $vehicles = Vehicle::where('status', VehicleStatus::Active)->get();
         $drivers = Driver::where('active', true)->get();
