@@ -1,5 +1,7 @@
 # Fase 4: Facturación y Auditoría
 
+> **Estado: PENDIENTE** — Requiere Fase 2 (completada); Fase 3 recomendada
+
 ## Objetivo
 
 Implementar el módulo de facturación de servicios, asegurar la inmutabilidad contable de registros ejecutados y establecer el log de auditoría.

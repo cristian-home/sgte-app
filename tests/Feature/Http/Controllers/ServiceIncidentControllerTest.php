@@ -6,7 +6,6 @@ use App\Models\IncidentType;
 use App\Models\Service;
 use App\Models\ServiceIncident;
 use App\Models\User;
-use Illuminate\Support\Carbon;
 
 use function Pest\Laravel\assertModelMissing;
 use function Pest\Laravel\delete;
@@ -18,20 +17,47 @@ beforeEach(function (): void {
     $user = User::factory()->create();
     $user->assignRole('super_admin');
     $this->actingAs($user);
+    $this->user = $user;
 });
 
 test('index behaves as expected', function (): void {
-    $serviceIncidents = ServiceIncident::factory()->count(3)->create();
+    ServiceIncident::factory()->count(3)->create();
 
     $response = get(route('service-incidents.index'));
 
     $response->assertOk();
 });
 
+test('index returns inertia page with service incidents', function (): void {
+    ServiceIncident::factory()->count(3)->create();
+
+    $response = get(route('service-incidents.index'));
+
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->component('service-incidents/index')
+            ->has('serviceIncidents', 3)
+    );
+});
+
 test('create behaves as expected', function (): void {
     $response = get(route('service-incidents.create'));
 
     $response->assertOk();
+});
+
+test('create with service_id pre-fills service', function (): void {
+    $service = Service::factory()->create();
+
+    $response = get(route('service-incidents.create', ['service_id' => $service->id]));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->component('service-incidents/create')
+            ->has('service')
+            ->where('service.id', $service->id)
+    );
 });
 
 test('store uses form request validation')
@@ -41,41 +67,39 @@ test('store uses form request validation')
         \App\Http\Requests\ServiceIncidentStoreRequest::class
     );
 
-test('store saves and redirects', function (): void {
+test('store saves with auto-set fields and redirects to service', function (): void {
     $service = Service::factory()->create();
     $incidentType = IncidentType::factory()->create();
     $description = fake()->text();
-    $registrar = User::factory()->create();
-    $is_driver_report = fake()->boolean();
-    $reported_at = Carbon::parse(fake()->dateTime());
-    $affects_billing = fake()->boolean();
-    $additional_value = fake()->randomFloat(2, 10000, 200000);
 
     $response = post(route('service-incidents.store'), [
         'service_id' => $service->id,
         'incident_type_id' => $incidentType->id,
         'description' => $description,
-        'registrar_id' => $registrar->id,
-        'is_driver_report' => $is_driver_report,
-        'reported_at' => $reported_at,
-        'affects_billing' => $affects_billing,
-        'additional_value' => $additional_value,
+        'affects_billing' => true,
+        'additional_value' => 50000,
     ]);
 
-    $serviceIncidents = ServiceIncident::query()
+    $serviceIncident = ServiceIncident::query()
         ->where('service_id', $service->id)
         ->where('incident_type_id', $incidentType->id)
         ->where('description', $description)
-        ->where('registrar_id', $registrar->id)
-        ->where('is_driver_report', $is_driver_report)
-        ->where('reported_at', $reported_at)
-        ->where('affects_billing', $affects_billing)
-        ->where('additional_value', $additional_value)
-        ->get();
-    expect($serviceIncidents)->toHaveCount(1);
-    $serviceIncident = $serviceIncidents->first();
+        ->first();
 
-    $response->assertRedirect(route('service-incidents.index'));
+    expect($serviceIncident)->not->toBeNull();
+    expect($serviceIncident->registrar_id)->toBe($this->user->id);
+    expect($serviceIncident->reported_at)->not->toBeNull();
+    expect($serviceIncident->is_driver_report)->toBeFalse();
+    expect($serviceIncident->affects_billing)->toBeTrue();
+    expect((float) $serviceIncident->additional_value)->toBe(50000.0);
+
+    $response->assertRedirect(route('services.show', $service));
+});
+
+test('store validates required fields', function (): void {
+    $response = post(route('service-incidents.store'), []);
+
+    $response->assertSessionHasErrors(['service_id', 'incident_type_id', 'description']);
 });
 
 test('show behaves as expected', function (): void {
@@ -101,48 +125,43 @@ test('update uses form request validation')
         \App\Http\Requests\ServiceIncidentUpdateRequest::class
     );
 
-test('update redirects', function (): void {
+test('update saves and redirects to service', function (): void {
     $serviceIncident = ServiceIncident::factory()->create();
-    $service = Service::factory()->create();
     $incidentType = IncidentType::factory()->create();
     $description = fake()->text();
-    $registrar = User::factory()->create();
-    $is_driver_report = fake()->boolean();
-    $reported_at = Carbon::parse(fake()->dateTime());
-    $affects_billing = fake()->boolean();
-    $additional_value = fake()->randomFloat(2, 10000, 200000);
 
     $response = put(route('service-incidents.update', $serviceIncident), [
-        'service_id' => $service->id,
         'incident_type_id' => $incidentType->id,
         'description' => $description,
-        'registrar_id' => $registrar->id,
-        'is_driver_report' => $is_driver_report,
-        'reported_at' => $reported_at,
-        'affects_billing' => $affects_billing,
-        'additional_value' => $additional_value,
+        'affects_billing' => false,
+        'additional_value' => null,
     ]);
 
     $serviceIncident->refresh();
 
-    $response->assertRedirect(route('service-incidents.index'));
+    $response->assertRedirect(route('services.show', $serviceIncident->service_id));
 
-    expect($service->id)->toEqual($serviceIncident->service_id);
     expect($incidentType->id)->toEqual($serviceIncident->incident_type_id);
     expect($description)->toEqual($serviceIncident->description);
-    expect($registrar->id)->toEqual($serviceIncident->registrar_id);
-    expect($is_driver_report)->toEqual($serviceIncident->is_driver_report);
-    expect($reported_at->timestamp)->toEqual($serviceIncident->reported_at);
-    expect($affects_billing)->toEqual($serviceIncident->affects_billing);
-    expect($additional_value)->toEqual($serviceIncident->additional_value);
+    expect($serviceIncident->affects_billing)->toBeFalse();
 });
 
-test('destroy deletes and redirects', function (): void {
+test('destroy deletes and redirects to service', function (): void {
     $serviceIncident = ServiceIncident::factory()->create();
+    $serviceId = $serviceIncident->service_id;
 
     $response = delete(route('service-incidents.destroy', $serviceIncident));
 
-    $response->assertRedirect(route('service-incidents.index'));
+    $response->assertRedirect(route('services.show', $serviceId));
 
     assertModelMissing($serviceIncident);
+});
+
+test('unauthorized user cannot access index', function (): void {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    $response = get(route('service-incidents.index'));
+
+    $response->assertForbidden();
 });

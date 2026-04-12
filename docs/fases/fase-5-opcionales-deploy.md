@@ -1,5 +1,7 @@
 # Fase 5: Módulos Opcionales y Deploy
 
+> **Estado: EN PROGRESO** — Despliegue completado, módulos opcionales pendientes
+
 ## Objetivo
 
 Implementar los módulos opcionales (FUEC, GPS) como funcionalidad latente y preparar el despliegue en producción.
@@ -46,23 +48,27 @@ Implementar los módulos opcionales (FUEC, GPS) como funcionalidad latente y pre
 - Vista de mapa con vehículos activos (solo si tienen ubicación reportada)
 - No bloquea ninguna operación si no hay datos GPS
 
-### 5.3 Preparación para deploy
+### 5.3 Preparación para deploy ✅
 
 - **Dockerización:**
-  - Dockerfile para la aplicación Laravel
-  - docker-compose con: app, PostgreSQL, MinIO, Redis (para colas)
-- **Dockploy:**
-  - Configuración de servicios en Dockploy
-  - Variables de entorno de producción
-  - SSL/HTTPS automático
+  - Dockerfile multi-stage con FrankenPHP (4 etapas: composer → base → build → production)
+  - `compose.staging.yaml` con perfiles: infraestructura (siempre) + app (perfil `local`)
+  - `.dockerignore` optimizado para builds de producción
+- **Dokploy:**
+  - CI/CD workflow (`deploy-staging.yml`) con redeploy automático vía API de Dokploy
+  - Variables de entorno de producción documentadas
+  - SSL/HTTPS automático via Dokploy/Caddy
 - **Infraestructura:**
-  - VPS Linux (Contabo recomendado)
-  - Configurar backups automáticos de BD
-  - Configurar cron para scheduler de Laravel (vencimientos, notificaciones)
+  - Laravel Octane con FrankenPHP como servidor de producción
+  - Supervisor para Octane + Horizon + Reverb + SSR
+  - Config/route caching en entrypoint (runtime env vars)
+  - Compresión automática (gzip + brotli + zstd) via FrankenPHP/Caddy
+- **Documentación:** Guía completa en [`docs/deployment.md`](../deployment.md)
+- **Requerimiento:** [frankenphp-production-docker.md](../requirements/frankenphp-production-docker.md)
 
 ### 5.4 Checklist pre-producción
 
-- [ ] Seeders de datos iniciales (roles, permisos, tipos de documento, tipos de novedad)
+- [x] Seeders de datos iniciales (roles, permisos, tipos de documento, tipos de novedad)
 - [ ] Pruebas de carga con datos representativos (100 vehículos, 300 servicios/día)
 - [ ] Revisión de seguridad (CSRF, XSS, SQL injection, validaciones)
 - [ ] Configurar rate limiting
@@ -85,8 +91,9 @@ Implementar los módulos opcionales (FUEC, GPS) como funcionalidad latente y pre
 - [ ] Generación de PDF con QR funcional
 - [ ] Página de verificación QR pública
 - [ ] Registro de ubicación GPS funcional (automático y manual)
-- [ ] Docker-compose funcional con todos los servicios
-- [ ] Deploy exitoso en VPS con Dockploy
-- [ ] SSL/HTTPS configurado
+- [x] Docker multi-stage funcional con FrankenPHP
+- [x] Compose de staging con todos los servicios de infraestructura
+- [x] CI/CD de deploy a staging configurado (Dokploy)
+- [x] SSL/HTTPS configurado (Dokploy/Caddy)
 - [ ] Backups automáticos de BD configurados
 - [ ] Scheduler de Laravel configurado para alertas de vencimiento

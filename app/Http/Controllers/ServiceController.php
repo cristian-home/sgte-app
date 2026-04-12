@@ -14,6 +14,7 @@ use App\Models\Driver;
 use App\Models\Municipality;
 use App\Models\Service;
 use App\Models\Vehicle;
+use App\Notifications\ServiceAssignedNotification;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -69,7 +70,15 @@ class ServiceController extends Controller
     public function store(ServiceStoreRequest $request): RedirectResponse
     {
         Gate::authorize(Permission::CREATE_SERVICES->value);
-        Service::create($request->validated());
+        $service = Service::create($request->validated());
+
+        if ($service->driver_id) {
+            $driverUser = Driver::find($service->driver_id)?->user;
+            if ($driverUser) {
+                $service->load('vehicle');
+                $driverUser->notify(new ServiceAssignedNotification($service));
+            }
+        }
 
         return redirect()->route('services.index');
     }

@@ -70,6 +70,12 @@ enum Permission: string
     case UPDATE_USERS = 'users.update';
     case DELETE_USERS = 'users.delete';
 
+    // Incident Types (catalog)
+    case VIEW_INCIDENT_TYPES = 'incident-types.view';
+    case CREATE_INCIDENT_TYPES = 'incident-types.create';
+    case UPDATE_INCIDENT_TYPES = 'incident-types.update';
+    case DELETE_INCIDENT_TYPES = 'incident-types.delete';
+
     // Notifications
     case RECEIVE_NOTIFICATIONS = 'notifications.receive';
 
@@ -118,6 +124,10 @@ enum Permission: string
             self::CREATE_USERS => 'Crear usuarios',
             self::UPDATE_USERS => 'Editar usuarios',
             self::DELETE_USERS => 'Eliminar usuarios',
+            self::VIEW_INCIDENT_TYPES => 'Ver tipos de novedad',
+            self::CREATE_INCIDENT_TYPES => 'Crear tipos de novedad',
+            self::UPDATE_INCIDENT_TYPES => 'Editar tipos de novedad',
+            self::DELETE_INCIDENT_TYPES => 'Eliminar tipos de novedad',
             self::RECEIVE_NOTIFICATIONS => 'Recibir notificaciones',
         };
     }

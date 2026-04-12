@@ -1,5 +1,7 @@
 # Fase 2: Core Operativo
 
+> **Estado: COMPLETADA** — Finalizada 2026-03-07
+
 ## Objetivo
 
 Implementar la funcionalidad central del sistema: calendario, planificador Gantt, formulario de servicio y control de estados del día.
@@ -20,28 +22,28 @@ Implementar la funcionalidad central del sistema: calendario, planificador Gantt
 
 ## Tareas
 
-### 2.1 Calendario anual (REQ-001)
+### 2.1 Calendario anual (REQ-001) ✅
 
 - Vista de 12 meses con indicadores de color por estado del día
   - **Negro**: sin servicios
   - **Naranja**: PROYECTADO (al menos un servicio registrado)
   - **Verde**: EJECUTADO (todos los servicios cerrados)
-- Doble clic en mes → vista detallada de días
-- Click en día → navegación al Gantt diario
-- Componente React con Inertia.js
+- Click en mes → vista detallada de días con navegación prev/next
+- Click en día → carga inline de servicios del día
+- Componente React custom con Inertia.js (sin dependencia de FullCalendar)
 
-### 2.2 Planificador Gantt diario (REQ-002)
+### 2.2 Planificador Gantt diario (REQ-002) ✅
 
 - Eje Y: listado de vehículos de la flota
 - Eje X: horas del día (00:00 - 24:00)
 - Barras horizontales por servicio con duración
-- Filtro por ciudad del vehículo
+- Filtro por municipio del vehículo (MunicipalityCombobox)
 - Vehículos con documentos vencidos: fila en gris, asignación bloqueada
 - Click en celda vacía → formulario de nuevo servicio (vehículo y hora pre-seleccionados)
-- Click en barra existente → formulario de edición del servicio
-- Librería JS (Frappe Gantt o DHTMLX) integrada como componente React
+- Click en barra existente → navegación al detalle del servicio
+- Componente React custom (sin librería Gantt externa)
 
-### 2.3 Formulario de servicio (REQ-003)
+### 2.3 Formulario de servicio (REQ-003) ✅
 
 - Campos obligatorios: placa, conductor, tercero/contrato, origen, destino, hora inicio, duración
 - Lógica para vehículos tercerizados (COD 18):
@@ -56,56 +58,71 @@ Implementar la funcionalidad central del sistema: calendario, planificador Gantt
 - Campos de facturación: grupo, valor unitario, cantidad, forma de pago
 - Estado: Abierto / Cerrado
 
-### 2.4 Resumen del día (REQ-008)
+### 2.4 Resumen del día (REQ-008) ✅
 
-- Tabla con: placa, conductor/proveedor, horarios, cliente, estado, indicador novedades
+- Tabla consolidada con estadísticas ejecutivas (total, cerrados, abiertos, con novedades, tercerizado)
 - Botón "Ejecutar Día" habilitado solo cuando todos los servicios están cerrados
-- Exportar resumen
+- Exportación CSV
 
-### 2.5 Estados del día y bloqueo (REQ-009)
+### 2.5 Estados del día y bloqueo (REQ-009) ✅
 
 - Lógica de transición: Sin datos → PROYECTADO → EJECUTADO
 - Automáticamente PROYECTADO al registrar primer servicio del día
 - EJECUTADO solo si todos los servicios cerrados
 - Bloqueo de edición en estado EJECUTADO (excepto Administrador con justificación y Contabilidad)
 - Registro de justificación obligatoria al modificar registros ejecutados
+- Activity log con spatie/laravel-activitylog
 
 ---
 
-## Paquetes
-
-| Paquete | Uso |
-| ------- | --- |
-| Frappe Gantt o DHTMLX | Diagrama Gantt interactivo |
-| FullCalendar (JS) | Calendario anual/mensual |
-
 ## Decisiones técnicas
 
-### Gantt
+### Gantt y Calendario
 
-Evaluar entre:
-- **Frappe Gantt**: open-source, más simple, menor curva de aprendizaje
-- **DHTMLX Gantt**: más completo, mejor rendimiento con muchos registros, licencia comercial
+Se optó por **componentes React custom** en lugar de librerías externas (Frappe Gantt, DHTMLX, FullCalendar). Esto permitió:
+1. Control total sobre la UI/UX con Tailwind CSS y shadcn/ui
+2. Integración nativa con Inertia props y navegación
+3. Sin dependencias adicionales de JS ni costos de licencia
+4. Rendimiento adecuado para el volumen esperado
 
-La librería elegida se integrará como componente React que:
-1. Recibe datos desde el backend via Inertia props (JSON de servicios del día)
-2. Renderiza el Gantt en el cliente
-3. Emite cambios al backend via Inertia router o llamadas API
-4. Recibe actualizaciones en tiempo real via Laravel Echo (Reverb)
+### Catálogo geográfico
 
-### Rendimiento (NFR-001)
+Se implementó el catálogo DIVIPOLA (departamentos y municipios de Colombia) como soporte para los filtros del Gantt y los formularios de servicio. Incluye un componente `MunicipalityCombobox` reutilizable con búsqueda y agrupación por departamento.
 
-- El Gantt debe soportar 100 vehículos y 300 servicios
-- Usar paginación/virtualización si el rendimiento degrada
-- Lazy loading de datos por ciudad (filtro)
+### Vista detalle de servicio
+
+Se rediseñó la vista show del servicio con layout de tarjetas, barra de timeline (planificado vs real), resumen de facturación e indicadores de incidencias.
+
+---
+
+## Documentación de requerimientos
+
+Cada feature de esta fase tiene su documento detallado en `docs/requirements/`:
+
+| Requerimiento | Documento |
+| ------------- | --------- |
+| Calendario anual | [annual-calendar.md](../requirements/annual-calendar.md) |
+| Gantt diario | [daily-gantt.md](../requirements/daily-gantt.md) |
+| Formulario de servicio | [service-form.md](../requirements/service-form.md) |
+| Resumen del día | [day-summary.md](../requirements/day-summary.md) |
+| Lógica de estados del día | [day-status-logic.md](../requirements/day-status-logic.md) |
+| Rediseño detalle de servicio | [service-detail-redesign.md](../requirements/service-detail-redesign.md) |
+| Catálogo departamentos/municipios | [departments-municipalities-catalog.md](../requirements/departments-municipalities-catalog.md) |
+| Combobox de municipios | [municipality-combobox.md](../requirements/municipality-combobox.md) |
 
 ## Criterios de completitud
 
-- [ ] Calendario anual con colores por estado del día
-- [ ] Gantt diario funcional con drag & click
-- [ ] Filtro por ciudad en el Gantt
-- [ ] Formulario de servicio con todas las validaciones
-- [ ] Lógica de vehículo tercerizado (COD 18)
-- [ ] Resumen del día con botón ejecutar
-- [ ] Bloqueo de edición en días ejecutados
-- [ ] Justificación obligatoria para editar registros ejecutados (admin)
+- [x] Calendario anual con colores por estado del día
+- [x] Gantt diario funcional con click-to-create
+- [x] Filtro por municipio en el Gantt
+- [x] Formulario de servicio con todas las validaciones
+- [x] Lógica de vehículo tercerizado (COD 18)
+- [x] Resumen del día con botón ejecutar y exportación CSV
+- [x] Bloqueo de edición en días ejecutados
+- [x] Justificación obligatoria para editar registros ejecutados (admin)
+
+---
+
+## Bloqueantes para Fase 3
+
+Ninguno. Calendario, Gantt, formulario de servicio, estados del día y resumen del día están completamente implementados y testeados.

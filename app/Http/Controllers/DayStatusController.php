@@ -4,14 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Enums\DayStatusEnum;
 use App\Enums\Permission;
+use App\Enums\Role;
 use App\Enums\ServiceStatus;
 use App\Http\Requests\DayStatusStoreRequest;
 use App\Http\Requests\DayStatusUpdateRequest;
 use App\Models\DayStatus;
 use App\Models\Service;
+use App\Models\User;
+use App\Notifications\DayExecutedNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Notification;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -139,6 +143,11 @@ class DayStatusController extends Controller
             'executor_id' => auth()->id(),
             'executed_at' => now(),
         ]);
+
+        $accountingUsers = User::role(Role::ACCOUNTING->value)->get();
+        if ($accountingUsers->isNotEmpty()) {
+            Notification::send($accountingUsers, new DayExecutedNotification($dayStatus));
+        }
 
         return redirect()->back()->with('success', 'Día ejecutado correctamente.');
     }

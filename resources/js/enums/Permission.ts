@@ -44,6 +44,10 @@ export const Permission = {
     CREATE_USERS: 'users.create',
     UPDATE_USERS: 'users.update',
     DELETE_USERS: 'users.delete',
+    VIEW_INCIDENT_TYPES: 'incident-types.view',
+    CREATE_INCIDENT_TYPES: 'incident-types.create',
+    UPDATE_INCIDENT_TYPES: 'incident-types.update',
+    DELETE_INCIDENT_TYPES: 'incident-types.delete',
     RECEIVE_NOTIFICATIONS: 'notifications.receive',
 } as const;
 
@@ -92,5 +96,9 @@ export const PermissionLabel: Record<Permission, string> = {
     'users.create': 'Crear usuarios',
     'users.update': 'Editar usuarios',
     'users.delete': 'Eliminar usuarios',
+    'incident-types.view': 'Ver tipos de novedad',
+    'incident-types.create': 'Crear tipos de novedad',
+    'incident-types.update': 'Editar tipos de novedad',
+    'incident-types.delete': 'Eliminar tipos de novedad',
     'notifications.receive': 'Recibir notificaciones',
 };

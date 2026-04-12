@@ -5,10 +5,10 @@
 # Dokploy manages the app container separately (see docs/deployment.md).
 #
 # Local testing (builds and runs the app alongside infrastructure):
-#   docker compose -f compose.staging.yaml --profile local --env-file .env.stg up -d --build
+#   docker compose -f compose.staging.yaml --profile local --env-file .env.staging up -d --build
 #
 # Infrastructure only (for Dokploy — paste this file as-is):
-#   docker compose -f compose.staging.yaml --env-file .env.stg up -d
+#   docker compose -f compose.staging.yaml up -d
 # =============================================================================
 
 services:
@@ -47,6 +47,7 @@ services:
             - 'sgte-pgsql:/var/lib/postgresql'
         networks:
             - sgte
+            - dokploy-network
         healthcheck:
             test:
                 - CMD
@@ -66,10 +67,14 @@ services:
             - 'sgte-redis:/data'
         networks:
             - sgte
+            - dokploy-network
+        command: redis-server --requirepass ${REDIS_PASSWORD:-secret}
         healthcheck:
             test:
                 - CMD
                 - redis-cli
+                - '-a'
+                - '${REDIS_PASSWORD:-secret}'
                 - ping
             retries: 3
             timeout: 5s
@@ -85,6 +90,7 @@ services:
             - 'sgte-typesense:/typesense-data'
         networks:
             - sgte
+            - dokploy-network
         healthcheck:
             test:
                 - CMD
@@ -99,12 +105,13 @@ services:
             - '${FORWARD_MINIO_PORT:-9000}:9000'
             - '${FORWARD_MINIO_CONSOLE_PORT:-8900}:8900'
         environment:
-            MINIO_ROOT_USER: sail
-            MINIO_ROOT_PASSWORD: password
+            MINIO_ROOT_USER: '${MINIO_ROOT_USER:-sail}'
+            MINIO_ROOT_PASSWORD: '${MINIO_ROOT_PASSWORD:-password}'
         volumes:
             - 'sgte-minio:/data'
         networks:
             - sgte
+            - dokploy-network
         command: 'minio server /data --console-address ":8900"'
         healthcheck:
             test:
@@ -121,9 +128,13 @@ services:
             - '${FORWARD_MAILPIT_DASHBOARD_PORT:-8025}:8025'
         networks:
             - sgte
+            - dokploy-network
 networks:
     sgte:
         driver: bridge
+    dokploy-network:
+        name: dokploy-network
+        external: true
 volumes:
     sgte-pgsql:
         driver: local

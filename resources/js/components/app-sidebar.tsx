@@ -8,6 +8,7 @@ import {
     MapPin,
     Receipt,
     Settings,
+    Truck,
     Wrench,
 } from 'lucide-react';
 import { index as contractsIndex } from '@/actions/App/Http/Controllers/ContractController';
@@ -18,6 +19,8 @@ import { index as driversIndex } from '@/actions/App/Http/Controllers/DriverCont
 import { index as epsIndex } from '@/actions/App/Http/Controllers/EpsController';
 import { index as fuecsIndex } from '@/actions/App/Http/Controllers/FuecController';
 import { index as ganttIndex } from '@/actions/App/Http/Controllers/GanttController';
+import { index as driverDashboardIndex } from '@/actions/App/Http/Controllers/DriverDashboardController';
+import { index as incidentTypesIndex } from '@/actions/App/Http/Controllers/IncidentTypeController';
 import { index as invoicesIndex } from '@/actions/App/Http/Controllers/InvoiceController';
 import { index as pensionFundsIndex } from '@/actions/App/Http/Controllers/PensionFundController';
 import { index as servicesIndex } from '@/actions/App/Http/Controllers/ServiceController';
@@ -53,6 +56,18 @@ const mainNavItems: NavItem[] = [
 ];
 
 const navGroups: NavGroup[] = [
+    {
+        label: 'Conductor',
+        icon: Truck,
+        permission: Permission.REGISTER_SERVICE_TIMES,
+        items: [
+            {
+                title: 'Mis Servicios',
+                href: driverDashboardIndex(),
+                permission: Permission.REGISTER_SERVICE_TIMES,
+            },
+        ],
+    },
     {
         label: 'Producción',
         icon: Calendar,
@@ -167,6 +182,10 @@ const navGroups: NavGroup[] = [
             {
                 title: 'Fondos de Cesantías',
                 href: severanceFundsIndex(),
+            },
+            {
+                title: 'Tipos de Novedad',
+                href: incidentTypesIndex(),
             },
         ],
     },

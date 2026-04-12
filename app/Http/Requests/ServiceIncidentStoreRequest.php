@@ -23,10 +23,7 @@ class ServiceIncidentStoreRequest extends FormRequest
             'service_id' => ['required', 'integer', 'exists:services,id'],
             'incident_type_id' => ['required', 'integer', 'exists:incident_types,id'],
             'description' => ['required', 'string'],
-            'registrar_id' => ['required', 'integer', 'exists:users,id'],
-            'is_driver_report' => ['required'],
-            'reported_at' => ['required'],
-            'affects_billing' => ['required'],
+            'affects_billing' => ['boolean'],
             'additional_value' => ['nullable', 'numeric', 'between:-9999999999.99,9999999999.99'],
         ];
     }

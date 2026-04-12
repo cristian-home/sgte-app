@@ -3,13 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Enums\Permission;
+use App\Enums\Role;
 use App\Http\Requests\ServiceIncidentStoreRequest;
 use App\Http\Requests\ServiceIncidentUpdateRequest;
 use App\Models\IncidentType;
+use App\Models\Service;
 use App\Models\ServiceIncident;
+use App\Models\User;
+use App\Notifications\BillingIncidentNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Notification;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\QueryBuilder\AllowedFilter;
@@ -21,12 +26,15 @@ class ServiceIncidentController extends Controller
     {
         Gate::authorize(Permission::VIEW_INCIDENTS->value);
         $serviceIncidents = QueryBuilder::for(ServiceIncident::class)
+            ->with(['service', 'incidentType', 'registrar'])
             ->allowedFilters([
+                AllowedFilter::exact('service_id'),
                 AllowedFilter::exact('incident_type_id'),
                 AllowedFilter::exact('is_driver_report'),
                 AllowedFilter::exact('affects_billing'),
             ])
-            ->allowedSorts(['incident_type_id', 'reported_at'])
+            ->allowedSorts(['reported_at', 'incident_type_id'])
+            ->latest('reported_at')
             ->get();
 
         return Inertia::render('service-incidents/index', [
@@ -38,22 +46,44 @@ class ServiceIncidentController extends Controller
     {
         Gate::authorize(Permission::CREATE_INCIDENTS->value);
 
+        $service = null;
+        if ($request->has('service_id')) {
+            $service = Service::with(['vehicle', 'contract.thirdParty'])->find($request->integer('service_id'));
+        }
+
         return Inertia::render('service-incidents/create', [
-            'incidentTypes' => IncidentType::all(),
+            'incidentTypes' => IncidentType::orderBy('name')->get(),
+            'service' => $service,
         ]);
     }
 
     public function store(ServiceIncidentStoreRequest $request): RedirectResponse
     {
         Gate::authorize(Permission::CREATE_INCIDENTS->value);
-        $serviceIncident = ServiceIncident::create($request->validated());
 
-        return redirect()->route('service-incidents.index');
+        $serviceIncident = ServiceIncident::create([
+            ...$request->validated(),
+            'registrar_id' => $request->user()->id,
+            'reported_at' => now(),
+            'is_driver_report' => $request->user()->hasRole(Role::DRIVER->value),
+        ]);
+
+        if ($serviceIncident->affects_billing) {
+            $recipients = User::role([Role::SUPER_ADMIN->value, Role::ADMIN->value, Role::ACCOUNTING->value])->get();
+            if ($recipients->isNotEmpty()) {
+                $serviceIncident->load(['service', 'incidentType']);
+                Notification::send($recipients, new BillingIncidentNotification($serviceIncident));
+            }
+        }
+
+        return redirect()->route('services.show', $serviceIncident->service_id);
     }
 
     public function show(Request $request, ServiceIncident $serviceIncident): Response
     {
         Gate::authorize(Permission::VIEW_INCIDENTS->value);
+
+        $serviceIncident->load(['service', 'incidentType', 'registrar']);
 
         return Inertia::render('service-incidents/show', [
             'serviceIncident' => $serviceIncident,
@@ -64,9 +94,11 @@ class ServiceIncidentController extends Controller
     {
         Gate::authorize(Permission::UPDATE_INCIDENTS->value);
 
+        $serviceIncident->load(['service.vehicle', 'service.contract.thirdParty']);
+
         return Inertia::render('service-incidents/edit', [
             'serviceIncident' => $serviceIncident,
-            'incidentTypes' => IncidentType::all(),
+            'incidentTypes' => IncidentType::orderBy('name')->get(),
         ]);
     }
 
@@ -75,14 +107,16 @@ class ServiceIncidentController extends Controller
         Gate::authorize(Permission::UPDATE_INCIDENTS->value);
         $serviceIncident->update($request->validated());
 
-        return redirect()->route('service-incidents.index');
+        return redirect()->route('services.show', $serviceIncident->service_id);
     }
 
     public function destroy(Request $request, ServiceIncident $serviceIncident): RedirectResponse
     {
         Gate::authorize(Permission::DELETE_INCIDENTS->value);
+
+        $serviceId = $serviceIncident->service_id;
         $serviceIncident->delete();
 
-        return redirect()->route('service-incidents.index');
+        return redirect()->route('services.show', $serviceId);
     }
 }

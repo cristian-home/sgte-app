@@ -12,6 +12,11 @@ Route::get('dashboard', [DashboardController::class, 'show'])->middleware(['auth
 require __DIR__.'/settings.php';
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    // Driver dashboard
+    Route::get('driver', [App\Http\Controllers\DriverDashboardController::class, 'index'])->name('driver.dashboard');
+    Route::post('driver/services/{service}/confirm-start', [App\Http\Controllers\DriverDashboardController::class, 'confirmStart'])->name('driver.confirm-start');
+    Route::post('driver/services/{service}/confirm-end', [App\Http\Controllers\DriverDashboardController::class, 'confirmEnd'])->name('driver.confirm-end');
+
     Route::get('gantt', [App\Http\Controllers\GanttController::class, 'index'])->name('gantt.index');
     Route::get('day-summary/export', [App\Http\Controllers\DaySummaryController::class, 'export'])->name('day-summary.export');
     Route::get('day-summary', [App\Http\Controllers\DaySummaryController::class, 'index'])->name('day-summary.index');
@@ -33,6 +38,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('day-statuses/{day_status}/execute', [App\Http\Controllers\DayStatusController::class, 'execute'])->name('day-statuses.execute');
     Route::resource('day-statuses', App\Http\Controllers\DayStatusController::class);
     Route::resource('services', App\Http\Controllers\ServiceController::class);
+    Route::resource('incident-types', App\Http\Controllers\IncidentTypeController::class);
     Route::resource('service-incidents', App\Http\Controllers\ServiceIncidentController::class);
     Route::resource('fuecs', App\Http\Controllers\FuecController::class);
     Route::resource('vehicle-locations', App\Http\Controllers\VehicleLocationController::class);

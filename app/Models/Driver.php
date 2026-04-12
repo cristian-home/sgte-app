@@ -23,6 +23,7 @@ class Driver extends Model
      * @var array
      */
     protected $fillable = [
+        'user_id',
         'document_type_id',
         'identification_number',
         'first_name',
@@ -51,6 +52,7 @@ class Driver extends Model
     {
         return [
             'id' => 'integer',
+            'user_id' => 'integer',
             'document_type_id' => 'integer',
             'municipality_id' => 'integer',
             'eps_id' => 'integer',
@@ -61,6 +63,11 @@ class Driver extends Model
             'has_social_security' => 'boolean',
             'active' => 'boolean',
         ];
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 
     public function municipality(): BelongsTo

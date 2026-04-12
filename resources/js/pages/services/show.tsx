@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import {
     Calendar,
     CircleDot,
@@ -7,11 +7,17 @@ import {
     FileText,
     Hash,
     MapPin,
+    Pencil,
+    Plus,
+    Trash2,
     Truck,
     User,
     Users,
 } from 'lucide-react';
+import { useState } from 'react';
+import ServiceIncidentController from '@/actions/App/Http/Controllers/ServiceIncidentController';
 import { Can } from '@/components/can';
+import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { ServiceTimelineBar } from '@/components/services/service-timeline-bar';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -167,6 +173,7 @@ export default function ServicesShow({
             : '\u2014';
 
     const incidents = service.service_incidents ?? [];
+    const [deleteUrl, setDeleteUrl] = useState<string | null>(null);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -409,13 +416,25 @@ export default function ServicesShow({
                 {/* Row 3: Incidentes */}
                 <Card>
                     <CardHeader>
-                        <div className="flex items-center gap-2">
-                            <CardTitle>Incidentes</CardTitle>
-                            {incidents.length > 0 && (
-                                <Badge variant="secondary">
-                                    {incidents.length}
-                                </Badge>
-                            )}
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <CardTitle>Incidentes</CardTitle>
+                                {incidents.length > 0 && (
+                                    <Badge variant="secondary">
+                                        {incidents.length}
+                                    </Badge>
+                                )}
+                            </div>
+                            <Can permission={Permission.CREATE_INCIDENTS}>
+                                <Link
+                                    href={`${ServiceIncidentController.create.url()}?service_id=${service.id}`}
+                                >
+                                    <Button size="sm">
+                                        <Plus className="mr-1 size-4" />
+                                        Registrar Novedad
+                                    </Button>
+                                </Link>
+                            </Can>
                         </div>
                     </CardHeader>
                     <CardContent>
@@ -444,6 +463,9 @@ export default function ServicesShow({
                                             <th className="pb-2 font-medium">
                                                 Facturacion
                                             </th>
+                                            <th className="pb-2 font-medium">
+                                                Acciones
+                                            </th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y">
@@ -471,12 +493,55 @@ export default function ServicesShow({
                                                         {incident.registrar
                                                             ?.name ?? '\u2014'}
                                                     </td>
-                                                    <td className="py-2">
+                                                    <td className="py-2 pr-3">
                                                         {incident.affects_billing && (
                                                             <Badge variant="destructive">
                                                                 Afecta
                                                             </Badge>
                                                         )}
+                                                    </td>
+                                                    <td className="py-2">
+                                                        <div className="flex items-center gap-1">
+                                                            <Can
+                                                                permission={
+                                                                    Permission.UPDATE_INCIDENTS
+                                                                }
+                                                            >
+                                                                <Link
+                                                                    href={ServiceIncidentController.edit.url(
+                                                                        incident.id,
+                                                                    )}
+                                                                >
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="icon"
+                                                                        className="size-7"
+                                                                    >
+                                                                        <Pencil className="size-3.5" />
+                                                                    </Button>
+                                                                </Link>
+                                                            </Can>
+                                                            <Can
+                                                                permission={
+                                                                    Permission.DELETE_INCIDENTS
+                                                                }
+                                                            >
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="size-7 text-destructive hover:text-destructive"
+                                                                    onClick={() =>
+                                                                        setDeleteUrl(
+                                                                            ServiceIncidentController.destroy.url(
+                                                                                incident.id,
+                                                                            ),
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    <Trash2 className="size-3.5" />
+                                                                </Button>
+                                                            </Can>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             ),
@@ -488,6 +553,11 @@ export default function ServicesShow({
                     </CardContent>
                 </Card>
             </div>
+            <DeleteConfirmationDialog
+                open={deleteUrl !== null}
+                onOpenChange={(open) => !open && setDeleteUrl(null)}
+                deleteUrl={deleteUrl ?? ''}
+            />
         </AppLayout>
     );
 }
