@@ -16,10 +16,10 @@ import { calendar as dayStatusesCalendar } from '@/actions/App/Http/Controllers/
 import { index as daySummaryIndex } from '@/actions/App/Http/Controllers/DaySummaryController';
 import { index as documentTypesIndex } from '@/actions/App/Http/Controllers/DocumentTypeController';
 import { index as driversIndex } from '@/actions/App/Http/Controllers/DriverController';
+import { index as driverDashboardIndex } from '@/actions/App/Http/Controllers/DriverDashboardController';
 import { index as epsIndex } from '@/actions/App/Http/Controllers/EpsController';
 import { index as fuecsIndex } from '@/actions/App/Http/Controllers/FuecController';
 import { index as ganttIndex } from '@/actions/App/Http/Controllers/GanttController';
-import { index as driverDashboardIndex } from '@/actions/App/Http/Controllers/DriverDashboardController';
 import { index as incidentTypesIndex } from '@/actions/App/Http/Controllers/IncidentTypeController';
 import { index as invoicesIndex } from '@/actions/App/Http/Controllers/InvoiceController';
 import { index as pensionFundsIndex } from '@/actions/App/Http/Controllers/PensionFundController';

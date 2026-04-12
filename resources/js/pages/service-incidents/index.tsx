@@ -1,4 +1,4 @@
-import { Head, router } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 import { useState } from 'react';
 import ServiceIncidentController from '@/actions/App/Http/Controllers/ServiceIncidentController';
 import {
