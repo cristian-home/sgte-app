@@ -155,6 +155,42 @@ Services in `compose.yaml`: PostgreSQL 18, Redis, Typesense (search), MinIO (S3 
 
 Project documentation lives in `/docs/`: SRS (`SRS.md`), data model (`modelo-datos.md`), navigation structure (`navegacion.md`), UI mockups (`mockups.md`), ADRs in `/docs/adr/`, and phase plans in `/docs/fases/`.
 
+## Browser Automation for UI Verification
+
+The project has **Playwright MCP** configured in local scope (personal, not committed to the repo — lives in `~/.claude.json` under the project path). It's the preferred way to verify UI changes, debug front-end behavior, or walk through features interactively.
+
+**Setup**: already installed via `claude mcp add playwright -s local -- npx -y @playwright/mcp@latest --user-data-dir=<repo>/.claude/playwright-profile --browser=chromium`. The user-data-dir is gitignored (under `/.claude/*`), so browser sessions (cookies, localStorage) persist across MCP restarts. If the MCP isn't available in a fresh session, re-run the `claude mcp add` command.
+
+**When to use which tool**:
+
+| Task | Tool |
+|---|---|
+| Explore a UI flow, click through a feature, take a screenshot on demand | Playwright MCP (`mcp__playwright__*`) |
+| Read browser console errors for a running local app | `mcp__laravel-boost__browser-logs` |
+| Committable regression tests | Laravel Dusk (`./vendor/bin/sail dusk`) — currently disabled in CI but the machinery works |
+
+**Testing with multiple roles**: the reference users (created by the init-data migration) all share the password `password`, except the super admin which reads from `.env`. To switch roles during a Playwright MCP session:
+
+1. Ensure you're on the login page: `browser_navigate http://localhost/login`
+2. Fill email + password, submit.
+3. The session cookie persists in the user-data-dir until you logout or delete the profile directory.
+
+Reference users (all password `password`):
+
+| Role | Email |
+|---|---|
+| Admin | `admin@sgte.app` |
+| Operator | `operator@sgte.app` |
+| Driver | `driver@sgte.app` |
+| Accounting | `accounting@sgte.app` |
+| Super Admin | whatever `SUPER_ADMIN_USER` is set to in `.env` |
+
+**Efficiency tips for token usage**:
+- Default to `browser_snapshot` (accessibility tree) over `browser_take_screenshot`. The a11y snapshot is ~200-600 tokens vs. 1500-3000 for image analysis.
+- Use `browser_take_screenshot` only when the question is visual (alignment, colors, spacing).
+- Keep the MCP session warm: don't restart it between checks — the persistent profile means the logged-in session is still there.
+- Use `mcp__laravel-boost__browser-logs` instead of scraping console output from Playwright when you only need JS errors.
+
 ## Git & Commit Conventions
 
 - **Never add `Co-Authored-By: Claude …` trailers, "Generated with Claude Code" footers, or any other AI attribution to commit messages or PR bodies.** Write commits as if authored entirely by the user. This overrides the default Claude Code commit template.
