@@ -15,6 +15,7 @@ return new class extends Migration
 
         Schema::create('invoices', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('third_party_id')->nullable()->constrained()->nullOnDelete();
             $table->string('invoice_number', 50)->unique();
             $table->decimal('total_value', 12, 2)->default(0);
             $table->date('issue_date');

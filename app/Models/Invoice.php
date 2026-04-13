@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\PaymentStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Laravel\Scout\Searchable;
@@ -22,6 +23,7 @@ class Invoice extends Model
      * @var array
      */
     protected $fillable = [
+        'third_party_id',
         'invoice_number',
         'total_value',
         'issue_date',
@@ -38,10 +40,16 @@ class Invoice extends Model
     {
         return [
             'id' => 'integer',
+            'third_party_id' => 'integer',
             'total_value' => 'decimal:2',
             'issue_date' => 'date',
             'payment_status' => PaymentStatus::class,
         ];
+    }
+
+    public function thirdParty(): BelongsTo
+    {
+        return $this->belongsTo(ThirdParty::class);
     }
 
     public function services(): HasMany
@@ -52,7 +60,7 @@ class Invoice extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['id', 'invoice_number', 'total_value', 'issue_date', 'payment_status', 'notes']);
+            ->logOnly(['id', 'third_party_id', 'invoice_number', 'total_value', 'issue_date', 'payment_status', 'notes']);
     }
 
     /**
@@ -72,6 +80,7 @@ class Invoice extends Model
     {
         return [
             'id' => (string) $this->id,
+            'third_party_id' => $this->third_party_id,
             'invoice_number' => $this->invoice_number,
             'total_value' => (float) $this->total_value,
             'issue_date' => $this->issue_date?->toDateString(),

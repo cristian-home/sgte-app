@@ -24,6 +24,7 @@ class InvoiceUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'third_party_id' => ['nullable', 'integer', 'exists:third_parties,id'],
             'invoice_number' => ['required', 'string', 'max:50', Rule::unique('invoices', 'invoice_number')->ignore($this->route('invoice'))],
             'total_value' => ['required', 'numeric', 'between:-9999999999.99,9999999999.99'],
             'issue_date' => ['required', 'date'],

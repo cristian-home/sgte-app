@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\PaymentStatus;
+use App\Models\ThirdParty;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class InvoiceFactory extends Factory
@@ -13,6 +14,7 @@ class InvoiceFactory extends Factory
     public function definition(): array
     {
         return [
+            'third_party_id' => ThirdParty::factory(),
             'invoice_number' => fake()->unique()->numerify('FAC-####-2026'),
             'total_value' => fake()->randomFloat(2, 100000, 5000000),
             'issue_date' => fake()->dateTimeBetween('-3 months', 'now'),
