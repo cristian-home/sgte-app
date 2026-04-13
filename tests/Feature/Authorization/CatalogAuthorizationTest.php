@@ -18,8 +18,8 @@ use function Pest\Laravel\put;
 /**
  * Verifies that the four "static" catalog modules (document types, EPS,
  * pension funds, severance funds) are gated behind the MANAGE_CATALOGS
- * permission. Admin and super-admin pass; operator, driver and accounting
- * are denied.
+ * permission. Admin, super-admin, and operator (via the Gestión/Catálogos
+ * group) pass; driver and accounting are denied.
  */
 dataset('catalogs', [
     'document-types' => [
@@ -45,7 +45,6 @@ dataset('catalogs', [
 ]);
 
 dataset('denied_roles', [
-    'operator' => [Role::OPERATOR],
     'driver' => [Role::DRIVER],
     'accounting' => [Role::ACCOUNTING],
 ]);
@@ -83,6 +82,15 @@ test('denied roles cannot edit or delete catalog entries', function (string $pre
 test('admin role can access catalog modules', function (string $prefix, $modelFactory, $validData): void {
     $user = User::factory()->create();
     $user->assignRole(Role::ADMIN->value);
+    actingAs($user);
+
+    get(route("$prefix.index"))->assertOk();
+    get(route("$prefix.create"))->assertOk();
+})->with('catalogs');
+
+test('operator role can access catalog modules', function (string $prefix, $modelFactory, $validData): void {
+    $user = User::factory()->create();
+    $user->assignRole(Role::OPERATOR->value);
     actingAs($user);
 
     get(route("$prefix.index"))->assertOk();

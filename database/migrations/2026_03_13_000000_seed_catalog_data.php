@@ -114,6 +114,7 @@ return new class extends Migration
             Permission::UPDATE_INCIDENT_TYPES,
             Permission::DELETE_INCIDENT_TYPES,
             Permission::MANAGE_CATALOGS,
+            Permission::VIEW_AUDIT_LOG,
             Permission::RECEIVE_NOTIFICATIONS,
         ]));
 
@@ -124,10 +125,30 @@ return new class extends Migration
         $operatorRole->syncPermissions(array_map(fn ($p) => $p->value, [
             Permission::VIEW_DASHBOARD,
             Permission::VIEW_SETTINGS,
+            // Gestión — master data (admin+operator)
             Permission::VIEW_VEHICLES,
+            Permission::CREATE_VEHICLES,
+            Permission::UPDATE_VEHICLES,
+            Permission::DELETE_VEHICLES,
             Permission::VIEW_DRIVERS,
+            Permission::CREATE_DRIVERS,
+            Permission::UPDATE_DRIVERS,
+            Permission::DELETE_DRIVERS,
             Permission::VIEW_THIRD_PARTIES,
+            Permission::CREATE_THIRD_PARTIES,
+            Permission::UPDATE_THIRD_PARTIES,
+            Permission::DELETE_THIRD_PARTIES,
             Permission::VIEW_CONTRACTS,
+            Permission::CREATE_CONTRACTS,
+            Permission::UPDATE_CONTRACTS,
+            Permission::DELETE_CONTRACTS,
+            // Catálogos
+            Permission::VIEW_INCIDENT_TYPES,
+            Permission::CREATE_INCIDENT_TYPES,
+            Permission::UPDATE_INCIDENT_TYPES,
+            Permission::DELETE_INCIDENT_TYPES,
+            Permission::MANAGE_CATALOGS,
+            // Producción
             Permission::VIEW_SERVICES,
             Permission::CREATE_SERVICES,
             Permission::UPDATE_PROJECTED_SERVICES,

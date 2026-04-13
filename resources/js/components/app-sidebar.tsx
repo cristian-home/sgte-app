@@ -1,9 +1,7 @@
 import { Link } from '@inertiajs/react';
 import {
-    BookOpen,
     Calendar,
     FileText,
-    Folder,
     LayoutGrid,
     MapPin,
     Receipt,
@@ -29,7 +27,6 @@ import { index as severanceFundsIndex } from '@/actions/App/Http/Controllers/Sev
 import { index as thirdPartiesIndex } from '@/actions/App/Http/Controllers/ThirdPartyController';
 import { index as vehiclesIndex } from '@/actions/App/Http/Controllers/VehicleController';
 import { index as vehicleLocationsIndex } from '@/actions/App/Http/Controllers/VehicleLocationController';
-import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import {
@@ -101,7 +98,7 @@ const navGroups: NavGroup[] = [
         ],
     },
     {
-        label: 'Administración',
+        label: 'Gestión',
         icon: Wrench,
         permission: Permission.VIEW_VEHICLES,
         items: [
@@ -196,19 +193,6 @@ const navGroups: NavGroup[] = [
     },
 ];
 
-const footerNavItems: NavItem[] = [
-    {
-        title: 'Repositorio',
-        href: 'https://github.com/laravel/react-starter-kit',
-        icon: Folder,
-    },
-    {
-        title: 'Documentación',
-        href: 'https://laravel.com/docs/starter-kits#react',
-        icon: BookOpen,
-    },
-];
-
 export function AppSidebar() {
     return (
         <Sidebar collapsible="icon" variant="inset">
@@ -229,7 +213,6 @@ export function AppSidebar() {
             </SidebarContent>
 
             <SidebarFooter>
-                <NavFooter items={footerNavItems} className="mt-auto" />
                 <NavUser />
             </SidebarFooter>
         </Sidebar>

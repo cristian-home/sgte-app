@@ -79,6 +79,9 @@ enum Permission: string
     // Static Catalogs (document types, EPS, pension funds, severance funds)
     case MANAGE_CATALOGS = 'catalogs.manage';
 
+    // Audit log (Administración)
+    case VIEW_AUDIT_LOG = 'audit-log.view';
+
     // Notifications
     case RECEIVE_NOTIFICATIONS = 'notifications.receive';
 
@@ -132,6 +135,7 @@ enum Permission: string
             self::UPDATE_INCIDENT_TYPES => 'Editar tipos de novedad',
             self::DELETE_INCIDENT_TYPES => 'Eliminar tipos de novedad',
             self::MANAGE_CATALOGS => 'Gestionar catálogos (documentos, EPS, fondos)',
+            self::VIEW_AUDIT_LOG => 'Ver registro de auditoría',
             self::RECEIVE_NOTIFICATIONS => 'Recibir notificaciones',
         };
     }
