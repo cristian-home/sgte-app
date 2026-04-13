@@ -159,7 +159,7 @@ Project documentation lives in `/docs/`: SRS (`SRS.md`), data model (`modelo-dat
 
 The project has **Playwright MCP** configured in local scope (personal, not committed to the repo — lives in `~/.claude.json` under the project path). It's the preferred way to verify UI changes, debug front-end behavior, or walk through features interactively.
 
-**Setup**: already installed via `claude mcp add playwright -s local -- npx -y @playwright/mcp@latest --user-data-dir=<repo>/.claude/playwright-profile --browser=chromium`. The user-data-dir is gitignored (under `/.claude/*`), so browser sessions (cookies, localStorage) persist across MCP restarts. If the MCP isn't available in a fresh session, re-run the `claude mcp add` command.
+**Setup**: already installed via `claude mcp add playwright -s local -- npx -y @playwright/mcp@latest --user-data-dir=<repo>/.claude/playwright-profile --browser=chromium --output-dir=<repo>/.claude/playwright-output`. Both dirs live under `/.claude/*` which is gitignored, so browser sessions (cookies, localStorage) and the MCP's snapshot/log output stay out of the repo. A safety-net `/.playwright-mcp` entry in `.gitignore` catches the legacy default output path too. If the MCP isn't available in a fresh session, re-run the `claude mcp add` command.
 
 **When to use which tool**:
 

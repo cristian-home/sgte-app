@@ -33,6 +33,7 @@ yarn-error.log
 /.claude/*
 !/.claude/commands/
 /.claude-backup
+/.playwright-mcp
 
 **/caddy
 frankenphp
