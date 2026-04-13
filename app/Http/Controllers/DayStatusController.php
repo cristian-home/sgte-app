@@ -87,12 +87,16 @@ class DayStatusController extends Controller
 
     public function create(Request $request): Response
     {
+        Gate::authorize(Permission::EXECUTE_DAY->value);
+
         return Inertia::render('day-statuses/create');
     }
 
     public function store(DayStatusStoreRequest $request): RedirectResponse
     {
-        $dayStatus = DayStatus::create($request->validated());
+        Gate::authorize(Permission::EXECUTE_DAY->value);
+
+        DayStatus::create($request->validated());
 
         return redirect()->route('day-statuses.index');
     }
@@ -108,6 +112,8 @@ class DayStatusController extends Controller
 
     public function edit(Request $request, DayStatus $dayStatus): Response
     {
+        Gate::authorize(Permission::EXECUTE_DAY->value);
+
         return Inertia::render('day-statuses/edit', [
             'dayStatus' => $dayStatus,
         ]);
@@ -115,6 +121,8 @@ class DayStatusController extends Controller
 
     public function update(DayStatusUpdateRequest $request, DayStatus $dayStatus): RedirectResponse
     {
+        Gate::authorize(Permission::EXECUTE_DAY->value);
+
         $dayStatus->update($request->validated());
 
         return redirect()->route('day-statuses.index');
@@ -154,6 +162,8 @@ class DayStatusController extends Controller
 
     public function destroy(Request $request, DayStatus $dayStatus): RedirectResponse
     {
+        Gate::authorize(Permission::EXECUTE_DAY->value);
+
         $dayStatus->delete();
 
         return redirect()->route('day-statuses.index');

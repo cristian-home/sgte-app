@@ -3,7 +3,9 @@
 namespace App\Http\Requests;
 
 use App\Enums\FuecStatus;
+use App\Enums\Permission;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
 class FuecStoreRequest extends FormRequest
@@ -13,7 +15,7 @@ class FuecStoreRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        return Gate::allows(Permission::GENERATE_FUEC->value);
     }
 
     /**

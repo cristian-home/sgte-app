@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\Permission;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Gate;
 
 class VehicleLocationStoreRequest extends FormRequest
 {
@@ -11,7 +13,7 @@ class VehicleLocationStoreRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        return Gate::allows(Permission::CREATE_VEHICLES->value);
     }
 
     /**

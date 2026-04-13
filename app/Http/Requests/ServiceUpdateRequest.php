@@ -4,8 +4,10 @@ namespace App\Http\Requests;
 
 use App\Enums\DayStatusEnum;
 use App\Enums\PaymentMethod;
+use App\Enums\Permission;
 use App\Enums\Role;
 use App\Models\DayStatus;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
 class ServiceUpdateRequest extends ServiceStoreRequest
@@ -34,7 +36,7 @@ class ServiceUpdateRequest extends ServiceStoreRequest
             return false;
         }
 
-        return true;
+        return Gate::allows(Permission::UPDATE_PROJECTED_SERVICES->value);
     }
 
     public function rules(): array

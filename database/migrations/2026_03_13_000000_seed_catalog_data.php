@@ -141,16 +141,16 @@ return new class extends Migration
             Permission::RECEIVE_NOTIFICATIONS,
         ]));
 
-        // Driver
+        // Driver — no global services.view / incidents.view. Drivers
+        // see only their own services through the DriverDashboardController
+        // (/driver) and register tiempos/novedades from there.
         $driverRole = SpatieRole::firstOrCreate(
             ['name' => Role::DRIVER->value, 'guard_name' => 'web'],
         );
         $driverRole->syncPermissions(array_map(fn ($p) => $p->value, [
             Permission::VIEW_DASHBOARD,
             Permission::VIEW_SETTINGS,
-            Permission::VIEW_SERVICES,
             Permission::REGISTER_SERVICE_TIMES,
-            Permission::VIEW_INCIDENTS,
             Permission::CREATE_INCIDENTS,
             Permission::RECEIVE_NOTIFICATIONS,
         ]));

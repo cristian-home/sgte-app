@@ -76,7 +76,7 @@ class ServiceIncidentController extends Controller
             }
         }
 
-        return redirect()->route('services.show', $serviceIncident->service_id);
+        return $this->redirectAfterMutation($request, $serviceIncident->service_id);
     }
 
     public function show(Request $request, ServiceIncident $serviceIncident): Response
@@ -107,7 +107,7 @@ class ServiceIncidentController extends Controller
         Gate::authorize(Permission::UPDATE_INCIDENTS->value);
         $serviceIncident->update($request->validated());
 
-        return redirect()->route('services.show', $serviceIncident->service_id);
+        return $this->redirectAfterMutation($request, $serviceIncident->service_id);
     }
 
     public function destroy(Request $request, ServiceIncident $serviceIncident): RedirectResponse
@@ -116,6 +116,24 @@ class ServiceIncidentController extends Controller
 
         $serviceId = $serviceIncident->service_id;
         $serviceIncident->delete();
+
+        return $this->redirectAfterMutation($request, $serviceId);
+    }
+
+    /**
+     * Pick a safe redirect target depending on the user's role.
+     *
+     * Drivers don't have VIEW_SERVICES, so redirecting them to
+     * services.show would yield a 403. Send them back to /driver
+     * where they see their own assigned services.
+     */
+    private function redirectAfterMutation(Request $request, int $serviceId): RedirectResponse
+    {
+        $user = $request->user();
+
+        if ($user && $user->hasRole(Role::DRIVER->value) && ! $user->can(Permission::VIEW_SERVICES->value)) {
+            return redirect()->route('driver.dashboard');
+        }
 
         return redirect()->route('services.show', $serviceId);
     }

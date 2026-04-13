@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\Permission;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
 class ThirdPartyStoreRequest extends FormRequest
@@ -12,7 +14,7 @@ class ThirdPartyStoreRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        return Gate::allows(Permission::CREATE_THIRD_PARTIES->value);
     }
 
     /**

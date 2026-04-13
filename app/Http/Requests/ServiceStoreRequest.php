@@ -4,12 +4,14 @@ namespace App\Http\Requests;
 
 use App\Enums\DayStatusEnum;
 use App\Enums\PaymentMethod;
+use App\Enums\Permission;
 use App\Enums\ServiceStatus;
 use App\Models\Contract;
 use App\Models\DayStatus;
 use App\Models\Vehicle;
 use App\Rules\NoScheduleConflict;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
 class ServiceStoreRequest extends FormRequest
@@ -19,7 +21,7 @@ class ServiceStoreRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        return Gate::allows(Permission::CREATE_SERVICES->value);
     }
 
     /**

@@ -34,12 +34,16 @@ class FuecController extends Controller
 
     public function create(Request $request): Response
     {
+        Gate::authorize(Permission::GENERATE_FUEC->value);
+
         return Inertia::render('fuecs/create');
     }
 
     public function store(FuecStoreRequest $request): RedirectResponse
     {
-        $fuec = Fuec::create($request->validated());
+        Gate::authorize(Permission::GENERATE_FUEC->value);
+
+        Fuec::create($request->validated());
 
         return redirect()->route('fuecs.index');
     }
@@ -55,6 +59,8 @@ class FuecController extends Controller
 
     public function edit(Request $request, Fuec $fuec): Response
     {
+        Gate::authorize(Permission::GENERATE_FUEC->value);
+
         return Inertia::render('fuecs/edit', [
             'fuec' => $fuec,
         ]);
@@ -62,6 +68,8 @@ class FuecController extends Controller
 
     public function update(FuecUpdateRequest $request, Fuec $fuec): RedirectResponse
     {
+        Gate::authorize(Permission::GENERATE_FUEC->value);
+
         $fuec->update($request->validated());
 
         return redirect()->route('fuecs.index');
@@ -69,6 +77,8 @@ class FuecController extends Controller
 
     public function destroy(Request $request, Fuec $fuec): RedirectResponse
     {
+        Gate::authorize(Permission::GENERATE_FUEC->value);
+
         $fuec->delete();
 
         return redirect()->route('fuecs.index');

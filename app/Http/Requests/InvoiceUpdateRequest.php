@@ -3,7 +3,9 @@
 namespace App\Http\Requests;
 
 use App\Enums\PaymentStatus;
+use App\Enums\Permission;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
 class InvoiceUpdateRequest extends FormRequest
@@ -13,7 +15,7 @@ class InvoiceUpdateRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        return Gate::allows(Permission::UPDATE_INVOICES->value);
     }
 
     /**

@@ -24,9 +24,7 @@ test('user permissions match assigned role permissions', function () {
     $expectedPermissions = [
         Permission::VIEW_DASHBOARD->value,
         Permission::VIEW_SETTINGS->value,
-        Permission::VIEW_SERVICES->value,
         Permission::REGISTER_SERVICE_TIMES->value,
-        Permission::VIEW_INCIDENTS->value,
         Permission::CREATE_INCIDENTS->value,
         Permission::RECEIVE_NOTIFICATIONS->value,
     ];

@@ -3,7 +3,9 @@
 namespace App\Http\Requests;
 
 use App\Enums\LicenseCategory;
+use App\Enums\Permission;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
 class DriverUpdateRequest extends FormRequest
@@ -13,7 +15,7 @@ class DriverUpdateRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        return Gate::allows(Permission::UPDATE_DRIVERS->value);
     }
 
     /**
