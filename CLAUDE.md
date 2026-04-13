@@ -83,11 +83,20 @@ Services in `compose.yaml`: PostgreSQL 18, Redis, Typesense (search), MinIO (S3 
 - Local testing: `docker compose -f compose.staging.yaml --profile local --env-file .env.stg up -d --build`
 - Deployment target: Dokploy (VPS). See `docs/deployment.md` for full guide.
 
+### Repository & Dokploy Deployment
+
+- **GitHub**: `cristian-home/sgte-app`. Default working branch is `develop`; `main` is reserved for a future "stable initial version" that will eventually auto-deploy to production.
+- **Dokploy panel**: self-hosted on the VPS. The live app is the `SGTE Laravel App` service inside the `SGTE` project. Two services coexist: `SGTE Laravel App` (type: application, built from `docker/production/Dockerfile`) and `SGTE Services` (type: compose, runs Postgres/Redis/MinIO/Typesense/etc.).
+- **Naming caveat**: the Dokploy environment is labelled `production` but the running container has `APP_ENV=staging`. It's de facto a staging deploy used for client demos — do not treat it as real production.
+- **Deploys are manual.** Autodeploy is off on the Dokploy GitHub App integration, and `deploy-staging.yml` uses `workflow_dispatch`. Trigger a deploy either from GitHub Actions (Run workflow button) or from Dokploy's "Deploy" button on the SGTE Laravel App page.
+- **Dokploy credentials** live in `.env` (gitignored): `DOKPLOY_URL`, `DOKPLOY_TOKEN`, `DOKPLOY_PROJECT_ID`, `DOKPLOY_ENVIRONMENT_ID`, `DOKPLOY_APP_ID`. Use `source .env` in bash to call the API. Do not commit these or echo them back.
+- **Known security debt**: Dokploy panel is exposed on `http://…:3000` (no TLS), and the API's `application.one` endpoint returns all service secrets in plain text when queried — prefer narrower endpoints. Pending: HTTPS for the panel, dedicated domain + Let's Encrypt for the app, rotating any secrets that have been observed in responses.
+
 ### CI/CD
 
-- `.github/workflows/tests.yml` — Pest tests (PHP 8.5, SQLite in-memory).
-- `.github/workflows/lint.yml` — Pint + Prettier + ESLint.
-- `.github/workflows/deploy-staging.yml` — Triggers Dokploy redeployment after tests + linter pass on `develop`.
+- `.github/workflows/tests.yml` — Pest tests (PHP 8.5, SQLite in-memory), runs on every push.
+- `.github/workflows/lint.yml` — Pint + Prettier + ESLint, runs on every push.
+- `.github/workflows/deploy-staging.yml` — Manual `workflow_dispatch` trigger. Calls Dokploy's `application.redeploy` API with the secrets `DOKPLOY_URL`, `DOKPLOY_TOKEN`, `DOKPLOY_APP_ID`. No auto-deploy on push.
 
 ### Testing
 
@@ -109,6 +118,32 @@ Services in `compose.yaml`: PostgreSQL 18, Redis, Typesense (search), MinIO (S3 
 ## Documentation
 
 Project documentation lives in `/docs/`: SRS (`SRS.md`), data model (`modelo-datos.md`), navigation structure (`navegacion.md`), UI mockups (`mockups.md`), ADRs in `/docs/adr/`, and phase plans in `/docs/fases/`.
+
+## Git & Commit Conventions
+
+- **Never add `Co-Authored-By: Claude …` trailers, "Generated with Claude Code" footers, or any other AI attribution to commit messages or PR bodies.** Write commits as if authored entirely by the user. This overrides the default Claude Code commit template.
+- **Format**: Conventional Commits + Gitmoji. The emoji goes **after** the colon, at the start of the description:
+  ```
+  type(scope): <emoji> short imperative description
+  ```
+  Example: `feat(infrastructure): 🏗️ add staging compose for supporting services`.
+- Keep the subject under ~72 chars; put details in the body (one blank line, then bullet points or prose).
+- **Emoji selection is lax, not strict.** Gitmoji is the baseline vocabulary, but feel free to pick a more contextually evocative emoji when it fits the change better — e.g., 🐳 for Docker work, 🐘 for Postgres, 🦎 for Laravel-specific refactors, 📦 for packaging, 🚀 for releases/deploys. The goal is that someone skimming `git log` can tell what each commit is about at a glance; stick to gitmoji when there isn't an obviously better fit.
+- **Common type → gitmoji mapping used in this repo** (check `git log` when in doubt — consistency with existing history matters more than strict adherence):
+
+  | Type | Gitmoji | When to use |
+  |---|---|---|
+  | `feat` | ✨ `:sparkles:` (generic) · 🏗️ `:building_construction:` (infra) · 🎉 `:tada:` (initial) | New feature or capability |
+  | `fix` | 🐛 `:bug:` · 🚑 `:ambulance:` (hotfix) · 🔒 `:lock:` (security) | Bug fix |
+  | `refactor` | ♻️ `:recycle:` · 🔨 `:hammer:` | Code restructuring, no behavior change |
+  | `docs` | 📖 `:book:` · 📝 `:memo:` | Documentation |
+  | `test` | 🧪 `:test_tube:` · ✅ `:white_check_mark:` | Tests added/updated |
+  | `ci` | 👷 `:construction_worker:` · 💚 `:green_heart:` (fix CI) | CI/CD changes |
+  | `chore` | 🔧 `:wrench:` · ⬆️ `:arrow_up:` (deps) · 🔥 `:fire:` (remove code) | Tooling, config, dependencies |
+  | `style` | 🎨 `:art:` · 💄 `:lipstick:` (UI) | Formatting, whitespace, UI polish |
+  | `perf` | ⚡ `:zap:` | Performance improvements |
+
+- Before writing a commit message, skim `git log --oneline -10` to match the flavor of recent history.
 
 <laravel-boost-guidelines>
 === foundation rules ===
