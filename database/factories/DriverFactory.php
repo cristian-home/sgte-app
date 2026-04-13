@@ -28,7 +28,10 @@ class DriverFactory extends Factory
             'address' => fake()->streetAddress(),
             'phone' => fake()->numerify('3#########'),
             'email' => fake()->unique()->safeEmail(),
-            'license_category' => fake()->randomElement(LicenseCategory::cases()),
+            // Default to C3 (the most permissive category) so factory-created
+            // drivers are always compatible with every vehicle type. Tests that
+            // need a specific category or an expired license can override.
+            'license_category' => LicenseCategory::C3,
             'license_due_date' => fake()->dateTimeBetween('+1 month', '+3 years'),
             'eps_id' => Eps::factory(),
             'pension_fund_id' => PensionFund::factory(),

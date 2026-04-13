@@ -39,7 +39,37 @@ class GanttController extends Controller
                 'municipality_id', 'soat_due_date', 'rtm_due_date', 'operation_card_due_date',
             ])
             ->orderBy('plate')
-            ->get();
+            ->get()
+            ->map(function (Vehicle $vehicle) use ($date): array {
+                // REQ-004: annotate vehicles whose legal documents have
+                // expired on the service date. The frontend renders the
+                // row disabled and the service form blocks creation
+                // (ServiceStoreRequest::validateVehicleDocumentsNotExpired).
+                $expiredDocuments = [];
+                $documents = [
+                    'soat_due_date' => 'SOAT',
+                    'rtm_due_date' => 'RTM',
+                    'operation_card_due_date' => 'Tarjeta de Operación',
+                ];
+
+                foreach ($documents as $column => $label) {
+                    $dueDate = $vehicle->{$column};
+                    if ($dueDate === null) {
+                        $expiredDocuments[] = $label;
+
+                        continue;
+                    }
+                    if ($dueDate->toDateString() < $date) {
+                        $expiredDocuments[] = $label;
+                    }
+                }
+
+                return [
+                    ...$vehicle->toArray(),
+                    'blocked' => $expiredDocuments !== [],
+                    'expired_documents' => $expiredDocuments,
+                ];
+            });
 
         $services = Service::query()
             ->whereDate('service_date', $date)
