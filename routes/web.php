@@ -42,4 +42,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('service-incidents', App\Http\Controllers\ServiceIncidentController::class);
     Route::resource('fuecs', App\Http\Controllers\FuecController::class);
     Route::resource('vehicle-locations', App\Http\Controllers\VehicleLocationController::class);
+
+    // Administración (admin only)
+    Route::resource('users', App\Http\Controllers\UserController::class);
+    Route::get('audit-log', [App\Http\Controllers\AuditLogController::class, 'index'])->name('audit-log.index');
 });

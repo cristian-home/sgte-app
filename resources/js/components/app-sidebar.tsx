@@ -6,9 +6,11 @@ import {
     MapPin,
     Receipt,
     Settings,
+    Shield,
     Truck,
     Wrench,
 } from 'lucide-react';
+import { index as auditLogIndex } from '@/actions/App/Http/Controllers/AuditLogController';
 import { index as contractsIndex } from '@/actions/App/Http/Controllers/ContractController';
 import { calendar as dayStatusesCalendar } from '@/actions/App/Http/Controllers/DayStatusController';
 import { index as daySummaryIndex } from '@/actions/App/Http/Controllers/DaySummaryController';
@@ -25,6 +27,7 @@ import { index as servicesIndex } from '@/actions/App/Http/Controllers/ServiceCo
 import { index as serviceIncidentsIndex } from '@/actions/App/Http/Controllers/ServiceIncidentController';
 import { index as severanceFundsIndex } from '@/actions/App/Http/Controllers/SeveranceFundController';
 import { index as thirdPartiesIndex } from '@/actions/App/Http/Controllers/ThirdPartyController';
+import { index as usersIndex } from '@/actions/App/Http/Controllers/UserController';
 import { index as vehiclesIndex } from '@/actions/App/Http/Controllers/VehicleController';
 import { index as vehicleLocationsIndex } from '@/actions/App/Http/Controllers/VehicleLocationController';
 import { NavMain } from '@/components/nav-main';
@@ -133,6 +136,23 @@ const navGroups: NavGroup[] = [
                 title: 'Facturas',
                 href: invoicesIndex(),
                 permission: Permission.VIEW_INVOICES,
+            },
+        ],
+    },
+    {
+        label: 'Administración',
+        icon: Shield,
+        permission: Permission.VIEW_USERS,
+        items: [
+            {
+                title: 'Usuarios',
+                href: usersIndex(),
+                permission: Permission.VIEW_USERS,
+            },
+            {
+                title: 'Auditoría',
+                href: auditLogIndex(),
+                permission: Permission.VIEW_AUDIT_LOG,
             },
         ],
     },
