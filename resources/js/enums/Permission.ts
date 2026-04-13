@@ -48,6 +48,7 @@ export const Permission = {
     CREATE_INCIDENT_TYPES: 'incident-types.create',
     UPDATE_INCIDENT_TYPES: 'incident-types.update',
     DELETE_INCIDENT_TYPES: 'incident-types.delete',
+    MANAGE_CATALOGS: 'catalogs.manage',
     RECEIVE_NOTIFICATIONS: 'notifications.receive',
 } as const;
 
@@ -100,5 +101,6 @@ export const PermissionLabel: Record<Permission, string> = {
     'incident-types.create': 'Crear tipos de novedad',
     'incident-types.update': 'Editar tipos de novedad',
     'incident-types.delete': 'Eliminar tipos de novedad',
+    'catalogs.manage': 'Gestionar catálogos (documentos, EPS, fondos)',
     'notifications.receive': 'Recibir notificaciones',
 };

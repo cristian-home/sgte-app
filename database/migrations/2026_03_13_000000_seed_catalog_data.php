@@ -113,6 +113,7 @@ return new class extends Migration
             Permission::CREATE_INCIDENT_TYPES,
             Permission::UPDATE_INCIDENT_TYPES,
             Permission::DELETE_INCIDENT_TYPES,
+            Permission::MANAGE_CATALOGS,
             Permission::RECEIVE_NOTIFICATIONS,
         ]));
 

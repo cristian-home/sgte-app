@@ -76,6 +76,9 @@ enum Permission: string
     case UPDATE_INCIDENT_TYPES = 'incident-types.update';
     case DELETE_INCIDENT_TYPES = 'incident-types.delete';
 
+    // Static Catalogs (document types, EPS, pension funds, severance funds)
+    case MANAGE_CATALOGS = 'catalogs.manage';
+
     // Notifications
     case RECEIVE_NOTIFICATIONS = 'notifications.receive';
 
@@ -128,6 +131,7 @@ enum Permission: string
             self::CREATE_INCIDENT_TYPES => 'Crear tipos de novedad',
             self::UPDATE_INCIDENT_TYPES => 'Editar tipos de novedad',
             self::DELETE_INCIDENT_TYPES => 'Eliminar tipos de novedad',
+            self::MANAGE_CATALOGS => 'Gestionar catálogos (documentos, EPS, fondos)',
             self::RECEIVE_NOTIFICATIONS => 'Recibir notificaciones',
         };
     }

@@ -170,22 +170,27 @@ const navGroups: NavGroup[] = [
             {
                 title: 'Tipos de Documento',
                 href: documentTypesIndex(),
+                permission: Permission.MANAGE_CATALOGS,
             },
             {
                 title: 'EPS',
                 href: epsIndex(),
+                permission: Permission.MANAGE_CATALOGS,
             },
             {
                 title: 'Fondos de Pensiones',
                 href: pensionFundsIndex(),
+                permission: Permission.MANAGE_CATALOGS,
             },
             {
                 title: 'Fondos de Cesantías',
                 href: severanceFundsIndex(),
+                permission: Permission.MANAGE_CATALOGS,
             },
             {
                 title: 'Tipos de Novedad',
                 href: incidentTypesIndex(),
+                permission: Permission.VIEW_INCIDENT_TYPES,
             },
         ],
     },
