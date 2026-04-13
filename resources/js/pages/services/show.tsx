@@ -210,7 +210,7 @@ export default function ServicesShow({
                 {dayStatus?.status === 'executed' && (
                     <Alert>
                         <AlertTitle>
-                            <Badge variant="secondary">Dia Ejecutado</Badge>
+                            <Badge variant="secondary">Día Ejecutado</Badge>
                         </AlertTitle>
                         <AlertDescription>
                             Ejecutado por{' '}
@@ -250,7 +250,7 @@ export default function ServicesShow({
                                         </span>
                                     )}
                                 </IconField>
-                                <IconField icon={Truck} label="Vehiculo">
+                                <IconField icon={Truck} label="Vehículo">
                                     {service.vehicle?.plate ?? '\u2014'}
                                     {service.vehicle?.is_third_party &&
                                         service.vehicle?.third_party && (
@@ -343,7 +343,7 @@ export default function ServicesShow({
                     </Card>
                 </div>
 
-                {/* Row 2: Cronograma y Tiempos + Resumen de Facturacion */}
+                {/* Row 2: Cronograma y Tiempos + Resumen de Facturación */}
                 <div className="grid gap-4 lg:grid-cols-2">
                     {/* Cronograma y Tiempos */}
                     <Card>
@@ -361,7 +361,7 @@ export default function ServicesShow({
                                 <Field label="Hora Inicio Planificada">
                                     {formatTime(service.planned_start_time)}
                                 </Field>
-                                <Field label="Duracion Planificada">
+                                <Field label="Duración Planificada">
                                     {service.planned_duration} min
                                 </Field>
                                 <Field label="Hora Inicio Real">
@@ -370,17 +370,17 @@ export default function ServicesShow({
                                 <Field label="Hora Fin Real">
                                     {formatTime(service.actual_end_time)}
                                 </Field>
-                                <Field label="Duracion Real">
+                                <Field label="Duración Real">
                                     {actualDuration}
                                 </Field>
                             </dl>
                         </CardContent>
                     </Card>
 
-                    {/* Resumen de Facturacion */}
+                    {/* Resumen de Facturación */}
                     <Card>
                         <CardHeader>
-                            <CardTitle>Resumen de Facturacion</CardTitle>
+                            <CardTitle>Resumen de Facturación</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             {/* Decorative icons row */}
@@ -392,7 +392,7 @@ export default function ServicesShow({
                             </div>
                             {/* Billing fields */}
                             <dl className="grid grid-cols-4 gap-3 text-center">
-                                <Field label="Grupo de Facturacion">
+                                <Field label="Grupo de Facturación">
                                     {service.billing_group ?? '\u2014'}
                                 </Field>
                                 <Field label="Valor Unitario">
@@ -401,7 +401,7 @@ export default function ServicesShow({
                                 <Field label="Cantidad">
                                     {service.quantity}
                                 </Field>
-                                <Field label="Metodo de Pago">
+                                <Field label="Método de Pago">
                                     <Badge variant="outline">
                                         {PaymentMethodLabel[
                                             service.payment_method as keyof typeof PaymentMethodLabel
@@ -452,7 +452,7 @@ export default function ServicesShow({
                                                 Tipo
                                             </th>
                                             <th className="pb-2 font-medium">
-                                                Descripcion
+                                                Descripción
                                             </th>
                                             <th className="pb-2 font-medium">
                                                 Fecha Reporte
@@ -461,7 +461,7 @@ export default function ServicesShow({
                                                 Registrador
                                             </th>
                                             <th className="pb-2 font-medium">
-                                                Facturacion
+                                                Facturación
                                             </th>
                                             <th className="pb-2 font-medium">
                                                 Acciones

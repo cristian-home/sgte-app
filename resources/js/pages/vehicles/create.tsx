@@ -11,7 +11,7 @@ import vehicles from '@/routes/vehicles';
 import { type BreadcrumbItem } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Vehiculos', href: vehicles.index().url },
+    { title: 'Vehículos', href: vehicles.index().url },
     { title: 'Crear', href: vehicles.create().url },
 ];
 
@@ -49,11 +49,11 @@ export default function VehiclesCreate({
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Crear Vehiculo" />
+            <Head title="Crear Vehículo" />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Crear Vehiculo</CardTitle>
+                        <CardTitle>Crear Vehículo</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={submit} className="space-y-6">

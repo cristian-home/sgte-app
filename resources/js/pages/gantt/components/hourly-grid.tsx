@@ -88,7 +88,7 @@ export default function HourlyGrid({
             <div className="flex border-b bg-muted/50">
                 <div className="sticky left-0 z-10 flex w-45 shrink-0 items-center border-r bg-background px-2 py-1.5">
                     <span className="text-xs font-medium text-muted-foreground">
-                        Vehiculo
+                        Vehículo
                     </span>
                 </div>
                 <div className="flex flex-1">
@@ -106,7 +106,7 @@ export default function HourlyGrid({
             {/* Vehicle rows */}
             {vehicles.length === 0 && (
                 <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
-                    No hay vehiculos activos para mostrar.
+                    No hay vehículos activos para mostrar.
                 </div>
             )}
 

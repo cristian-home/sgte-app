@@ -319,7 +319,7 @@ export default function ServiceForm({
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
                     data-error={invalid('vehicle_id')}
                 >
-                    <Label htmlFor="vehicle_id">Vehiculo</Label>
+                    <Label htmlFor="vehicle_id">Vehículo</Label>
                     <Select
                         value={data.vehicle_id}
                         onValueChange={(value) => {
@@ -435,7 +435,7 @@ export default function ServiceForm({
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
                     data-error={invalid('origin_address')}
                 >
-                    <Label htmlFor="origin_address">Direccion Origen</Label>
+                    <Label htmlFor="origin_address">Dirección Origen</Label>
                     <Input
                         id="origin_address"
                         value={data.origin_address}
@@ -476,7 +476,7 @@ export default function ServiceForm({
                     data-error={invalid('destination_address')}
                 >
                     <Label htmlFor="destination_address">
-                        Direccion Destino
+                        Dirección Destino
                     </Label>
                     <Input
                         id="destination_address"
@@ -519,7 +519,7 @@ export default function ServiceForm({
                     data-error={invalid('planned_duration')}
                 >
                     <Label htmlFor="planned_duration">
-                        Duracion Planificada (min)
+                        Duración Planificada (min)
                     </Label>
                     <Input
                         id="planned_duration"
@@ -575,7 +575,7 @@ export default function ServiceForm({
                     <InputError message={errors.actual_end_time} />
                 </div>
                 <div className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid">
-                    <Label>Duracion Real</Label>
+                    <Label>Duración Real</Label>
                     <div className="flex items-center rounded-md border bg-muted/50 px-3 py-2 text-sm">
                         {actualDuration ?? '—'}
                     </div>
@@ -583,15 +583,15 @@ export default function ServiceForm({
                 </div>
             </div>
 
-            {/* Facturacion */}
-            <h3 className="text-lg font-semibold">Facturacion</h3>
+            {/* Facturación */}
+            <h3 className="text-lg font-semibold">Facturación</h3>
 
             <div className="grid gap-4 md:grid-cols-4 md:grid-rows-[auto_1fr_auto]">
                 <div
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
                     data-error={invalid('billing_group')}
                 >
-                    <Label htmlFor="billing_group">Grupo de Facturacion</Label>
+                    <Label htmlFor="billing_group">Grupo de Facturación</Label>
                     <Input
                         id="billing_group"
                         value={data.billing_group}
@@ -638,7 +638,7 @@ export default function ServiceForm({
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
                     data-error={invalid('payment_method')}
                 >
-                    <Label htmlFor="payment_method">Metodo de Pago</Label>
+                    <Label htmlFor="payment_method">Método de Pago</Label>
                     <Select
                         value={data.payment_method}
                         onValueChange={(value) =>

@@ -51,7 +51,7 @@ export default function IncidentTypesShow({
                             <div>
                                 <CardTitle>{incidentType.name}</CardTitle>
                                 <CardDescription>
-                                    Codigo: {incidentType.code}
+                                    Código: {incidentType.code}
                                 </CardDescription>
                             </div>
                             <Link

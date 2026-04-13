@@ -69,9 +69,9 @@ export default function VehicleCreateDialog({
         <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogContent className="flex max-h-[calc(100vh-4rem)] flex-col px-0 sm:max-w-2xl">
                 <DialogHeader className="px-6">
-                    <DialogTitle>Crear Vehiculo</DialogTitle>
+                    <DialogTitle>Crear Vehículo</DialogTitle>
                     <DialogDescription>
-                        Complete los campos para registrar un nuevo vehiculo.
+                        Complete los campos para registrar un nuevo vehículo.
                     </DialogDescription>
                 </DialogHeader>
 

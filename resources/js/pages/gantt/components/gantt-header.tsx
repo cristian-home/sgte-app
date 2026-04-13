@@ -142,8 +142,8 @@ export default function GanttHeader({
 
             {isExecuted && (
                 <div className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700 dark:border-green-800 dark:bg-green-950 dark:text-green-300">
-                    Dia Ejecutado — No se pueden crear nuevos servicios en este
-                    dia.
+                    Día Ejecutado — No se pueden crear nuevos servicios en este
+                    día.
                 </div>
             )}
         </div>

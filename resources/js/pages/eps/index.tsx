@@ -23,7 +23,7 @@ const columns: ColumnDef<Eps>[] = [
     {
         accessorKey: 'code',
         header: ({ column }) => (
-            <DataTableColumnHeader column={column} title="Codigo" />
+            <DataTableColumnHeader column={column} title="Código" />
         ),
     },
     {

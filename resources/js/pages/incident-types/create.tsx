@@ -52,7 +52,7 @@ export default function IncidentTypesCreate() {
                         <form onSubmit={submit} className="space-y-6">
                             <div className="grid gap-4 md:grid-cols-2">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="code">Codigo</Label>
+                                    <Label htmlFor="code">Código</Label>
                                     <Input
                                         id="code"
                                         value={data.code}

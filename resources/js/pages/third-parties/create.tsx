@@ -279,7 +279,7 @@ export default function ThirdPartiesCreate({
                                     />
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label htmlFor="address">Direccion</Label>
+                                    <Label htmlFor="address">Dirección</Label>
                                     <Input
                                         id="address"
                                         value={data.address}
@@ -290,7 +290,7 @@ export default function ThirdPartiesCreate({
                                     <InputError message={errors.address} />
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label htmlFor="phone">Telefono</Label>
+                                    <Label htmlFor="phone">Teléfono</Label>
                                     <Input
                                         id="phone"
                                         value={data.phone}

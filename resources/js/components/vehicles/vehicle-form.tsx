@@ -80,7 +80,7 @@ export default function VehicleForm({
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
                     data-error={invalid('internal_code')}
                 >
-                    <Label htmlFor={id('internal_code')}>Codigo Interno</Label>
+                    <Label htmlFor={id('internal_code')}>Código Interno</Label>
                     <Input
                         id={id('internal_code')}
                         value={data.internal_code}
@@ -111,7 +111,7 @@ export default function VehicleForm({
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
                     data-error={invalid('mobile_number')}
                 >
-                    <Label htmlFor={id('mobile_number')}>Numero Movil</Label>
+                    <Label htmlFor={id('mobile_number')}>Número Móvil</Label>
                     <Input
                         id={id('mobile_number')}
                         value={data.mobile_number}
@@ -229,7 +229,7 @@ export default function VehicleForm({
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
                     data-error={invalid('engine_number')}
                 >
-                    <Label htmlFor={id('engine_number')}>Numero de Motor</Label>
+                    <Label htmlFor={id('engine_number')}>Número de Motor</Label>
                     <Input
                         id={id('engine_number')}
                         value={data.engine_number}
@@ -268,7 +268,7 @@ export default function VehicleForm({
                     }
                 />
                 <Label htmlFor={id('is_third_party')}>
-                    Vehiculo de Tercero
+                    Vehículo de Tercero
                 </Label>
                 <InputError message={errors.is_third_party} />
             </div>

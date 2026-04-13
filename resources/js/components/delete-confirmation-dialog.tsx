@@ -23,8 +23,8 @@ export function DeleteConfirmationDialog({
     open,
     onOpenChange,
     deleteUrl,
-    title = 'Confirmar eliminacion',
-    description = 'Esta accion no se puede deshacer. El registro sera eliminado permanentemente.',
+    title = 'Confirmar eliminación',
+    description = 'Esta acción no se puede deshacer. El registro será eliminado permanentemente.',
 }: DeleteConfirmationDialogProps) {
     const [processing, setProcessing] = useState(false);
 

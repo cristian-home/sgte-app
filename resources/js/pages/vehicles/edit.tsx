@@ -41,7 +41,7 @@ export default function VehiclesEdit({
     thirdParties: ThirdPartyOption[];
 }) {
     const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'Vehiculos', href: vehicles.index().url },
+        { title: 'Vehículos', href: vehicles.index().url },
         { title: 'Editar', href: VehicleController.edit(vehicle.id).url },
     ];
 
@@ -76,11 +76,11 @@ export default function VehiclesEdit({
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Editar Vehiculo" />
+            <Head title="Editar Vehículo" />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Editar Vehiculo</CardTitle>
+                        <CardTitle>Editar Vehículo</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={submit} className="space-y-6">

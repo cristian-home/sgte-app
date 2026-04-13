@@ -47,7 +47,7 @@ import { columns } from './columns';
 import type { BreadcrumbItem, DayStatus, Service } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Resumen del Dia', href: daySummaryIndex().url },
+    { title: 'Resumen del Día', href: daySummaryIndex().url },
 ];
 
 interface Props {
@@ -146,7 +146,7 @@ export default function DaySummaryIndex({
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Resumen del Dia" />
+            <Head title="Resumen del Día" />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
                 {/* Header */}
                 <div className="flex flex-wrap items-center gap-3">
@@ -259,7 +259,7 @@ export default function DaySummaryIndex({
                                     {summary.third_party}
                                 </p>
                                 <p className="text-sm text-muted-foreground">
-                                    Vehiculos 3ros
+                                    Vehículos 3ros
                                 </p>
                             </div>
                         </div>
@@ -338,19 +338,19 @@ export default function DaySummaryIndex({
                                                     }
                                                 >
                                                     <PlayCircle className="mr-2 size-4" />
-                                                    Ejecutar Dia
+                                                    Ejecutar Día
                                                 </Button>
                                             </AlertDialogTrigger>
                                             <AlertDialogContent>
                                                 <AlertDialogHeader>
                                                     <AlertDialogTitle>
-                                                        Ejecutar Dia
+                                                        Ejecutar Día
                                                     </AlertDialogTitle>
                                                     <AlertDialogDescription>
-                                                        Esta seguro que desea
-                                                        ejecutar el dia? Esta
-                                                        accion bloqueara la
-                                                        edicion de los
+                                                        ¿Está seguro que desea
+                                                        ejecutar el día? Esta
+                                                        acción bloqueará la
+                                                        edición de los
                                                         servicios.
                                                     </AlertDialogDescription>
                                                 </AlertDialogHeader>
@@ -372,7 +372,7 @@ export default function DaySummaryIndex({
                                 </TooltipTrigger>
                                 {summary.open > 0 && (
                                     <TooltipContent>
-                                        Para ejecutar el dia, todos los
+                                        Para ejecutar el día, todos los
                                         servicios deben estar cerrados.
                                     </TooltipContent>
                                 )}

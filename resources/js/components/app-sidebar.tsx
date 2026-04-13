@@ -84,7 +84,7 @@ const navGroups: NavGroup[] = [
                 permission: Permission.VIEW_SERVICES,
             },
             {
-                title: 'Resumen del Dia',
+                title: 'Resumen del Día',
                 href: daySummaryIndex(),
                 permission: Permission.VIEW_DAY_SUMMARY,
             },
