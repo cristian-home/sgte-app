@@ -34,6 +34,11 @@ return new class extends Migration
         (new ThirdPartySeeder)->run();
         (new DriverSeeder)->run();
         (new VehicleSeeder)->run();
+
+        // NOTE: linking driver@sgte.app to a Driver record happens in
+        // 2026_04_12_213633_link_driver_reference_user_to_driver.php,
+        // which runs after 2026_03_22_055857_add_user_id_to_drivers_table.
+        // We can't do it here because the user_id column doesn't exist yet.
     }
 
     public function down(): void

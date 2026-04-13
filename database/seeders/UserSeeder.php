@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Enums\Role;
+use App\Models\Driver;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -47,6 +48,15 @@ class UserSeeder extends Seeder
             if ($user->wasRecentlyCreated) {
                 $user->forceFill(['email_verified_at' => now()])->save();
                 $user->assignRole(Role::DRIVER);
+            }
+
+            // Link this user to the next unlinked Driver record so the
+            // DriverDashboardController can resolve $user->driver.
+            if (! Driver::where('user_id', $user->id)->exists()) {
+                $unlinked = Driver::whereNull('user_id')->orderBy('id')->first();
+                if ($unlinked) {
+                    $unlinked->update(['user_id' => $user->id]);
+                }
             }
         }
     }
