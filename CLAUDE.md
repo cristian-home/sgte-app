@@ -8,9 +8,45 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Domain modules: vehicles, drivers, third-parties (clients/providers), contracts, services (Gantt-based scheduling), day summaries, incidents, invoices, FUEC document generation, and reports.
 
+## Host vs. Sail Devcontainer — IMPORTANT
+
+This project ships a **Sail-based devcontainer** (`compose.yaml` + `docker/8.5/`) that runs PostgreSQL, Redis, Typesense, MinIO, Mailpit, Reverb, and the Laravel app itself. You can open the project two ways:
+
+1. **VS Code devcontainer mode** → shell runs *inside* the `laravel.test` container. PHP, Node, artisan, etc. run natively.
+2. **Host shell** → open a terminal on the host and use `./vendor/bin/sail <command>` to execute anything that needs the containerized services.
+
+**Detect which side you're on** with `test -f /.dockerenv && echo INSIDE || echo HOST`.
+
+### Rule: tests and e2e must run inside the container
+
+When you are on the **host machine** (i.e., `test -f /.dockerenv` returns nothing), **always** run unit, feature, and browser (Dusk) tests through `./vendor/bin/sail` so they hit the same PHP runtime, extensions, and infra services as CI and production. Running `php artisan test` directly on the host happens to work for SQLite-in-memory feature tests but:
+
+- Uses whatever PHP version the host has (may not be 8.5.3).
+- Skips integration with the real Postgres/Redis/Typesense/MinIO containers.
+- Diverges from what Dusk, Horizon, queue workers, or any test relying on real services need.
+- Masks bugs that only show up in the containerized stack.
+
+```bash
+# ✅ Correct (when on host)
+./vendor/bin/sail up -d                                    # start services if down
+./vendor/bin/sail test --compact                           # full suite
+./vendor/bin/sail test --compact --filter=testName         # single test
+./vendor/bin/sail artisan test --compact tests/Feature/Foo # directory
+./vendor/bin/sail dusk                                     # browser tests
+
+# ❌ Wrong on host (use sail)
+php artisan test
+vendor/bin/pest
+```
+
+If `./vendor/bin/sail` is unavailable (inside the container) or the user explicitly asks to bypass Sail, call `artisan test` / `pest` directly.
+
 ## Development Commands
 
 ```bash
+# NOTE: the commands below assume you are inside the Sail container (VS Code
+# devcontainer mode). If you are on the host, prefix with `./vendor/bin/sail`.
+
 # Full dev environment (server + queue + logs + vite)
 composer run dev
 
