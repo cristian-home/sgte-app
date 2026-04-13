@@ -289,7 +289,7 @@ Ejecutado : Color: Verde\n(Bloqueado para edición)
 
 1. WHEN the administrator registers a vehicle THEN the system SHALL require:
    - Plate
-   - COD (internal code combined with cost center)
+   - Internal code (`internal_code`; value `18` denotes outsourced)
    - Mobile number
    - Make
    - Line
@@ -298,8 +298,8 @@ Ejecutado : Color: Verde\n(Bloqueado para edición)
    - Engine number
    - Chassis number
    - Passenger capacity
-   - Location city (for filter in Gantt)
-   - Expiration dates: SOAT, RTM, Tarjeta de Operación
+   - Municipality (FK to `municipalities` catalog, used as the Gantt filter)
+   - Expiration dates: SOAT (`soat_due_date`), RTM (`rtm_due_date`), Tarjeta de Operación (`operation_card_due_date`)
 
 2. WHEN the vehicle COD is 18 THEN the system SHALL:
    - Mark the vehicle as outsourced
@@ -311,6 +311,8 @@ Ejecutado : Color: Verde\n(Bloqueado para edición)
 4. WHEN a vehicle document is expired THEN the system SHALL automatically block the vehicle in the Gantt planner.
 
 5. IF the user attempts to generate a FUEC (optional) for a vehicle with expired documents THEN the system SHALL reject the operation and display the reason for the block.
+
+> **Implementation note:** AC 3–5 are enforced server-side in `ServiceStoreRequest::validateVehicleDocumentsNotExpired()` and surfaced to the Gantt view via the `blocked` flag returned by the Gantt endpoint.
 
 ```plantuml
 @startuml
@@ -363,16 +365,16 @@ stop
    - Middle name (optional)
    - First surname
    - Second surname (optional)
-   - City of residence
+   - Municipality of residence (FK to `municipalities` catalog)
    - Main address
    - Contact phone
    - Email
-   - License category
-   - License expiration date
+   - License category (C1, C2, C3)
+   - License expiration date (`license_due_date`)
    - EPS (Entidad Promotora de Salud — selected from catalog)
    - Pension fund (selected from catalog)
    - Severance fund (selected from catalog)
-   - Valid social security status
+   - Valid social security status (`has_social_security`)
 
 2. WHEN attempting to assign a driver to a service THEN the system SHALL validate that the license category matches the vehicle type.
 
@@ -381,6 +383,8 @@ stop
 4. WHEN 30, 15 or 5 days remain before the license expires THEN the system SHALL generate automatic alerts.
 
 5. WHEN the driver's social security is not up-to-date THEN the system SHALL display a warning and record the incident.
+
+> **Implementation note:** AC 2, 3 and 5 are enforced server-side in `ServiceStoreRequest::validateDriverLicense()`. License category compatibility follows the `LICENSE_CATEGORY_MAP` lookup in the same request class (maps vehicle `type` → allowed license categories).
 
 ---
 
@@ -640,21 +644,23 @@ stop
 
 ## 5. Non-Functional Requirements
 
+> **Note:** The NFRs below are aspirational targets — design objectives to inform implementation decisions — rather than automated, continuously-enforced checks. They set direction; they are not gated in CI.
+
 ### NFR-001: Performance
 
-- The Gantt must render up to 100 vehicles and 300 services without visible degradation (FPS > 30).
-- Changes in the Gantt must be reflected in less than 2 seconds for other users.
+- Target: the Gantt should render up to 100 vehicles and 300 services without visible degradation (FPS > 30).
+- Target: changes in the Gantt should be reflected in under 2 seconds for other users.
 
 ### NFR-002: Availability
 
-- The system must be available 99.5% of the time during operating hours (5:00 - 22:00).
+- Target: the system should be available 99.5% of the time during operating hours (5:00 - 22:00). No SLA monitoring or uptime check is enforced in the current deployment.
 
 ### NFR-003: Security
 
-- Authentication via username and password.
-- Defined roles: Administrator, Operations, Driver, Accounting.
-- Encrypted communication (HTTPS).
-- Immutable audit log.
+- Authentication via username and password (Laravel Fortify, headless).
+- Five defined roles: Super Admin, Administrator, Operations, Driver, Accounting.
+- Encrypted communication (HTTPS) — target for production; the staging/demo deployment currently has Dokploy-managed Let's Encrypt TLS for the app domain.
+- Audit log — the intent is an immutable log; the current implementation uses `spatie/laravel-activitylog` (append-only by convention), exposed at `/audit-log` to admins. There is no cryptographic tamper-evidence yet.
 
 ### NFR-004: Compatibility
 
@@ -663,12 +669,14 @@ stop
 
 ### NFR-005: Optional GPS
 
-- GPS tracking is optional; the system must work fully without it.
+- GPS tracking is optional; the system is designed to work fully without it.
 - Location may be entered manually via coordinates when GPS is not available.
 
 ---
 
 ## 6. Data Model
+
+> **Terminology note:** Product terminology in this document is in Spanish (as used in the UI); the actual PostgreSQL column names use English snake_case and are referenced in parentheses when they differ. All primary keys are `BIGINT` (auto-increment via `$table->id()`).
 
 ```plantuml
 @startuml
@@ -676,7 +684,7 @@ stop
 title Modelo de Datos - SGTE v1.2
 
 entity "TipoDocumento" as tipo_doc {
-  * id : UUID <<PK>>
+  * id : BIGINT <<PK>>
   --
   * codigo : VARCHAR(10)
   * nombre : VARCHAR
@@ -685,9 +693,9 @@ entity "TipoDocumento" as tipo_doc {
 }
 
 entity "Tercero" as tercero {
-  * id : UUID <<PK>>
+  * id : BIGINT <<PK>>
   --
-  * tipo_documento_id : UUID <<FK>>
+  * tipo_documento_id : BIGINT <<FK>>
   * numero_identificacion : VARCHAR
   * es_persona_natural : BOOLEAN
   primer_nombre : VARCHAR
@@ -696,7 +704,7 @@ entity "Tercero" as tercero {
   segundo_apellido : VARCHAR
   razon_social : VARCHAR
   nombre_comercial : VARCHAR
-  * ciudad : VARCHAR
+  * municipality_id : BIGINT <<FK>>
   * direccion : VARCHAR
   * telefono : VARCHAR
   * email : VARCHAR
@@ -706,54 +714,55 @@ entity "Tercero" as tercero {
 }
 
 entity "Vehiculo" as vehiculo {
-  * id : UUID <<PK>>
+  * id : BIGINT <<PK>>
   --
-  * cod : VARCHAR
-  * placa : VARCHAR(6)
+  * internal_code : VARCHAR
+  * plate : VARCHAR(6)
   * movil : VARCHAR
   * marca : VARCHAR
   * linea : VARCHAR
   * modelo : INT
-  * tipo : ENUM
+  * type : ENUM (bus|buseta|van|automobile)
   * motor : VARCHAR
   * chasis : VARCHAR
   * capacidad : INT
-  * ciudad : VARCHAR
-  * es_tercerizado : BOOLEAN
-  tercero_id : UUID <<FK>>
-  * soat_vencimiento : DATE
-  * rtm_vencimiento : DATE
-  * tarjeta_op_vencimiento : DATE
+  * municipality_id : BIGINT <<FK>>
+  * is_third_party : BOOLEAN
+  third_party_id : BIGINT <<FK>>
+  * soat_due_date : DATE
+  * rtm_due_date : DATE
+  * operation_card_due_date : DATE
   estado : ENUM
 }
 
 entity "Conductor" as conductor {
-  * id : UUID <<PK>>
+  * id : BIGINT <<PK>>
   --
-  * tipo_documento_id : UUID <<FK>>
+  user_id : BIGINT <<FK>>
+  * tipo_documento_id : BIGINT <<FK>>
   * numero_identificacion : VARCHAR
   * primer_nombre : VARCHAR
   segundo_nombre : VARCHAR
   * primer_apellido : VARCHAR
   segundo_apellido : VARCHAR
-  * ciudad : VARCHAR
+  * municipality_id : BIGINT <<FK>>
   * direccion : VARCHAR
   * telefono : VARCHAR
   * email : VARCHAR
-  * categoria_licencia : VARCHAR
-  * licencia_vencimiento : DATE
-  * eps : VARCHAR
-  * fondo_pensiones : VARCHAR
-  * fondo_cesantias : VARCHAR
-  * seguridad_social_vigente : BOOLEAN
+  * license_category : ENUM (C1|C2|C3)
+  * license_due_date : DATE
+  * eps_id : BIGINT <<FK>>
+  * pension_fund_id : BIGINT <<FK>>
+  * severance_fund_id : BIGINT <<FK>>
+  * has_social_security : BOOLEAN
   * activo : BOOLEAN
 }
 
 entity "Contrato" as contrato {
-  * id : UUID <<PK>>
+  * id : BIGINT <<PK>>
   --
   * numero : VARCHAR
-  * tercero_id : UUID <<FK>>
+  * tercero_id : BIGINT <<FK>>
   * objeto : ENUM
   * fecha_inicio : DATE
   * fecha_fin : DATE
@@ -762,24 +771,28 @@ entity "Contrato" as contrato {
 }
 
 entity "Servicio" as servicio {
-  * id : UUID <<PK>>
+  * id : BIGINT <<PK>>
   --
-  * contrato_id : UUID <<FK>>
-  * vehiculo_id : UUID <<FK>>
-  conductor_id : UUID <<FK>>
-  factura_id : UUID <<FK>>
-  * fecha : DATE
-  * origen : VARCHAR
-  * destino : VARCHAR
-  * hora_inicio_plan : TIME
-  * duracion_plan : INTERVAL
-  hora_inicio_real : TIME
-  hora_fin_real : TIME
-  * valor_unitario : DECIMAL
-  * cantidad : INT
-  grupo : VARCHAR
-  * forma_pago : ENUM
-  * estado_servicio : ENUM
+  * contract_id : BIGINT <<FK>>
+  * vehicle_id : BIGINT <<FK>>
+  driver_id : BIGINT <<FK>>
+  invoice_id : BIGINT <<FK>>
+  * service_date : DATE
+  * origin_municipality_id : BIGINT <<FK>>
+  * origin_address : VARCHAR
+  origin_coordinates : VARCHAR
+  * destination_municipality_id : BIGINT <<FK>>
+  * destination_address : VARCHAR
+  destination_coordinates : VARCHAR
+  * planned_start_time : TIME
+  * planned_duration : INTEGER (minutes)
+  actual_start_time : TIME
+  actual_end_time : TIME
+  * unit_value : DECIMAL
+  * quantity : INT
+  billing_group : VARCHAR
+  * payment_method : ENUM
+  * service_status : ENUM (open|closed)
 }
 
 entity "TipoNovedad" as tipo_novedad {
@@ -806,9 +819,9 @@ entity "NovedadServicio" as novedad {
 }
 
 entity "FUEC" as fuec {
-  * id : UUID <<PK>>
+  * id : BIGINT <<PK>>
   --
-  * servicio_id : UUID <<FK>>
+  * servicio_id : BIGINT <<FK>>
   * consecutivo : INT
   * fecha_generacion : TIMESTAMP
   * codigo_qr : VARCHAR
@@ -817,27 +830,29 @@ entity "FUEC" as fuec {
 }
 
 entity "EstadoDia" as estado_dia {
-  * id : UUID <<PK>>
+  * id : BIGINT <<PK>>
   --
   * fecha : DATE <<UNIQUE>>
-  * estado : ENUM
-  ejecutado_por : UUID <<FK>>
-  ejecutado_fecha : TIMESTAMP
+  * estado : ENUM (projected|executed)
+  executed_by : BIGINT <<FK>>
+  executed_at : TIMESTAMP
 }
 
 entity "Factura" as factura {
-  * id : UUID <<PK>>
+  * id : BIGINT <<PK>>
   --
-  * numero_factura : VARCHAR
-  * valor_total : DECIMAL
-  * fecha_emision : DATE
-  * estado_pago : ENUM
+  * third_party_id : BIGINT <<FK>>
+  * invoice_number : VARCHAR
+  * total_value : DECIMAL
+  * issue_date : DATE
+  * payment_status : ENUM (pending|paid|overdue)
+  notes : TEXT
 }
 
 entity "UbicacionVehiculo" as ubicacion {
-  * id : UUID <<PK>>
+  * id : BIGINT <<PK>>
   --
-  * vehiculo_id : UUID <<FK>>
+  * vehiculo_id : BIGINT <<FK>>
   * timestamp : TIMESTAMP
   latitud : DECIMAL
   longitud : DECIMAL
@@ -848,6 +863,7 @@ tipo_doc ||--o{ tercero
 tipo_doc ||--o{ conductor
 tercero ||--o{ vehiculo : proveedor
 tercero ||--o{ contrato : cliente
+tercero ||--o{ factura : cliente
 contrato ||--o{ servicio
 vehiculo ||--o{ servicio
 conductor ||--o{ servicio
@@ -856,6 +872,13 @@ tipo_novedad ||--o{ novedad
 servicio ||--o{ novedad
 servicio ||--o| fuec
 vehiculo ||--o{ ubicacion
+
+note right of conductor
+  Driver ↔ User is 1:1
+  via ""user_id"". The driver
+  portal uses this link to
+  scope ""/driver"" services.
+end note
 
 @enduml
 ```
@@ -866,8 +889,10 @@ vehiculo ||--o{ ubicacion
 | ------------- | ----------------- | ----------------------------- |
 | TipoDocumento | Tercero           | One-to-Many                   |
 | TipoDocumento | Conductor         | One-to-Many                   |
+| User          | Conductor         | One-to-One (driver portal link) |
 | Tercero       | Vehiculo          | One-to-Many (if provider)     |
 | Tercero       | Contrato          | One-to-Many (if client)       |
+| Tercero       | Factura           | One-to-Many (invoice client)  |
 | Contrato      | Servicio          | One-to-Many                   |
 | Vehiculo      | Servicio          | One-to-Many                   |
 | Conductor     | Servicio          | One-to-Many                   |
@@ -894,20 +919,27 @@ The following tables are created and managed automatically by the framework and 
 
 ## 7. Roles and Permissions
 
+The system defines **five** roles: **Super Admin**, **Administrador**, **Operación**, **Conductor** and **Contabilidad**. Super Admin is not granted through the permissions matrix — it bypasses every gate via `Gate::before` in `AppServiceProvider` and is intended for emergency access only. The matrix below covers the other four roles.
+
+The **Administración** sidebar group (Usuarios, Auditoría) is admin-only. The **Gestión** sidebar group (Vehículos, Conductores, Terceros, Contratos) is accessible to both Administrador and Operación — operators now have full CRUD on those master-data modules.
+
 | Function                             | Administrador | Operación | Conductor | Contabilidad |
 | ------------------------------------ | :-----------: | :-------: | :-------: | :----------: |
-| Manage vehicles                      |       ✓       |     -     |     -     |      -       |
-| Manage drivers                       |       ✓       |     -     |     -     |      -       |
-| Manage contracts                     |       ✓       |     -     |     -     |      -       |
+| Manage vehicles                      |       ✓       |     ✓     |     -     |      -       |
+| Manage drivers                       |       ✓       |     ✓     |     -     |      -       |
+| Manage third parties                 |       ✓       |     ✓     |     -     |      -       |
+| Manage contracts                     |       ✓       |     ✓     |     -     |      -       |
 | Create services                      |       ✓       |     ✓     |     -     |      -       |
 | Edit services (projected)            |       ✓       |     ✓     |     -     |      -       |
 | Edit services (executed)             |       ✓       |     -     |     -     |      ✓       |
-| Generate FUEC (optional)             |       ✓       |     ✓     |     -     |      -       |
+| Generate FUEC (optional)             |       ✓       |     -     |     -     |      -       |
 | Execute day                          |       ✓       |     ✓     |     -     |      -       |
 | View reports                         |       ✓       |     ✓     |     -     |      ✓       |
 | View completed services              |       ✓       |     -     |     -     |      ✓       |
 | Generate invoices                    |       ✓       |     -     |     -     |      ✓       |
 | Link services to invoices            |       ✓       |     -     |     -     |      ✓       |
+| Manage users (Administración)        |       ✓       |     -     |     -     |      -       |
+| View audit log (Administración)      |       ✓       |     -     |     -     |      -       |
 | Record actual times and incidents    |       -       |     -     |     ✓     |      -       |
 | Receive notifications                |       ✓       |     ✓     |     ✓     |      ✓       |
 
@@ -953,20 +985,26 @@ The project is structured to be developed over **5 calendar weeks**, distributed
 
 ---
 
-## 9. Recommended Technology Stack
+## 9. Technology Stack
 
-| Layer                | Technology                                                                  |
-| -------------------- | --------------------------------------------------------------------------- |
-| **Frontend**         | React + Inertia.js + shadcn/ui (via `laravel/react-starter-kit`)            |
-| **Gantt Component**  | JS library (e.g. Frappe/DHTMLX) as a React component                        |
-| **Backend**          | Laravel Framework (PHP)                                                     |
-| **Database**         | PostgreSQL                                                                  |
-| **Authentication**   | Laravel Auth (starter kit with Inertia)                                     |
-| **Real-Time**        | Laravel Reverb + Echo                                                       |
-| **Search**           | Laravel Scout                                                               |
-| **Scaffolding**      | Laravel Blueprint (models, migrations, controllers, requests, etc.)         |
-| **Storage**          | MinIO (self-hosted, compatible with Laravel's S3 driver)                    |
-| **Hosting / Infra**  | Dockploy + Linux VPS (to orchestrate App + DB + MinIO)                      |
+| Layer                | Technology                                                                      |
+| -------------------- | ------------------------------------------------------------------------------- |
+| **Backend**          | Laravel 12 (PHP 8.5)                                                            |
+| **Frontend**         | React 19 + Inertia.js v2 + Tailwind CSS v4 + shadcn-style UI primitives         |
+| **Gantt / Calendar** | Custom React components (no external Gantt library)                             |
+| **Application server** | Laravel Octane + FrankenPHP                                                   |
+| **Database**         | PostgreSQL 18                                                                   |
+| **Authentication**   | Laravel Fortify (headless)                                                      |
+| **Queues & Monitoring** | Redis + Laravel Horizon                                                      |
+| **Real-Time**        | Laravel Reverb + Laravel Echo                                                   |
+| **Search**           | Laravel Scout + Typesense (catalog/reference models); `SearchesDatabase` trait for `Service` (ADR-002) |
+| **Audit / Logs**     | spatie/laravel-activitylog (backs REQ-009)                                      |
+| **Permissions**      | spatie/laravel-permission                                                       |
+| **Media**            | spatie/laravel-medialibrary v11                                                 |
+| **Routes (TS)**      | laravel/wayfinder                                                               |
+| **Storage**          | MinIO (S3-compatible, self-hosted)                                              |
+| **Email (dev/stg)**  | Mailpit                                                                         |
+| **Hosting / Infra**  | Dokploy + Linux VPS (containerized app + Postgres/Redis/Typesense/MinIO)        |
 
 ---
 

@@ -79,7 +79,7 @@ Implement the core functionality of the system: calendar, Gantt planner, service
 
 ### Gantt and Calendar
 
-**Custom React components** were chosen instead of external libraries (Frappe Gantt, DHTMLX, FullCalendar). This enabled:
+**Custom React components** were chosen instead of an external Gantt/calendar library. This enabled:
 1. Full control over UI/UX with Tailwind CSS and shadcn/ui
 2. Native integration with Inertia props and navigation
 3. No additional JS dependencies or licensing costs

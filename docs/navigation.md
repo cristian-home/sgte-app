@@ -1,32 +1,35 @@
 # Navigation Map by Role - SGTE
 
-Document describing the application's navigation structure for each role in the system, grouping roles when they share the same experience.
+Document describing the application's navigation structure for each role in the system, grouping roles when they share the same experience. The canonical groups are the ones defined in `resources/js/components/app-sidebar.tsx`.
 
 ## Access summary by role
 
-| Module / View             | Administrador | Operación | Conductor | Contabilidad |
-| ------------------------- | :-----------: | :-------: | :-------: | :----------: |
-| Login                     |       ✓       |     ✓     |     ✓     |      ✓       |
-| Dashboard                 |       ✓       |     ✓     |     -     |      ✓       |
-| Calendario anual/mensual  |       ✓       |     ✓     |     -     |      ✓       |
-| Gantt diario              |       ✓       |     ✓     |     -     |      -       |
-| Formulario de servicio    |       ✓       |     ✓     |     -     |      -       |
-| Resumen del día           |       ✓       |     ✓     |     -     |      ✓       |
-| Ejecutar día              |       ✓       |     ✓     |     -     |      -       |
-| Gestión de vehículos      |       ✓       |     -     |     -     |      -       |
-| Gestión de conductores    |       ✓       |     -     |     -     |      -       |
-| Gestión de terceros       |       ✓       |     -     |     -     |      -       |
-| Gestión de contratos      |       ✓       |     -     |     -     |      -       |
-| Mis servicios (móvil)     |       -       |     -     |     ✓     |      -       |
-| Registrar inicio/fin      |       -       |     -     |     ✓     |      -       |
-| Registrar novedades       |       ✓       |     ✓     |     ✓     |      -       |
-| Facturación               |       ✓       |     -     |     -     |      ✓       |
-| Servicios ejecutados      |       ✓       |     -     |     -     |      ✓       |
-| Generar FUEC (opcional)   |       ✓       |     ✓     |     -     |      -       |
-| Mapa GPS (opcional)       |       ✓       |     ✓     |     ✓     |      -       |
-| Log de auditoría          |       ✓       |     -     |     -     |      -       |
-| Reportes                  |       ✓       |     ✓     |     -     |      ✓       |
-| Notificaciones            |       ✓       |     ✓     |     ✓     |      ✓       |
+| Module / View                          | Administrador | Operación | Conductor | Contabilidad |
+| -------------------------------------- | :-----------: | :-------: | :-------: | :----------: |
+| Login                                  |       ✓       |     ✓     |     ✓     |      ✓       |
+| Panel (dashboard)                      |       ✓       |     ✓     | → /driver |      ✓       |
+| Producción → Servicios                 |       ✓       |     ✓     |     -     |      ✓ (RO)  |
+| Producción → Planificador (Gantt)      |       ✓       |     ✓     |     -     |      -       |
+| Producción → Resumen del Día           |       ✓       |     ✓     |     -     |      ✓ (RO)  |
+| Producción → Calendario                |       ✓       |     ✓     |     -     |      ✓ (RO)  |
+| Producción → Novedades                 |       ✓       |     ✓     |     -     |      -       |
+| Gestión → Vehículos                    |       ✓       |     ✓     |     -     |      -       |
+| Gestión → Conductores                  |       ✓       |     ✓     |     -     |      -       |
+| Gestión → Terceros                     |       ✓       |     ✓     |     -     |      -       |
+| Gestión → Contratos                    |       ✓       |     ✓     |     -     |      -       |
+| Facturación → Facturas                 |       ✓       |     -     |     -     |      ✓       |
+| Administración → Usuarios              |       ✓       |     -     |     -     |      -       |
+| Administración → Auditoría             |       ✓       |     -     |     -     |      -       |
+| FUEC (scaffolded stub)                 |       ✓       |     -     |     -     |      -       |
+| GPS → Ubicaciones (scaffolded stub)    |       ✓       |     -     |     -     |      -       |
+| Catálogos → Tipos de Documento         |       ✓       |     ✓     |     -     |      -       |
+| Catálogos → EPS                        |       ✓       |     ✓     |     -     |      -       |
+| Catálogos → Fondos de Pensiones        |       ✓       |     ✓     |     -     |      -       |
+| Catálogos → Fondos de Cesantías        |       ✓       |     ✓     |     -     |      -       |
+| Catálogos → Tipos de Novedad           |       ✓       |     ✓     |     -     |      -       |
+| Driver portal (/driver) — Mis Servicios |      -       |     -     |     ✓     |      -       |
+| Registrar inicio/fin (driver cards)    |       -       |     -     |     ✓     |      -       |
+| Registrar Novedad (from /driver card)  |       ✓       |     ✓     |     ✓     |      -       |
 
 ---
 
@@ -64,22 +67,32 @@ state "Dashboard Contable" as DashboardContable {
 
 ## 2. Administrador and Operación
 
-These two roles share the main navigation (calendar → Gantt → services). The difference is that **Administrador** has additional access to the administration menu (master data, audit) and can edit executed records with justification.
+These two roles share the operational navigation. **Administrador** additionally has the **Administración** group (Usuarios + Auditoría), the **Facturación** group, and the scaffolded-stub groups **FUEC** and **GPS**. Operación is limited to Producción + Gestión + Catálogos.
 
 ### Sidebar menu
 
-| Section              | Administrador | Operación |
-| -------------------- | :-----------: | :-------: |
-| Producción           |       ✓       |     ✓     |
-| Vehículos            |       ✓       |     -     |
-| Conductores          |       ✓       |     -     |
-| Terceros             |       ✓       |     -     |
-| Contratos            |       ✓       |     -     |
-| Facturación          |       ✓       |     -     |
-| Reportes             |       ✓       |     ✓     |
-| Auditoría            |       ✓       |     -     |
-| FUEC (opcional)      |       ✓       |     ✓     |
-| Mapa GPS (opcional)  |       ✓       |     ✓     |
+| Group → item                           | Administrador | Operación |
+| -------------------------------------- | :-----------: | :-------: |
+| Panel (top-level link)                 |       ✓       |     ✓     |
+| Producción → Servicios                 |       ✓       |     ✓     |
+| Producción → Planificador              |       ✓       |     ✓     |
+| Producción → Resumen del Día           |       ✓       |     ✓     |
+| Producción → Calendario                |       ✓       |     ✓     |
+| Producción → Novedades                 |       ✓       |     ✓     |
+| Gestión → Vehículos                    |       ✓       |     ✓     |
+| Gestión → Conductores                  |       ✓       |     ✓     |
+| Gestión → Terceros                     |       ✓       |     ✓     |
+| Gestión → Contratos                    |       ✓       |     ✓     |
+| Facturación → Facturas                 |       ✓       |     -     |
+| Administración → Usuarios              |       ✓       |     -     |
+| Administración → Auditoría             |       ✓       |     -     |
+| FUEC → Documentos FUEC (stub)          |       ✓       |     -     |
+| GPS → Ubicaciones (stub)               |       ✓       |     -     |
+| Catálogos → Tipos de Documento         |       ✓       |     ✓     |
+| Catálogos → EPS                        |       ✓       |     ✓     |
+| Catálogos → Fondos de Pensiones        |       ✓       |     ✓     |
+| Catálogos → Fondos de Cesantías        |       ✓       |     ✓     |
+| Catálogos → Tipos de Novedad           |       ✓       |     ✓     |
 
 ### Full navigation map
 
@@ -220,16 +233,16 @@ stop
 
 ## 3. Conductor
 
-The driver has a simplified, mobile-oriented interface. They do not access the calendar or the Gantt. Their main view is the list of services assigned for the current day.
+The driver has a simplified, mobile-oriented interface. They do not access the calendar or the Gantt. Their main (and only) view is the list of services assigned to them for the current day, at `/driver`. When a driver logs in, `Panel` redirects to `/driver`.
 
 ### Menu
 
-| Section              | Access |
-| -------------------- | :----: |
-| Mis Servicios        |   ✓    |
-| Mapa GPS (opcional)  |   ✓    |
-| Notificaciones       |   ✓    |
-| Mi Perfil            |   ✓    |
+| Section                                          | Access |
+| ------------------------------------------------ | :----: |
+| Panel → /driver (redirect)                       |   ✓    |
+| Conductor → Mis Servicios                        |   ✓    |
+
+> **Not implemented yet** (present in earlier mockups only): Mapa GPS, Notificaciones, Mi Perfil, dedicated per-service detail page. The service cards on `/driver` are themselves the detail view. Incidents are registered via `GET /service-incidents/create?service_id=X` from the "Registrar Novedad" button on each card.
 
 ### Navigation map
 
@@ -443,31 +456,42 @@ stop
 
 ## 5. Sidebar menu structure
 
-Consolidated representation of the sidebar menu visible to each role.
+Consolidated representation of the canonical sidebar in `resources/js/components/app-sidebar.tsx`, visible to each role.
 
 ```plantuml
 @startsalt
 {
   {T
     + <b>SGTE - Menú Principal</b>
-    ++ <&home> Producción (Dashboard)       | <color:green>A</color> <color:blue>O</color> <color:gray>C$</color>
-    +++ Calendario Anual                     | <color:green>A</color> <color:blue>O</color> <color:gray>C$</color>
-    +++ Gantt Diario                         | <color:green>A</color> <color:blue>O</color>
-    +++ Resumen del Día                      | <color:green>A</color> <color:blue>O</color> <color:gray>C$</color>
-    ++ <&wrench> Administración              | <color:green>A</color>
-    +++ Vehículos                            | <color:green>A</color>
-    +++ Conductores                          | <color:green>A</color>
-    +++ Terceros                             | <color:green>A</color>
-    +++ Contratos                            | <color:green>A</color>
-    ++ <&truck> Mis Servicios                | <color:red>Co</color>
-    ++ <&dollar> Facturación                 | <color:green>A</color> <color:gray>C$</color>
-    +++ Facturas                             | <color:green>A</color> <color:gray>C$</color>
-    +++ Servicios Ejecutados                 | <color:green>A</color> <color:gray>C$</color>
-    ++ <&bar-chart> Reportes                 | <color:green>A</color> <color:blue>O</color> <color:gray>C$</color>
-    ++ <&document> FUEC (Opcional)           | <color:green>A</color> <color:blue>O</color>
-    ++ <&map-marker> Mapa GPS (Opcional)     | <color:green>A</color> <color:blue>O</color> <color:red>Co</color>
-    ++ <&eye> Auditoría                      | <color:green>A</color>
-    ++ <&bell> Notificaciones                | <color:green>A</color> <color:blue>O</color> <color:red>Co</color> <color:gray>C$</color>
+    ++ <&home> Panel                          | <color:green>A</color> <color:blue>O</color> <color:red>Co</color> <color:gray>C$</color>
+    ++ <&calendar> Producción                 | <color:green>A</color> <color:blue>O</color>
+    +++ Servicios                              | <color:green>A</color> <color:blue>O</color>
+    +++ Planificador                           | <color:green>A</color> <color:blue>O</color>
+    +++ Resumen del Día                        | <color:green>A</color> <color:blue>O</color>
+    +++ Calendario                             | <color:green>A</color> <color:blue>O</color>
+    +++ Novedades                              | <color:green>A</color> <color:blue>O</color>
+    ++ <&wrench> Gestión                      | <color:green>A</color> <color:blue>O</color>
+    +++ Vehículos                              | <color:green>A</color> <color:blue>O</color>
+    +++ Conductores                            | <color:green>A</color> <color:blue>O</color>
+    +++ Terceros                               | <color:green>A</color> <color:blue>O</color>
+    +++ Contratos                              | <color:green>A</color> <color:blue>O</color>
+    ++ <&dollar> Facturación                  | <color:green>A</color> <color:gray>C$</color>
+    +++ Facturas                               | <color:green>A</color> <color:gray>C$</color>
+    ++ <&shield> Administración               | <color:green>A</color>
+    +++ Usuarios                               | <color:green>A</color>
+    +++ Auditoría                              | <color:green>A</color>
+    ++ <&document> FUEC (stub)                | <color:green>A</color>
+    +++ Documentos FUEC                        | <color:green>A</color>
+    ++ <&map-marker> GPS (stub)               | <color:green>A</color>
+    +++ Ubicaciones                            | <color:green>A</color>
+    ++ <&list> Catálogos                      | <color:green>A</color> <color:blue>O</color>
+    +++ Tipos de Documento                     | <color:green>A</color> <color:blue>O</color>
+    +++ EPS                                    | <color:green>A</color> <color:blue>O</color>
+    +++ Fondos de Pensiones                    | <color:green>A</color> <color:blue>O</color>
+    +++ Fondos de Cesantías                    | <color:green>A</color> <color:blue>O</color>
+    +++ Tipos de Novedad                       | <color:green>A</color> <color:blue>O</color>
+    ++ <&truck> Conductor (driver-only)       | <color:red>Co</color>
+    +++ Mis Servicios (/driver)                | <color:red>Co</color>
   }
   ---
   <color:green>A</color> = Admin  |  <color:blue>O</color> = Operación  |  <color:red>Co</color> = Conductor  |  <color:gray>C$</color> = Contabilidad

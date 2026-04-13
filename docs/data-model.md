@@ -2,6 +2,8 @@
 
 This file contains the updated data model based on client notes and meetings.
 
+> **Terminology note:** Product terminology in this document is in Spanish (as used in the UI); actual DB column names use English snake_case (listed in parentheses when they differ). All primary keys are `BIGINT` auto-increment (`$table->id()`), not UUID.
+
 ---
 
 ## Main changes from the previous version:
@@ -9,191 +11,227 @@ This file contains the updated data model based on client notes and meetings.
 1. **New TERCERO entity** - Unifies clients and providers (natural and legal persons)
 2. **New TIPO_DOCUMENTO entity** - Catalog of identification document types
 3. **New NOVEDAD_SERVICIO table** - To record incidents/events
-4. **COD field in VEHICULO** - Internal code combined with cost center
-5. **CIUDAD field in VEHICULO** - Used for filtering in the Gantt
-6. **CONTABILIDAD role added** - With specific permissions
-7. **Optional GPS** - Location is no longer required
+4. **`internal_code` field in Vehicle** - Internal vehicle code (value `18` flags an outsourced vehicle). There is no separate `cost_center` column.
+5. **Municipality FKs** - Terceros, Vehicles, Drivers and Services reference the `municipalities` catalog instead of free-text city fields. Services split origin/destination into `origin_municipality_id` + `origin_address` + `origin_coordinates` (and destination).
+6. **Driver ↔ User (1:1)** - Drivers carry a nullable `user_id` FK to `users`, which powers the `/driver` portal (`DriverDashboardController`).
+7. **Invoice ↔ Tercero** - `invoices.third_party_id` FK (added during Phase D refactor) enforces "one invoice groups services from a single tercero".
+8. **CONTABILIDAD role added** - With specific permissions
+9. **Optional GPS** - Location is no longer required
 
 ---
 
-## Table 1: TipoDocumento
+## Table 1: TipoDocumento (`document_types`)
 
 Catalog of identification document types.
 
-| Field               | Type        | Description                           |
-| ------------------- | ----------- | ------------------------------------- |
-| id                  | UUID        | Primary Key                           |
-| codigo              | VARCHAR(10) | Type code (CC, NIT, CE, etc.)         |
-| nombre              | VARCHAR     | Type name                             |
-| es_persona_natural  | BOOLEAN     | Whether it applies to natural persons |
-| es_persona_juridica | BOOLEAN     | Whether it applies to legal persons   |
+| Field                 | Type        | Description                           |
+| --------------------- | ----------- | ------------------------------------- |
+| id                    | BIGINT      | Primary Key                           |
+| code                  | VARCHAR(10) | Type code (CC, NIT, CE, etc.)         |
+| name                  | VARCHAR     | Type name                             |
+| is_natural_person     | BOOLEAN     | Whether it applies to natural persons |
+| is_legal_person       | BOOLEAN     | Whether it applies to legal persons   |
 
 ---
 
-## Table 2: Tercero
+## Table 2: Tercero (`third_parties`)
 
 Unifies clients, providers, and any natural or legal person (except drivers).
 
 | Field                 | Type    | Description                                |
 | --------------------- | ------- | ------------------------------------------ |
-| id                    | UUID    | Primary Key                                |
-| tipo_documento_id     | UUID    | Foreign Key → TipoDocumento                |
-| numero_identificacion | VARCHAR | Identification number                      |
-| es_persona_natural    | BOOLEAN | Person type                                |
-| primer_nombre         | VARCHAR | Natural persons only                       |
-| segundo_nombre        | VARCHAR | Natural persons only                       |
-| primer_apellido       | VARCHAR | Natural persons only                       |
-| segundo_apellido      | VARCHAR | Natural persons only                       |
-| razon_social          | VARCHAR | Legal persons only                         |
-| nombre_comercial      | VARCHAR | Legal persons only                         |
-| ciudad                | VARCHAR | City                                       |
-| direccion             | VARCHAR | Main address                               |
-| telefono              | VARCHAR | Contact phone                              |
+| id                    | BIGINT  | Primary Key                                |
+| document_type_id      | BIGINT  | Foreign Key → document_types               |
+| identification_number | VARCHAR | Identification number                      |
+| is_natural_person     | BOOLEAN | Person type                                |
+| first_name            | VARCHAR | Natural persons only                       |
+| middle_name           | VARCHAR | Natural persons only                       |
+| first_lastname        | VARCHAR | Natural persons only                       |
+| second_lastname       | VARCHAR | Natural persons only                       |
+| company_name          | VARCHAR | Legal persons only (razón social)          |
+| trade_name            | VARCHAR | Legal persons only (nombre comercial)      |
+| municipality_id       | BIGINT  | Foreign Key → municipalities               |
+| address               | VARCHAR | Main address                               |
+| phone                 | VARCHAR | Contact phone                              |
 | email                 | VARCHAR | Email address                              |
-| es_cliente            | BOOLEAN | Whether it is a client                     |
-| es_proveedor          | BOOLEAN | Whether it is a provider (outsourced veh.) |
-| activo                | BOOLEAN | Active/inactive status                     |
+| is_client             | BOOLEAN | Whether it is a client                     |
+| is_provider           | BOOLEAN | Whether it is a provider (outsourced veh.) |
+| active                | BOOLEAN | Active/inactive status                     |
 
 ---
 
-## Table 3: Vehiculo
+## Table 3: Vehiculo (`vehicles`)
 
-| Field                  | Type       | Description                                  |
-| ---------------------- | ---------- | -------------------------------------------- |
-| id                     | UUID       | Primary Key                                  |
-| cod                    | VARCHAR    | Internal code (18 = outsourced)              |
-| placa                  | VARCHAR(6) | Vehicle license plate                        |
-| movil                  | VARCHAR    | Mobile number                                |
-| marca                  | VARCHAR    | Vehicle brand                                |
-| linea                  | VARCHAR    | Vehicle line                                 |
-| modelo                 | INT        | Model year                                   |
-| tipo                   | ENUM       | Bus, Buseta, Van, Automóvil                  |
-| motor                  | VARCHAR    | Engine number                                |
-| chasis                 | VARCHAR    | Chassis number                               |
-| capacidad              | INT        | Passenger capacity                           |
-| ciudad                 | VARCHAR    | City (for Gantt filter)                      |
-| es_tercerizado         | BOOLEAN    | Whether it is a third-party vehicle          |
-| tercero_id             | UUID       | Foreign Key → Tercero (if outsourced)        |
-| soat_vencimiento       | DATE       | SOAT expiration date                         |
-| rtm_vencimiento        | DATE       | RTM expiration date                          |
-| tarjeta_op_vencimiento | DATE       | Operating Card expiration date               |
-| estado                 | ENUM       | Vehicle status                               |
+| Field                   | Type       | Description                                                    |
+| ----------------------- | ---------- | -------------------------------------------------------------- |
+| id                      | BIGINT     | Primary Key                                                    |
+| internal_code           | VARCHAR    | Internal vehicle code (value `18` flags an outsourced vehicle) |
+| plate                   | VARCHAR(6) | Vehicle license plate                                          |
+| movil                   | VARCHAR    | Mobile/radio number                                            |
+| brand                   | VARCHAR    | Vehicle brand                                                  |
+| line                    | VARCHAR    | Vehicle line                                                   |
+| model                   | INT        | Model year                                                     |
+| type                    | ENUM       | `bus`, `buseta`, `van`, `automobile`                           |
+| engine_number           | VARCHAR    | Engine number                                                  |
+| chassis_number          | VARCHAR    | Chassis number                                                 |
+| passenger_capacity      | INT        | Passenger capacity                                             |
+| municipality_id         | BIGINT     | FK → municipalities (used as Gantt filter)                     |
+| is_third_party          | BOOLEAN    | Whether it is a third-party vehicle                            |
+| third_party_id          | BIGINT     | FK → third_parties (if outsourced, otherwise NULL)             |
+| soat_due_date           | DATE       | SOAT expiration date                                           |
+| rtm_due_date            | DATE       | RTM expiration date                                            |
+| operation_card_due_date | DATE       | Operating Card (Tarjeta de Operación) expiration date          |
+| status                  | ENUM       | Vehicle status                                                 |
+
+> **Note:** There is no `cost_center` column — internal vehicle identification is via `internal_code` alone.
 
 ---
 
-## Table 1b: Eps
+## Table 1b: Departamento (`departments`)
+
+Catalog of Colombian departments.
+
+| Field | Type        | Description       |
+| ----- | ----------- | ----------------- |
+| id    | BIGINT      | Primary Key       |
+| code  | VARCHAR(10) | DANE department code |
+| name  | VARCHAR     | Department name   |
+
+---
+
+## Table 1c: Municipio (`municipalities`)
+
+Catalog of Colombian municipalities, used for any address-like geographic reference (vehicles, drivers, terceros, services).
+
+| Field         | Type        | Description                         |
+| ------------- | ----------- | ----------------------------------- |
+| id            | BIGINT      | Primary Key                         |
+| department_id | BIGINT      | Foreign Key → departments           |
+| code          | VARCHAR(10) | DANE municipality code              |
+| name          | VARCHAR     | Municipality name                   |
+| latitude      | DECIMAL     | Centroid latitude                   |
+| longitude     | DECIMAL     | Centroid longitude                  |
+
+---
+
+## Table 1d: Eps (`eps`)
 
 Catalog of Colombian Health Promotion Entities (EPS).
 
-| Field  | Type        | Description |
-| ------ | ----------- | ----------- |
-| id     | UUID        | Primary Key |
-| codigo | VARCHAR(10) | EPS code    |
-| nombre | VARCHAR     | EPS name    |
+| Field | Type        | Description |
+| ----- | ----------- | ----------- |
+| id    | BIGINT      | Primary Key |
+| code  | VARCHAR(10) | EPS code    |
+| name  | VARCHAR     | EPS name    |
 
 ---
 
-## Table 1c: FondoPensiones
+## Table 1e: FondoPensiones (`pension_funds`)
 
 Catalog of Colombian Pension Funds.
 
-| Field  | Type        | Description       |
-| ------ | ----------- | ----------------- |
-| id     | UUID        | Primary Key       |
-| codigo | VARCHAR(10) | Pension fund code |
-| nombre | VARCHAR     | Pension fund name |
+| Field | Type        | Description       |
+| ----- | ----------- | ----------------- |
+| id    | BIGINT      | Primary Key       |
+| code  | VARCHAR(10) | Pension fund code |
+| name  | VARCHAR     | Pension fund name |
 
 ---
 
-## Table 1d: FondoCesantias
+## Table 1f: FondoCesantias (`severance_funds`)
 
 Catalog of Colombian Severance Funds.
 
-| Field  | Type        | Description        |
-| ------ | ----------- | ------------------ |
-| id     | UUID        | Primary Key        |
-| codigo | VARCHAR(10) | Severance fund code|
-| nombre | VARCHAR     | Severance fund name|
+| Field | Type        | Description         |
+| ----- | ----------- | ------------------- |
+| id    | BIGINT      | Primary Key         |
+| code  | VARCHAR(10) | Severance fund code |
+| name  | VARCHAR     | Severance fund name |
 
 ---
 
-## Table 4: Conductor
+## Table 4: Conductor (`drivers`)
 
-| Field                    | Type    | Description                    |
-| ------------------------ | ------- | ------------------------------ |
-| id                       | UUID    | Primary Key                    |
-| tipo_documento_id        | UUID    | Foreign Key → TipoDocumento    |
-| numero_identificacion    | VARCHAR | Document number                |
-| primer_nombre            | VARCHAR | First name                     |
-| segundo_nombre           | VARCHAR | Middle name                    |
-| primer_apellido          | VARCHAR | First surname                  |
-| segundo_apellido         | VARCHAR | Second surname                 |
-| ciudad                   | VARCHAR | City of residence              |
-| direccion                | VARCHAR | Main address                   |
-| telefono                 | VARCHAR | Contact phone                  |
-| email                    | VARCHAR | Email address                  |
-| categoria_licencia       | VARCHAR | License category               |
-| licencia_vencimiento     | DATE    | License expiration date        |
-| eps_id                   | UUID    | Foreign Key → Eps              |
-| fondo_pensiones_id       | UUID    | Foreign Key → FondoPensiones   |
-| fondo_cesantias_id       | UUID    | Foreign Key → FondoCesantias   |
-| seguridad_social_vigente | BOOLEAN | Social security status         |
-| activo                   | BOOLEAN | Whether active at the company  |
-
----
-
-## Table 5: Contrato
-
-| Field            | Type    | Description                              |
-| ---------------- | ------- | ---------------------------------------- |
-| id               | UUID    | Primary Key                              |
-| numero           | VARCHAR | Contract number                          |
-| tercero_id       | UUID    | Foreign Key → Tercero (client)           |
-| objeto           | ENUM    | Empresarial, Turismo, Salud, Ocasional   |
-| fecha_inicio     | DATE    | Start date of validity                   |
-| fecha_fin        | DATE    | End date of validity                     |
-| ruta_descripcion | TEXT    | Description of the authorized route      |
-| es_generico      | BOOLEAN | Whether it is a temporary generic contract |
+| Field                 | Type    | Description                                                   |
+| --------------------- | ------- | ------------------------------------------------------------- |
+| id                    | BIGINT  | Primary Key                                                   |
+| user_id               | BIGINT  | FK → users (nullable, 1:1 link that powers the driver portal) |
+| document_type_id      | BIGINT  | Foreign Key → document_types                                  |
+| identification_number | VARCHAR | Document number                                               |
+| first_name            | VARCHAR | First name                                                    |
+| middle_name           | VARCHAR | Middle name                                                   |
+| first_lastname        | VARCHAR | First surname                                                 |
+| second_lastname       | VARCHAR | Second surname                                                |
+| municipality_id       | BIGINT  | FK → municipalities (city of residence)                       |
+| address               | VARCHAR | Main address                                                  |
+| phone                 | VARCHAR | Contact phone                                                 |
+| email                 | VARCHAR | Email address                                                 |
+| license_category      | ENUM    | License category (`C1`, `C2`, `C3`)                           |
+| license_due_date      | DATE    | License expiration date                                       |
+| eps_id                | BIGINT  | Foreign Key → eps                                             |
+| pension_fund_id       | BIGINT  | Foreign Key → pension_funds                                   |
+| severance_fund_id     | BIGINT  | Foreign Key → severance_funds                                 |
+| has_social_security   | BOOLEAN | Social security status                                       |
+| active                | BOOLEAN | Whether active at the company                                 |
 
 ---
 
-## Table 6: Servicio
+## Table 5: Contrato (`contracts`)
 
-| Field            | Type     | Description                                         |
-| ---------------- | -------- | --------------------------------------------------- |
-| id               | UUID     | Primary Key                                         |
-| contrato_id      | UUID     | Foreign Key → Contrato                              |
-| vehiculo_id      | UUID     | Foreign Key → Vehiculo                              |
-| conductor_id     | UUID     | Foreign Key → Conductor (nullable if outsourced)    |
-| factura_id       | UUID     | Foreign Key → Factura (nullable)                    |
-| fecha            | DATE     | Service date                                        |
-| origen           | VARCHAR  | Trip origin                                         |
-| destino          | VARCHAR  | Trip destination                                    |
-| hora_inicio_plan | TIME     | Planned start time                                  |
-| duracion_plan    | INTERVAL | Estimated duration                                  |
-| hora_inicio_real | TIME     | Actual start time                                   |
-| hora_fin_real    | TIME     | Actual end time                                     |
-| valor_unitario   | DECIMAL  | Unit value of the service                           |
-| cantidad         | INT      | Quantity                                            |
-| grupo            | VARCHAR  | Billing category (nullable)                         |
-| forma_pago       | ENUM     | Payment method                                      |
-| estado_servicio  | ENUM     | ABIERTO/CERRADO                                     |
+| Field             | Type    | Description                                |
+| ----------------- | ------- | ------------------------------------------ |
+| id                | BIGINT  | Primary Key                                |
+| contract_number   | VARCHAR | Contract number                            |
+| third_party_id    | BIGINT  | Foreign Key → third_parties (client)       |
+| contract_object   | ENUM    | Empresarial, Turismo, Salud, Ocasional     |
+| start_date        | DATE    | Start date of validity                     |
+| end_date          | DATE    | End date of validity                      |
+| route_description | TEXT    | Description of the authorized route        |
+| is_generic        | BOOLEAN | Whether it is a temporary generic contract |
 
 ---
 
-## Table 1e: TipoNovedad
+## Table 6: Servicio (`services`)
+
+| Field                      | Type    | Description                                              |
+| -------------------------- | ------- | -------------------------------------------------------- |
+| id                         | BIGINT  | Primary Key                                              |
+| contract_id                | BIGINT  | FK → contracts                                           |
+| vehicle_id                 | BIGINT  | FK → vehicles                                            |
+| driver_id                  | BIGINT  | FK → drivers (nullable when the vehicle is third-party)  |
+| invoice_id                 | BIGINT  | FK → invoices (nullable)                                 |
+| service_date               | DATE    | Service date                                             |
+| origin_municipality_id     | BIGINT  | FK → municipalities                                      |
+| origin_address             | VARCHAR | Free-text origin address                                 |
+| origin_coordinates         | VARCHAR | Optional lat/lng pair for origin                         |
+| destination_municipality_id | BIGINT | FK → municipalities                                      |
+| destination_address        | VARCHAR | Free-text destination address                            |
+| destination_coordinates    | VARCHAR | Optional lat/lng pair for destination                    |
+| planned_start_time         | TIME    | Planned start time                                       |
+| planned_duration           | INTEGER | Estimated duration in minutes                            |
+| actual_start_time          | TIME    | Actual start time                                        |
+| actual_end_time            | TIME    | Actual end time                                          |
+| unit_value                 | DECIMAL | Unit value of the service                                |
+| quantity                   | INT     | Quantity                                                 |
+| billing_group              | VARCHAR | Billing category (nullable)                              |
+| payment_method             | ENUM    | Payment method                                           |
+| service_status             | ENUM    | `open` / `closed`                                        |
+
+---
+
+## Table 1g: TipoNovedad (`incident_types`)
 
 Configurable catalog of incident/event types. Replaces the previous ENUM to allow operational management without code changes.
 
-| Field                          | Type        | Description                                          |
-| ------------------------------ | ----------- | ---------------------------------------------------- |
-| id                             | BIGINT      | Primary Key                                          |
-| codigo                         | VARCHAR(10) | Unique code (DELAY, ACCIDENT, BREAKDOWN, etc.)       |
-| nombre                         | VARCHAR(100)| Spanish name (Retraso, Accidente, Avería, etc.)      |
-| severidad                      | VARCHAR(20) | Severity: informational, minor, major (PHP ENUM)     |
-| afecta_facturacion_por_defecto | BOOLEAN     | Default value for afecta_facturacion                 |
-| descripcion                    | TEXT        | Optional type description (nullable)                 |
-| soft_delete                    | TIMESTAMP   | Soft delete to deactivate while preserving history   |
+| Field                      | Type         | Description                                          |
+| -------------------------- | ------------ | ---------------------------------------------------- |
+| id                         | BIGINT       | Primary Key                                          |
+| code                       | VARCHAR(10)  | Unique code (DELAY, ACCIDENT, BREAKDOWN, etc.)       |
+| name                       | VARCHAR(100) | Spanish name (Retraso, Accidente, Avería, etc.)      |
+| severity                   | VARCHAR(20)  | Severity: informational, minor, major (PHP ENUM)     |
+| affects_billing_default    | BOOLEAN      | Default value for `affects_billing`                  |
+| description                | TEXT         | Optional type description (nullable)                 |
+| deleted_at                 | TIMESTAMP    | Soft delete to deactivate while preserving history   |
 
 Seed records:
 
@@ -209,76 +247,81 @@ Seed records:
 
 ---
 
-## Table 7: NovedadServicio
+## Table 7: NovedadServicio (`service_incidents`)
 
 Records service incidents or events.
 
-| Field              | Type      | Description                             |
-| ------------------ | --------- | --------------------------------------- |
-| id                 | BIGINT    | Primary Key                             |
-| servicio_id        | BIGINT    | Foreign Key → Servicio                  |
-| tipo_novedad_id    | BIGINT    | Foreign Key → TipoNovedad (NOT NULL)    |
-| descripcion        | TEXT      | Incident description                    |
-| registrado_por     | BIGINT    | Foreign Key → User (who recorded it)    |
-| es_conductor       | BOOLEAN   | Whether recorded by a driver            |
-| fecha_registro     | TIMESTAMP | Date and time of the record             |
-| afecta_facturacion | BOOLEAN   | Whether it affects the billing amount   |
-| valor_adicional    | DECIMAL   | Additional value for the incident       |
+| Field             | Type      | Description                             |
+| ----------------- | --------- | --------------------------------------- |
+| id                | BIGINT    | Primary Key                             |
+| service_id        | BIGINT    | Foreign Key → services                  |
+| incident_type_id  | BIGINT    | Foreign Key → incident_types (NOT NULL) |
+| description       | TEXT      | Incident description                    |
+| registrar_id      | BIGINT    | Foreign Key → users (who recorded it)   |
+| is_driver_report  | BOOLEAN   | Whether recorded by a driver            |
+| reported_at       | TIMESTAMP | Date and time of the record             |
+| affects_billing   | BOOLEAN   | Whether it affects the billing amount   |
+| additional_value  | DECIMAL   | Additional value for the incident       |
 
 ---
 
-## Table 8: FUEC
+## Table 8: FUEC (`fuecs`)
+
+> **Note:** The FUEC module is scaffolded only. The table exists and a minimal CRUD is wired up, but PDF generation, QR codes, consecutive numbering, feature flag and public verification are not yet implemented (see `docs/phases/phase-5-optionals-deploy.md`).
 
 | Field            | Type      | Description                |
 | ---------------- | --------- | -------------------------- |
-| id               | UUID      | Primary Key                |
-| servicio_id      | UUID      | Foreign Key → Servicio     |
-| consecutivo      | INT       | FUEC consecutive number    |
-| fecha_generacion | TIMESTAMP | Generation date            |
-| codigo_qr        | VARCHAR   | Verification QR code       |
-| estado           | ENUM      | Document status            |
+| id               | BIGINT    | Primary Key                |
+| service_id       | BIGINT    | Foreign Key → services     |
+| consecutive      | INT       | FUEC consecutive number    |
+| generated_at     | TIMESTAMP | Generation date            |
+| qr_code          | VARCHAR   | Verification QR code       |
+| status           | ENUM      | Document status            |
 | pdf_url          | VARCHAR   | URL of the generated PDF   |
 
-> **Note:** The FUEC module is optional and can be enabled/disabled.
+---
+
+## Table 9: EstadoDia (`day_statuses`)
+
+| Field        | Type      | Description                   |
+| ------------ | --------- | ----------------------------- |
+| id           | BIGINT    | Primary Key                   |
+| date         | DATE      | Day date (UNIQUE)             |
+| status       | ENUM      | `projected` / `executed`      |
+| executed_by  | BIGINT    | Foreign Key → users (nullable)|
+| executed_at  | TIMESTAMP | Execution date (nullable)     |
 
 ---
 
-## Table 9: EstadoDia
+## Table 10: Factura (`invoices`)
 
-| Field           | Type      | Description                   |
-| --------------- | --------- | ----------------------------- |
-| id              | UUID      | Primary Key                   |
-| fecha           | DATE      | Day date (UNIQUE)             |
-| estado          | ENUM      | PROYECTADO/EJECUTADO          |
-| ejecutado_por   | UUID      | Foreign Key → User (nullable) |
-| ejecutado_fecha | TIMESTAMP | Execution date (nullable)     |
+A single invoice groups multiple services from the same tercero. The `third_party_id` FK (added in Phase D) enforces this constraint at the schema level.
 
----
-
-## Table 10: Factura
-
-A single invoice can group multiple services from the same tercero.
-
-| Field          | Type    | Description             |
-| -------------- | ------- | ----------------------- |
-| id             | UUID    | Primary Key             |
-| numero_factura | VARCHAR | Invoice number          |
-| valor_total    | DECIMAL | Total invoice amount    |
-| fecha_emision  | DATE    | Issue date              |
-| estado_pago    | ENUM    | Payment status          |
+| Field          | Type    | Description                                          |
+| -------------- | ------- | ---------------------------------------------------- |
+| id             | BIGINT  | Primary Key                                          |
+| third_party_id | BIGINT  | Foreign Key → third_parties (invoice client)         |
+| invoice_number | VARCHAR | Invoice number                                       |
+| total_value    | DECIMAL | Total invoice amount                                 |
+| issue_date     | DATE    | Issue date                                           |
+| payment_status | ENUM    | `pending` / `paid` / `overdue`                       |
+| notes          | TEXT    | Free-form notes (nullable)                           |
+| deleted_at     | TIMESTAMP | Soft delete                                        |
 
 ---
 
-## Table 11: UbicacionVehiculo
+## Table 11: UbicacionVehiculo (`vehicle_locations`)
+
+> **Note:** Scaffolded stub. The table exists but the driver-side capture, map view and active-service filtering are not yet implemented.
 
 | Field       | Type      | Description                   |
 | ----------- | --------- | ----------------------------- |
-| id          | UUID      | Primary Key                   |
-| vehiculo_id | UUID      | Foreign Key → Vehiculo        |
+| id          | BIGINT    | Primary Key                   |
+| vehicle_id  | BIGINT    | Foreign Key → vehicles        |
 | timestamp   | TIMESTAMP | Location timestamp            |
-| latitud     | DECIMAL   | GPS latitude coordinate       |
-| longitud    | DECIMAL   | GPS longitude coordinate      |
-| es_manual   | BOOLEAN   | Whether entered manually      |
+| latitude    | DECIMAL   | GPS latitude coordinate       |
+| longitude   | DECIMAL   | GPS longitude coordinate      |
+| is_manual   | BOOLEAN   | Whether entered manually      |
 
 > **Note:** GPS usage is optional (can be automatic or manual).
 
@@ -324,20 +367,27 @@ The following tables are created and managed automatically by the framework and 
 
 ## Relationships between tables
 
-| Source Table  | Target Table      | Relationship Type             |
-| ------------- | ----------------- | ----------------------------- |
-| TipoDocumento | Tercero           | One-to-Many                   |
-| TipoDocumento | Conductor         | One-to-Many                   |
-| Eps           | Conductor         | One-to-Many                   |
-| FondoPensiones| Conductor         | One-to-Many                   |
-| FondoCesantias| Conductor         | One-to-Many                   |
-| Tercero       | Vehiculo          | One-to-Many (if provider)     |
-| Tercero       | Contrato          | One-to-Many (if client)       |
-| Contrato      | Servicio          | One-to-Many                   |
-| Vehiculo      | Servicio          | One-to-Many                   |
-| Conductor     | Servicio          | One-to-Many                   |
-| Factura       | Servicio          | One-to-Many                   |
-| TipoNovedad   | NovedadServicio   | One-to-Many                   |
-| Servicio      | NovedadServicio   | One-to-Many                   |
-| Servicio      | FUEC              | One-to-One                    |
-| Vehiculo      | UbicacionVehiculo | One-to-Many                   |
+| Source Table  | Target Table      | Relationship Type                         |
+| ------------- | ----------------- | ----------------------------------------- |
+| Department    | Municipality      | One-to-Many                               |
+| Municipality  | Tercero           | One-to-Many                               |
+| Municipality  | Vehiculo          | One-to-Many                               |
+| Municipality  | Conductor         | One-to-Many                               |
+| Municipality  | Servicio (origin/destination) | One-to-Many (twice per service) |
+| TipoDocumento | Tercero           | One-to-Many                               |
+| TipoDocumento | Conductor         | One-to-Many                               |
+| User          | Conductor         | One-to-One (driver portal link, nullable) |
+| Eps           | Conductor         | One-to-Many                               |
+| FondoPensiones| Conductor         | One-to-Many                               |
+| FondoCesantias| Conductor         | One-to-Many                               |
+| Tercero       | Vehiculo          | One-to-Many (if provider)                 |
+| Tercero       | Contrato          | One-to-Many (if client)                   |
+| Tercero       | Factura           | One-to-Many (invoice client)              |
+| Contrato      | Servicio          | One-to-Many                               |
+| Vehiculo      | Servicio          | One-to-Many                               |
+| Conductor     | Servicio          | One-to-Many                               |
+| Factura       | Servicio          | One-to-Many                               |
+| TipoNovedad   | NovedadServicio   | One-to-Many                               |
+| Servicio      | NovedadServicio   | One-to-Many                               |
+| Servicio      | FUEC              | One-to-One                                |
+| Vehiculo      | UbicacionVehiculo | One-to-Many                               |

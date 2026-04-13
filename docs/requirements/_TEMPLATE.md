@@ -6,7 +6,7 @@ status: pending # pending | in-progress | completed | blocked
 priority: medium # low | medium | high | critical
 created_date: YYYY-MM-DD
 completed_date: # filled when completed
-srs_refs: [] # e.g., ["RF-001", "RF-002"]
+srs_refs: [] # e.g., ["REQ-001", "REQ-002"]
 migration_strategy: new # new | modify-existing
 ---
 
@@ -84,19 +84,47 @@ Specify which approach and why.
 
 ## Verification
 
-### UI (Laravel Dusk)
+### UI (Playwright MCP)
 
-Dusk browser tests in `tests/Browser/`. Use super admin credentials from `env('SUPER_ADMIN_USER')` / `env('SUPER_ADMIN_PASSWORD')`. Run `php artisan migrate:fresh --seed --no-interaction` before tests that need a clean database.
+UI changes are verified interactively with the Playwright MCP (see `CLAUDE.md` for setup). The MCP keeps a persistent browser profile in `.claude/playwright-profile/`, so the logged-in session survives between runs.
+
+Reference users (all password `password`, except super admin which reads `SUPER_ADMIN_USER` / `SUPER_ADMIN_PASSWORD` from `.env`):
+
+| Role | Email |
+|---|---|
+| Admin | `admin@sgte.app` |
+| Operator | `operator@sgte.app` |
+| Driver | `driver@sgte.app` |
+| Accounting | `accounting@sgte.app` |
+
+Preferred flow:
+
+1. `mcp__playwright__browser_navigate` to `http://localhost/login`
+2. Fill in email + password, submit
+3. Navigate to the page under test
+4. Prefer `mcp__playwright__browser_snapshot` (accessibility tree, ~200–600 tokens) for assertions
+5. Use `mcp__playwright__browser_take_screenshot` only when the check is visual (alignment, spacing, color)
+6. Read JS errors with `mcp__laravel-boost__browser-logs` when relevant
 
 - [ ] Scenario 1: Navigate to page X and verify element Y is visible
 - [ ] Scenario 2: Fill form and verify submission succeeds
 
+### Automated regression (optional)
+
+If the feature needs committable regression coverage, add Pest feature tests (`tests/Feature/`) and/or Laravel Dusk browser tests (`tests/Browser/`). Dusk is currently disabled in CI but the machinery works for local runs via `./vendor/bin/sail dusk`.
+
 ### API (curl)
 
-curl commands to verify API endpoints. Use the same super admin credentials for authentication.
+curl commands to verify API endpoints. Use the reference users above for authentication.
 
 ```bash
-# Example: verify endpoint returns expected data
+# Example: login and hit a protected endpoint
+curl -s -X POST http://localhost/login \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{"email":"admin@sgte.app","password":"password"}' \
+  -c cookies.txt
+
 curl -s -X GET http://localhost/api/example \
   -H "Accept: application/json" \
   -b cookies.txt

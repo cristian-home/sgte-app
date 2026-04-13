@@ -263,6 +263,20 @@ Dusk browser tests in `tests/Browser/`. Use super admin credentials from `env('S
 - `departments-municipalities-catalog` (completed) — provides Municipality model and FK columns on services table
 - Municipality dropdown component (pending — separate prerequisite requirement) — provides the reusable municipality selector used in origin/destination fields
 
+## Server-side validations (enforced in `ServiceStoreRequest` / `ServiceUpdateRequest`)
+
+The full list of business rules enforced at the form-request layer. All error messages are surfaced in Spanish.
+
+| Rule | Where | Notes |
+|---|---|---|
+| `NoScheduleConflict` on `vehicle_id` and `driver_id` | `App\Rules\NoScheduleConflict` | Original rule from this requirement. Time ranges overlap based on `planned_start_time` + `planned_duration`. |
+| Executed-day restriction | `ServiceStoreRequest::validateDayNotExecuted()` | Prevents creating or editing services when the day status is `executed` (except accounting fields, handled elsewhere). |
+| Contract date range | `ServiceStoreRequest::validateContractCoversDate()` | Rejects services whose `service_date` falls outside the selected contract's `start_date` / `end_date`. |
+| Driver required for non-third-party vehicles | `ServiceStoreRequest::rules()` | `driver_id` is required unless the selected vehicle has `is_third_party = true`. |
+| **Vehicle documents not expired** (REQ-004 AC 3–5) | `ServiceStoreRequest::validateVehicleDocumentsNotExpired()` | Checks `soat_due_date`, `rtm_due_date` and `operation_card_due_date` against `service_date`. Also surfaced to the Gantt via the `blocked` flag. |
+| **Driver license valid + category compatible with vehicle type** (REQ-003 AC 5 / REQ-005 AC 2) | `ServiceStoreRequest::validateDriverLicense()` | Rejects expired licenses. Category compatibility uses the `LICENSE_CATEGORY_MAP` constant in the same request class (vehicle `type` → allowed license categories `C1`/`C2`/`C3`). |
+| **Driver social security active** (REQ-005 AC 5) | `ServiceStoreRequest::validateDriverLicense()` | Requires `has_social_security = true` for the assigned driver. |
+
 ## Notes
 
 - **Day locking (EJECUTADO)** is explicitly OUT OF SCOPE for this requirement. The form does not enforce read-only behavior based on day status. That will be handled in the separate `day-status-logic` requirement, which will add middleware/gate checks and frontend read-only state.

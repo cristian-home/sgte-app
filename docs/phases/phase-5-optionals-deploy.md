@@ -22,7 +22,7 @@ Implement the optional modules (FUEC, GPS) as latent functionality and prepare t
 
 ### 5.1 FUEC module (REQ-007)
 
-> This module ships **disabled** initially. The logic is in place, ready to be enabled in the future.
+> **Status: scaffolded only.** A `fuecs` table, model, controller and basic CRUD exist, but the feature is **not** user-facing yet. Missing (all TODO): PDF generation, QR code, unique consecutive numbering from the MinTransporte-authorized range, pre-generation validations (contract / vehicle docs / driver license), the feature flag to enable/disable the module, public verification endpoint, and storage wiring to MinIO. Packages `simplesoftwareio/simple-qrcode` and `barryvdh/laravel-dompdf` are **not yet** in `composer.json`; they will need to be added when the module is implemented.
 
 - Feature flag to enable/disable the FUEC module
 - Pre-generation validations:
@@ -41,10 +41,10 @@ Implement the optional modules (FUEC, GPS) as latent functionality and prepare t
 
 ### 5.2 Optional GPS location (REQ-010)
 
-> GPS is optional. The system works fully without it.
+> **Status: scaffolded only.** A `vehicle_locations` table, model and basic CRUD exist, but there is **no** map view, **no** driver-side capture flow (browser geolocation or manual input), and **no** active-service filtering. GPS is optional and the rest of the system works fully without it.
 
 - Location registration by the driver (automatic via browser geolocation or manual)
-- Storage: coordinates + timestamp + `es_manual` indicator
+- Storage: coordinates + timestamp + `is_manual` indicator
 - Map view with active vehicles (only those with a reported location)
 - Does not block any operation if no GPS data is available
 

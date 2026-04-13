@@ -1,6 +1,6 @@
 # Phase 4: Billing and Audit
 
-> **Status: PENDING** — Requires Phase 2 (completed); Phase 3 recommended
+> **Status: IN PROGRESS** — Invoice model, migration, and CRUD are scaffolded (including the `invoices.third_party_id` FK added in the Phase D refactor); the full billing workflow (aggregation of multiple services, total computation, PDF, REQ-009 justification UX) is pending. Requires Phase 2 (completed); Phase 3 recommended.
 
 ## Objective
 
@@ -49,21 +49,20 @@ Implement the service billing module, enforce accounting immutability of execute
 
 ### 4.4 Audit log
 
-Implement using `owen-it/laravel-auditing`:
+Backed by **`spatie/laravel-activitylog`** (already installed and trait'd on all domain models). REQ-009 (Accounting Immutability) is served by this package, with an admin viewer at `/audit-log` (`AuditLogController@index`).
 
-- Automatically record changes on auditable models:
-  - Servicio
-  - Factura
-  - EstadoDia
-  - Contrato
-- Data captured per change:
-  - User who performed the change
-  - Date and time
-  - Previous value
-  - New value
-  - Justification (additional field for executed records)
-- Audit query view for Administrador
-- Filters: by model, by user, by date range
+- Automatically record changes on auditable models via the `LogsActivity` trait:
+  - Service
+  - Invoice
+  - DayStatus
+  - Contract
+- Data captured per activity entry (via spatie defaults):
+  - Causer (user who performed the change)
+  - Timestamp
+  - Old attributes / attributes (before/after)
+  - Description
+  - Subject (the model affected)
+- Pending work: add a "justification" field for executed-record edits (stored in the activity log `properties` bag) and surface filter/search UI on `/audit-log` (by model type, by causer, by date range).
 
 ---
 
@@ -71,8 +70,8 @@ Implement using `owen-it/laravel-auditing`:
 
 | Package | Use |
 | ------- | --- |
-| `owen-it/laravel-auditing` | Automatic audit log |
-| `barryvdh/laravel-dompdf` | Invoice PDF generation |
+| `spatie/laravel-activitylog` | Automatic audit log (already installed and trait'd on all domain models) |
+| `barryvdh/laravel-dompdf` | Invoice PDF generation (pending — not yet in composer.json) |
 
 ## Completion criteria
 

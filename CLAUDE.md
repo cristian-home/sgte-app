@@ -84,7 +84,17 @@ php artisan enum:typescript              # Regenerate TS enums from PHP enums �
 - **Routing**: `bootstrap/app.php` registers routes (web, api, console, channels) and middleware. No `Kernel.php`.
 - **Providers**: `bootstrap/providers.php` → AppServiceProvider, FortifyServiceProvider, HorizonServiceProvider.
 - **Auth**: Laravel Fortify (headless). Super Admin role bypasses all gates via `Gate::before` in AppServiceProvider.
-- **Permissions**: Spatie Permission package. Roles defined in `app/Enums/Role.php` (5 roles). Permissions in `app/Enums/Permission.php` (47 permissions, CRUD pattern per module).
+- **Permissions**: Spatie Permission package. Roles defined in `app/Enums/Role.php` (5 roles: Super Admin, Admin, Operator, Driver, Accounting). Permissions in `app/Enums/Permission.php` (~50 permissions, CRUD pattern per module, including `VIEW_AUDIT_LOG`). Super Admin bypasses all gates via `Gate::before` (see Auth above).
+- **Sidebar groups** (see `resources/js/components/app-sidebar.tsx`):
+    - `Panel` (top-level link) — all authenticated roles
+    - `Producción` (admin, operator) — Servicios, Planificador, Resumen del Día, Calendario, Novedades
+    - `Gestión` (admin, operator) — Vehículos, Conductores, Terceros, Contratos
+    - `Facturación` (admin, accounting) — Facturas
+    - `Administración` (admin only) — Usuarios, Auditoría
+    - `FUEC` (admin only, scaffolded stub) — Documentos FUEC
+    - `GPS` (admin only, scaffolded stub) — Ubicaciones
+    - `Catálogos` (admin, operator) — Tipos de Documento, EPS, Fondos de Pensiones, Fondos de Cesantías, Tipos de Novedad
+    - Driver-only: `Panel` → redirects to `/driver`, plus `Conductor > Mis Servicios`.
 - **Validation**: Form Request classes in `app/Http/Requests/` — never inline validation in controllers.
 - **Shared Inertia data**: `HandleInertiaRequests` middleware shares `auth.user`, `auth.permissions`, `auth.roles`, `sidebarOpen`, `name`, `url` to all pages.
 

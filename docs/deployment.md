@@ -26,6 +26,8 @@ SGTE uses **Laravel Octane with FrankenPHP** as the production application serve
 
 Supporting services (PostgreSQL, Redis, Typesense, MinIO, Mailpit) run as separate containers via `compose.staging.yaml`.
 
+> **Environment caveat:** the Dokploy environment is labelled `production` but the running container has `APP_ENV=staging` — it is a de-facto staging/demo deploy used for client review, not real production.
+
 ---
 
 ## Architecture
@@ -95,7 +97,7 @@ FrankenPHP/Caddy compresses all HTTP responses (HTML, JSON, JS, CSS) automatical
 | `compose.staging.yaml` | Infrastructure services + app (via `local` profile) |
 | `.dockerignore` | Excludes dev artifacts from build context |
 | `config/octane.php` | Octane configuration (server: frankenphp) |
-| `.env.stg` | Environment variables for local testing (gitignored) |
+| `.env.staging` | Environment variables for local testing (gitignored) |
 
 ---
 
@@ -108,7 +110,7 @@ Docker installed on the **host machine** (not inside the Sail container). All co
 ### 1. Create the Environment File
 
 ```bash
-cp .env.stg.example .env.stg   # or create manually
+cp .env.staging.example .env.staging   # or create manually
 ```
 
 See [Environment Variables](#environment-variables) for the full reference. Key values for local testing:
@@ -120,20 +122,20 @@ See [Environment Variables](#environment-variables) for the full reference. Key 
 ### 2. Start Everything
 
 ```bash
-docker compose -f compose.staging.yaml --profile local --env-file .env.stg up -d --build
+docker compose -f compose.staging.yaml --profile local --env-file .env.staging up -d --build
 ```
 
 This single command:
 - Builds the production image from `docker/production/Dockerfile`
 - Starts all infrastructure services (pgsql, redis, typesense, minio, mailpit)
 - Waits for services to be healthy before starting the app
-- Starts the app container with env vars from `.env.stg`
+- Starts the app container with env vars from `.env.staging`
 - Runs migrations automatically via the entrypoint
 
 Subsequent runs without code changes can omit `--build`:
 
 ```bash
-docker compose -f compose.staging.yaml --profile local --env-file .env.stg up -d
+docker compose -f compose.staging.yaml --profile local --env-file .env.staging up -d
 ```
 
 ### 3. Verify
@@ -160,13 +162,13 @@ open http://localhost:8000
 ### 4. Stop Everything
 
 ```bash
-docker compose -f compose.staging.yaml --profile local --env-file .env.stg down
+docker compose -f compose.staging.yaml --profile local --env-file .env.staging down
 ```
 
 To also remove volumes (database data, redis, etc.):
 
 ```bash
-docker compose -f compose.staging.yaml --profile local --env-file .env.stg down -v
+docker compose -f compose.staging.yaml --profile local --env-file .env.staging down -v
 ```
 
 ---
@@ -234,21 +236,9 @@ Click **Deploy**. Dokploy will:
 
 ## CI/CD (GitHub Actions)
 
-### Option A: Dokploy Auto-Deploy (Simplest)
+Deploys are **manual**. The `deploy-staging.yml` workflow is triggered with `workflow_dispatch` — there is no auto-deploy on push. The Docker build happens on the VPS (not in CI), keeping GitHub Actions minutes low. Tests and linting still run on every push via the separate `tests.yml` and `lint.yml` workflows — they just don't trigger a deploy automatically.
 
-Dokploy can connect directly to your GitHub repository and auto-deploy on every push — no GitHub Actions needed:
-
-1. In Dokploy, go to the app service > **Deployments**
-2. Enable the GitHub webhook
-3. Every push to the configured branch triggers a build + deploy
-
-This is the simplest option but provides no test gating — a push with failing tests will still deploy.
-
-### Option B: GitHub Actions + Dokploy Webhook (Recommended)
-
-Run your test suite first, and only deploy if tests pass. The workflow triggers Dokploy's API to redeploy. The Docker build happens on your VPS (not in CI), keeping GitHub Actions minutes low.
-
-#### Setup
+### Setup
 
 1. In Dokploy, go to **Settings** > **API/Tokens** and create an API token
 2. In your Dokploy app settings, copy the **Application ID** (visible in the URL or General tab)
@@ -257,25 +247,24 @@ Run your test suite first, and only deploy if tests pass. The workflow triggers 
    - `DOKPLOY_TOKEN` — the API token from step 1
    - `DOKPLOY_APP_ID` — the application ID from step 2
 
-#### Workflow
+### Workflow
 
-The deploy workflow (`.github/workflows/deploy-staging.yml`) uses `workflow_run` to trigger after the existing `tests` and `linter` workflows succeed — no need to duplicate test steps:
+The deploy workflow (`.github/workflows/deploy-staging.yml`) uses `workflow_dispatch` with a `reason` input so the trigger is auditable (e.g., "demo cliente", "fix urgente"):
 
 ```yaml
 name: deploy-staging
 
 on:
-  workflow_run:
-    workflows: [tests, linter]
-    types: [completed]
-    branches: [develop]
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Motivo del deploy (ej. demo cliente, fix urgente)'
+        required: false
+        default: 'manual'
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    if: >-
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.head_branch == 'develop'
 
     steps:
       - name: Trigger Dokploy deployment
@@ -286,34 +275,33 @@ jobs:
             -d '{"applicationId": "${{ secrets.DOKPLOY_APP_ID }}"}'
 ```
 
-#### How It Works
+### How It Works
 
 ```
-Push to develop
+Developer decides a feature is ready to demo
       │
-      ├──▶ tests workflow (Pest on PHP 8.5)
-      ├──▶ linter workflow (Pint + Prettier + ESLint)
-      │
-      ▼ both pass
-┌──────────────────┐         ┌─────────────────┐
-│  deploy-staging   │────────▶│  Dokploy webhook │
-│  (workflow_run)   │         │  Build + Deploy  │
-└──────────────────┘         └─────────────────┘
-      │ either fails
-      ▼
-  No deployment
+      ├──▶ GitHub Actions → Run workflow → deploy-staging
+      │        (or)
+      └──▶ Dokploy panel → SGTE Laravel App → Deploy button
+               │
+               ▼
+        ┌─────────────────┐
+        │  Dokploy webhook │
+        │  Build + Deploy  │
+        └─────────────────┘
 ```
 
-- **Tests (PHP 8.5) and linting run in existing CI workflows** (already configured)
-- **Deploy workflow triggers only after both succeed** via `workflow_run`
-- **Docker build runs on your VPS** via Dokploy (keeps CI minutes and costs low)
-- The deploy job itself takes ~5 seconds (a single API call)
+- **Tests (PHP 8.5) and linting run on every push** via `tests.yml` / `lint.yml`, but they do **not** trigger a deploy.
+- **Deploys are a deliberate, manual action** — either the GitHub Actions "Run workflow" button or Dokploy's own Deploy button.
+- **Docker build runs on the VPS** via Dokploy (keeps CI minutes and costs low).
+- The deploy job itself takes ~5 seconds (a single API call); the actual build on Dokploy can take several minutes.
+- This is deliberate until `main` becomes the stable-release branch — once that happens, pushing to `main` will likely auto-deploy to a future real production environment.
 
 ---
 
 ## Environment Variables
 
-### Minimal `.env.stg` Example (Local Testing)
+### Minimal `.env.staging` Example (Local Testing)
 
 ```env
 APP_NAME=SGTE
@@ -423,7 +411,8 @@ SUPER_ADMIN_PASSWORD=password
 
 ```
 1. Push code to repository (develop branch for staging)
-2. CI runs tests → on success, triggers Dokploy webhook
+2. Tests + lint run in CI; when a feature is ready to demo, developer fires
+   deploy-staging manually (GitHub Actions "Run workflow" or Dokploy "Deploy")
 3. Dokploy builds the Docker image:
    ├── Stage 1: composer install --no-dev
    ├── Stage 2: Base frankenphp image with PHP extensions + Node.js
@@ -444,7 +433,7 @@ SUPER_ADMIN_PASSWORD=password
 
 ```
 1. Developer pushes code changes
-2. CI runs tests → triggers Dokploy on success
+2. Tests + lint run in CI; when ready, developer manually fires deploy-staging
 3. Dokploy rebuilds the image (cached layers speed this up)
 4. New container starts → caches config → runs migrations → starts processes
 5. Dokploy performs zero-downtime swap:
@@ -579,9 +568,9 @@ docker exec sgte-app-app-1 php artisan optimize
 PostgreSQL only sets credentials on first volume initialization. If credentials change after the volume was created, you must recreate the volume:
 
 ```bash
-docker compose -f compose.staging.yaml --profile local --env-file .env.stg stop pgsql
-docker compose -f compose.staging.yaml --profile local --env-file .env.stg rm -f pgsql
+docker compose -f compose.staging.yaml --profile local --env-file .env.staging stop pgsql
+docker compose -f compose.staging.yaml --profile local --env-file .env.staging rm -f pgsql
 docker volume rm sgte-app_sgte-pgsql
-docker compose -f compose.staging.yaml --profile local --env-file .env.stg up -d
+docker compose -f compose.staging.yaml --profile local --env-file .env.staging up -d
 ```
 

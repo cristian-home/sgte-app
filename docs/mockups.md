@@ -72,15 +72,14 @@ The `<` indicator marks the active view. Footer shows the user and settings.
 │  FACTURACION           │ │ [!!] Tarjeta Op.    - GHI-789           Vence en 25 dias            │ │
 │  > Facturas            │ └─────────────────────────────────────────────────────────────────────┘ │
 │  > Serv.Ejecutados     │                                                                         │
-│                        │ ┌──────────────────────────────────┐ ┌──────────────────────────────┐   │
-│  OPCIONALES            │ │ ACCESOS RAPIDOS                  │ │ ACTIVIDAD RECIENTE           │   │
-│  > FUEC                │ │ ──────────────────────────────── │ │ ──────────────────────────── │   │
-│  > Mapa GPS            │ │ [Ir al Calendario Anual]         │ │ Serv SERV-102 creado  10:30  │   │
-│                        │ │ [Ir al Gantt de Hoy]             │ │ Serv SERV-101 cerrado 09:45  │   │
-│  ──────────────────    │ │ [Ver Resumen de Hoy]             │ │ Novedad en SERV-098   09:20  │   │
-│  [U] Admin User        │ │ [+ Nuevo Servicio]               │ │ Factura F-045 creada  08:50  │   │
-│                        │ └──────────────────────────────────┘ │ Dia 24/02 ejecutado   08:30  │   │
-│                        │                                      └──────────────────────────────┘   │
+│  OPCIONALES            │                                                                         │
+│  > FUEC                │                                                                         │
+│  > Mapa GPS            │                                                                         │
+│                        │                                                                         │
+│  ──────────────────    │                                                                         │
+│  [U] Admin User        │                                                                         │
+│                        │                                                                         │
+│                        │                                                                         │
 │                        │                                                                         │
 └────────────────────────┴─────────────────────────────────────────────────────────────────────────┘
 ```
@@ -89,9 +88,8 @@ The `<` indicator marks the active view. Footer shows the user and settings.
 - Top KPIs: counters for vehicles, drivers, today's services, and pending invoices.
 - Indicators: `ok`=valid, `!!`=expiring soon, `XX`=expired, `Ab`=open, `Ce`=closed.
 - Alerts panel: shows expired or expiring documents (SOAT, RTM, Operation Card, Licenses).
-- Quick access: direct links to the most-used views.
-- Recent activity: latest actions in the system (services, incidents, invoices).
-- Content adapts to the user's role (drivers see only their services).
+- Content adapts to the user's role (drivers are redirected to `/driver`).
+- **Implementation status:** the live dashboard builds KPI cards + the document-alerts panel only. The "Accesos Rápidos" and "Actividad Reciente" blocks shown in earlier mockups are deferred and not yet implemented.
 
 ---
 
@@ -104,9 +102,9 @@ The `<` indicator marks the active view. Footer shows the user and settings.
 │                        │ Calendario Anual 2025                                                   │
 │  SGTE                  │ ═══════════════════════════════════════════════════════════════════════ │
 │                        │                                                                         │
-│  PRODUCCION            │ ┌─────────────────────────────────────────────────────────────────────┐ │
-│  > Calendario        < │ │ Filtros: [Ciudad: Todas v]  [Modalidad: Todas v]  [Buscar]          │ │
-│  > Gantt Diario        │ └─────────────────────────────────────────────────────────────────────┘ │
+│  PRODUCCION            │                                                                         │
+│  > Calendario        < │                                                                         │
+│  > Gantt Diario        │                                                                         │
 │  > Resumen del Dia     │                                                                         │
 │                        │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐       │
 │  ADMINISTRACION        │  │  ENERO   │ │ FEBRERO  │ │  MARZO   │ │  ABRIL   │ │  MAYO    │       │
@@ -230,30 +228,21 @@ Clicking the month title (e.g. "Octubre 2025") returns to the yearly view. Color
 │                        │ Hora ->  06:00  08:00  10:00  12:00  14:00  16:00  18:00  20:00         │
 │                        │ ─────────┬──────┬──────┬──────┬──────┬──────┬──────┬──────┬──────       │
 │                        │ WTO-250  │      │[=SERV-001==]│      │      │      │      │             │
-│                        │ Act.     │      │ EmpABC      │      │      │      │      │             │
 │                        │ ─────────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┼──────       │
 │                        │ TOY-250  │      │      │      │[===SERV-002========]      │             │
-│                        │ Act.     │      │      │      │ TurXYZ             │      │             │
 │                        │ ─────────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┼──────       │
 │                        │ ABC-123  │//////│//////│//////│//////│//////│//////│//////│//////       │
-│                        │ BLOQ.    │ [SOAT VENCIDO - 05/10/2025]  Vehiculo bloqueado              │
+│                        │          │ [SOAT VENCIDO - 05/10/2025]  Vehiculo bloqueado              │
 │                        │ ─────────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┼──────       │
 │                        │ XYZ-789  │      │      │[S003]│      │[S004]│      │[S005]│             │
-│                        │ Act.     │      │      │SaludP│      │EmpXYZ│      │SaludP│             │
 │                        │ ─────────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┼──────       │
 │                        │ DEF-456  │      │[S005]│      │      │      │[====SERV-006=====]        │
-│                        │ Prec.    │      │Ocasio│      │      │      │ EmpABC                    │
 │                        │ ─────────┼──────┼──────┼──────┼──────┼──────┼──────┼──────┼──────       │
 │                        │ GHI-789  │[S007]│      │      │      │      │      │      │             │
-│                        │ 3ro.     │Provee│      │      │      │      │      │      │             │
 │                        │ ─────────┴──────┴──────┴──────┴──────┴──────┴──────┴──────┴──────       │
-│                        │                                                                         │
-│                        │ Leyenda: Act.=Activo  Prec.=RTM<15d  BLOQ.=Doc.vencido  3ro=COD 18      │
 │                        │                                                                         │
 │                        │ Click en celda vacia -> Nuevo Servicio                                  │
 │                        │ Click en barra -> Editar Servicio                                       │
-│                        │                                                                         │
-│                        │ [+ Nuevo Servicio]  [FUEC (Opcional)]  [Resumen]                        │
 │                        │                                                                         │
 └────────────────────────┴─────────────────────────────────────────────────────────────────────────┘
 ```
@@ -314,27 +303,22 @@ Clicking the month title (e.g. "Octubre 2025") returns to the yearly view. Color
 │                        │ │ Cantidad:         [1                        ]                       │ │
 │                        │ │ Forma de Pago:    [CREDITO 30 DIAS         v]                       │ │
 │                        │ │                                                                     │ │
-│                        │ │ NOVEDADES                                                           │ │
-│                        │ │ ─────────────────────────────────────────────────────────────────── │ │
-│                        │ │ [!! Ver 2 novedades registradas]                                    │ │
-│                        │ │ ┌─ Novedad #1 ──────────────────────────────────────────────────┐   │ │
-│                        │ │ │ Tipo: Retraso por trafico | Registrada por: Conductor         │   │ │
-│                        │ │ │ Descripcion: Accidente en autopista norte, demora 15 min      │   │ │
-│                        │ │ │ [Afecta facturacion: Si | Valor adicional: $25,000]           │   │ │
-│                        │ │ └───────────────────────────────────────────────────────────────┘   │ │
-│                        │ │                                                                     │ │
 │                        │ │ ESTADO                                                              │ │
 │                        │ │ ─────────────────────────────────────────────────────────────────── │ │
 │                        │ │ Estado Servicio:  (*) Abierto  ( ) Cerrado                          │ │
 │                        │ │ Estado Dia:       PROYECTADO (Dia en modo edicion)                  │ │
 │                        │ └─────────────────────────────────────────────────────────────────────┘ │
 │                        │                                                                         │
-│                        │ [Guardar]  [Cancelar]  [FUEC (Opcional)]  [+ Novedad]                   │
+│                        │ [Guardar]  [Cancelar]                                                   │
 │                        │                                                                         │
 │                        │ Notas:                                                                  │
 │                        │ * Campos marcados con * son obligatorios                                │
-│                        │ * Si vehiculo es COD 18 (Tercerizado), no se muestra conductor          │
+│                        │ * Si vehiculo es tercerizado (internal_code = 18), no se muestra        │
+│                        │   conductor                                                             │
 │                        │ * En dia EJECUTADO, solo Contabilidad edita campos de facturacion       │
+│                        │ * Novedades: se registran desde `/service-incidents/create`             │
+│                        │   (o desde el boton "Registrar Novedad" en las tarjetas de `/driver`)   │
+│                        │ * FUEC: vive en su propio modulo (Fase 5, aun solo scaffolded)          │
 │                        │                                                                         │
 └────────────────────────┴─────────────────────────────────────────────────────────────────────────┘
 ```
@@ -375,11 +359,8 @@ Clicking the month title (e.g. "Octubre 2025") returns to the yearly view. Color
 │                        │ ┌─────────────────────────────────────────────────────────────────────┐ │
 │                        │ │ RESUMEN EJECUTIVO                                                   │ │
 │                        │ │ ─────────────────────────────────────────────────────────────────── │ │
-│                        │ │ Total Servicios:     5                                              │ │
-│                        │ │ Servicios Cerrados:  3  [ok]                                        │ │
-│                        │ │ Servicios Abiertos:  2  [!!]                                        │ │
-│                        │ │ Con Novedades:       2                                              │ │
-│                        │ │ Vehiculos 3ros:      2                                              │ │
+│                        │ │ Total Servicios:  5   Cerrados: 3   Abiertos: 2                     │ │
+│                        │ │ Con Novedades:    2   Vehiculos 3ros: 2                             │ │
 │                        │ │                                                                     │ │
 │                        │ │ ESTADO DEL DIA                                                      │ │
 │                        │ │ ─────────────────────────────────────────────────────────────────── │ │
