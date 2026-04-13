@@ -2,10 +2,13 @@
 
 namespace Tests\Feature\Http\Controllers;
 
+use App\Enums\Role;
 use App\Models\Driver;
+use App\Models\IncidentType;
 use App\Models\Service;
 use App\Models\User;
 
+use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
 use function Pest\Laravel\post;
 
@@ -124,4 +127,46 @@ test('unauthorized user cannot access driver dashboard', function (): void {
     $response = get(route('driver.dashboard'));
 
     $response->assertForbidden();
+});
+
+test('driver can open the incident create form with service_id pre-filled', function (): void {
+    // Swap the super-admin harness for a real driver scenario
+    $driverUser = User::factory()->create();
+    $driverUser->assignRole(Role::DRIVER->value);
+    $driver = Driver::factory()->create(['user_id' => $driverUser->id]);
+    $service = Service::factory()->create([
+        'driver_id' => $driver->id,
+        'service_date' => today(),
+    ]);
+    actingAs($driverUser);
+
+    get(route('service-incidents.create', ['service_id' => $service->id]))
+        ->assertOk()
+        ->assertInertia(
+            fn (\Inertia\Testing\AssertableInertia $page) => $page
+                ->component('service-incidents/create')
+                ->where('service.id', $service->id)
+        );
+});
+
+test('driver creating an incident is flagged as driver report and redirected to driver dashboard', function (): void {
+    $driverUser = User::factory()->create();
+    $driverUser->assignRole(Role::DRIVER->value);
+    $driver = Driver::factory()->create(['user_id' => $driverUser->id]);
+    $service = Service::factory()->create([
+        'driver_id' => $driver->id,
+        'service_date' => today(),
+    ]);
+    $type = IncidentType::factory()->create();
+    actingAs($driverUser);
+
+    $response = post(route('service-incidents.store'), [
+        'service_id' => $service->id,
+        'incident_type_id' => $type->id,
+        'description' => 'Averia en la ruta',
+    ]);
+
+    $response->assertRedirect(route('driver.dashboard'));
+    expect($service->serviceIncidents()->count())->toBe(1);
+    expect($service->serviceIncidents()->first()->is_driver_report)->toBeTrue();
 });

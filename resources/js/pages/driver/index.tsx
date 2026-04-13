@@ -1,5 +1,5 @@
-import { Head, router } from '@inertiajs/react';
-import { Clock, Flag, MapPin, Play, Truck } from 'lucide-react';
+import { Head, Link, router } from '@inertiajs/react';
+import { AlertCircle, Clock, Flag, MapPin, Play, Truck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -186,7 +186,7 @@ export default function DriverDashboard({
                                     )}
 
                                     {/* Action buttons */}
-                                    <div className="flex gap-2 pt-2">
+                                    <div className="flex flex-wrap gap-2 pt-2">
                                         {!hasStarted && (
                                             <Button
                                                 className="flex-1"
@@ -211,10 +211,22 @@ export default function DriverDashboard({
                                             </Button>
                                         )}
                                         {hasStarted && hasEnded && (
-                                            <p className="w-full py-2 text-center text-sm text-muted-foreground">
+                                            <p className="flex-1 py-2 text-center text-sm text-muted-foreground">
                                                 Servicio completado
                                             </p>
                                         )}
+                                        <Button
+                                            variant="outline"
+                                            asChild
+                                            className="flex-1"
+                                        >
+                                            <Link
+                                                href={`/service-incidents/create?service_id=${service.id}`}
+                                            >
+                                                <AlertCircle className="mr-1 size-4" />
+                                                Registrar Novedad
+                                            </Link>
+                                        </Button>
                                     </div>
                                 </CardContent>
                             </Card>
