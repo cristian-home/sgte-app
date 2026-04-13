@@ -1,99 +1,99 @@
-# Fase 5: Módulos Opcionales y Deploy
+# Phase 5: Optional Modules and Deploy
 
-> **Estado: EN PROGRESO** — Despliegue completado, módulos opcionales pendientes
+> **Status: IN PROGRESS** — Deployment completed, optional modules pending
 
-## Objetivo
+## Objective
 
-Implementar los módulos opcionales (FUEC, GPS) como funcionalidad latente y preparar el despliegue en producción.
+Implement the optional modules (FUEC, GPS) as latent functionality and prepare the production deployment.
 
-## Requerimientos cubiertos
+## Covered requirements
 
-- **REQ-007** - Generación de FUEC (opcional)
-- **REQ-010** - Seguimiento de Ubicación de Vehículos (GPS opcional)
+- **REQ-007** - FUEC Generation (optional)
+- **REQ-010** - Vehicle Location Tracking (optional GPS)
 
-## Dependencias
+## Dependencies
 
-- Sin bloqueantes fuertes; puede iniciarse en paralelo con Fase 4
-- Requiere los servicios y vehículos de Fases 1-2
+- No hard blockers; can start in parallel with Phase 4
+- Requires services and vehicles from Phases 1-2
 
 ---
 
-## Tareas
+## Tasks
 
-### 5.1 Módulo FUEC (REQ-007)
+### 5.1 FUEC module (REQ-007)
 
-> Este módulo se entrega **desactivado** inicialmente. La lógica queda implementada para activarse en el futuro.
+> This module ships **disabled** initially. The logic is in place, ready to be enabled in the future.
 
-- Feature flag para activar/desactivar el módulo FUEC
-- Validaciones previas a la generación:
-  - Contrato vigente
-  - Documentos del vehículo vigentes
-  - Licencia del conductor vigente
-- Generación de PDF con:
-  - Datos del contrato, vehículo y conductor
-  - Origen y destino del servicio
-  - Fecha y hora
-  - Código QR de verificación
-  - Número consecutivo único
-- Página pública de verificación al escanear QR (estado VIGENTE/ANULADO)
-- Almacenamiento de PDF en MinIO
-- Consecutivo del rango autorizado por MinTransporte
+- Feature flag to enable/disable the FUEC module
+- Pre-generation validations:
+  - Valid contract
+  - Valid vehicle documents
+  - Valid driver license
+- PDF generation with:
+  - Contract, vehicle, and driver data
+  - Service origin and destination
+  - Date and time
+  - Verification QR code
+  - Unique consecutive number
+- Public verification page on QR scan (status VIGENTE/ANULADO)
+- PDF storage on MinIO
+- Consecutive from the range authorized by MinTransporte
 
-### 5.2 Ubicación GPS opcional (REQ-010)
+### 5.2 Optional GPS location (REQ-010)
 
-> El GPS es opcional. El sistema funciona completamente sin él.
+> GPS is optional. The system works fully without it.
 
-- Registro de ubicación por conductor (automático vía geolocalización del navegador o manual)
-- Almacenamiento: coordenadas + timestamp + indicador `es_manual`
-- Vista de mapa con vehículos activos (solo si tienen ubicación reportada)
-- No bloquea ninguna operación si no hay datos GPS
+- Location registration by the driver (automatic via browser geolocation or manual)
+- Storage: coordinates + timestamp + `es_manual` indicator
+- Map view with active vehicles (only those with a reported location)
+- Does not block any operation if no GPS data is available
 
-### 5.3 Preparación para deploy ✅
+### 5.3 Deploy preparation ✅
 
-- **Dockerización:**
-  - Dockerfile multi-stage con FrankenPHP (4 etapas: composer → base → build → production)
-  - `compose.staging.yaml` con perfiles: infraestructura (siempre) + app (perfil `local`)
-  - `.dockerignore` optimizado para builds de producción
+- **Dockerization:**
+  - Multi-stage Dockerfile with FrankenPHP (4 stages: composer → base → build → production)
+  - `compose.staging.yaml` with profiles: infrastructure (always) + app (`local` profile)
+  - `.dockerignore` optimized for production builds
 - **Dokploy:**
-  - CI/CD workflow (`deploy-staging.yml`) con redeploy automático vía API de Dokploy
-  - Variables de entorno de producción documentadas
-  - SSL/HTTPS automático via Dokploy/Caddy
-- **Infraestructura:**
-  - Laravel Octane con FrankenPHP como servidor de producción
-  - Supervisor para Octane + Horizon + Reverb + SSR
-  - Config/route caching en entrypoint (runtime env vars)
-  - Compresión automática (gzip + brotli + zstd) via FrankenPHP/Caddy
-- **Documentación:** Guía completa en [`docs/deployment.md`](../deployment.md)
-- **Requerimiento:** [frankenphp-production-docker.md](../requirements/frankenphp-production-docker.md)
+  - CI/CD workflow (`deploy-staging.yml`) with automatic redeploy via Dokploy API
+  - Documented production environment variables
+  - Automatic SSL/HTTPS via Dokploy/Caddy
+- **Infrastructure:**
+  - Laravel Octane with FrankenPHP as the production server
+  - Supervisor for Octane + Horizon + Reverb + SSR
+  - Config/route caching in the entrypoint (runtime env vars)
+  - Automatic compression (gzip + brotli + zstd) via FrankenPHP/Caddy
+- **Documentation:** Full guide in [`docs/deployment.md`](../deployment.md)
+- **Requirement:** [frankenphp-production-docker.md](../requirements/frankenphp-production-docker.md)
 
-### 5.4 Checklist pre-producción
+### 5.4 Pre-production checklist
 
-- [x] Seeders de datos iniciales (roles, permisos, tipos de documento, tipos de novedad)
-- [ ] Pruebas de carga con datos representativos (100 vehículos, 300 servicios/día)
-- [ ] Revisión de seguridad (CSRF, XSS, SQL injection, validaciones)
-- [ ] Configurar rate limiting
-- [ ] Configurar logs de producción
-- [ ] Documentar proceso de respaldo y restauración
+- [x] Initial data seeders (roles, permissions, document types, incident types)
+- [ ] Load testing with representative data (100 vehicles, 300 services/day)
+- [ ] Security review (CSRF, XSS, SQL injection, validations)
+- [ ] Configure rate limiting
+- [ ] Configure production logs
+- [ ] Document backup and restore process
 
 ---
 
-## Paquetes
+## Packages
 
-| Paquete | Uso |
+| Package | Use |
 | ------- | --- |
-| `simplesoftwareio/simple-qrcode` | Generación de QR para FUEC |
-| `league/flysystem-aws-s3-v3` | Almacenamiento en MinIO (driver S3) |
-| `barryvdh/laravel-dompdf` | PDF para FUEC (reutilizado de Fase 4) |
+| `simplesoftwareio/simple-qrcode` | QR generation for FUEC |
+| `league/flysystem-aws-s3-v3` | Storage on MinIO (S3 driver) |
+| `barryvdh/laravel-dompdf` | PDF for FUEC (reused from Phase 4) |
 
-## Criterios de completitud
+## Completion criteria
 
-- [ ] Módulo FUEC implementado y desactivado (feature flag)
-- [ ] Generación de PDF con QR funcional
-- [ ] Página de verificación QR pública
-- [ ] Registro de ubicación GPS funcional (automático y manual)
-- [x] Docker multi-stage funcional con FrankenPHP
-- [x] Compose de staging con todos los servicios de infraestructura
-- [x] CI/CD de deploy a staging configurado (Dokploy)
-- [x] SSL/HTTPS configurado (Dokploy/Caddy)
-- [ ] Backups automáticos de BD configurados
-- [ ] Scheduler de Laravel configurado para alertas de vencimiento
+- [ ] FUEC module implemented and disabled (feature flag)
+- [ ] PDF generation with QR working
+- [ ] Public QR verification page
+- [ ] Working GPS location recording (automatic and manual)
+- [x] Working multi-stage Docker with FrankenPHP
+- [x] Staging compose with all infrastructure services
+- [x] CI/CD staging deploy configured (Dokploy)
+- [x] SSL/HTTPS configured (Dokploy/Caddy)
+- [ ] Automatic database backups configured
+- [ ] Laravel scheduler configured for expiration alerts

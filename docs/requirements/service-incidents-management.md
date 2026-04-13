@@ -10,21 +10,21 @@ srs_refs: ["REQ-012"]
 migration_strategy: new
 ---
 
-# Gestión de Novedades de Servicio
+# Service Incidents Management
 
 ## Description
 
-Reemplazar las páginas scaffold de service-incidents con una UI funcional completa. Agregar un botón "Registrar Novedad" en la vista detalle del servicio. Auto-asignar registrar_id (usuario autenticado), reported_at (now), e is_driver_report (según rol del usuario). Permitir edición y eliminación de novedades desde la vista del servicio.
+Replace the scaffold pages for service-incidents with a fully functional UI. Add a "Registrar Novedad" button on the service detail view. Auto-assign registrar_id (authenticated user), reported_at (now), and is_driver_report (based on the user's role). Allow editing and deleting incidents from the service view.
 
 ## Acceptance Criteria
 
-- [ ] WHEN un usuario con permiso navega a /service-incidents THEN ve una DataTable con todas las novedades (servicio, tipo, descripción, fecha, registrador, facturación)
-- [ ] WHEN un usuario hace clic en "Registrar Novedad" desde el detalle del servicio THEN ve un formulario con service_id pre-llenado
-- [ ] WHEN un usuario envía el formulario THEN se auto-asigna registrar_id, reported_at y is_driver_report
-- [ ] WHEN affects_billing está activado THEN se muestra el campo additional_value
-- [ ] WHEN el tipo de novedad cambia THEN affects_billing se pre-llena con el default del tipo seleccionado
-- [ ] WHEN un usuario edita una novedad THEN ve el formulario pre-llenado
-- [ ] WHEN un usuario elimina una novedad desde el detalle del servicio THEN se elimina y se recarga la página
+- [ ] WHEN a user with permission navigates to /service-incidents THEN they see a DataTable with all incidents (service, type, description, date, registrar, billing)
+- [ ] WHEN a user clicks "Registrar Novedad" from the service detail THEN they see a form with service_id pre-filled
+- [ ] WHEN a user submits the form THEN registrar_id, reported_at and is_driver_report are auto-assigned
+- [ ] WHEN affects_billing is enabled THEN the additional_value field is shown
+- [ ] WHEN the incident type changes THEN affects_billing is pre-filled with the default of the selected type
+- [ ] WHEN a user edits an incident THEN they see the form pre-filled
+- [ ] WHEN a user deletes an incident from the service detail THEN it is removed and the page is reloaded
 
 ## Tasks
 

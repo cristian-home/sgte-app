@@ -1,12 +1,12 @@
-# Mockups ASCII - Sistema de Gestión de Transporte Especial (SGTE)
+# ASCII Mockups - Special Transport Management System (SGTE)
 
-> Representaciones ASCII de las vistas principales de la aplicación.
-> Ancho fijo: 100 caracteres. Sidebar: 24 chars. Contenido: 73 chars.
-> Sin emojis en sidebar/header para evitar desalineación por ancho variable.
+> ASCII representations of the application's main views.
+> Fixed width: 100 characters. Sidebar: 24 chars. Content: 73 chars.
+> No emojis in sidebar/header to avoid misalignment from variable widths.
 
 ---
 
-## Estructura General de Layout
+## General Layout Structure
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -43,12 +43,12 @@
 └──────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Sidebar:** Secciones agrupadas (Produccion, Administracion, Facturacion, Opcionales).
-El indicador `<` marca la vista activa. Footer con usuario y configuracion.
+**Sidebar:** Grouped sections (Produccion, Administracion, Facturacion, Opcionales).
+The `<` indicator marks the active view. Footer shows the user and settings.
 
 ---
 
-## 0. DASHBOARD GENERAL (Página de Inicio)
+## 0. GENERAL DASHBOARD (Home Page)
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -85,17 +85,17 @@ El indicador `<` marca la vista activa. Footer con usuario y configuracion.
 └────────────────────────┴─────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Notas:**
-- KPIs superiores: contadores de vehiculos, conductores, servicios del dia y facturas pendientes.
-- Indicadores: `ok`=vigente, `!!`=por vencer, `XX`=vencido, `Ab`=abierto, `Ce`=cerrado.
-- Panel de alertas: muestra documentos vencidos o por vencer (SOAT, RTM, Tarjeta, Licencias).
-- Accesos rapidos: enlaces directos a las vistas mas usadas.
-- Actividad reciente: ultimas acciones en el sistema (servicios, novedades, facturas).
-- El contenido se adapta segun el rol del usuario (el conductor ve solo sus servicios).
+**Notes:**
+- Top KPIs: counters for vehicles, drivers, today's services, and pending invoices.
+- Indicators: `ok`=valid, `!!`=expiring soon, `XX`=expired, `Ab`=open, `Ce`=closed.
+- Alerts panel: shows expired or expiring documents (SOAT, RTM, Operation Card, Licenses).
+- Quick access: direct links to the most-used views.
+- Recent activity: latest actions in the system (services, incidents, invoices).
+- Content adapts to the user's role (drivers see only their services).
 
 ---
 
-## 1. DASHBOARD / CALENDARIO ANUAL
+## 1. DASHBOARD / YEARLY CALENDAR
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -149,13 +149,13 @@ El indicador `<` marca la vista activa. Footer con usuario y configuracion.
 └────────────────────────┴─────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Notas:** Click en mes navega a `/day-statuses/{year}/{month}` (vista mensual). Dias en color: Negro (vacio),
-Naranja (proyectado), Verde (ejecutado). Grid de 5 meses por fila + 2 en la ultima.
-URL: `/day-statuses/{year}` — flechas de ano cambian el path, no query params.
+**Notes:** Clicking a month navigates to `/day-statuses/{year}/{month}` (monthly view). Colored days: Black (empty),
+Orange (projected), Green (executed). Grid of 5 months per row + 2 on the last row.
+URL: `/day-statuses/{year}` — year arrows change the path, not query params.
 
 ---
 
-## 2. VISTA MENSUAL (Detalle de un mes)
+## 2. MONTHLY VIEW (Month detail)
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -207,13 +207,13 @@ URL: `/day-statuses/{year}` — flechas de ano cambian el path, no query params.
 └────────────────────────┴─────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Notas:** Click en dia carga los servicios del dia inline debajo del calendario (no navega a otra pagina).
-URL: `/day-statuses/{year}/{month}?selectedDay={day}`. Flechas `[<]` `[>]` navegan al mes anterior/siguiente.
-Click en el titulo del mes (ej. "Octubre 2025") vuelve a la vista anual. Colores indican estado del dia.
+**Notes:** Clicking a day loads the day's services inline below the calendar (does not navigate to another page).
+URL: `/day-statuses/{year}/{month}?selectedDay={day}`. The `[<]` `[>]` arrows navigate to the previous/next month.
+Clicking the month title (e.g. "Octubre 2025") returns to the yearly view. Colors indicate day status.
 
 ---
 
-## 3. GANTT DIARIO - Planificador de Flota
+## 3. DAILY GANTT - Fleet Planner
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -258,16 +258,16 @@ Click en el titulo del mes (ej. "Octubre 2025") vuelve a la vista anual. Colores
 └────────────────────────┴─────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Notas:**
-- Eje Y: Lista de vehiculos de la flota
-- Eje X: Horario del dia (06:00 - 22:00)
-- Barras horizontales = Servicios asignados
-- Vehiculos bloqueados en gris con documento vencido
-- `//////` = fila bloqueada (vehiculo con documentos vencidos)
+**Notes:**
+- Y axis: List of fleet vehicles
+- X axis: Day schedule (06:00 - 22:00)
+- Horizontal bars = Assigned services
+- Blocked vehicles shown in grey with the expired document
+- `//////` = blocked row (vehicle with expired documents)
 
 ---
 
-## 4. FORMULARIO DE SERVICIO (Crear/Editar)
+## 4. SERVICE FORM (Create/Edit)
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -341,7 +341,7 @@ Click en el titulo del mes (ej. "Octubre 2025") vuelve a la vista anual. Colores
 
 ---
 
-## 5. RESUMEN DEL DIA
+## 5. DAY SUMMARY
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -396,15 +396,15 @@ Click en el titulo del mes (ej. "Octubre 2025") vuelve a la vista anual. Colores
 └────────────────────────┴─────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Notas:**
-- Estado ABIERTO: Servicio en ejecucion o pendiente
-- Estado CERRADO: Servicio finalizado por conductor
-- Click en fila -> Ver/Editar servicio
-- Ejecutar Dia solo habilitado cuando todos los servicios esten CERRADOS
+**Notes:**
+- OPEN state: Service in progress or pending
+- CLOSED state: Service finalized by the driver
+- Click on a row -> View/Edit service
+- "Execute Day" only enabled when every service is CLOSED
 
 ---
 
-## 6. LISTADO DE VEHICULOS (CRUD)
+## 6. VEHICLES LIST (CRUD)
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -454,7 +454,7 @@ Click en el titulo del mes (ej. "Octubre 2025") vuelve a la vista anual. Colores
 
 ---
 
-## 7. FORMULARIO DE VEHICULO (Crear/Editar)
+## 7. VEHICLE FORM (Create/Edit)
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -513,7 +513,7 @@ Click en el titulo del mes (ej. "Octubre 2025") vuelve a la vista anual. Colores
 
 ---
 
-## 8. LISTADO DE CONDUCTORES (CRUD)
+## 8. DRIVERS LIST (CRUD)
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -557,7 +557,7 @@ Click en el titulo del mes (ej. "Octubre 2025") vuelve a la vista anual. Colores
 
 ---
 
-## 9. FORMULARIO DE CONDUCTOR (Crear/Editar)
+## 9. DRIVER FORM (Create/Edit)
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -612,7 +612,7 @@ Click en el titulo del mes (ej. "Octubre 2025") vuelve a la vista anual. Colores
 
 ---
 
-## 10. LISTADO DE TERCEROS (CRUD)
+## 10. THIRD PARTIES LIST (CRUD)
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -650,11 +650,11 @@ Click en el titulo del mes (ej. "Octubre 2025") vuelve a la vista anual. Colores
 └────────────────────────┴─────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Notas:** Rol: [Cli]=Cliente  [Pro]=Proveedor. Un tercero puede ser ambos.
+**Notes:** Role: [Cli]=Client  [Pro]=Provider. A third party can be both.
 
 ---
 
-## 11. LISTADO DE CONTRATOS (CRUD)
+## 11. CONTRACTS LIST (CRUD)
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -701,7 +701,7 @@ Click en el titulo del mes (ej. "Octubre 2025") vuelve a la vista anual. Colores
 
 ---
 
-## 12. FACTURACION - Servicios Ejecutados
+## 12. BILLING - Executed Services
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -753,11 +753,11 @@ Click en el titulo del mes (ej. "Octubre 2025") vuelve a la vista anual. Colores
 └────────────────────────┴─────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Notas:** Solo servicios de dias EJECUTADO. !! Pend=Sin factura. ok Fac=Con factura.
+**Notes:** Only services from days in EXECUTED state. !! Pend=No invoice. ok Fac=Has an invoice.
 
 ---
 
-## 13. FORMULARIO DE FACTURA (Crear/Editar)
+## 13. INVOICE FORM (Create/Edit)
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -807,11 +807,11 @@ Click en el titulo del mes (ej. "Octubre 2025") vuelve a la vista anual. Colores
 └────────────────────────┴─────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Notas:** Solo servicios del mismo cliente. Solo EJECUTADOS sin factura. Total incluye novedades.
+**Notes:** Only services from the same client. Only EXECUTED with no invoice. Total includes incidents.
 
 ---
 
-## 14. INTERFAZ MOVIL - CONDUCTOR (Mis Servicios)
+## 14. MOBILE INTERFACE - DRIVER (My Services)
 
 ```
 ┌─────────────────────────────┐
@@ -861,11 +861,11 @@ Click en el titulo del mes (ej. "Octubre 2025") vuelve a la vista anual. Colores
 └─────────────────────────────┘
 ```
 
-**Notas:** Mobile-first para conductores. Estados: !! Pendiente | En Curso | ok Completado
+**Notes:** Mobile-first for drivers. States: !! Pending | In Progress | ok Completed
 
 ---
 
-## 15. INTERFAZ MOVIL - Detalle de Servicio (Conductor)
+## 15. MOBILE INTERFACE - Service Detail (Driver)
 
 ```
 ┌─────────────────────────────┐
@@ -937,11 +937,11 @@ Click en el titulo del mes (ej. "Octubre 2025") vuelve a la vista anual. Colores
 └─────────────────────────────┘
 ```
 
-**Notas:** Vista durante ejecucion. Boton grande para finalizar. GPS opcional.
+**Notes:** View while a service is running. Large button to finalize. GPS is optional.
 
 ---
 
-## 16. MODAL - Registrar Novedad
+## 16. MODAL - Register Incident
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -1002,12 +1002,12 @@ Click en el titulo del mes (ej. "Octubre 2025") vuelve a la vista anual. Colores
 └──────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Notas:** Modal sobre pantalla actual. Tipo de novedad es catalogo configurable.
-Afectacion a facturacion es opcional. Puede adjuntar evidencia fotografica.
+**Notes:** Modal over the current screen. Incident type is a configurable catalog.
+Impact on billing is optional. Photographic evidence can be attached.
 
 ---
 
-## 17. NOTIFICACIONES / BANDEJA DE ENTRADA
+## 17. NOTIFICATIONS / INBOX
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -1066,7 +1066,7 @@ Afectacion a facturacion es opcional. Puede adjuntar evidencia fotografica.
 
 ---
 
-## 18. SETTINGS / CONFIGURACION DE CUENTA
+## 18. SETTINGS / ACCOUNT CONFIGURATION
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -1101,82 +1101,82 @@ Afectacion a facturacion es opcional. Puede adjuntar evidencia fotografica.
 └────────────────────────┴─────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Notas:**
-- Submenu lateral izquierdo con 4 secciones: Perfil, Contrasena, Apariencia, Seguridad 2FA.
-- **Perfil:** Editar nombre y correo. Opcion de eliminar cuenta.
-- **Contrasena:** Cambiar contrasena actual por una nueva.
-- **Apariencia:** Selector de tema (Claro, Oscuro, Sistema).
-- **Seguridad 2FA:** Activar/desactivar autenticacion de dos factores con TOTP.
-- El indicador `<` marca la seccion activa.
-- Accesible desde el menu de usuario en el header (icono [Admin]).
+**Notes:**
+- Left-hand submenu with 4 sections: Profile, Password, Appearance, 2FA Security.
+- **Profile:** Edit name and email. Option to delete the account.
+- **Password:** Change the current password.
+- **Appearance:** Theme selector (Light, Dark, System).
+- **2FA Security:** Enable/disable two-factor authentication with TOTP.
+- The `<` indicator marks the active section.
+- Accessible from the user menu in the header (the [Admin] icon).
 
 ---
 
-## RESUMEN DE VISTAS
+## VIEW SUMMARY
 
-| #  | Vista                    | Rol Principal      | Descripcion                                     |
+| #  | View                     | Primary Role       | Description                                     |
 |----|--------------------------|--------------------|-------------------------------------------------|
-| 0  | Dashboard General        | Todos              | KPIs, alertas, accesos rapidos, actividad       |
-| 1  | Dashboard/Calendario     | Todos              | Vista anual con colores de estado               |
-| 2  | Vista Mensual            | Todos              | Detalle de dias de un mes                       |
-| 3  | Gantt Diario             | Admin/Operacion    | Planificador de flota con barras de servicio    |
-| 4  | Formulario de Servicio   | Admin/Operacion    | Crear/editar servicio                           |
-| 5  | Resumen del Dia          | Todos              | Lista de servicios del dia con estados          |
-| 6  | Listado de Vehiculos     | Admin              | CRUD de vehiculos con estado de documentos      |
-| 7  | Formulario de Vehiculo   | Admin              | Crear/editar vehiculo                           |
-| 8  | Listado de Conductores   | Admin              | CRUD de conductores                             |
-| 9  | Formulario de Conductor  | Admin              | Crear/editar conductor                          |
-| 10 | Listado de Terceros      | Admin              | CRUD de clientes y proveedores                  |
-| 11 | Listado de Contratos     | Admin              | CRUD de contratos                               |
-| 12 | Facturacion              | Admin/Contabilidad | Servicios ejecutados listos para facturar       |
-| 13 | Formulario de Factura    | Admin/Contabilidad | Crear factura con servicios                     |
-| 14 | Mis Servicios (Mobile)   | Conductor          | Lista de servicios del dia                      |
-| 15 | Detalle Servicio (Mobile)| Conductor          | Ejecutar servicio con GPS                       |
-| 16 | Modal Novedad            | Todos              | Registrar novedad/incidencia                    |
-| 17 | Notificaciones           | Todos              | Bandeja de notificaciones                       |
-| 18 | Settings/Configuracion   | Todos              | Perfil, contrasena, apariencia, 2FA             |
+| 0  | General Dashboard        | All                | KPIs, alerts, quick access, activity            |
+| 1  | Dashboard/Calendar       | All                | Yearly view with status colors                  |
+| 2  | Monthly View             | All                | Day detail for a given month                    |
+| 3  | Daily Gantt              | Admin/Operations   | Fleet planner with service bars                 |
+| 4  | Service Form             | Admin/Operations   | Create/edit service                             |
+| 5  | Day Summary              | All                | Day's service list with statuses                |
+| 6  | Vehicles List            | Admin              | Vehicle CRUD with document status               |
+| 7  | Vehicle Form             | Admin              | Create/edit vehicle                             |
+| 8  | Drivers List             | Admin              | Driver CRUD                                     |
+| 9  | Driver Form              | Admin              | Create/edit driver                              |
+| 10 | Third Parties List       | Admin              | Clients and providers CRUD                      |
+| 11 | Contracts List           | Admin              | Contracts CRUD                                  |
+| 12 | Billing                  | Admin/Accounting   | Executed services ready to bill                 |
+| 13 | Invoice Form             | Admin/Accounting   | Create invoice from services                    |
+| 14 | My Services (Mobile)     | Driver             | Day's service list                              |
+| 15 | Service Detail (Mobile)  | Driver             | Run a service with GPS                          |
+| 16 | Incident Modal           | All                | Register an incident                            |
+| 17 | Notifications            | All                | Notifications inbox                             |
+| 18 | Settings                 | All                | Profile, password, appearance, 2FA              |
 
 ---
 
-## COLORES Y ESTADOS
+## COLORS AND STATES
 
-### Estados del Dia
-| Estado     | Color   | Representacion | Descripcion                        |
+### Day States
+| State      | Color   | Representation | Description                        |
 |------------|---------|----------------|------------------------------------|
-| Sin datos  | Negro   | `######`       | Dia sin servicios registrados      |
-| Proyectado | Naranja | `@@@@@@`       | Tiene servicios, estado ABIERTO    |
-| Ejecutado  | Verde   | `######`       | Todos los servicios CERRADOS       |
+| Empty      | Black   | `######`       | Day with no services registered    |
+| Projected  | Orange  | `@@@@@@`       | Has services, OPEN state           |
+| Executed   | Green   | `######`       | All services CLOSED                |
 
-### Estados de Servicio
-| Estado  | Indicador | Descripcion                   |
+### Service States
+| State   | Indicator | Description                   |
 |---------|-----------|-------------------------------|
-| Abierto | `Abiert`  | En ejecucion o pendiente      |
-| Cerrado | `ok Cer`  | Finalizado por conductor      |
+| Open    | `Abiert`  | In progress or pending        |
+| Closed  | `ok Cer`  | Finalized by the driver       |
 
-### Estados de Vehiculo
-| Estado       | Indicador | Descripcion                    |
+### Vehicle States
+| State        | Indicator | Description                    |
 |--------------|-----------|--------------------------------|
-| Activo       | `Activo`  | Documentos vigentes            |
-| Precaucion   | `Prec.`   | Documento vence en < 15 dias   |
-| Bloqueado    | `Bloq.`   | Documento vencido              |
-| Tercerizado  | `3ro`     | COD 18, vinculado a proveedor  |
+| Active       | `Activo`  | Documents valid                |
+| Caution      | `Prec.`   | Document expires in < 15 days  |
+| Blocked      | `Bloq.`   | Expired document               |
+| Outsourced   | `3ro`     | COD 18, linked to a provider   |
 
-### Estados de Documentos
-| Estado     | Indicador | Descripcion              |
-|------------|-----------|--------------------------|
-| Vigente    | `ok`      | Documento al dia         |
-| Por vencer | `!!`      | Vence en < 15 dias       |
-| Vencido    | `XX`      | Documento vencido        |
+### Document States
+| State        | Indicator | Description              |
+|--------------|-----------|--------------------------|
+| Valid        | `ok`      | Document up to date      |
+| Expiring     | `!!`      | Expires in < 15 days     |
+| Expired      | `XX`      | Expired document         |
 
-### Estados de Facturacion
-| Estado    | Indicador  | Descripcion              |
+### Billing States
+| State     | Indicator  | Description              |
 |-----------|------------|--------------------------|
-| Pendiente | `!! Pend`  | Sin factura asociada     |
-| Facturado | `ok Fac.`  | Con numero de factura    |
+| Pending   | `!! Pend`  | No invoice attached      |
+| Invoiced  | `ok Fac.`  | Has an invoice number    |
 
 ---
 
-## COMPONENTES REUTILIZABLES
+## REUSABLE COMPONENTS
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -1233,4 +1233,4 @@ Afectacion a facturacion es opcional. Puede adjuntar evidencia fotografica.
 
 ---
 
-*Fin de los Mockups ASCII - SGTE v2.0*
+*End of ASCII Mockups - SGTE v2.0*

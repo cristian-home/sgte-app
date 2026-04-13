@@ -10,20 +10,20 @@ srs_refs: ["REQ-013"]
 migration_strategy: new
 ---
 
-# Notificaciones por Correo Electrónico
+# Email Notifications
 
 ## Description
 
-Implementar 5 tipos de notificaciones por correo usando Laravel Notifications. Incluye un comando artisan schedulable para verificar vencimientos de documentos y licencias diariamente.
+Implement 5 types of email notifications using Laravel Notifications. Includes a schedulable artisan command to check document and license expirations daily.
 
 ## Acceptance Criteria
 
-- [x] WHEN un servicio se crea con conductor vinculado THEN el conductor recibe email de asignación
-- [x] WHEN un documento de vehículo vence en 30/15/5 días THEN los administradores reciben email de alerta
-- [x] WHEN una licencia de conductor vence en 30/15/5 días THEN los administradores reciben email de alerta
-- [x] WHEN se registra una novedad que afecta facturación THEN admin + contabilidad reciben email
-- [x] WHEN un día se ejecuta THEN los usuarios con rol contabilidad reciben email
-- [x] WHEN se ejecuta `app:check-expirations` THEN se verifican todos los documentos y licencias
+- [x] WHEN a service is created with a linked driver THEN the driver receives an assignment email
+- [x] WHEN a vehicle document expires in 30/15/5 days THEN administrators receive an alert email
+- [x] WHEN a driver license expires in 30/15/5 days THEN administrators receive an alert email
+- [x] WHEN an incident affecting billing is registered THEN admin + accounting receive an email
+- [x] WHEN a day is executed THEN users with the accounting role receive an email
+- [x] WHEN `app:check-expirations` is run THEN all documents and licenses are checked
 
 ## Implementation Summary
 

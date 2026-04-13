@@ -1,77 +1,77 @@
-# ADR-002: Trait SearchesDatabase para busqueda avanzada en Eloquent
+# ADR-002: SearchesDatabase trait for advanced Eloquent search
 
-**Estado:** Aceptado
-**Fecha:** 2026-03-02
+**Status:** Accepted
+**Date:** 2026-03-02
 
-## Contexto
+## Context
 
-Los modelos que no usan Laravel Scout (por ejemplo, aquellos cuya busqueda es local a la base de datos) necesitan una solucion de busqueda que:
-1. Soporte busqueda por subcadena (parcial).
-2. Tolere errores tipograficos (fuzzy matching).
-3. Permita buscar en columnas del modelo y de relaciones.
-4. Permita buscar en multiples columnas concatenadas (nombre completo = nombre + apellido).
-5. Funcione en PostgreSQL (produccion) y SQLite (tests).
+Models that do not use Laravel Scout (for example, those whose search is local to the database) need a search solution that:
+1. Supports substring (partial) matching.
+2. Tolerates typos (fuzzy matching).
+3. Allows searching across model columns and relationship columns.
+4. Allows searching across multiple concatenated columns (full name = first name + last name).
+5. Works on PostgreSQL (production) and SQLite (tests).
 
-PostgreSQL tiene la extension `pg_trgm` (v1.6) habilitada con indices GIN trigram en las columnas buscables. La funcion `word_similarity()` permite busqueda difusa encontrando la mejor subcadena coincidente dentro del valor.
+PostgreSQL has the `pg_trgm` extension (v1.6) enabled with GIN trigram indexes on searchable columns. The `word_similarity()` function enables fuzzy search by finding the best matching substring inside the value.
 
 ## Decision
 
-### 1. Trait reutilizable `SearchesDatabase`
+### 1. Reusable `SearchesDatabase` trait
 
-Se creo el trait `App\Models\Concerns\SearchesDatabase` que cualquier modelo Eloquent puede usar implementando el metodo abstracto `searchableColumns()`.
+The `App\Models\Concerns\SearchesDatabase` trait was created, which any Eloquent model can use by implementing the abstract `searchableColumns()` method.
 
-### 2. Formato de columnas buscables
+### 2. Searchable column format
 
-`searchableColumns()` retorna un array que soporta tres formatos:
+`searchableColumns()` returns an array supporting three formats:
 
-- **Columna local:** `'column_name'`
-- **Columna de relacion (dot notation):** `'relation.column_name'`
-- **Columnas compuestas (array):** `['relation.column_a', 'relation.column_b']`
+- **Local column:** `'column_name'`
+- **Relation column (dot notation):** `'relation.column_name'`
+- **Composite columns (array):** `['relation.column_a', 'relation.column_b']`
 
-Las columnas compuestas se concatenan con espacios, permitiendo busqueda multi-campo (ej. buscar un nombre completo que abarca dos columnas).
+Composite columns are concatenated with spaces, enabling multi-field search (e.g. searching for a full name that spans two columns).
 
-### 3. Estrategia dual en PostgreSQL
+### 3. Dual strategy on PostgreSQL
 
-En PostgreSQL, cada columna se busca con dos condiciones combinadas via `OR`:
+On PostgreSQL, each column is searched with two conditions combined via `OR`:
 
-- **`ILIKE '%term%'`** — Coincidencia exacta por subcadena (aprovecha indices GIN trgm).
-- **`word_similarity(term, column) >= threshold`** — Coincidencia difusa (tolera errores tipograficos).
+- **`ILIKE '%term%'`** — Exact substring match (leverages GIN trgm indexes).
+- **`word_similarity(term, column) >= threshold`** — Fuzzy match (tolerates typos).
 
-Se usa `word_similarity()` en lugar de `similarity()` porque encuentra la mejor subcadena coincidente dentro del valor, lo cual funciona bien tanto para campos cortos (ciudades) como largos (descripciones).
+`word_similarity()` is used instead of `similarity()` because it finds the best matching substring inside the value, which works well for both short fields (cities) and long ones (descriptions).
 
-### 4. Umbral configurable por modelo
+### 4. Per-model configurable threshold
 
-El metodo `searchSimilarityThreshold()` retorna el umbral de similitud (0.0–1.0). Es sobreescribible por modelo para ajustar la sensibilidad segun el dominio de datos.
+The `searchSimilarityThreshold()` method returns the similarity threshold (0.0–1.0). It is overridable per model to tune sensitivity to the data domain.
 
-### 5. Ordenamiento por relevancia opcional
+### 5. Optional relevance ordering
 
-Se proveen dos scopes publicos:
+Two public scopes are provided:
 
-- **`scopeSearch()`** — Solo filtra resultados. Ideal para vistas donde el ordenamiento lo controla el usuario o Spatie QueryBuilder.
-- **`scopeSearchWithRelevance()`** — Filtra y ordena por relevancia usando `GREATEST(word_similarity(...), ...)` DESC. Usa subconsultas correlacionadas para calcular scores de columnas en relaciones BelongsTo.
+- **`scopeSearch()`** — Only filters results. Ideal for views where ordering is controlled by the user or Spatie QueryBuilder.
+- **`scopeSearchWithRelevance()`** — Filters and orders by relevance using `GREATEST(word_similarity(...), ...)` DESC. It uses correlated subqueries to compute scores for columns on BelongsTo relations.
 
-El controlador elige cual scope usar segun sus necesidades.
+The controller chooses which scope to use based on its needs.
 
-### 6. Fallback para SQLite/MySQL
+### 6. SQLite/MySQL fallback
 
-En drivers distintos a PostgreSQL, el trait usa `LIKE '%term%'` sin funciones de trigrama ni ordenamiento por relevancia. Esto permite que los tests (SQLite en memoria) funcionen sin cambios.
+On drivers other than PostgreSQL, the trait falls back to `LIKE '%term%'` without trigram functions or relevance ordering. This allows tests (in-memory SQLite) to run unchanged.
 
-## Consecuencias
+## Consequences
 
-**Positivas:**
-- Reutilizable: cualquier modelo puede adoptar busqueda avanzada implementando un metodo.
-- Busqueda por relaciones y campos compuestos sin configuracion adicional en el controlador.
-- Tolerancia a errores tipograficos en produccion via pg_trgm.
-- Relevancia opcional sin afectar los casos donde no se necesita.
-- Compatible con Spatie QueryBuilder via `AllowedFilter::callback`.
+**Positive:**
+- Reusable: any model can adopt advanced search by implementing a single method.
+- Search across relationships and composite fields without extra configuration in the controller.
+- Typo tolerance in production via pg_trgm.
+- Optional relevance ordering without affecting cases where it isn't needed.
+- Compatible with Spatie QueryBuilder via `AllowedFilter::callback`.
 
-**Negativas:**
-- La busqueda difusa y el ordenamiento por relevancia solo funcionan en PostgreSQL; en SQLite/MySQL se degrada a subcadena exacta.
-- Las subconsultas correlacionadas para scores de relaciones agregan costo en queries con muchas columnas de relacion.
-- Solo soporta relaciones BelongsTo para el score de relevancia.
+**Negative:**
+- Fuzzy search and relevance ordering only work on PostgreSQL; on SQLite/MySQL it degrades to exact substring matching.
+- Correlated subqueries for relation scores add cost when queries include many relation columns.
+- Only BelongsTo relations are supported for the relevance score.
 
-**Archivos clave:**
+**Key files:**
 - `app/Models/Concerns/SearchesDatabase.php` — Trait
-- `app/Models/Service.php` — Ejemplo de modelo que usa el trait
-- `app/Http/Controllers/ServiceController.php` — Ejemplo de uso con `searchWithRelevance()`
-- `tests/Feature/Http/Controllers/ServiceControllerTest.php` — Tests de busqueda
+- `app/Models/Service.php` — Example model using the trait
+- `app/Http/Controllers/ServiceController.php` — Example usage with `searchWithRelevance()`
+- `tests/Feature/Http/Controllers/ServiceControllerTest.php` — Search tests

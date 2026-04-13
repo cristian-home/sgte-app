@@ -1,42 +1,42 @@
 # Architecture Decision Records (ADR)
 
-Registro de decisiones arquitectonicas del proyecto SGTE.
+Record of architectural decisions for the SGTE project.
 
-## Indice
+## Index
 
-| ID | Titulo | Estado | Fecha |
-|----|--------|--------|-------|
-| ADR-001 | [Sistema de permisos en el frontend](ADR-001-frontend-permission-system.md) | Aceptado | 2026-02-26 |
-| ADR-002 | [Trait SearchesDatabase para busqueda avanzada](ADR-002-searches-database-trait.md) | Aceptado | 2026-03-02 |
-| ADR-003 | [Componente DataTable reutilizable](ADR-003-reusable-datatable-component.md) | Aceptado | 2026-03-02 |
+| ID | Title | Status | Date |
+|----|-------|--------|------|
+| ADR-001 | [Frontend permission system](ADR-001-frontend-permission-system.md) | Accepted | 2026-02-26 |
+| ADR-002 | [SearchesDatabase trait for advanced search](ADR-002-searches-database-trait.md) | Accepted | 2026-03-02 |
+| ADR-003 | [Reusable DataTable component](ADR-003-reusable-datatable-component.md) | Accepted | 2026-03-02 |
 
-## Formato
+## Format
 
-Cada ADR debe seguir esta estructura:
+Each ADR should follow this structure:
 
 ```markdown
-# ADR-NNN: Titulo de la decision
+# ADR-NNN: Decision title
 
-**Estado:** Propuesto | Aceptado | Deprecado | Supersedido por ADR-XXX
-**Fecha:** YYYY-MM-DD
+**Status:** Proposed | Accepted | Deprecated | Superseded by ADR-XXX
+**Date:** YYYY-MM-DD
 
-## Contexto
+## Context
 
-Descripcion del problema o situacion que requiere una decision.
+Description of the problem or situation that requires a decision.
 
 ## Decision
 
-La decision tomada y su justificacion.
+The decision made and its justification.
 
-## Consecuencias
+## Consequences
 
-Impacto positivo y negativo de la decision.
-Compromisos (trade-offs) aceptados.
+Positive and negative impact of the decision.
+Accepted trade-offs.
 ```
 
-## Guia de uso
+## Usage guide
 
-- Numerar secuencialmente: ADR-001, ADR-002, etc.
-- Un ADR por archivo: `ADR-001-titulo-de-la-decision.md`
-- No modificar ADRs aceptados; si cambia la decision, crear uno nuevo que lo superseda
-- Actualizar el indice de este README al agregar cada ADR
+- Number sequentially: ADR-001, ADR-002, etc.
+- One ADR per file: `ADR-001-decision-title.md`
+- Do not modify accepted ADRs; if the decision changes, create a new one that supersedes it
+- Update the index in this README when adding each ADR

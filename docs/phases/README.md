@@ -1,50 +1,50 @@
-# Plan de Implementación - SGTE
+# Implementation Plan - SGTE
 
-Documentación técnica de las fases de desarrollo del Sistema de Gestión de Transporte Especial.
+Technical documentation of the development phases of SGTE (Special Transport Management System).
 
-## Fases
+## Phases
 
-| Fase | Nombre | Estado | REQs principales |
-| ---- | ------ | ------ | ---------------- |
-| 1 | [Fundamentos y Datos Maestros](fase-1-fundamentos.md) | ✅ Completada | REQ-004, REQ-005, REQ-006, REQ-014 |
-| 2 | [Core Operativo](fase-2-operaciones.md) | ✅ Completada | REQ-001, REQ-002, REQ-003, REQ-008, REQ-009 |
-| 3 | [Conductor y Novedades](fase-3-conductor-novedades.md) | ✅ Completada | REQ-012, REQ-013 |
-| 4 | [Facturación y Auditoría](fase-4-facturacion-reportes.md) | ⬜ Pendiente (siguiente) | REQ-011, REQ-009 |
-| 5 | [Opcionales y Deploy](fase-5-opcionales-deploy.md) | 🔶 En progreso (deploy listo) | REQ-007, REQ-010 |
+| Phase | Name | Status | Main REQs |
+| ----- | ---- | ------ | --------- |
+| 1 | [Foundations and Master Data](phase-1-foundations.md) | ✅ Completed | REQ-004, REQ-005, REQ-006, REQ-014 |
+| 2 | [Operational Core](phase-2-operations.md) | ✅ Completed | REQ-001, REQ-002, REQ-003, REQ-008, REQ-009 |
+| 3 | [Driver and Incidents](phase-3-driver-incidents.md) | ✅ Completed | REQ-012, REQ-013 |
+| 4 | [Billing and Audit](phase-4-billing-reports.md) | ⬜ Pending (next) | REQ-011, REQ-009 |
+| 5 | [Optional Modules and Deploy](phase-5-optionals-deploy.md) | 🔶 In progress (deploy ready) | REQ-007, REQ-010 |
 
-## Dependencias entre fases
+## Dependencies between phases
 
 ```
-Fase 1 ✅ ──► Fase 2 ✅ ──► Fase 3 ✅
-                       └──► Fase 4 ⬜ (siguiente)
-                                 └──► Fase 5 🔶
+Phase 1 ✅ ──► Phase 2 ✅ ──► Phase 3 ✅
+                        └──► Phase 4 ⬜ (next)
+                                  └──► Phase 5 🔶
 ```
 
-- **Fase 2** requiere las migraciones y CRUDs de Fase 1
-- **Fase 3** requiere el formulario de servicio de Fase 2
-- **Fase 4** requiere los estados del día de Fase 2; Fase 3 recomendada
-- **Fase 5** no tiene bloqueantes fuertes; deploy ya completado, módulos opcionales pendientes
+- **Phase 2** requires the migrations and CRUDs from Phase 1
+- **Phase 3** requires the service form from Phase 2
+- **Phase 4** requires the day states from Phase 2; Phase 3 recommended
+- **Phase 5** has no hard blockers; deploy already completed, optional modules pending
 
-## Stack tecnológico
+## Technology stack
 
-| Capa | Tecnología |
-| ---- | ---------- |
+| Layer | Technology |
+| ----- | ---------- |
 | Backend | Laravel 12 (PHP 8.5) |
 | Frontend | React 19 + Inertia.js v2 + shadcn/ui |
-| Gantt / Calendario | Componentes React custom (sin librerías externas) |
-| BD | PostgreSQL 18 |
-| Almacenamiento | MinIO (S3-compatible) |
-| Búsqueda | Laravel Scout + Typesense |
-| Tiempo real | Laravel Reverb + Laravel Echo |
-| Servidor | FrankenPHP (Laravel Octane) |
-| Hosting | Dokploy + VPS Linux |
+| Gantt / Calendar | Custom React components (no external libraries) |
+| Database | PostgreSQL 18 |
+| Storage | MinIO (S3-compatible) |
+| Search | Laravel Scout + Typesense |
+| Real-time | Laravel Reverb + Laravel Echo |
+| Server | FrankenPHP (Laravel Octane) |
+| Hosting | Dokploy + Linux VPS |
 
-## Referencia
+## Reference
 
-- [SRS completo](../SRS.md)
-- [Modelo de datos](../modelo-datos.md)
-- [Navegación](../navegacion.md)
+- [Full SRS](../SRS.md)
+- [Data model](../data-model.md)
+- [Navigation](../navigation.md)
 - [Mockups](../mockups.md)
-- [Guía de despliegue](../deployment.md)
-- [Requerimientos detallados](../requirements/)
+- [Deployment guide](../deployment.md)
+- [Detailed requirements](../requirements/)
 - [ADRs](../adr/)

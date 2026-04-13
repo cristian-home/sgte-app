@@ -153,7 +153,7 @@ Services in `compose.yaml`: PostgreSQL 18, Redis, Typesense (search), MinIO (S3 
 
 ## Documentation
 
-Project documentation lives in `/docs/`: SRS (`SRS.md`), data model (`modelo-datos.md`), navigation structure (`navegacion.md`), UI mockups (`mockups.md`), ADRs in `/docs/adr/`, and phase plans in `/docs/fases/`.
+Project documentation lives in `/docs/`: SRS (`SRS.md`), data model (`data-model.md`), navigation structure (`navigation.md`), UI mockups (`mockups.md`), ADRs in `/docs/adr/`, and phase plans in `/docs/phases/`.
 
 ## Browser Automation for UI Verification
 

@@ -1,162 +1,162 @@
-# Fase 1: Fundamentos y Datos Maestros
+# Phase 1: Foundations and Master Data
 
-**Estado:** Completada (100%)
-**Última actualización:** 2026-02-28
+**Status:** Completed (100%)
+**Last updated:** 2026-02-28
 
-## Objetivo
+## Objective
 
-Establecer la base del proyecto: stack frontend/backend, autenticación, autorización, scaffolding de modelos/migraciones con Blueprint, y CRUDs de entidades maestras.
+Establish the project base: frontend/backend stack, authentication, authorization, scaffolding of models/migrations with Blueprint, and CRUDs for master entities.
 
-## Requerimientos cubiertos
+## Covered requirements
 
-- **REQ-004** - Gestión de Flota Vehicular
-- **REQ-005** - Gestión de Conductores
-- **REQ-006** - Gestión de Contratos
-- **REQ-014** - Inserción Inicial de Datos (Seeders)
-- Parcial **REQ-003** - Estructura de datos para servicios
+- **REQ-004** - Vehicle Fleet Management
+- **REQ-005** - Driver Management
+- **REQ-006** - Contract Management
+- **REQ-014** - Initial Data Insertion (Seeders)
+- Partial **REQ-003** - Service data structure
 
 ---
 
-## Tareas
+## Tasks
 
-### 1.1 Setup del proyecto
+### 1.1 Project setup
 
-- [x] Crear proyecto Laravel con `laravel/react-starter-kit` (Inertia.js, React, shadcn/ui, Tailwind)
-- [x] Configurar PostgreSQL como BD (Docker/Sail)
-- [x] Configurar MinIO como filesystem S3
-- [x] Configurar variables de entorno (.env.example)
+- [x] Create Laravel project with `laravel/react-starter-kit` (Inertia.js, React, shadcn/ui, Tailwind)
+- [x] Configure PostgreSQL as the database (Docker/Sail)
+- [x] Configure MinIO as the S3 filesystem
+- [x] Configure environment variables (.env.example)
 
-### 1.2 Instalación y configuración de paquetes
+### 1.2 Package installation and configuration
 
-- [x] `spatie/laravel-permission` — Roles y permisos
-- [x] `spatie/laravel-activitylog` — Log de auditoría
-- [x] `spatie/laravel-query-builder` — Filtrado/ordenamiento en APIs
-- [x] `kirschbaum-development/eloquent-power-joins` — Joins optimizados
-- [x] `spatie/laravel-medialibrary` — Gestión de archivos
-- [x] `laravel/reverb` — WebSocket server (tiempo real)
-- [x] `laravel/scout` — Búsqueda full-text con Typesense
-- [x] `laravel/horizon` — Monitoreo de colas Redis
-- [x] `laravel-shift/blueprint` — Scaffolding de código
+- [x] `spatie/laravel-permission` — Roles and permissions
+- [x] `spatie/laravel-activitylog` — Audit log
+- [x] `spatie/laravel-query-builder` — Filtering/sorting in APIs
+- [x] `kirschbaum-development/eloquent-power-joins` — Optimized joins
+- [x] `spatie/laravel-medialibrary` — File management
+- [x] `laravel/reverb` — WebSocket server (real time)
+- [x] `laravel/scout` — Full-text search with Typesense
+- [x] `laravel/horizon` — Redis queue monitoring
+- [x] `laravel-shift/blueprint` — Code scaffolding
 
-### 1.3 Scaffolding con Laravel Blueprint
+### 1.3 Scaffolding with Laravel Blueprint
 
-- [x] `draft.yaml` definido con 14 entidades
-- [x] 14 modelos con relaciones generados
-- [x] 14 migraciones ejecutadas en PostgreSQL
-- [x] 14 controladores con CRUD completo
-- [x] 28 form requests (store/update) con validación mejorada
+- [x] `draft.yaml` defined with 14 entities
+- [x] 14 models with relationships generated
+- [x] 14 migrations executed on PostgreSQL
+- [x] 14 controllers with full CRUD
+- [x] 28 form requests (store/update) with improved validation
 - [x] 14 factories + 14 seeders
-- [x] 14 feature tests generados (193 tests, 570 assertions)
-- [x] 56 páginas React (Inertia) generadas
+- [x] 14 generated feature tests (193 tests, 570 assertions)
+- [x] 56 generated React (Inertia) pages
 
-**Entidades:** DocumentType, Eps, PensionFund, SeveranceFund, ThirdParty, Driver, Vehicle, Contract, Invoice, DayStatus, Service, ServiceIncident, Fuec, VehicleLocation
+**Entities:** DocumentType, Eps, PensionFund, SeveranceFund, ThirdParty, Driver, Vehicle, Contract, Invoice, DayStatus, Service, ServiceIncident, Fuec, VehicleLocation
 
-### 1.4 Autenticación y autorización
+### 1.4 Authentication and authorization
 
-- [x] Autenticación base (Laravel Fortify + react-starter-kit)
-- [x] 5 roles en `App\Enums\Role` (super_admin, admin, operator, driver, accounting)
-- [x] 47 permisos granulares en `App\Enums\Permission` (patrón `recurso.accion`)
-- [x] `RolesAndPermissionsSeeder` con `syncPermissions`
-- [x] `UserSeeder` con 21 usuarios de prueba
-- [x] Gate `super_admin` bypass en `AppServiceProvider`
-- [x] Middleware `can:dashboard.view` en ruta dashboard
-- [x] Comando `php artisan enum:typescript` — genera enums TypeScript desde PHP (ver ADR-001)
-- [x] Permisos y roles compartidos al frontend via Inertia (`HandleInertiaRequests`)
-- [x] Hook `usePermissions()` con `can()`, `hasRole()` y bypass super_admin
-- [x] Componente `<Can permission={...}>` para renderizado condicional
-- [x] Gate aplicado en sidebar, header y menú de usuario
+- [x] Base authentication (Laravel Fortify + react-starter-kit)
+- [x] 5 roles in `App\Enums\Role` (super_admin, admin, operator, driver, accounting)
+- [x] 47 granular permissions in `App\Enums\Permission` (pattern `resource.action`)
+- [x] `RolesAndPermissionsSeeder` with `syncPermissions`
+- [x] `UserSeeder` with 21 test users
+- [x] `super_admin` Gate bypass in `AppServiceProvider`
+- [x] `can:dashboard.view` middleware on the dashboard route
+- [x] Command `php artisan enum:typescript` — generates TypeScript enums from PHP (see ADR-001)
+- [x] Permissions and roles shared to the frontend via Inertia (`HandleInertiaRequests`)
+- [x] `usePermissions()` hook with `can()`, `hasRole()`, and super_admin bypass
+- [x] `<Can permission={...}>` component for conditional rendering
+- [x] Gate applied in sidebar, header, and user menu
 
-### 1.5 Configuración de tiempo real
+### 1.5 Real-time configuration
 
-- [x] Laravel Reverb instalado y configurado
-- [x] Laravel Echo inicializado en frontend (`app.tsx`)
-- [ ] Canales broadcasting para Gantt y notificaciones (se usará en Fase 2/3)
+- [x] Laravel Reverb installed and configured
+- [x] Laravel Echo initialized on the frontend (`app.tsx`)
+- [ ] Broadcasting channels for Gantt and notifications (will be used in Phase 2/3)
 
-### 1.6 CRUD de Vehículos (REQ-004)
+### 1.6 Vehicle CRUD (REQ-004)
 
-- [x] Modelo, migración, controlador, form requests, factory, seeder
-- [x] 4 páginas React (index/create/show/edit)
-- [x] Filtrado y ordenamiento con Spatie Query Builder
-- [x] Validación condicional `is_third_party` → requiere `third_party_id`
-- [x] Formulario con lógica COD 18 (tercerizado): Switch + Select de terceros proveedores
-- [x] Selects para tipo (bus/buseta/van/automóvil) y estado (activo/mantenimiento/retirado)
-- [x] Campos de fecha para vencimientos SOAT, RTM, tarjeta de operación
-- [ ] Búsqueda Scout — índice Typesense (UI de búsqueda en Fase 2)
-- [ ] Indicadores visuales de documentos — Fase 2
-- [ ] Alertas automáticas por vencimiento — Fase 2
+- [x] Model, migration, controller, form requests, factory, seeder
+- [x] 4 React pages (index/create/show/edit)
+- [x] Filtering and sorting with Spatie Query Builder
+- [x] Conditional validation `is_third_party` → requires `third_party_id`
+- [x] Form with COD 18 (outsourced) logic: Switch + Select of provider terceros
+- [x] Selects for tipo (bus/buseta/van/automóvil) and estado (activo/mantenimiento/retirado)
+- [x] Date fields for SOAT, RTM, and operating card expirations
+- [ ] Scout search — Typesense index (search UI in Phase 2)
+- [ ] Visual indicators for documents — Phase 2
+- [ ] Automatic expiration alerts — Phase 2
 
-### 1.7 CRUD de Conductores (REQ-005)
+### 1.7 Driver CRUD (REQ-005)
 
-- [x] Modelo, migración, controlador, form requests, factory, seeder
-- [x] 4 páginas React
-- [x] Normalización de EPS: catálogo `Eps` con FK `eps_id`
-- [x] Normalización de Fondo de Pensiones: catálogo `PensionFund` con FK `pension_fund_id`
-- [x] Normalización de Fondo de Cesantías: catálogo `SeveranceFund` con FK `severance_fund_id`
-- [x] Validación de categoría de licencia (`Rule::in(['C1','C2','C3'])`)
-- [x] Validación de licencia vigente (`after:today` en store, `date` en update)
-- [x] Filtrado y ordenamiento con Spatie Query Builder
-- [ ] Alertas automáticas por vencimiento — Fase 2
+- [x] Model, migration, controller, form requests, factory, seeder
+- [x] 4 React pages
+- [x] EPS normalization: `Eps` catalog with FK `eps_id`
+- [x] Pension fund normalization: `PensionFund` catalog with FK `pension_fund_id`
+- [x] Severance fund normalization: `SeveranceFund` catalog with FK `severance_fund_id`
+- [x] License category validation (`Rule::in(['C1','C2','C3'])`)
+- [x] Valid license validation (`after:today` on store, `date` on update)
+- [x] Filtering and sorting with Spatie Query Builder
+- [ ] Automatic expiration alerts — Phase 2
 
-### 1.7b Catálogos de Seguridad Social
+### 1.7b Social security catalogs
 
-- [x] Modelo `Eps` — CRUD completo, factory, seeder (8 EPS colombianas), test
-- [x] Modelo `PensionFund` — CRUD completo, factory, seeder (5 fondos), test
-- [x] Modelo `SeveranceFund` — CRUD completo, factory, seeder (4 fondos), test
-- [x] Patrón catálogo: code/name, SoftDeletes, LogsActivity, Searchable
-- [x] Seeders con datos reales del contexto colombiano
+- [x] `Eps` model — full CRUD, factory, seeder (8 Colombian EPS), test
+- [x] `PensionFund` model — full CRUD, factory, seeder (5 funds), test
+- [x] `SeveranceFund` model — full CRUD, factory, seeder (4 funds), test
+- [x] Catalog pattern: code/name, SoftDeletes, LogsActivity, Searchable
+- [x] Seeders with real data from the Colombian context
 
-### 1.8 CRUD de Terceros
+### 1.8 ThirdParty CRUD
 
-- [x] Modelo, migración, controlador, form requests, factory, seeder
-- [x] Catálogo TipoDocumento implementado
-- [x] Validación condicional `is_natural_person`: persona natural requiere nombre/apellido, empresa requiere razón social
-- [x] Formulario dinámico persona natural vs jurídica con Switch
-- [x] Select de tipo de documento, checkboxes para cliente/proveedor/activo
-- [x] Filtrado y ordenamiento con Spatie Query Builder
+- [x] Model, migration, controller, form requests, factory, seeder
+- [x] TipoDocumento catalog implemented
+- [x] Conditional validation `is_natural_person`: natural person requires first/last name, company requires legal name
+- [x] Dynamic form for natural vs legal person with Switch
+- [x] Document type select, checkboxes for client/provider/active
+- [x] Filtering and sorting with Spatie Query Builder
 
-### 1.9 CRUD de Contratos (REQ-006)
+### 1.9 Contract CRUD (REQ-006)
 
-- [x] Modelo, migración, controlador, form requests, factory, seeder
-- [x] Generación automática de número para contratos genéricos (`GEN-XXXX-YYYY`)
-- [x] Validación de vigencia: `end_date` debe ser `after_or_equal:start_date`
-- [x] `contract_number` nullable cuando `is_generic=true`
-- [x] Filtrado y ordenamiento con Spatie Query Builder
+- [x] Model, migration, controller, form requests, factory, seeder
+- [x] Automatic number generation for generic contracts (`GEN-XXXX-YYYY`)
+- [x] Validity validation: `end_date` must be `after_or_equal:start_date`
+- [x] `contract_number` nullable when `is_generic=true`
+- [x] Filtering and sorting with Spatie Query Builder
 
-### 1.10 Navegación (Sidebar)
+### 1.10 Navigation (Sidebar)
 
-- [x] Sidebar con grupos colapsables por módulo (Producción, Administración, Facturación, FUEC, GPS, Catálogos)
-- [x] Cada grupo enlaza a los index de sus recursos
-- [x] Filtrado por permisos (items y grupos se ocultan según rol)
-- [x] Rutas protegidas con middleware `['auth', 'verified']`
+- [x] Sidebar with collapsible groups per module (Producción, Administración, Facturación, FUEC, GPS, Catálogos)
+- [x] Each group links to the index of its resources
+- [x] Permission-based filtering (items and groups hide according to role)
+- [x] Routes protected with middleware `['auth', 'verified']`
 
-### 1.11 Inserción inicial de datos (Seeders)
+### 1.11 Initial data insertion (Seeders)
 
-- [x] Seeders catálogos (Roles, Permisos, DocumentType, Eps, PensionFund, SeveranceFund)
-- [x] Seeders generados por Blueprint para todas las entidades
-- [x] Seeders de conductores y catálogos con datos reales colombianos
+- [x] Catalog seeders (Roles, Permissions, DocumentType, Eps, PensionFund, SeveranceFund)
+- [x] Seeders generated by Blueprint for all entities
+- [x] Driver and catalog seeders with real Colombian data
 
-### 1.12 QueryBuilder Filtros y Ordenamiento
+### 1.12 QueryBuilder filters and sorting
 
-- [x] 14 controladores con `allowedFilters` y `allowedSorts` configurados
-- [x] Filtros exactos para booleanos/enums (`AllowedFilter::exact`)
-- [x] Filtros parciales para campos de texto
+- [x] 14 controllers with `allowedFilters` and `allowedSorts` configured
+- [x] Exact filters for booleans/enums (`AllowedFilter::exact`)
+- [x] Partial filters for text fields
 
 ---
 
-## Notas de implementación
+## Implementation notes
 
-- Se usó Laravel Blueprint para generar el scaffolding completo de 14 entidades (11 originales + 3 catálogos de seguridad social).
-- Los permisos se expandieron de 14 genéricos a 47 granulares con patrón `recurso.accion` para uso en backend (gates/middleware) y frontend (mostrar/ocultar UI).
-- Los campos string `eps`, `pension_fund` y `severance_fund` del modelo Driver fueron normalizados a FKs apuntando a catálogos dedicados (Eps, PensionFund, SeveranceFund), siguiendo el patrón de DocumentType.
-- Se usa `syncPermissions` en el seeder para idempotencia al re-ejecutar.
-- Los enums PHP se comparten con el frontend via `php artisan enum:typescript` (ver ADR-001). Los archivos generados en `resources/js/enums/` se versionan en git.
-- El middleware `HandleInertiaRequests` comparte `auth.permissions` y `auth.roles` en cada respuesta Inertia, permitiendo control de UI sin requests adicionales.
-- Validación condicional implementada con `Rule::when()` para ThirdParty (persona natural vs jurídica), Vehicle (tercerizado), y Contract (genérico).
-- Formularios React con `useForm` + Wayfinder para ThirdParty (dinámico) y Vehicle (COD 18).
+- Laravel Blueprint was used to generate the full scaffolding of 14 entities (11 original + 3 social security catalogs).
+- Permissions were expanded from 14 generic ones to 47 granular ones following the `resource.action` pattern for use in the backend (gates/middleware) and the frontend (show/hide UI).
+- The string fields `eps`, `pension_fund`, and `severance_fund` in the Driver model were normalized to FKs pointing to dedicated catalogs (Eps, PensionFund, SeveranceFund), following the DocumentType pattern.
+- `syncPermissions` is used in the seeder for idempotency on re-execution.
+- PHP enums are shared with the frontend via `php artisan enum:typescript` (see ADR-001). Generated files in `resources/js/enums/` are versioned in git.
+- The `HandleInertiaRequests` middleware shares `auth.permissions` and `auth.roles` on every Inertia response, enabling UI control without extra requests.
+- Conditional validation implemented with `Rule::when()` for ThirdParty (natural vs legal person), Vehicle (outsourced), and Contract (generic).
+- React forms using `useForm` + Wayfinder for ThirdParty (dynamic) and Vehicle (COD 18).
 
-### Commits relevantes
+### Relevant commits
 
-| Commit | Descripción |
+| Commit | Description |
 |--------|-------------|
 | `d75ae94` | Initial commit |
 | `edfeab0` | Add development skills and Docker Sail configuration |
@@ -169,6 +169,6 @@ Establecer la base del proyecto: stack frontend/backend, autenticación, autoriz
 
 ---
 
-## Bloqueantes para Fase 2
+## Blockers for Phase 2
 
-Ninguno. Todos los modelos, migraciones, relaciones Eloquent, controladores, validaciones y formularios base están listos. Los pendientes restantes (búsqueda Scout UI, alertas de vencimiento, indicadores visuales) son features de Fase 2.
+None. All models, migrations, Eloquent relationships, controllers, validations, and base forms are ready. Remaining pending items (Scout search UI, expiration alerts, visual indicators) are Phase 2 features.

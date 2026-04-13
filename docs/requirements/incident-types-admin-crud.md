@@ -10,32 +10,32 @@ srs_refs: ["REQ-012"]
 migration_strategy: new
 ---
 
-# Tipos de Novedad - CRUD Administrativo
+# Incident Types - Admin CRUD
 
 ## Description
 
-Implementar la interfaz administrativa para gestionar los tipos de novedad (IncidentType). El modelo, migración, factory y enum de severidad ya existen. Faltan: controlador con permisos, form requests, páginas frontend (index con DataTable, create/edit con formulario), permisos en el enum, entrada en el sidebar bajo Catálogos, y tests.
+Implement the admin interface to manage incident types (IncidentType). The model, migration, factory and severity enum already exist. Missing: controller with permissions, form requests, frontend pages (index with DataTable, create/edit with form), permissions in the enum, sidebar entry under Catálogos, and tests.
 
 ## Acceptance Criteria
 
-- [ ] WHEN un administrador navega a /incident-types THEN ve una tabla con todos los tipos de novedad (código, nombre, severidad, afecta facturación)
-- [ ] WHEN un administrador hace clic en "Nuevo Tipo de Novedad" THEN ve un formulario con campos: código, nombre, severidad (select), afecta facturación (switch), descripción (textarea)
-- [ ] WHEN un administrador envía el formulario con datos válidos THEN se crea el tipo de novedad y se redirige al index
-- [ ] WHEN un administrador envía el formulario con datos inválidos THEN ve errores de validación inline
-- [ ] WHEN un administrador edita un tipo de novedad THEN ve el formulario pre-llenado con los datos actuales
-- [ ] WHEN un administrador elimina un tipo de novedad THEN se hace soft-delete y se redirige al index
-- [ ] WHEN el controlador recibe un request THEN verifica los permisos incident-types.* via Gate
-- [ ] WHEN un usuario navega al sidebar THEN ve "Tipos de Novedad" en el grupo Catálogos
+- [ ] WHEN an administrator navigates to /incident-types THEN they see a table with all incident types (code, name, severity, affects billing)
+- [ ] WHEN an administrator clicks "Nuevo Tipo de Novedad" THEN they see a form with fields: code, name, severity (select), affects billing (switch), description (textarea)
+- [ ] WHEN an administrator submits the form with valid data THEN the incident type is created and the user is redirected to the index
+- [ ] WHEN an administrator submits the form with invalid data THEN they see inline validation errors
+- [ ] WHEN an administrator edits an incident type THEN they see the form pre-filled with the current data
+- [ ] WHEN an administrator deletes an incident type THEN it is soft-deleted and the user is redirected to the index
+- [ ] WHEN the controller receives a request THEN it verifies incident-types.* permissions via Gate
+- [ ] WHEN a user browses the sidebar THEN they see "Tipos de Novedad" in the Catálogos group
 
 ## Technical Specification
 
 ### Data Model
 
-No requiere cambios. El modelo `IncidentType` y la migración ya existen.
+No changes required. The `IncidentType` model and the migration already exist.
 
 ### Enums
 
-Agregar 4 permisos al enum `Permission`:
+Add 4 permissions to the `Permission` enum:
 
 ```php
 case VIEW_INCIDENT_TYPES = 'incident-types.view';
@@ -69,15 +69,15 @@ case DELETE_INCIDENT_TYPES = 'incident-types.delete'; // 'Eliminar tipos de nove
 
 | Page | Component Path | Description |
 |------|---------------|-------------|
-| Index | `resources/js/pages/incident-types/index.tsx` | DataTable con código, nombre, severidad (badge de color), afecta facturación (check/x), acciones (editar/eliminar) |
-| Create | `resources/js/pages/incident-types/create.tsx` | Formulario con Card: código, nombre, severidad (Select), afecta facturación (Switch), descripción (Textarea) |
-| Edit | `resources/js/pages/incident-types/edit.tsx` | Mismo formulario que create, pre-llenado |
+| Index | `resources/js/pages/incident-types/index.tsx` | DataTable with code, name, severity (color badge), affects billing (check/x), actions (edit/delete) |
+| Create | `resources/js/pages/incident-types/create.tsx` | Form with Card: code, name, severity (Select), affects billing (Switch), description (Textarea) |
+| Edit | `resources/js/pages/incident-types/edit.tsx` | Same form as create, pre-filled |
 
 ## Tasks
 
 ### Backend
 
-- [ ] Add 4 permission cases to `app/Enums/Permission.php` with Spanish labels
+- [ ] Add 4 permission cases to `app/Enums/Permission.php` with Spanish labels (UI)
 - [ ] Regenerate TS enums: `php artisan enum:typescript`
 - [ ] Create `app/Http/Controllers/IncidentTypeController.php` following EpsController pattern + Gate::authorize for permissions
 - [ ] Create `app/Http/Requests/IncidentTypeStoreRequest.php` with rules: code (required, string, max:10, unique), name (required, string, max:100), severity (required, in:informational,minor,major), affects_billing_default (boolean), description (nullable, string)
@@ -89,7 +89,7 @@ case DELETE_INCIDENT_TYPES = 'incident-types.delete'; // 'Eliminar tipos de nove
 - [ ] Create `resources/js/pages/incident-types/index.tsx` with DataTable (follow EpsIndex/DocumentTypesIndex pattern)
 - [ ] Create `resources/js/pages/incident-types/create.tsx` with useForm + Card (follow VehiclesCreate pattern)
 - [ ] Create `resources/js/pages/incident-types/edit.tsx` with useForm pre-filled
-- [ ] Add "Tipos de Novedad" entry to sidebar Catálogos group in `app-sidebar.tsx`
+- [ ] Add "Tipos de Novedad" entry to the sidebar Catálogos group in `app-sidebar.tsx`
 
 ### Tests
 

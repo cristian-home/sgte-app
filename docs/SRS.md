@@ -1,63 +1,63 @@
-# Sistema de Gestión de Transporte Especial (SGTE)
+# Special Transport Management System (SGTE)
 
-## Documento de Requerimientos de Software
+## Software Requirements Specification
 
-**Versión:** 1.2  
-**Fecha:** Febrero 2026  
-**Cliente:** Empresa de Transporte Especial - Colombia
-
----
-
-## 1. Introducción
-
-### 1.1 Propósito
-
-Sistema web para gestión operativa de transporte especial en Colombia, centrado en la planificación visual de servicios mediante diagrama Gantt, con módulo opcional para generación del FUEC (Formato Único de Extracto de Contrato).
-
-### 1.2 Alcance
-
-- Gestión de flota vehicular y documentación legal
-- Planificación y despacho de servicios
-- Módulo para generación de FUEC (opcional, desactivado inicialmente)
-- Control de conductores
-- Gestión de terceros (clientes y proveedores)
-- Control de estados operativos y contables
-- Facturación de servicios
-- Gestión de novedades e incidencias
-- Notificaciones por correo electrónico
-
-### 1.3 Modalidades de Transporte Incluidas
-
-- Transporte Empresarial
-- Transporte Turístico
-- Transporte de Salud
-- Transporte Ocasional
-
-> El transporte escolar NO está incluido en este alcance.
+**Version:** 1.2  
+**Date:** February 2026  
+**Client:** Special Transport Company - Colombia
 
 ---
 
-## 2. Glosario
+## 1. Introduction
 
-| Término                  | Definición                                                                                                   |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------ |
-| **FUEC**                 | Formato Único de Extracto de Contrato - Documento legal opcional para operación de transporte especial       |
-| **SOAT**                 | Seguro Obligatorio de Accidentes de Tránsito                                                                 |
-| **RTM**                  | Revisión Técnico-Mecánica                                                                                    |
-| **Tarjeta de Operación** | Documento que habilita al vehículo para prestar servicio de transporte especial                              |
-| **Servicio**             | Asignación de un viaje específico a un vehículo y conductor                                                  |
-| **Estado del Servicio**  | Condición operativa: ABIERTO o CERRADO                                                                       |
-| **Estado del Día**       | Condición contable: PROYECTADO o EJECUTADO                                                                   |
-| **Factura**              | Documento contable que registra el cobro por un servicio prestado                                            |
-| **Notificación**         | Mensaje automático enviado por correo electrónico a usuarios según eventos del sistema                       |
-| **COD**                  | Código interno del vehículo combinado entre la tabla y centro de costos                                      |
-| **TERCERO**              | Entidad unificada que representa personas naturales o jurídicas (clientes, proveedores, excepto conductores) |
-| **PROVEEDOR**            | Tercero que provee vehículos tercerizados para la operación                                                  |
-| **NOVEDAD**              | Incidencia o evento registrado durante la ejecución de un servicio que puede afectar la facturación          |
+### 1.1 Purpose
+
+Web-based system for the operational management of special transport in Colombia, focused on the visual planning of services through a Gantt chart, with an optional module for generating the FUEC (Formato Único de Extracto de Contrato).
+
+### 1.2 Scope
+
+- Fleet management and legal documentation
+- Service planning and dispatching
+- FUEC generation module (optional, initially disabled)
+- Driver management
+- Third-party management (clients and providers)
+- Operational and accounting status control
+- Service invoicing
+- Incident and event management
+- Email notifications
+
+### 1.3 Transport Modalities Included
+
+- Corporate Transport
+- Tourist Transport
+- Health Transport
+- Occasional Transport
+
+> School transport is NOT included in this scope.
 
 ---
 
-## 3. Arquitectura de Navegación
+## 2. Glossary
+
+| Term                     | Definition                                                                                                      |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| **FUEC**                 | Formato Único de Extracto de Contrato — Optional legal document for special transport operation                 |
+| **SOAT**                 | Mandatory Traffic Accident Insurance (Seguro Obligatorio de Accidentes de Tránsito)                             |
+| **RTM**                  | Technical-Mechanical Inspection (Revisión Técnico-Mecánica)                                                     |
+| **Tarjeta de Operación** | Document that authorizes a vehicle to provide special transport services                                        |
+| **Service**              | Assignment of a specific trip to a vehicle and driver                                                           |
+| **Service Status**       | Operational condition: "Abierto" or "Cerrado"                                                                   |
+| **Day Status**           | Accounting condition: "Proyectado" or "Ejecutado"                                                               |
+| **Invoice**              | Accounting document that records the charge for a service provided                                              |
+| **Notification**         | Automatic message sent by email to users based on system events                                                 |
+| **COD**                  | Internal vehicle code combined between the table and the cost center                                            |
+| **TERCERO**              | Unified entity representing natural or legal persons (clients, providers, except drivers)                       |
+| **PROVEEDOR**            | Third party that provides outsourced vehicles for the operation                                                 |
+| **NOVEDAD**              | Incident or event recorded during the execution of a service that may affect invoicing                          |
+
+---
+
+## 3. Navigation Architecture
 
 ```plantuml
 @startuml
@@ -122,23 +122,23 @@ state Settings {
 
 ---
 
-## 4. Requerimientos Funcionales
+## 4. Functional Requirements
 
-### REQ-001: Gestión de Calendario y Estados
+### REQ-001: Calendar and Status Management
 
-**Historia de Usuario:** Como despachador, quiero visualizar el estado operativo de cada día del año para identificar rápidamente días con servicios proyectados o ejecutados.
+**User Story:** As a dispatcher, I want to visualize the operational status of each day of the year so I can quickly identify days with projected or executed services.
 
-#### Criterios de Aceptación
+#### Acceptance Criteria
 
-1. CUANDO el usuario accede al módulo de producción ENTONCES el sistema DEBERÁ mostrar una vista de calendario anual con los 12 meses.
+1. WHEN the user accesses the production module THEN the system SHALL display an annual calendar view with the 12 months.
 
-2. CUANDO el usuario hace doble clic en un mes ENTONCES el sistema DEBERÁ desplegar la vista detallada de días de ese mes.
+2. WHEN the user double-clicks on a month THEN the system SHALL display the detailed view of the days of that month.
 
-3. MIENTRAS un día no tiene servicios registrados ENTONCES el sistema DEBERÁ mostrar el día en color negro.
+3. WHILE a day has no recorded services THEN the system SHALL display the day in black.
 
-4. CUANDO se registra al menos un servicio en un día ENTONCES el sistema DEBERÁ cambiar el color del día a naranja y establecer el estado como "PROYECTADO".
+4. WHEN at least one service is recorded on a day THEN the system SHALL change the day color to orange and set the status to "Proyectado".
 
-5. CUANDO todos los servicios de un día tienen estado "CERRADO" ENTONCES el sistema DEBERÁ permitir cambiar el estado del día a "EJECUTADO" y mostrar el día en color verde.
+5. WHEN all services for a day have the "Cerrado" status THEN the system SHALL allow changing the day status to "Ejecutado" and display the day in green.
 
 ```plantuml
 @startuml
@@ -160,25 +160,25 @@ Ejecutado : Color: Verde\n(Bloqueado para edición)
 
 ---
 
-### REQ-002: Vista de Flota Diaria (Gantt)
+### REQ-002: Daily Fleet View (Gantt)
 
-**Historia de Usuario:** Como despachador, quiero ver todos los vehículos y sus servicios asignados en un diagrama Gantt para planificar eficientemente la operación del día.
+**User Story:** As a dispatcher, I want to see all vehicles and their assigned services in a Gantt chart to efficiently plan the day's operation.
 
-#### Criterios de Aceptación
+#### Acceptance Criteria
 
-1. CUANDO el usuario selecciona un día ENTONCES el sistema DEBERÁ mostrar un listado de todos los vehículos de la flota en el eje Y.
+1. WHEN the user selects a day THEN the system SHALL display a list of all fleet vehicles on the Y axis.
 
-2. CUANDO el usuario visualiza el Gantt ENTONCES el sistema DEBERÁ mostrar las horas del día (00:00-24:00) en el eje X.
+2. WHEN the user views the Gantt THEN the system SHALL display the hours of the day (00:00-24:00) on the X axis.
 
-3. CUANDO un vehículo tiene servicios asignados ENTONCES el sistema DEBERÁ mostrar barras horizontales representando cada servicio con su duración.
+3. WHEN a vehicle has assigned services THEN the system SHALL display horizontal bars representing each service with its duration.
 
-4. CUANDO el usuario hace clic en una celda vacía del Gantt ENTONCES el sistema DEBERÁ abrir el formulario de nuevo servicio con el vehículo y hora preseleccionados.
+4. WHEN the user clicks on an empty cell of the Gantt THEN the system SHALL open the new service form with the vehicle and time pre-selected.
 
-5. CUANDO el usuario hace clic en una barra de servicio existente ENTONCES el sistema DEBERÁ abrir el formulario de edición del servicio.
+5. WHEN the user clicks on an existing service bar THEN the system SHALL open the service edit form.
 
-6. MIENTRAS un vehículo tiene documentos vencidos (SOAT, RTM, Tarjeta de Operación) ENTONCES el sistema DEBERÁ mostrar la fila del vehículo en gris y bloquear la asignación de servicios.
+6. WHILE a vehicle has expired documents (SOAT, RTM, Tarjeta de Operación) THEN the system SHALL display the vehicle row in gray and block service assignment.
 
-7. CUANDO el usuario accede al Gantt ENTONCES el sistema DEBERÁ mostrar un filtro por ciudad del vehículo para facilitar la planificación por ubicación.
+7. WHEN the user accesses the Gantt THEN the system SHALL display a filter by vehicle city to facilitate planning by location.
 
 ```plantuml
 @startsalt
@@ -206,39 +206,39 @@ Ejecutado : Color: Verde\n(Bloqueado para edición)
 
 ---
 
-### REQ-003: Formulario de Servicio (Producción)
+### REQ-003: Service Form (Production)
 
-**Historia de Usuario:** Como despachador, quiero registrar todos los datos de un servicio de transporte para controlar la operación y gestionar la facturación.
+**User Story:** As a dispatcher, I want to record all data of a transport service to control operations and manage invoicing.
 
-#### Criterios de Aceptación
+#### Acceptance Criteria
 
-1. CUANDO el usuario crea un nuevo servicio ENTONCES el sistema DEBERÁ requerir los siguientes campos obligatorios:
-   - Placa del vehículo
-   - Conductor asignado (si el vehículo no es tercerizado)
-   - Cliente/Tercero (contrato)
-   - Origen
-   - Destino
-   - Hora inicio recorrido (planificada)
-   - Duración estimada
+1. WHEN the user creates a new service THEN the system SHALL require the following mandatory fields:
+   - Vehicle plate
+   - Assigned driver (if the vehicle is not outsourced)
+   - Client/Third party (contract)
+   - Origin
+   - Destination
+   - Trip start time (planned)
+   - Estimated duration
 
-2. CUANDO el usuario selecciona un vehículo con COD 18 (tercerizado) ENTONCES el sistema DEBERÁ:
-   - Ocultar el campo de conductor asignado
-   - Mostrar la información del tercero proveedor asociado al vehículo
-   - Permitir continuar con el registro del servicio
+2. WHEN the user selects a vehicle with COD 18 (outsourced) THEN the system SHALL:
+   - Hide the assigned driver field
+   - Display information about the provider third party associated with the vehicle
+   - Allow continuing with the service registration
 
-3. CUANDO el usuario guarda un servicio ENTONCES el sistema DEBERÁ validar que el vehículo no tenga conflictos de horario con otros servicios.
+3. WHEN the user saves a service THEN the system SHALL validate that the vehicle has no schedule conflicts with other services.
 
-4. CUANDO el servicio se ejecuta ENTONCES el conductor DEBERÁ confirmar inicio, finalización y registrar novedades, permitiendo al sistema capturar:
-   - Hora inicio real
-   - Hora final real
-   - Duración real (calculada automáticamente)
-   - Novedades o incidentes
+4. WHEN the service is executed THEN the driver SHALL confirm start, completion and register incidents, allowing the system to capture:
+   - Actual start time
+   - Actual end time
+   - Actual duration (automatically calculated)
+   - Incidents or events
 
-5. CUANDO el usuario intenta asignar un conductor ENTONCES el sistema DEBERÁ validar que el conductor tenga licencia vigente y seguridad social al día.
+5. WHEN the user attempts to assign a driver THEN the system SHALL validate that the driver has a valid license and up-to-date social security.
 
-6. MIENTRAS el estado del día sea "EJECUTADO" ENTONCES el sistema DEBERÁ bloquear la edición de todos los campos del servicio. Los usuarios con rol de Contabilidad podrán editar únicamente los campos contables y de facturación.
+6. WHILE the day status is "Ejecutado" THEN the system SHALL block editing of all service fields. Users with the Accounting role may edit only the accounting and invoicing fields.
 
-7. CUANDO se registran novedades en el servicio ENTONCES el sistema DEBERÁ mostrar un indicador visual en el formulario y permitir consultar el detalle de las novedades registradas.
+7. WHEN incidents are recorded on the service THEN the system SHALL display a visual indicator on the form and allow consulting the details of the recorded incidents.
 
 ```plantuml
 @startsalt
@@ -281,36 +281,36 @@ Ejecutado : Color: Verde\n(Bloqueado para edición)
 
 ---
 
-### REQ-004: Gestión de Flota Vehicular
+### REQ-004: Fleet Management
 
-**Historia de Usuario:** Como administrador, quiero gestionar la información de los vehículos y sus documentos legales para garantizar el cumplimiento normativo.
+**User Story:** As an administrator, I want to manage vehicle information and their legal documents to ensure regulatory compliance.
 
-#### Criterios de Aceptación
+#### Acceptance Criteria
 
-1. CUANDO el administrador registra un vehículo ENTONCES el sistema DEBERÁ requerir:
-   - Placa
-   - COD (código interno combinado con centro de costos)
-   - Número de móvil
-   - Marca
-   - Línea
-   - Modelo (año)
-   - Tipo de vehículo (Bus, Buseta, Van, Automóvil)
-   - Número de motor
-   - Número de chasis
-   - Capacidad de pasajeros
-   - Ciudad de ubicación (para filtro en Gantt)
-   - Fechas de vencimiento: SOAT, RTM, Tarjeta de Operación
+1. WHEN the administrator registers a vehicle THEN the system SHALL require:
+   - Plate
+   - COD (internal code combined with cost center)
+   - Mobile number
+   - Make
+   - Line
+   - Model (year)
+   - Vehicle type (Bus, Buseta, Van, Automóvil)
+   - Engine number
+   - Chassis number
+   - Passenger capacity
+   - Location city (for filter in Gantt)
+   - Expiration dates: SOAT, RTM, Tarjeta de Operación
 
-2. CUANDO el COD del vehículo es 18 ENTONCES el sistema DEBERÁ:
-   - Marcar el vehículo como tercerizado
-   - Requerir la vinculación de un tercero proveedor
-   - Aplicar la lógica de visualización diferente en el formulario de servicio
+2. WHEN the vehicle COD is 18 THEN the system SHALL:
+   - Mark the vehicle as outsourced
+   - Require linking a provider third party
+   - Apply different display logic in the service form
 
-3. CUANDO faltan 30, 15 o 5 días para el vencimiento de un documento ENTONCES el sistema DEBERÁ generar alertas automáticas.
+3. WHEN 30, 15 or 5 days remain before a document expires THEN the system SHALL generate automatic alerts.
 
-4. CUANDO un documento del vehículo está vencido ENTONCES el sistema DEBERÁ bloquear automáticamente el vehículo en el planificador Gantt.
+4. WHEN a vehicle document is expired THEN the system SHALL automatically block the vehicle in the Gantt planner.
 
-5. SI el usuario intenta generar un FUEC (opcional) para un vehículo con documentos vencidos ENTONCES el sistema DEBERÁ rechazar la operación y mostrar el motivo del bloqueo.
+5. IF the user attempts to generate a FUEC (optional) for a vehicle with expired documents THEN the system SHALL reject the operation and display the reason for the block.
 
 ```plantuml
 @startuml
@@ -350,92 +350,92 @@ stop
 
 ---
 
-### REQ-005: Gestión de Conductores
+### REQ-005: Driver Management
 
-**Historia de Usuario:** Como administrador, quiero gestionar la información de los conductores para asegurar que solo personal habilitado opere los vehículos.
+**User Story:** As an administrator, I want to manage driver information to ensure that only authorized personnel operate the vehicles.
 
-#### Criterios de Aceptación
+#### Acceptance Criteria
 
-1. CUANDO el administrador registra un conductor ENTONCES el sistema DEBERÁ requerir:
-   - Tipo de documento de identidad
-   - Número de documento de identidad
-   - Primer nombre
-   - Segundo nombre (opcional)
-   - Primer apellido
-   - Segundo apellido (opcional)
-   - Ciudad de residencia
-   - Dirección principal
-   - Teléfono de contacto
-   - Correo electrónico
-   - Categoría de licencia
-   - Fecha vencimiento licencia
-   - EPS (Entidad Promotora de Salud — seleccionada desde catálogo)
-   - Fondo de pensiones (seleccionado desde catálogo)
-   - Fondo de cesantías (seleccionado desde catálogo)
-   - Estado de seguridad social vigente
+1. WHEN the administrator registers a driver THEN the system SHALL require:
+   - Identification document type
+   - Identification document number
+   - First name
+   - Middle name (optional)
+   - First surname
+   - Second surname (optional)
+   - City of residence
+   - Main address
+   - Contact phone
+   - Email
+   - License category
+   - License expiration date
+   - EPS (Entidad Promotora de Salud — selected from catalog)
+   - Pension fund (selected from catalog)
+   - Severance fund (selected from catalog)
+   - Valid social security status
 
-2. CUANDO se intenta asignar un conductor a un servicio ENTONCES el sistema DEBERÁ validar que la categoría de licencia corresponda al tipo de vehículo.
+2. WHEN attempting to assign a driver to a service THEN the system SHALL validate that the license category matches the vehicle type.
 
-3. CUANDO la licencia del conductor está vencida ENTONCES el sistema DEBERÁ bloquear su asignación a servicios.
+3. WHEN the driver's license is expired THEN the system SHALL block their assignment to services.
 
-4. CUANDO faltan 30, 15 o 5 días para el vencimiento de la licencia ENTONCES el sistema DEBERÁ generar alertas automáticas.
+4. WHEN 30, 15 or 5 days remain before the license expires THEN the system SHALL generate automatic alerts.
 
-5. CUANDO la seguridad social del conductor no está vigente ENTONCES el sistema DEBERÁ mostrar una advertencia y registrar la novedad.
-
----
-
-### REQ-006: Gestión de Contratos
-
-**Historia de Usuario:** Como administrador, quiero gestionar los contratos con terceros para vincular correctamente los servicios.
-
-#### Criterios de Aceptación
-
-1. CUANDO el administrador crea un contrato ENTONCES el sistema DEBERÁ requerir:
-   - Número de contrato
-   - Tercero asociado (cliente)
-   - Objeto del contrato (Empresarial, Turismo, Salud, Ocasional)
-   - Fecha inicio y fin de vigencia
-   - Descripción de ruta autorizada
-   - Indicador de contrato genérico (temporal)
-
-2. CUANDO se intenta crear un servicio ENTONCES el sistema DEBERÁ permitir seleccionar un contrato vigente o generar un contrato genérico temporal.
-
-3. SI la fecha del servicio está fuera del período de vigencia del contrato ENTONCES el sistema DEBERÁ rechazar la creación del servicio o permitir generar un contrato genérico si aplica.
-
-4. CUANDO se crea un contrato genérico ENTONCES el sistema DEBERÁ:
-   - Asignar un número automático
-   - Marcarlo como temporal
-   - Permitir su uso inmediato para servicios
+5. WHEN the driver's social security is not up-to-date THEN the system SHALL display a warning and record the incident.
 
 ---
 
-### REQ-007: Generación de FUEC
+### REQ-006: Contract Management
 
-**Historia de Usuario:** Como despachador, quiero tener la opción de generar el FUEC para cumplir con la normativa de transporte especial cuando sea necesario.
+**User Story:** As an administrator, I want to manage contracts with third parties to properly link services.
 
-> **Nota importante:** Este módulo es OPCIONAL y se encuentra DESACTIVADO inicialmente. La lógica relacionada permanece en el sistema para poder activarse o retomarse en el futuro. Los campos relacionados al FUEC son opcionales y no afectan la operación principal del sistema.
+#### Acceptance Criteria
 
-#### Criterios de Aceptación
+1. WHEN the administrator creates a contract THEN the system SHALL require:
+   - Contract number
+   - Associated third party (client)
+   - Contract object (Empresarial, Turismo, Salud, Ocasional)
+   - Validity start and end date
+   - Authorized route description
+   - Generic contract indicator (temporary)
 
-1. CUANDO el usuario solicita generar FUEC ENTONCES el sistema DEBERÁ validar:
-   - Contrato vigente asociado
-   - Vehículo con documentos vigentes
-   - Conductor con licencia vigente
+2. WHEN attempting to create a service THEN the system SHALL allow selecting a valid contract or generating a temporary generic contract.
 
-2. CUANDO todas las validaciones son exitosas ENTONCES el sistema DEBERÁ generar un PDF con:
-   - Datos del contrato
-   - Datos del vehículo
-   - Datos del conductor
-   - Origen y destino
-   - Fecha y hora del servicio
-   - Código QR de verificación
-   - Número consecutivo único
+3. IF the service date is outside the contract validity period THEN the system SHALL reject the service creation or allow generating a generic contract if applicable.
 
-3. CUANDO se genera el FUEC ENTONCES el sistema DEBERÁ asignar un número consecutivo del rango autorizado por MinTransporte.
+4. WHEN a generic contract is created THEN the system SHALL:
+   - Assign an automatic number
+   - Mark it as temporary
+   - Allow its immediate use for services
 
-4. CUANDO se escanea el código QR del FUEC ENTONCES el sistema DEBERÁ mostrar una página de verificación con el estado del documento (VIGENTE/ANULADO).
+---
 
-5. CUANDO el módulo FUEC está desactivado ENTONCES el sistema NO DEBERÁ realizar validaciones que dependan de la generación del FUEC.
+### REQ-007: FUEC Generation
+
+**User Story:** As a dispatcher, I want to have the option to generate the FUEC to comply with special transport regulations when necessary.
+
+> **Important note:** This module is OPTIONAL and is initially DISABLED. The related logic remains in the system so that it can be activated or resumed in the future. FUEC-related fields are optional and do not affect the main operation of the system.
+
+#### Acceptance Criteria
+
+1. WHEN the user requests FUEC generation THEN the system SHALL validate:
+   - Valid associated contract
+   - Vehicle with valid documents
+   - Driver with valid license
+
+2. WHEN all validations are successful THEN the system SHALL generate a PDF with:
+   - Contract data
+   - Vehicle data
+   - Driver data
+   - Origin and destination
+   - Service date and time
+   - Verification QR code
+   - Unique consecutive number
+
+3. WHEN the FUEC is generated THEN the system SHALL assign a consecutive number from the range authorized by MinTransporte.
+
+4. WHEN the FUEC QR code is scanned THEN the system SHALL display a verification page with the status of the document ("Vigente"/"Anulado").
+
+5. WHEN the FUEC module is disabled THEN the system SHALL NOT perform validations that depend on FUEC generation.
 
 ```plantuml
 @startuml
@@ -480,22 +480,22 @@ stop
 
 ---
 
-### REQ-008: Resumen del Día
+### REQ-008: Day Summary
 
-**Historia de Usuario:** Como supervisor, quiero ver un resumen consolidado de todos los servicios del día para control operativo.
+**User Story:** As a supervisor, I want to see a consolidated summary of all the day's services for operational control.
 
-#### Criterios de Aceptación
+#### Acceptance Criteria
 
-1. CUANDO el usuario accede al resumen del día ENTONCES el sistema DEBERÁ mostrar una tabla con:
-   - Placa del vehículo
-   - Conductor asignado (o proveedor si es tercerizado)
-   - Horarios de servicio
-   - Estado de cada servicio
-   - Indicador de novedades registradas
+1. WHEN the user accesses the "Resumen del Día" THEN the system SHALL display a table with:
+   - Vehicle plate
+   - Assigned driver (or provider if outsourced)
+   - Service schedules
+   - Status of each service
+   - Recorded incidents indicator
 
-2. CUANDO todos los servicios del día están en estado "CERRADO" ENTONCES el sistema DEBERÁ habilitar el botón "Ejecutar Día".
+2. WHEN all services of the day are in "Cerrado" status THEN the system SHALL enable the "Ejecutar Día" button.
 
-3. CUANDO el usuario ejecuta el día ENTONCES el sistema DEBERÁ cambiar el estado del día a "EJECUTADO" y bloquear modificaciones.
+3. WHEN the user executes the day THEN the system SHALL change the day status to "Ejecutado" and block modifications.
 
 ```plantuml
 @startsalt
@@ -518,157 +518,157 @@ stop
 
 ---
 
-### REQ-009: Control de Inmutabilidad Contable
+### REQ-009: Accounting Immutability Control
 
-**Historia de Usuario:** Como administrador, quiero que los registros ejecutados estén protegidos contra modificaciones para garantizar la integridad contable.
+**User Story:** As an administrator, I want executed records to be protected against modifications to ensure accounting integrity.
 
-#### Criterios de Aceptación
+#### Acceptance Criteria
 
-1. MIENTRAS el estado del día sea "EJECUTADO" ENTONCES el sistema DEBERÁ bloquear todos los campos de los servicios para usuarios con rol Despachador.
+1. WHILE the day status is "Ejecutado" THEN the system SHALL block all service fields for users with the Dispatcher role.
 
-2. CUANDO un usuario con rol Administrador necesita modificar cualquier campo de un registro ejecutado ENTONCES el sistema DEBERÁ requerir una justificación obligatoria.
+2. WHEN a user with the Administrator role needs to modify any field of an executed record THEN the system SHALL require mandatory justification.
 
-3. CUANDO un usuario con rol de Contabilidad edita un registro ejecutado, el sistema DEBERÁ permitirle modificar únicamente los campos contables y de facturación.
+3. WHEN a user with the Accounting role edits an executed record, the system SHALL allow them to modify only the accounting and invoicing fields.
 
-4. CUANDO se modifica un registro ejecutado ENTONCES el sistema DEBERÁ registrar en el log de auditoría:
-   - Usuario que realizó el cambio
-   - Fecha y hora
-   - Valor anterior
-   - Valor nuevo
-   - Justificación (obligatoria para Administradores)
-
----
-
-### REQ-010: Seguimiento de Ubicación de Vehículos
-
-**Historia de Usuario:** Como despachador, quiero monitorear la ubicación actual de los vehículos para una mejor gestión operativa.
-
-> **Nota:** El uso de GPS es OPCIONAL. La ubicación puede capturarse automáticamente mediante el GPS del móvil o ingresarse manualmente mediante coordenadas.
-
-#### Criterios de Aceptación
-
-1. CUANDO un vehículo está en servicio Y el GPS está habilitado ENTONCES el sistema DEBERÁ registrar y mostrar la ubicación actual del vehículo.
-
-2. CUANDO el conductor actualiza la ubicación ENTONCES el sistema DEBERÁ almacenar las coordenadas GPS y timestamp, indicando si fue ingresada manualmente.
-
-3. CUANDO se consulta la ubicación ENTONCES el sistema DEBERÁ mostrar un mapa con la posición actual de los vehículos activos.
-
-4. CUANDO el GPS no está disponible ENTONCES el sistema DEBERÁ permitir el registro manual de coordenadas sin bloquear la operación.
+4. WHEN an executed record is modified THEN the system SHALL log in the audit trail:
+   - User who made the change
+   - Date and time
+   - Previous value
+   - New value
+   - Justification (mandatory for Administrators)
 
 ---
 
-### REQ-011: Facturación de Servicios
+### REQ-010: Vehicle Location Tracking
 
-**Historia de Usuario:** Como contador, quiero gestionar la facturación de servicios para registrar los cobros asociados.
+**User Story:** As a dispatcher, I want to monitor the current location of vehicles for better operational management.
 
-#### Criterios de Aceptación
+> **Note:** GPS usage is OPTIONAL. Location may be captured automatically via the mobile device's GPS or entered manually using coordinates.
 
-1. CUANDO un servicio se cierra ENTONCES el sistema DEBERÁ permitir vincular un número de factura al servicio.
+#### Acceptance Criteria
 
-2. CUANDO se registra una factura ENTONCES el sistema DEBERÁ almacenar:
-   - Número de factura
-   - Valor total
-   - Fecha de emisión
-   - Estado de pago
+1. WHEN a vehicle is in service AND GPS is enabled THEN the system SHALL record and display the current location of the vehicle.
 
-3. CUANDO se consulta un servicio ENTONCES el sistema DEBERÁ mostrar la información de facturación asociada.
+2. WHEN the driver updates the location THEN the system SHALL store the GPS coordinates and timestamp, indicating whether it was entered manually.
 
-4. CUANDO una novedad afecta la facturación ENTONCES el sistema DEBERÁ calcular el valor adicional o descuento correspondiente.
+3. WHEN the location is queried THEN the system SHALL display a map with the current position of active vehicles.
+
+4. WHEN GPS is not available THEN the system SHALL allow manual recording of coordinates without blocking the operation.
 
 ---
 
-### REQ-012: Gestión de Novedades/Incidencias
+### REQ-011: Service Invoicing
 
-**Historia de Usuario:** Como conductor o administrador, quiero registrar novedades durante la ejecución de un servicio para documentar incidencias que puedan afectar la operación y facturación.
+**User Story:** As an accountant, I want to manage service invoicing to record associated charges.
 
-#### Criterios de Aceptación
+#### Acceptance Criteria
 
-1. CUANDO el conductor accede a un servicio asignado ENTONCES el sistema DEBERÁ permitir registrar una novedad en cualquier momento.
+1. WHEN a service is closed THEN the system SHALL allow linking an invoice number to the service.
 
-2. CUANDO el rol de administración accede a un servicio ENTONCES el sistema DEBERÁ permitir registrar una novedad en cualquier momento.
+2. WHEN an invoice is recorded THEN the system SHALL store:
+   - Invoice number
+   - Total amount
+   - Issue date
+   - Payment status
 
-3. CUANDO se registra una novedad ENTONCES el sistema DEBERÁ almacenar:
-   - Tipo de novedad (desplegable configurable)
-   - Descripción detallada
-   - Usuario que registró la novedad
-   - Fecha y hora del registro
-   - Indicador si fue registrado por conductor
-   - Indicador si afecta la facturación
-   - Valor adicional o descuento (si aplica)
+3. WHEN a service is consulted THEN the system SHALL display the associated invoicing information.
 
-4. CUANDO una novedad afecta la facturación ENTONCES el sistema DEBERÁ:
-   - Marcar el servicio con indicador visual
-   - Incluir la novedad en el cálculo del valor total
-   - Mostrar el detalle en el resumen de facturación
+4. WHEN an incident affects invoicing THEN the system SHALL calculate the corresponding additional amount or discount.
 
 ---
 
-### REQ-013: Notificaciones por Correo Electrónico
+### REQ-012: Incident/Event Management
 
-**Historia de Usuario:** Como usuario del sistema, quiero recibir notificaciones por correo electrónico sobre eventos relevantes para mantenerme informado sin necesidad de estar conectado.
+**User Story:** As a driver or administrator, I want to record incidents during the execution of a service in order to document events that may affect operations and invoicing.
 
-#### Criterios de Aceptación
+#### Acceptance Criteria
 
-1. CUANDO se asigna un servicio a un conductor ENTONCES el sistema DEBERÁ enviar una notificación al conductor con los datos del servicio.
+1. WHEN the driver accesses an assigned service THEN the system SHALL allow recording an incident at any time.
 
-2. CUANDO un documento de vehículo o licencia de conductor está próximo a vencer (30, 15 o 5 días) ENTONCES el sistema DEBERÁ enviar notificación al administrador.
+2. WHEN the administration role accesses a service THEN the system SHALL allow recording an incident at any time.
 
-3. CUANDO se registra una novedad que afecta la facturación ENTONCES el sistema DEBERÁ notificar al administrador y al rol de contabilidad.
+3. WHEN an incident is recorded THEN the system SHALL store:
+   - Incident type (configurable dropdown)
+   - Detailed description
+   - User who recorded the incident
+   - Date and time of record
+   - Indicator of whether it was recorded by the driver
+   - Indicator of whether it affects invoicing
+   - Additional amount or discount (if applicable)
 
-4. CUANDO se ejecuta un día ENTONCES el sistema DEBERÁ notificar al rol de contabilidad que los registros están disponibles para facturación.
-
-5. CUANDO un conductor confirma la finalización de un servicio ENTONCES el sistema DEBERÁ enviar una notificación al administrador con los datos del servicio completado.
-
-6. CUANDO el sistema envía una notificación ENTONCES DEBERÁ registrar: tipo, destinatario, mensaje, fecha de envío y estado de entrega.
-
----
-
-### REQ-014: Inserción Inicial de Datos (Seeders)
-
-**Historia de Usuario:** Como administrador, quiero que el sistema cuente con datos iniciales pre-cargados para poder operar de inmediato tras la instalación.
-
-#### Criterios de Aceptación
-
-1. El sistema DEBERÁ incluir scripts de inicialización de base de datos (`seeders` en Laravel).
-2. Los `seeders` DEBERÁN cargar automáticamente:
-   - Catálogos básicos (Roles, Permisos, Tipos de Documento, Tipos de Novedad).
-   - Un usuario Administrador por defecto.
-   - Datos iniciales parametrizados de Vehículos, Conductores y Terceros según lo provisto por el cliente.
-3. El proceso de instalación DEBERÁ ejecutar estos `seeders` como parte del despliegue inicial.
+4. WHEN an incident affects invoicing THEN the system SHALL:
+   - Mark the service with a visual indicator
+   - Include the incident in the total amount calculation
+   - Show the detail in the invoicing summary
 
 ---
 
-## 5. Requerimientos No Funcionales
+### REQ-013: Email Notifications
 
-### NFR-001: Rendimiento
+**User Story:** As a system user, I want to receive email notifications about relevant events to stay informed without needing to be connected.
 
-- El Gantt debe renderizar hasta 100 vehículos y 300 servicios sin degradación visible (FPS > 30).
-- Los cambios en el Gantt deben reflejarse en menos de 2 segundos para otros usuarios.
+#### Acceptance Criteria
 
-### NFR-002: Disponibilidad
+1. WHEN a service is assigned to a driver THEN the system SHALL send a notification to the driver with the service data.
 
-- El sistema debe estar disponible 99.5% del tiempo en horario operativo (5:00 - 22:00).
+2. WHEN a vehicle document or driver's license is about to expire (30, 15 or 5 days) THEN the system SHALL send a notification to the administrator.
 
-### NFR-003: Seguridad
+3. WHEN an incident that affects invoicing is recorded THEN the system SHALL notify the administrator and the accounting role.
 
-- Autenticación mediante usuario y contraseña.
-- Roles definidos: Administrador, Operación, Conductor, Contabilidad.
-- Comunicación cifrada (HTTPS).
-- Log de auditoría inmutable.
+4. WHEN a day is executed THEN the system SHALL notify the accounting role that the records are available for invoicing.
 
-### NFR-004: Compatibilidad
+5. WHEN a driver confirms the completion of a service THEN the system SHALL send a notification to the administrator with the data of the completed service.
 
-- Navegadores: Chrome, Edge, Firefox (últimas 2 versiones).
-- Resolución mínima: 1366x768.
-
-### NFR-005: GPS Opcional
-
-- El seguimiento GPS es opcional; el sistema debe funcionar completamente sin él.
-- La ubicación puede ingresarse manualmente mediante coordenadas cuando el GPS no está disponible.
+6. WHEN the system sends a notification THEN it SHALL log: type, recipient, message, sending date and delivery status.
 
 ---
 
-## 6. Modelo de Datos
+### REQ-014: Initial Data Insertion (Seeders)
+
+**User Story:** As an administrator, I want the system to come with pre-loaded initial data so it can operate immediately after installation.
+
+#### Acceptance Criteria
+
+1. The system SHALL include database initialization scripts (`seeders` in Laravel).
+2. The `seeders` SHALL automatically load:
+   - Basic catalogs (Roles, Permissions, Document Types, Incident Types).
+   - A default Administrator user.
+   - Parameterized initial data of Vehicles, Drivers and Third parties as provided by the client.
+3. The installation process SHALL execute these `seeders` as part of the initial deployment.
+
+---
+
+## 5. Non-Functional Requirements
+
+### NFR-001: Performance
+
+- The Gantt must render up to 100 vehicles and 300 services without visible degradation (FPS > 30).
+- Changes in the Gantt must be reflected in less than 2 seconds for other users.
+
+### NFR-002: Availability
+
+- The system must be available 99.5% of the time during operating hours (5:00 - 22:00).
+
+### NFR-003: Security
+
+- Authentication via username and password.
+- Defined roles: Administrator, Operations, Driver, Accounting.
+- Encrypted communication (HTTPS).
+- Immutable audit log.
+
+### NFR-004: Compatibility
+
+- Browsers: Chrome, Edge, Firefox (last 2 versions).
+- Minimum resolution: 1366x768.
+
+### NFR-005: Optional GPS
+
+- GPS tracking is optional; the system must work fully without it.
+- Location may be entered manually via coordinates when GPS is not available.
+
+---
+
+## 6. Data Model
 
 ```plantuml
 @startuml
@@ -860,14 +860,14 @@ vehiculo ||--o{ ubicacion
 @enduml
 ```
 
-### Relaciones entre Tablas
+### Table Relationships
 
-| Tabla Origen  | Tabla Destino     | Tipo de Relación              |
+| Source Table  | Target Table      | Relationship Type             |
 | ------------- | ----------------- | ----------------------------- |
 | TipoDocumento | Tercero           | One-to-Many                   |
 | TipoDocumento | Conductor         | One-to-Many                   |
-| Tercero       | Vehiculo          | One-to-Many (si es proveedor) |
-| Tercero       | Contrato          | One-to-Many (si es cliente)   |
+| Tercero       | Vehiculo          | One-to-Many (if provider)     |
+| Tercero       | Contrato          | One-to-Many (if client)       |
 | Contrato      | Servicio          | One-to-Many                   |
 | Vehiculo      | Servicio          | One-to-Many                   |
 | Conductor     | Servicio          | One-to-Many                   |
@@ -877,111 +877,111 @@ vehiculo ||--o{ ubicacion
 | Servicio      | FUEC              | One-to-One                    |
 | Vehiculo      | UbicacionVehiculo | One-to-Many                   |
 
-### Tablas gestionadas por Laravel y paquetes
+### Tables Managed by Laravel and Packages
 
-Las siguientes tablas son creadas y gestionadas automáticamente por el framework y paquetes de terceros. No se incluyen en el ERD por ser estándar:
+The following tables are created and managed automatically by the framework and third-party packages. They are not included in the ERD because they are standard:
 
-| Tabla(s) | Paquete | Propósito |
-| -------- | ------- | --------- |
-| `users` | Laravel Auth (react-starter-kit) | Usuarios del sistema |
-| `roles`, `permissions`, `model_has_roles`, `model_has_permissions`, `role_has_permissions` | spatie/laravel-permission | Roles y permisos |
-| `activity_log` | spatie/laravel-activitylog | Log de auditoría (REQ-009) |
-| `notifications` | Laravel Notifications (canal database) | Notificaciones in-app y email (REQ-013) |
+| Table(s) | Package | Purpose |
+| -------- | ------- | ------- |
+| `users` | Laravel Auth (react-starter-kit) | System users |
+| `roles`, `permissions`, `model_has_roles`, `model_has_permissions`, `role_has_permissions` | spatie/laravel-permission | Roles and permissions |
+| `activity_log` | spatie/laravel-activitylog | Audit log (REQ-009) |
+| `notifications` | Laravel Notifications (database channel) | In-app and email notifications (REQ-013) |
 
-> **Nota:** `NovedadServicio.registrado_por` y `EstadoDia.ejecutado_por` son FK a la tabla `users` de Laravel.
+> **Note:** `NovedadServicio.registrado_por` and `EstadoDia.ejecutado_por` are FKs to Laravel's `users` table.
 
 ---
 
-## 7. Roles y Permisos
+## 7. Roles and Permissions
 
-| Función                              | Administrador | Operación | Conductor | Contabilidad |
+| Function                             | Administrador | Operación | Conductor | Contabilidad |
 | ------------------------------------ | :-----------: | :-------: | :-------: | :----------: |
-| Gestionar vehículos                  |       ✓       |     -     |     -     |      -       |
-| Gestionar conductores                |       ✓       |     -     |     -     |      -       |
-| Gestionar contratos                  |       ✓       |     -     |     -     |      -       |
-| Crear servicios                      |       ✓       |     ✓     |     -     |      -       |
-| Editar servicios (proyectados)       |       ✓       |     ✓     |     -     |      -       |
-| Editar servicios (ejecutados)        |       ✓       |     -     |     -     |      ✓       |
-| Generar FUEC (opcional)              |       ✓       |     ✓     |     -     |      -       |
-| Ejecutar día                         |       ✓       |     ✓     |     -     |      -       |
-| Ver reportes                         |       ✓       |     ✓     |     -     |      ✓       |
-| Ver servicios finalizados            |       ✓       |     -     |     -     |      ✓       |
-| Generar facturas                     |       ✓       |     -     |     -     |      ✓       |
-| Asociar servicios a facturas         |       ✓       |     -     |     -     |      ✓       |
-| Registrar tiempos reales y novedades |       -       |     -     |     ✓     |      -       |
-| Recibir notificaciones               |       ✓       |     ✓     |     ✓     |      ✓       |
+| Manage vehicles                      |       ✓       |     -     |     -     |      -       |
+| Manage drivers                       |       ✓       |     -     |     -     |      -       |
+| Manage contracts                     |       ✓       |     -     |     -     |      -       |
+| Create services                      |       ✓       |     ✓     |     -     |      -       |
+| Edit services (projected)            |       ✓       |     ✓     |     -     |      -       |
+| Edit services (executed)             |       ✓       |     -     |     -     |      ✓       |
+| Generate FUEC (optional)             |       ✓       |     ✓     |     -     |      -       |
+| Execute day                          |       ✓       |     ✓     |     -     |      -       |
+| View reports                         |       ✓       |     ✓     |     -     |      ✓       |
+| View completed services              |       ✓       |     -     |     -     |      ✓       |
+| Generate invoices                    |       ✓       |     -     |     -     |      ✓       |
+| Link services to invoices            |       ✓       |     -     |     -     |      ✓       |
+| Record actual times and incidents    |       -       |     -     |     ✓     |      -       |
+| Receive notifications                |       ✓       |     ✓     |     ✓     |      ✓       |
 
 ---
 
-## 8. Fases de Implementación y Cronograma
+## 8. Implementation Phases and Schedule
 
-El proyecto está estructurado para desarrollarse en **5 semanas calendario**, distribuidas de la siguiente manera:
+The project is structured to be developed over **5 calendar weeks**, distributed as follows:
 
-### Semana 1: Fundamentos y Datos Maestros (Fase 1)
+### Week 1: Foundations and Master Data (Phase 1)
 
-- Setup Laravel + autenticación + roles/permisos
-- Migraciones de base de datos (todas las tablas)
-- CRUD: Vehículos, Conductores, Terceros, Contratos
-- Inserción de datos iniciales (Seeders)
+- Laravel setup + authentication + roles/permissions
+- Database migrations (all tables)
+- CRUD: Vehicles, Drivers, Third parties, Contracts
+- Initial data insertion (Seeders)
 
-### Semana 2: Core Operativo (Fase 2)
+### Week 2: Operational Core (Phase 2)
 
-- Calendario anual/mensual
-- Diagrama Gantt de flota
-- Formulario de servicios
-- Resumen del día
-- Estados del día y lógica de bloqueo
+- Annual/monthly calendar
+- Fleet Gantt chart
+- Service form
+- Day summary
+- Day statuses and blocking logic
 
-### Semana 3: Conductor y Novedades (Fase 3)
+### Week 3: Driver and Incidents (Phase 3)
 
-- Interfaz del conductor (confirmar inicio/fin)
-- Gestión de novedades e incidencias
-- Notificaciones por correo electrónico
+- Driver interface (confirm start/end)
+- Incident and event management
+- Email notifications
 
-### Semana 4: Facturación y Auditoría (Fase 4)
+### Week 4: Invoicing and Auditing (Phase 4)
 
-- Facturación de servicios
-- Inmutabilidad contable
-- Log de auditoría
+- Service invoicing
+- Accounting immutability
+- Audit log
 
-### Semana 5: Módulos Opcionales y Despliegue (Fase 5)
+### Week 5: Optional Modules and Deployment (Phase 5)
 
-- FUEC (módulo latente, desactivado)
-- Ubicación GPS opcional
-- Pruebas y estabilización
-- Despliegue en producción con Dockploy
+- FUEC (dormant module, disabled)
+- Optional GPS location
+- Testing and stabilization
+- Production deployment with Dockploy
 
 ---
 
-## 9. Stack Tecnológico Recomendado
+## 9. Recommended Technology Stack
 
-| Capa                 | Tecnología                                                                  |
+| Layer                | Technology                                                                  |
 | -------------------- | --------------------------------------------------------------------------- |
 | **Frontend**         | React + Inertia.js + shadcn/ui (via `laravel/react-starter-kit`)            |
-| **Componente Gantt** | Librería JS (ej. Frappe/DHTMLX) como componente React                       |
+| **Gantt Component**  | JS library (e.g. Frappe/DHTMLX) as a React component                        |
 | **Backend**          | Laravel Framework (PHP)                                                     |
-| **Base de Datos**    | PostgreSQL                                                                  |
-| **Autenticación**    | Laravel Auth (starter kit con Inertia)                                      |
-| **Tiempo Real**      | Laravel Reverb + Echo                                                       |
-| **Búsqueda**         | Laravel Scout                                                               |
-| **Scaffolding**      | Laravel Blueprint (modelos, migraciones, controladores, requests, etc.)      |
-| **Almacenamiento**   | MinIO (Self-hosted, compatible con driver S3 de Laravel)                    |
-| **Hosting / Infra**  | Dockploy + VPS Linux (Para orquestar App + DB + MinIO)                      |
+| **Database**         | PostgreSQL                                                                  |
+| **Authentication**   | Laravel Auth (starter kit with Inertia)                                     |
+| **Real-Time**        | Laravel Reverb + Echo                                                       |
+| **Search**           | Laravel Scout                                                               |
+| **Scaffolding**      | Laravel Blueprint (models, migrations, controllers, requests, etc.)         |
+| **Storage**          | MinIO (self-hosted, compatible with Laravel's S3 driver)                    |
+| **Hosting / Infra**  | Dockploy + Linux VPS (to orchestrate App + DB + MinIO)                      |
 
 ---
 
-## 10. Presupuesto
+## 10. Budget
 
-### 10.1 Costo de Desarrollo
+### 10.1 Development Cost
 
-- **Desarrollo del Sistema:** COP $5.000.000
+- **System Development:** COP $5,000,000
 
-### 10.2 Costos Asociados
+### 10.2 Associated Costs
 
-- **Hosting y Servidores:** COP $360.000 / año ($30.000 / mes) (Contabo)
-- **Dominio + Certificados SSL:** COP $80.000 / año aproximadamente
-- **Mantenimiento y Soporte:** COP $1.000.000 / año (opcional)
+- **Hosting and Servers:** COP $360,000 / year ($30,000 / month) (Contabo)
+- **Domain + SSL Certificates:** COP $80,000 / year approximately
+- **Maintenance and Support:** COP $1,000,000 / year (optional)
 
-**Total Estimado Anual (incluyendo desarrollo inicial):** COP $5.440.000 - $6.440.000 primer año
+**Estimated Annual Total (including initial development):** COP $5,440,000 - $6,440,000 first year
 
-> El soporte incluye corrección de errores y desarrollo de nuevas características menores.
+> Support includes bug fixes and development of minor new features.

@@ -1,58 +1,58 @@
-# ADR-001: Sistema de permisos en el frontend
+# ADR-001: Frontend permission system
 
-**Estado:** Aceptado
-**Fecha:** 2026-02-26
+**Status:** Accepted
+**Date:** 2026-02-26
 
-## Contexto
+## Context
 
-La aplicacion necesita mostrar u ocultar elementos de UI (items de navegacion, botones, secciones) segun los permisos del usuario autenticado. Los permisos se gestionan en el backend con `spatie/laravel-permission` y estan definidos como enums PHP en `App\Enums\Permission` y `App\Enums\Role`.
+The application needs to show or hide UI elements (navigation items, buttons, sections) based on the authenticated user's permissions. Permissions are managed in the backend with `spatie/laravel-permission` and are defined as PHP enums in `App\Enums\Permission` and `App\Enums\Role`.
 
-El frontend React (via Inertia.js) necesita:
-1. Acceso a los enums de permisos con type safety.
-2. Conocer los permisos y roles del usuario actual.
-3. Una utilidad para evaluar permisos, respetando el bypass de super_admin.
+The React frontend (via Inertia.js) needs:
+1. Access to the permission enums with type safety.
+2. Knowledge of the current user's permissions and roles.
+3. A utility to evaluate permissions, honoring the super_admin bypass.
 
 ## Decision
 
-### 1. Generacion de enums TypeScript desde PHP
+### 1. TypeScript enum generation from PHP
 
-Se creo el comando `php artisan enum:typescript` que escanea los enums string-backed en `app/Enums/` y genera archivos `.ts` en `resources/js/enums/` con:
-- Objeto `const` (para usar como constantes)
-- `type` union (para type safety)
-- Mapa de labels (si el enum tiene metodo `label()`)
+The `php artisan enum:typescript` command was created. It scans the string-backed enums in `app/Enums/` and generates `.ts` files in `resources/js/enums/` containing:
+- `const` object (to use as constants)
+- `type` union (for type safety)
+- Label map (if the enum has a `label()` method)
 
-Los archivos generados se versionan en git (no en `.gitignore`) porque el comando es manual y un dev que clone el repo necesita que compilen sin pasos extra. Se regeneran con `php artisan enum:typescript` cuando cambian los enums PHP.
+Generated files are versioned in git (not in `.gitignore`) because the command is manual and a developer cloning the repo needs the build to succeed without extra steps. They are regenerated with `php artisan enum:typescript` whenever the PHP enums change.
 
-### 2. Compartir permisos via Inertia
+### 2. Sharing permissions via Inertia
 
-El middleware `HandleInertiaRequests` comparte `auth.permissions` (array de strings) y `auth.roles` (array de strings) en cada respuesta. Esto evita requests adicionales y funciona tanto en SSR como en el browser.
+The `HandleInertiaRequests` middleware shares `auth.permissions` (array of strings) and `auth.roles` (array of strings) on every response. This avoids extra requests and works in both SSR and the browser.
 
-Para super_admin, los permisos llegan como array vacio (no tiene permisos directos asignados); el bypass se maneja en el frontend.
+For super_admin, the permissions array arrives empty (it has no permissions directly assigned); the bypass is handled on the frontend.
 
-### 3. Utilidades frontend
+### 3. Frontend utilities
 
-- **`usePermissions()` hook** — Expone `can(permission)`, `hasRole(role)`, `isSuperAdmin`. Si el usuario tiene rol `super_admin`, `can()` siempre retorna `true` (espejo de `Gate::before()` en el backend).
-- **`<Can permission={...}>` componente** — Renderizado condicional declarativo con prop `fallback` opcional.
-- **`NavItem.permission`** — Campo opcional en el tipo `NavItem`; los componentes de navegacion filtran automaticamente items sin permiso.
+- **`usePermissions()` hook** — Exposes `can(permission)`, `hasRole(role)`, `isSuperAdmin`. If the user has the `super_admin` role, `can()` always returns `true` (mirroring `Gate::before()` on the backend).
+- **`<Can permission={...}>` component** — Declarative conditional rendering with optional `fallback` prop.
+- **`NavItem.permission`** — Optional field on the `NavItem` type; navigation components automatically filter out items the user lacks permission for.
 
-### 4. Doble capa de seguridad
+### 4. Two layers of security
 
-El frontend es solo UX (ocultar lo que no aplica). La autorizacion real se mantiene en el backend via middleware `can:` en rutas y policies en controladores.
+The frontend layer is UX only (hiding what doesn't apply). Real authorization stays in the backend via `can:` middleware on routes and policies in controllers.
 
-## Consecuencias
+## Consequences
 
-**Positivas:**
-- Type safety end-to-end: los mismos valores de permisos en PHP y TypeScript.
-- Agregar un permiso a un nav item es declarativo (una propiedad).
-- El bypass de super_admin se replica fielmente en el frontend.
+**Positive:**
+- End-to-end type safety: the same permission values in PHP and TypeScript.
+- Adding a permission to a nav item is declarative (just one property).
+- The super_admin bypass is faithfully replicated on the frontend.
 
-**Negativas:**
-- Requiere ejecutar `php artisan enum:typescript` manualmente cuando cambian enums PHP.
-- Los permisos se envian en cada respuesta Inertia (peso minimo, ~1KB para 43 permisos).
+**Negative:**
+- Requires running `php artisan enum:typescript` manually when PHP enums change.
+- Permissions ship on every Inertia response (minimal weight, ~1KB for 43 permissions).
 
-**Archivos clave:**
+**Key files:**
 - `app/Console/Commands/GenerateTypescriptEnums.php`
 - `app/Http/Middleware/HandleInertiaRequests.php`
 - `resources/js/hooks/use-permissions.ts`
 - `resources/js/components/can.tsx`
-- `resources/js/enums/` (generado)
+- `resources/js/enums/` (generated)

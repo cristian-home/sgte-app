@@ -1,10 +1,10 @@
-# Mapa de Navegación por Rol - SGTE
+# Navigation Map by Role - SGTE
 
-Documento que describe la estructura de navegación de la aplicación para cada rol del sistema, agrupando roles cuando comparten la misma experiencia.
+Document describing the application's navigation structure for each role in the system, grouping roles when they share the same experience.
 
-## Resumen de acceso por rol
+## Access summary by role
 
-| Módulo / Vista            | Administrador | Operación | Conductor | Contabilidad |
+| Module / View             | Administrador | Operación | Conductor | Contabilidad |
 | ------------------------- | :-----------: | :-------: | :-------: | :----------: |
 | Login                     |       ✓       |     ✓     |     ✓     |      ✓       |
 | Dashboard                 |       ✓       |     ✓     |     -     |      ✓       |
@@ -30,9 +30,9 @@ Documento que describe la estructura de navegación de la aplicación para cada 
 
 ---
 
-## 1. Navegación general (todos los roles)
+## 1. General navigation (all roles)
 
-Todos los usuarios acceden al sistema a través de la misma pantalla de login. Después de autenticarse, el sistema redirige al usuario a la vista principal correspondiente a su rol.
+All users access the system through the same login screen. After authenticating, the system redirects the user to the main view corresponding to their role.
 
 ```plantuml
 @startuml
@@ -62,13 +62,13 @@ state "Dashboard Contable" as DashboardContable {
 
 ---
 
-## 2. Administrador y Operación
+## 2. Administrador and Operación
 
-Estos dos roles comparten la navegación principal (calendario → Gantt → servicios). La diferencia es que **Administrador** tiene acceso adicional al menú de administración (datos maestros, auditoría) y puede editar registros ejecutados con justificación.
+These two roles share the main navigation (calendar → Gantt → services). The difference is that **Administrador** has additional access to the administration menu (master data, audit) and can edit executed records with justification.
 
-### Menú lateral
+### Sidebar menu
 
-| Sección              | Administrador | Operación |
+| Section              | Administrador | Operación |
 | -------------------- | :-----------: | :-------: |
 | Producción           |       ✓       |     ✓     |
 | Vehículos            |       ✓       |     -     |
@@ -81,7 +81,7 @@ Estos dos roles comparten la navegación principal (calendario → Gantt → ser
 | FUEC (opcional)      |       ✓       |     ✓     |
 | Mapa GPS (opcional)  |       ✓       |     ✓     |
 
-### Mapa de navegación completo
+### Full navigation map
 
 ```plantuml
 @startuml
@@ -160,7 +160,7 @@ end note
 @enduml
 ```
 
-### Flujo principal: Calendario → Gantt → Servicio
+### Main flow: Calendario → Gantt → Servicio
 
 ```plantuml
 @startuml
@@ -205,33 +205,33 @@ stop
 @enduml
 ```
 
-### Diferencias de comportamiento según rol
+### Behavior differences by role
 
-| Contexto                       | Administrador                            | Operación                    |
+| Context                        | Administrador                            | Operación                    |
 | ------------------------------ | ---------------------------------------- | ---------------------------- |
-| Servicio en día PROYECTADO     | Crear / Editar / Eliminar                | Crear / Editar / Eliminar    |
-| Servicio en día EJECUTADO      | Editar con justificación obligatoria     | Solo lectura                 |
-| Novedades                      | Registrar desde formulario de servicio   | Registrar desde formulario   |
-| Menú Administración            | Visible (Vehículos, Conductores, etc.)   | No visible                   |
-| Menú Facturación               | Visible                                  | No visible                   |
-| Menú Auditoría                 | Visible                                  | No visible                   |
+| Service on PROYECTADO day      | Create / Edit / Delete                   | Create / Edit / Delete       |
+| Service on EJECUTADO day       | Edit with mandatory justification        | Read-only                    |
+| Novedades                      | Register from the service form           | Register from the form       |
+| Administración menu            | Visible (Vehículos, Conductores, etc.)   | Not visible                  |
+| Facturación menu               | Visible                                  | Not visible                  |
+| Auditoría menu                 | Visible                                  | Not visible                  |
 
 ---
 
 ## 3. Conductor
 
-El conductor tiene una interfaz simplificada y orientada a móvil. No accede al calendario ni al Gantt. Su vista principal es la lista de servicios asignados para el día actual.
+The driver has a simplified, mobile-oriented interface. They do not access the calendar or the Gantt. Their main view is the list of services assigned for the current day.
 
-### Menú
+### Menu
 
-| Sección              | Acceso |
+| Section              | Access |
 | -------------------- | :----: |
 | Mis Servicios        |   ✓    |
 | Mapa GPS (opcional)  |   ✓    |
 | Notificaciones       |   ✓    |
 | Mi Perfil            |   ✓    |
 
-### Mapa de navegación
+### Navigation map
 
 ```plantuml
 @startuml
@@ -279,7 +279,7 @@ MisServicios --> Notificaciones : Menú
 @enduml
 ```
 
-### Flujo del conductor durante un servicio
+### Driver flow during a service
 
 ```plantuml
 @startuml
@@ -328,11 +328,11 @@ stop
 
 ## 4. Contabilidad
 
-El rol de Contabilidad accede al calendario en modo de consulta para navegar a los días ejecutados. Su foco es la facturación y la revisión de servicios finalizados. Puede editar campos contables de servicios en días ejecutados.
+The Contabilidad role accesses the calendar in read mode to navigate to executed days. Its focus is billing and reviewing finalized services. It can edit accounting fields of services on executed days.
 
-### Menú lateral
+### Sidebar menu
 
-| Sección                 | Acceso |
+| Section                 | Access |
 | ----------------------- | :----: |
 | Calendario (lectura)    |   ✓    |
 | Servicios Ejecutados    |   ✓    |
@@ -340,7 +340,7 @@ El rol de Contabilidad accede al calendario en modo de consulta para navegar a l
 | Reportes                |   ✓    |
 | Notificaciones          |   ✓    |
 
-### Mapa de navegación
+### Navigation map
 
 ```plantuml
 @startuml
@@ -398,7 +398,7 @@ DashboardContable --> Notificaciones : Menú lateral
 @enduml
 ```
 
-### Flujo de facturación
+### Billing flow
 
 ```plantuml
 @startuml
@@ -441,9 +441,9 @@ stop
 
 ---
 
-## 5. Estructura de menú lateral (sidebar)
+## 5. Sidebar menu structure
 
-Representación consolidada del menú lateral visible para cada rol.
+Consolidated representation of the sidebar menu visible to each role.
 
 ```plantuml
 @startsalt
@@ -477,7 +477,7 @@ Representación consolidada del menú lateral visible para cada rol.
 
 ---
 
-## Referencia
+## Reference
 
-- [SRS - Sección 3: Arquitectura de Navegación](SRS.md#3-arquitectura-de-navegación)
-- [SRS - Sección 7: Roles y Permisos](SRS.md#7-roles-y-permisos)
+- [SRS - Section 3: Navigation Architecture](SRS.md#3-navigation-architecture)
+- [SRS - Section 7: Roles and Permissions](SRS.md#7-roles-and-permissions)

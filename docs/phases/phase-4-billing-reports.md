@@ -1,85 +1,85 @@
-# Fase 4: Facturación y Auditoría
+# Phase 4: Billing and Audit
 
-> **Estado: PENDIENTE** — Requiere Fase 2 (completada); Fase 3 recomendada
+> **Status: PENDING** — Requires Phase 2 (completed); Phase 3 recommended
 
-## Objetivo
+## Objective
 
-Implementar el módulo de facturación de servicios, asegurar la inmutabilidad contable de registros ejecutados y establecer el log de auditoría.
+Implement the service billing module, enforce accounting immutability of executed records, and establish the audit log.
 
-## Requerimientos cubiertos
+## Covered requirements
 
-- **REQ-011** - Facturación de Servicios
-- **REQ-009** - Control de Inmutabilidad Contable (complemento)
+- **REQ-011** - Service Billing
+- **REQ-009** - Accounting Immutability Control (complement)
 
-## Dependencias
+## Dependencies
 
-- Fase 2 completada (estados del día, servicios cerrados)
-- Fase 3 recomendada (novedades pueden afectar facturación)
+- Phase 2 completed (day states, closed services)
+- Phase 3 recommended (incidents may affect billing)
 
 ---
 
-## Tareas
+## Tasks
 
-### 4.1 Facturación de servicios (REQ-011)
+### 4.1 Service billing (REQ-011)
 
-- Vincular número de factura a servicios cerrados
-- Formulario de factura:
-  - Número de factura
-  - Valor total (calculado desde servicio + novedades)
-  - Fecha de emisión
-  - Estado de pago (Pendiente, Pagada, Anulada)
-- Vista de facturación: listado de servicios pendientes de facturar
-- Filtros: por tercero, por fecha, por estado de pago
-- Cálculo de valor total considerando novedades con afectación
+- Link invoice number to closed services
+- Invoice form:
+  - Invoice number
+  - Total amount (computed from service + incidents)
+  - Issue date
+  - Payment status (Pendiente, Pagada, Anulada)
+- Billing view: list of services pending invoicing
+- Filters: by tercero, by date, by payment status
+- Total amount computed taking billing-affecting incidents into account
 
-### 4.2 Asociación servicio-factura
+### 4.2 Service-invoice association
 
-- Un servicio cerrado puede asociarse a una factura
-- Vista para seleccionar múltiples servicios del mismo tercero y asociarlos a una factura
-- Solo roles Administrador y Contabilidad pueden facturar
-- Generación de PDF de factura (informativo, no fiscal)
+- A closed service can be associated with an invoice
+- View to select multiple services from the same tercero and link them to a single invoice
+- Only the Administrador and Contabilidad roles can bill
+- Invoice PDF generation (informational, not fiscal)
 
-### 4.3 Inmutabilidad contable (REQ-009 complemento)
+### 4.3 Accounting immutability (REQ-009 complement)
 
-- En estado EJECUTADO:
-  - Rol Operación: lectura solamente
-  - Rol Administrador: edición con justificación obligatoria
-  - Rol Contabilidad: puede asociar facturas y editar campos contables
-- Cada modificación a un registro ejecutado debe registrarse en el log de auditoría
+- In the EJECUTADO state:
+  - Operación role: read-only
+  - Administrador role: editing with mandatory justification
+  - Contabilidad role: can associate invoices and edit accounting fields
+- Every modification of an executed record must be recorded in the audit log
 
-### 4.4 Log de auditoría
+### 4.4 Audit log
 
-Implementar usando `owen-it/laravel-auditing`:
+Implement using `owen-it/laravel-auditing`:
 
-- Registrar automáticamente cambios en modelos auditables:
+- Automatically record changes on auditable models:
   - Servicio
   - Factura
   - EstadoDia
   - Contrato
-- Datos capturados por cambio:
-  - Usuario que realizó el cambio
-  - Fecha y hora
-  - Valor anterior
-  - Valor nuevo
-  - Justificación (campo adicional para registros ejecutados)
-- Vista de consulta de auditoría para Administrador
-- Filtros: por modelo, por usuario, por rango de fechas
+- Data captured per change:
+  - User who performed the change
+  - Date and time
+  - Previous value
+  - New value
+  - Justification (additional field for executed records)
+- Audit query view for Administrador
+- Filters: by model, by user, by date range
 
 ---
 
-## Paquetes
+## Packages
 
-| Paquete | Uso |
+| Package | Use |
 | ------- | --- |
-| `owen-it/laravel-auditing` | Log de auditoría automático |
-| `barryvdh/laravel-dompdf` | Generación de PDF de facturas |
+| `owen-it/laravel-auditing` | Automatic audit log |
+| `barryvdh/laravel-dompdf` | Invoice PDF generation |
 
-## Criterios de completitud
+## Completion criteria
 
-- [ ] Servicios cerrados pueden asociarse a facturas
-- [ ] Valor total de factura calcula novedades con afectación
-- [ ] Solo Admin y Contabilidad pueden facturar
-- [ ] Generación de PDF informativo de factura
-- [ ] Log de auditoría registra todos los cambios en modelos sensibles
-- [ ] Modificación de registros ejecutados requiere justificación
-- [ ] Vista de consulta de auditoría funcional
+- [ ] Closed services can be linked to invoices
+- [ ] Invoice total amount accounts for billing-affecting incidents
+- [ ] Only Admin and Contabilidad can bill
+- [ ] Informational invoice PDF generation
+- [ ] Audit log records all changes on sensitive models
+- [ ] Modifying executed records requires justification
+- [ ] Working audit query view
