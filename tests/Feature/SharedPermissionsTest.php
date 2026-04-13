@@ -29,7 +29,9 @@ test('user permissions match assigned role permissions', function () {
         Permission::RECEIVE_NOTIFICATIONS->value,
     ];
 
-    $response = $this->actingAs($user)->get(route('dashboard'));
+    // Drivers are redirected from /dashboard to /driver, so we hit
+    // the driver dashboard directly to inspect the shared Inertia props.
+    $response = $this->actingAs($user)->get(route('driver.dashboard'));
 
     $response->assertInertia(function ($page) use ($expectedPermissions) {
         $permissions = $page->toArray()['props']['auth']['permissions'];
