@@ -37,7 +37,7 @@ For super_admin, the permissions array arrives empty (it has no permissions dire
 
 ### 4. Two layers of security
 
-The frontend layer is UX only (hiding what doesn't apply). Real authorization stays in the backend via `can:` middleware on routes and policies in controllers.
+The frontend layer is UX only (hiding what doesn't apply). Real authorization stays in the backend. See **ADR-005 (Authorization layering)** for the full picture: a `Gate::before` hook for the Super Admin bypass, `can:` middleware on routes, and fine-grained `FormRequest::authorize()` gates. There are no Eloquent Policies.
 
 ## Consequences
 
@@ -48,7 +48,7 @@ The frontend layer is UX only (hiding what doesn't apply). Real authorization st
 
 **Negative:**
 - Requires running `php artisan enum:typescript` manually when PHP enums change.
-- Permissions ship on every Inertia response (minimal weight, ~1KB for 43 permissions).
+- Permissions ship on every Inertia response (minimal weight, ~1–2 KB for the current permission set — 49 cases as of 2026-04).
 
 **Key files:**
 - `app/Console/Commands/GenerateTypescriptEnums.php`

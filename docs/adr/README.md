@@ -9,6 +9,9 @@ Record of architectural decisions for the SGTE project.
 | ADR-001 | [Frontend permission system](ADR-001-frontend-permission-system.md) | Accepted | 2026-02-26 |
 | ADR-002 | [SearchesDatabase trait for advanced search](ADR-002-searches-database-trait.md) | Accepted | 2026-03-02 |
 | ADR-003 | [Reusable DataTable component](ADR-003-reusable-datatable-component.md) | Accepted | 2026-03-02 |
+| ADR-004 | [Hybrid search strategy (Scout+Typesense + SearchesDatabase)](ADR-004-hybrid-search-strategy.md) | Accepted | 2026-04-13 |
+| ADR-005 | [Authorization layering (no Eloquent Policies)](ADR-005-authorization-layering.md) | Accepted | 2026-04-13 |
+| ADR-006 | [Platform conventions](ADR-006-platform-conventions.md) | Accepted | 2026-04-13 |
 
 ## Format
 
