@@ -28,6 +28,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('drivers', App\Http\Controllers\DriverController::class);
     Route::resource('vehicles', App\Http\Controllers\VehicleController::class);
     Route::resource('contracts', App\Http\Controllers\ContractController::class);
+    Route::post('invoices/{invoice}/mark-paid', [App\Http\Controllers\InvoiceController::class, 'markPaid'])->name('invoices.mark-paid');
     Route::resource('invoices', App\Http\Controllers\InvoiceController::class);
     Route::get('day-statuses/{year}/{month}', [App\Http\Controllers\DayStatusController::class, 'calendarMonth'])
         ->name('day-statuses.calendar-month')
