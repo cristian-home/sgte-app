@@ -1,4 +1,12 @@
 import { Badge } from '@/components/ui/badge';
+import {
+    dateFormatter,
+    localTodayMs,
+    parseDueDate,
+    statusBadgeVariant,
+    statusFor,
+    type DocumentStatus,
+} from '@/lib/document-status';
 
 type DocumentInput = {
     soat_due_date: string | null;
@@ -6,75 +14,10 @@ type DocumentInput = {
     operation_card_due_date: string | null;
 };
 
-type DocumentStatus = 'expired' | 'expiring_soon' | 'ok';
-
 interface DocumentSlot {
     label: string;
     dueDate: string | null;
     status: DocumentStatus;
-}
-
-const DAYS_IN_MS = 24 * 60 * 60 * 1000;
-
-const dateFormatter = new Intl.DateTimeFormat('es-CO', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-});
-
-/**
- * Parse a backend-supplied due date into a Date instance. Accepts both
- * the short `Y-m-d` form (returned by helper methods like
- * `Carbon::toDateString()`) and the long ISO form
- * `Y-m-d\TH:i:s.uP` (returned by the default Eloquent `date` cast
- * serializer).
- *
- * Returns null when the input is null, empty, or unparseable.
- */
-function parseDueDate(dueDate: string | null): Date | null {
-    if (!dueDate) {
-        return null;
-    }
-    // Y-m-d is parsed as UTC midnight by the JS Date constructor on most
-    // engines, which can yield "yesterday" in negative timezones. Append
-    // a local-time component to anchor it to the user's wall clock.
-    const isoCandidate = /^\d{4}-\d{2}-\d{2}$/.test(dueDate)
-        ? `${dueDate}T00:00:00`
-        : dueDate;
-    const parsed = new Date(isoCandidate);
-    if (Number.isNaN(parsed.getTime())) {
-        return null;
-    }
-    return parsed;
-}
-
-function statusFor(dueDate: string | null, todayMs: number): DocumentStatus {
-    const parsed = parseDueDate(dueDate);
-    if (parsed === null) {
-        return 'expired';
-    }
-    const dueMs = parsed.getTime();
-    if (dueMs < todayMs) {
-        return 'expired';
-    }
-    const daysOut = Math.round((dueMs - todayMs) / DAYS_IN_MS);
-    if (daysOut <= 30) {
-        return 'expiring_soon';
-    }
-    return 'ok';
-}
-
-function variantFor(
-    status: DocumentStatus,
-): 'destructive' | 'secondary' | 'outline' {
-    switch (status) {
-        case 'expired':
-            return 'destructive';
-        case 'expiring_soon':
-            return 'secondary';
-        default:
-            return 'outline';
-    }
 }
 
 function tooltipFor(
@@ -116,8 +59,7 @@ export function VehicleDocumentPills({
     vehicle: DocumentInput;
     today?: string;
 }) {
-    const todayString = today ?? new Date().toISOString().slice(0, 10);
-    const todayMs = new Date(`${todayString}T00:00:00`).getTime();
+    const todayMs = localTodayMs(today);
 
     const slots: DocumentSlot[] = [
         {
@@ -142,7 +84,7 @@ export function VehicleDocumentPills({
             {slots.map((slot) => (
                 <Badge
                     key={slot.label}
-                    variant={variantFor(slot.status)}
+                    variant={statusBadgeVariant(slot.status)}
                     title={tooltipFor(slot.label, slot.dueDate, slot.status)}
                 >
                     {slot.label}
@@ -166,8 +108,7 @@ export function vehicleDocsAggregateStatus(
     vehicle: DocumentInput,
     today?: string,
 ): DocumentStatus {
-    const todayString = today ?? new Date().toISOString().slice(0, 10);
-    const todayMs = new Date(`${todayString}T00:00:00`).getTime();
+    const todayMs = localTodayMs(today);
 
     const statuses = [
         statusFor(vehicle.soat_due_date, todayMs),
