@@ -88,6 +88,61 @@ test('dashboard surfaces expiring vehicle and driver documents', function () {
         );
 });
 
+test('document alerts include a navigation link', function () {
+    $user = User::factory()->create();
+    $user->assignRole(Role::ADMIN->value);
+
+    Vehicle::factory()->create([
+        'plate' => 'EXP-100',
+        'soat_due_date' => Carbon::today()->subDays(5),
+        'rtm_due_date' => Carbon::today()->addYears(1),
+        'operation_card_due_date' => Carbon::today()->addYears(1),
+    ]);
+
+    Vehicle::factory()->create([
+        'plate' => 'WRN-200',
+        'soat_due_date' => Carbon::today()->addDays(10),
+        'rtm_due_date' => Carbon::today()->addYears(1),
+        'operation_card_due_date' => Carbon::today()->addYears(1),
+    ]);
+
+    Driver::factory()->create([
+        'first_name' => 'Ana',
+        'first_lastname' => 'Gómez',
+        'license_due_date' => Carbon::today()->subDays(1),
+    ]);
+
+    actingAs($user);
+
+    get(route('dashboard'))
+        ->assertOk()
+        ->assertInertia(
+            fn ($page) => $page
+                ->has('documentAlerts', fn ($alerts) => $alerts->each(
+                    fn ($alert) => $alert
+                        ->has('kind')
+                        ->has('label')
+                        ->has('subject')
+                        ->has('due_date')
+                        ->has('days_remaining')
+                        ->has('link')
+                ))
+        );
+
+    // Drill in on the specific links via a second request so the
+    // assertion closure above stays focused on shape coverage.
+    $payload = get(route('dashboard'))->viewData('page')['props']['documentAlerts'];
+
+    $expiredVehicle = collect($payload)->firstWhere('subject', 'EXP-100');
+    expect($expiredVehicle['link'])->toBe('/vehicles?filter[docs_status]=expired');
+
+    $warnVehicle = collect($payload)->firstWhere('subject', 'WRN-200');
+    expect($warnVehicle['link'])->toBe('/vehicles?filter[docs_status]=expiring_soon');
+
+    $driverAlert = collect($payload)->firstWhere('kind', 'driver');
+    expect($driverAlert['link'])->toBe('/drivers');
+});
+
 test('drivers are redirected to the driver dashboard', function () {
     $user = User::factory()->create();
     $user->assignRole(Role::DRIVER->value);

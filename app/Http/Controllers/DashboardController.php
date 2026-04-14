@@ -70,7 +70,7 @@ class DashboardController extends Controller
     }
 
     /**
-     * @return array<int, array{kind: string, label: string, subject: string, due_date: string|null, days_remaining: int}>
+     * @return array<int, array{kind: string, label: string, subject: string, due_date: string|null, days_remaining: int, link: string}>
      */
     private function buildDocumentAlerts(Carbon $today, Carbon $expiryThreshold): array
     {
@@ -95,12 +95,14 @@ class DashboardController extends Controller
                     if ($dueDate === null || $dueDate->greaterThan($expiryThreshold)) {
                         continue;
                     }
+                    $daysRemaining = (int) $today->diffInDays($dueDate, false);
                     $rows[] = [
                         'kind' => 'vehicle',
                         'label' => $label,
                         'subject' => $vehicle->plate,
                         'due_date' => $dueDate->toDateString(),
-                        'days_remaining' => (int) $today->diffInDays($dueDate, false),
+                        'days_remaining' => $daysRemaining,
+                        'link' => $this->vehicleAlertLink($daysRemaining),
                     ];
                 }
 
@@ -119,6 +121,11 @@ class DashboardController extends Controller
                     'subject' => trim($driver->first_name.' '.$driver->first_lastname),
                     'due_date' => $driver->license_due_date?->toDateString(),
                     'days_remaining' => (int) $today->diffInDays($driver->license_due_date, false),
+                    // Drivers index is still a Blueprint scaffold; for now the
+                    // alert lands on the bare /drivers route. The dedicated
+                    // drivers rebuild requirement will refine this with a
+                    // license_status filter mirroring the vehicles one.
+                    'link' => '/drivers',
                 ];
             });
 
@@ -128,5 +135,17 @@ class DashboardController extends Controller
             ->values()
             ->take(self::ALERTS_MAX_ROWS)
             ->all();
+    }
+
+    /**
+     * Build the deep-link a vehicle alert should navigate to. Already-expired
+     * documents jump to the vehicles index filtered by docs_status=expired;
+     * documents within the 30-day window jump to docs_status=expiring_soon.
+     */
+    private function vehicleAlertLink(int $daysRemaining): string
+    {
+        return $daysRemaining < 0
+            ? '/vehicles?filter[docs_status]=expired'
+            : '/vehicles?filter[docs_status]=expiring_soon';
     }
 }
