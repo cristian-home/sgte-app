@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { AlertTriangle, FileText, Truck, User, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,6 +17,7 @@ type DocumentAlert = {
     subject: string;
     due_date: string | null;
     days_remaining: number;
+    link: string;
 };
 
 type DashboardProps = {
@@ -127,30 +128,34 @@ export default function Dashboard({ kpis, documentAlerts }: DashboardProps) {
                                     return (
                                         <li
                                             key={`${alert.kind}-${alert.subject}-${alert.label}-${index}`}
-                                            className="flex items-center justify-between gap-4 py-3 text-sm"
                                         >
-                                            <div className="flex min-w-0 flex-col">
-                                                <span className="font-medium">{alert.label}</span>
-                                                <span className="truncate text-muted-foreground">
-                                                    {alert.subject}
-                                                </span>
-                                            </div>
-                                            <div className="flex flex-col items-end gap-1 text-right">
-                                                <Badge
-                                                    variant={
-                                                        formatted.tone === 'destructive'
-                                                            ? 'destructive'
-                                                            : formatted.tone === 'warning'
-                                                              ? 'secondary'
-                                                              : 'outline'
-                                                    }
-                                                >
-                                                    {formatted.text}
-                                                </Badge>
-                                                <span className="text-xs text-muted-foreground">
-                                                    {formatDueDate(alert.due_date)}
-                                                </span>
-                                            </div>
+                                            <Link
+                                                href={alert.link}
+                                                className="-mx-2 flex items-center justify-between gap-4 rounded-md px-2 py-3 text-sm transition-colors hover:bg-muted/50"
+                                            >
+                                                <div className="flex min-w-0 flex-col">
+                                                    <span className="font-medium">{alert.label}</span>
+                                                    <span className="truncate text-muted-foreground">
+                                                        {alert.subject}
+                                                    </span>
+                                                </div>
+                                                <div className="flex flex-col items-end gap-1 text-right">
+                                                    <Badge
+                                                        variant={
+                                                            formatted.tone === 'destructive'
+                                                                ? 'destructive'
+                                                                : formatted.tone === 'warning'
+                                                                  ? 'secondary'
+                                                                  : 'outline'
+                                                        }
+                                                    >
+                                                        {formatted.text}
+                                                    </Badge>
+                                                    <span className="text-xs text-muted-foreground">
+                                                        {formatDueDate(alert.due_date)}
+                                                    </span>
+                                                </div>
+                                            </Link>
                                         </li>
                                     );
                                 })}
