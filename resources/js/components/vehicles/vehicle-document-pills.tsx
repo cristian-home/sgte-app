@@ -64,7 +64,9 @@ function statusFor(dueDate: string | null, todayMs: number): DocumentStatus {
     return 'ok';
 }
 
-function variantFor(status: DocumentStatus): 'destructive' | 'secondary' | 'outline' {
+function variantFor(
+    status: DocumentStatus,
+): 'destructive' | 'secondary' | 'outline' {
     switch (status) {
         case 'expired':
             return 'destructive';
@@ -75,7 +77,11 @@ function variantFor(status: DocumentStatus): 'destructive' | 'secondary' | 'outl
     }
 }
 
-function tooltipFor(label: string, dueDate: string | null, status: DocumentStatus): string {
+function tooltipFor(
+    label: string,
+    dueDate: string | null,
+    status: DocumentStatus,
+): string {
     const parsed = parseDueDate(dueDate);
     if (parsed === null) {
         return `${label} sin registrar`;

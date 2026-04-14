@@ -63,12 +63,15 @@ export default function UsersEdit({
                         <form onSubmit={submit} className="space-y-4">
                             <div className="space-y-2">
                                 <Label htmlFor="name">
-                                    Nombre <span className="text-destructive">*</span>
+                                    Nombre{' '}
+                                    <span className="text-destructive">*</span>
                                 </Label>
                                 <Input
                                     id="name"
                                     value={data.name}
-                                    onChange={(e) => setData('name', e.target.value)}
+                                    onChange={(e) =>
+                                        setData('name', e.target.value)
+                                    }
                                     required
                                 />
                                 {errors.name && (
@@ -79,13 +82,16 @@ export default function UsersEdit({
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="email">
-                                    Correo <span className="text-destructive">*</span>
+                                    Correo{' '}
+                                    <span className="text-destructive">*</span>
                                 </Label>
                                 <Input
                                     id="email"
                                     type="email"
                                     value={data.email}
-                                    onChange={(e) => setData('email', e.target.value)}
+                                    onChange={(e) =>
+                                        setData('email', e.target.value)
+                                    }
                                     required
                                 />
                                 {errors.email && (
@@ -114,7 +120,8 @@ export default function UsersEdit({
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="role">
-                                    Rol <span className="text-destructive">*</span>
+                                    Rol{' '}
+                                    <span className="text-destructive">*</span>
                                 </Label>
                                 <Select
                                     value={data.role}

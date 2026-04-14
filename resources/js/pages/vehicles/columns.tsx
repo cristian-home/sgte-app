@@ -25,9 +25,7 @@ const statusLabels: Record<string, string> = {
     retired: 'Retirado',
 };
 
-function statusVariant(
-    status: string,
-): 'default' | 'secondary' | 'outline' {
+function statusVariant(status: string): 'default' | 'secondary' | 'outline' {
     switch (status) {
         case 'active':
             return 'default';
@@ -47,7 +45,9 @@ function ownerLabel(vehicle: Vehicle): string {
         return '—';
     }
     if (tp.is_natural_person) {
-        return `${tp.first_name ?? ''} ${tp.first_lastname ?? ''}`.trim() || '—';
+        return (
+            `${tp.first_name ?? ''} ${tp.first_lastname ?? ''}`.trim() || '—'
+        );
     }
     return tp.company_name ?? '—';
 }
@@ -85,8 +85,7 @@ export const columns: ColumnDef<Vehicle, unknown>[] = [
         accessorKey: 'type',
         meta: { label: 'Tipo' },
         header: 'Tipo',
-        cell: ({ row }) =>
-            typeLabels[row.original.type] ?? row.original.type,
+        cell: ({ row }) => typeLabels[row.original.type] ?? row.original.type,
     },
     {
         id: 'propietario',

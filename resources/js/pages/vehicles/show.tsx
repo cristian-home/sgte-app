@@ -19,26 +19,44 @@ import vehicles from '@/routes/vehicles';
 import type { BreadcrumbItem } from '@/types';
 import type { Service, Vehicle } from '@/types/models';
 
-interface ShowVehicle extends Vehicle {
-    municipality?:
-        | {
-              id: number;
-              name: string;
-              department_id: number;
-              department?: { id: number; name: string };
-          }
-        | null;
-    third_party?:
-        | {
-              id: number;
-              identification_number: string;
-              first_name: string | null;
-              first_lastname: string | null;
-              company_name: string | null;
-              is_natural_person: boolean;
-          }
-        | null;
-}
+// Local shape — does NOT extend Vehicle because the global Vehicle
+// type uses `relation?: T` (undefined-only), while the show payload
+// can return `null` for absent relationships. Picking the relevant
+// scalar fields keeps both compatible without fighting the typings.
+type ShowVehicle = Pick<
+    Vehicle,
+    | 'id'
+    | 'internal_code'
+    | 'plate'
+    | 'mobile_number'
+    | 'brand'
+    | 'line'
+    | 'model_year'
+    | 'type'
+    | 'engine_number'
+    | 'chassis_number'
+    | 'capacity'
+    | 'is_third_party'
+    | 'soat_due_date'
+    | 'rtm_due_date'
+    | 'operation_card_due_date'
+    | 'status'
+> & {
+    municipality?: {
+        id: number;
+        name: string;
+        department_id: number;
+        department?: { id: number; name: string };
+    } | null;
+    third_party?: {
+        id: number;
+        identification_number: string;
+        first_name: string | null;
+        first_lastname: string | null;
+        company_name: string | null;
+        is_natural_person: boolean;
+    } | null;
+};
 
 const typeLabels: Record<string, string> = {
     bus: 'Bus',
@@ -64,7 +82,9 @@ function formatDate(date: string | null): string {
     // Accept both 'Y-m-d' and full ISO datetime strings — Eloquent's
     // default `date` cast serializer returns the long form, while
     // helper methods like Carbon::toDateString() return the short one.
-    const isoCandidate = /^\d{4}-\d{2}-\d{2}$/.test(date) ? `${date}T00:00:00` : date;
+    const isoCandidate = /^\d{4}-\d{2}-\d{2}$/.test(date)
+        ? `${date}T00:00:00`
+        : date;
     const parsed = new Date(isoCandidate);
     if (Number.isNaN(parsed.getTime())) {
         return '—';
@@ -72,9 +92,7 @@ function formatDate(date: string | null): string {
     return dateFormatter.format(parsed);
 }
 
-function statusVariant(
-    status: string,
-): 'default' | 'secondary' | 'outline' {
+function statusVariant(status: string): 'default' | 'secondary' | 'outline' {
     switch (status) {
         case 'active':
             return 'default';
@@ -91,7 +109,9 @@ function ownerName(vehicle: ShowVehicle): string {
         return '—';
     }
     if (tp.is_natural_person) {
-        return `${tp.first_name ?? ''} ${tp.first_lastname ?? ''}`.trim() || '—';
+        return (
+            `${tp.first_name ?? ''} ${tp.first_lastname ?? ''}`.trim() || '—'
+        );
     }
     return tp.company_name ?? '—';
 }
@@ -105,10 +125,16 @@ function municipalityDisplay(vehicle: ShowVehicle): string {
     return m.name;
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+    label,
+    children,
+}: {
+    label: string;
+    children: React.ReactNode;
+}) {
     return (
         <div>
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+            <p className="text-xs tracking-wide text-muted-foreground uppercase">
                 {label}
             </p>
             <p className="font-medium">{children}</p>
@@ -135,7 +161,9 @@ function recentServiceClient(service: RecentServiceRow): string {
     const tp = service.contract?.third_party;
     if (!tp) return '—';
     if (tp.is_natural_person) {
-        return `${tp.first_name ?? ''} ${tp.first_lastname ?? ''}`.trim() || '—';
+        return (
+            `${tp.first_name ?? ''} ${tp.first_lastname ?? ''}`.trim() || '—'
+        );
     }
     return tp.company_name ?? '—';
 }
@@ -184,7 +212,8 @@ export default function VehiclesShow({
                             </div>
                             <div className="flex items-center gap-2">
                                 <Badge variant={statusVariant(vehicle.status)}>
-                                    {statusLabels[vehicle.status] ?? vehicle.status}
+                                    {statusLabels[vehicle.status] ??
+                                        vehicle.status}
                                 </Badge>
                                 <Button asChild size="sm" variant="outline">
                                     <Link href={vehicles.edit(vehicle.id).url}>
@@ -247,7 +276,7 @@ export default function VehiclesShow({
                             </Field>
                         </div>
                         <div>
-                            <p className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">
+                            <p className="mb-2 text-xs tracking-wide text-muted-foreground uppercase">
                                 Estado
                             </p>
                             <VehicleDocumentPills vehicle={vehicle} />
@@ -323,15 +352,21 @@ export default function VehiclesShow({
                                             <TableCell>
                                                 <Link
                                                     href={
-                                                        services.show(service.id).url
+                                                        services.show(
+                                                            service.id,
+                                                        ).url
                                                     }
                                                     className="text-primary hover:underline"
                                                 >
-                                                    {formatDate(service.service_date)}
+                                                    {formatDate(
+                                                        service.service_date,
+                                                    )}
                                                 </Link>
                                             </TableCell>
                                             <TableCell>
-                                                {recentServiceDriverName(service)}
+                                                {recentServiceDriverName(
+                                                    service,
+                                                )}
                                             </TableCell>
                                             <TableCell>
                                                 {recentServiceClient(service)}

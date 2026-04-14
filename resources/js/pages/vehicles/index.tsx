@@ -109,7 +109,8 @@ export default function VehiclesIndex({
         columns,
     });
 
-    const selectedMunicipalityId = activeFilters['municipality_id']?.[0] ?? null;
+    const selectedMunicipalityId =
+        activeFilters['municipality_id']?.[0] ?? null;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>

@@ -1,7 +1,13 @@
 import { Head, Link } from '@inertiajs/react';
 import { AlertTriangle, FileText, Truck, User, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes';
 import type { BreadcrumbItem } from '@/types';
@@ -50,15 +56,24 @@ function formatDueDate(isoDate: string | null): string {
     return dateFormatter.format(new Date(`${isoDate}T00:00:00`));
 }
 
-function formatDaysRemaining(days: number): { text: string; tone: 'destructive' | 'warning' | 'muted' } {
+function formatDaysRemaining(days: number): {
+    text: string;
+    tone: 'destructive' | 'warning' | 'muted';
+} {
     if (days < 0) {
-        return { text: `Vencido hace ${Math.abs(days)} día${Math.abs(days) === 1 ? '' : 's'}`, tone: 'destructive' };
+        return {
+            text: `Vencido hace ${Math.abs(days)} día${Math.abs(days) === 1 ? '' : 's'}`,
+            tone: 'destructive',
+        };
     }
     if (days === 0) {
         return { text: 'Vence hoy', tone: 'destructive' };
     }
     if (days <= 7) {
-        return { text: `Vence en ${days} día${days === 1 ? '' : 's'}`, tone: 'destructive' };
+        return {
+            text: `Vence en ${days} día${days === 1 ? '' : 's'}`,
+            tone: 'destructive',
+        };
     }
     return { text: `Vence en ${days} días`, tone: 'warning' };
 }
@@ -74,8 +89,16 @@ export default function Dashboard({ kpis, documentAlerts }: DashboardProps) {
                         title="Vehículos"
                         total={kpis.vehicles.total}
                         breakdown={[
-                            { label: 'Activos', value: kpis.vehicles.active, tone: 'success' },
-                            { label: 'Mantenimiento', value: kpis.vehicles.maintenance, tone: 'warning' },
+                            {
+                                label: 'Activos',
+                                value: kpis.vehicles.active,
+                                tone: 'success',
+                            },
+                            {
+                                label: 'Mantenimiento',
+                                value: kpis.vehicles.maintenance,
+                                tone: 'warning',
+                            },
                         ]}
                     />
                     <KpiCard
@@ -83,8 +106,16 @@ export default function Dashboard({ kpis, documentAlerts }: DashboardProps) {
                         title="Conductores"
                         total={kpis.drivers.total}
                         breakdown={[
-                            { label: 'Activos', value: kpis.drivers.active, tone: 'success' },
-                            { label: 'Inactivos', value: kpis.drivers.inactive, tone: 'muted' },
+                            {
+                                label: 'Activos',
+                                value: kpis.drivers.active,
+                                tone: 'success',
+                            },
+                            {
+                                label: 'Inactivos',
+                                value: kpis.drivers.inactive,
+                                tone: 'muted',
+                            },
                         ]}
                     />
                     <KpiCard
@@ -92,8 +123,16 @@ export default function Dashboard({ kpis, documentAlerts }: DashboardProps) {
                         title="Servicios hoy"
                         total={kpis.services_today.total}
                         breakdown={[
-                            { label: 'Abiertos', value: kpis.services_today.open, tone: 'warning' },
-                            { label: 'Cerrados', value: kpis.services_today.closed, tone: 'success' },
+                            {
+                                label: 'Abiertos',
+                                value: kpis.services_today.open,
+                                tone: 'warning',
+                            },
+                            {
+                                label: 'Cerrados',
+                                value: kpis.services_today.closed,
+                                tone: 'success',
+                            },
                         ]}
                     />
                     <KpiCard
@@ -101,7 +140,11 @@ export default function Dashboard({ kpis, documentAlerts }: DashboardProps) {
                         title="Facturas pendientes"
                         total={kpis.invoices_pending.total}
                         breakdown={[
-                            { label: 'Vencidas', value: kpis.invoices_pending.overdue, tone: 'destructive' },
+                            {
+                                label: 'Vencidas',
+                                value: kpis.invoices_pending.overdue,
+                                tone: 'destructive',
+                            },
                         ]}
                     />
                 </div>
@@ -109,11 +152,15 @@ export default function Dashboard({ kpis, documentAlerts }: DashboardProps) {
                 <Card>
                     <CardHeader>
                         <div className="flex items-center gap-2">
-                            <AlertTriangle className="h-5 w-5 text-amber-500" aria-hidden />
+                            <AlertTriangle
+                                className="h-5 w-5 text-amber-500"
+                                aria-hidden
+                            />
                             <CardTitle>Alertas de documentos</CardTitle>
                         </div>
                         <CardDescription>
-                            Documentos vencidos o por vencer en los próximos 30 días.
+                            Documentos vencidos o por vencer en los próximos 30
+                            días.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -124,7 +171,9 @@ export default function Dashboard({ kpis, documentAlerts }: DashboardProps) {
                         ) : (
                             <ul className="divide-y divide-border">
                                 {documentAlerts.map((alert, index) => {
-                                    const formatted = formatDaysRemaining(alert.days_remaining);
+                                    const formatted = formatDaysRemaining(
+                                        alert.days_remaining,
+                                    );
                                     return (
                                         <li
                                             key={`${alert.kind}-${alert.subject}-${alert.label}-${index}`}
@@ -134,7 +183,9 @@ export default function Dashboard({ kpis, documentAlerts }: DashboardProps) {
                                                 className="-mx-2 flex items-center justify-between gap-4 rounded-md px-2 py-3 text-sm transition-colors hover:bg-muted/50"
                                             >
                                                 <div className="flex min-w-0 flex-col">
-                                                    <span className="font-medium">{alert.label}</span>
+                                                    <span className="font-medium">
+                                                        {alert.label}
+                                                    </span>
                                                     <span className="truncate text-muted-foreground">
                                                         {alert.subject}
                                                     </span>
@@ -142,9 +193,11 @@ export default function Dashboard({ kpis, documentAlerts }: DashboardProps) {
                                                 <div className="flex flex-col items-end gap-1 text-right">
                                                     <Badge
                                                         variant={
-                                                            formatted.tone === 'destructive'
+                                                            formatted.tone ===
+                                                            'destructive'
                                                                 ? 'destructive'
-                                                                : formatted.tone === 'warning'
+                                                                : formatted.tone ===
+                                                                    'warning'
                                                                   ? 'secondary'
                                                                   : 'outline'
                                                         }
@@ -152,7 +205,9 @@ export default function Dashboard({ kpis, documentAlerts }: DashboardProps) {
                                                         {formatted.text}
                                                     </Badge>
                                                     <span className="text-xs text-muted-foreground">
-                                                        {formatDueDate(alert.due_date)}
+                                                        {formatDueDate(
+                                                            alert.due_date,
+                                                        )}
                                                     </span>
                                                 </div>
                                             </Link>
@@ -188,11 +243,16 @@ function KpiCard({
                     <CardTitle className="text-sm font-medium text-muted-foreground">
                         {title}
                     </CardTitle>
-                    <Icon className="h-5 w-5 text-muted-foreground" aria-hidden />
+                    <Icon
+                        className="h-5 w-5 text-muted-foreground"
+                        aria-hidden
+                    />
                 </div>
             </CardHeader>
             <CardContent>
-                <div className="text-3xl font-semibold tabular-nums">{total}</div>
+                <div className="text-3xl font-semibold tabular-nums">
+                    {total}
+                </div>
                 <div className="mt-2 flex flex-wrap gap-2">
                     {breakdown.map((item) => (
                         <Badge
