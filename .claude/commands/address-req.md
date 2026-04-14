@@ -106,61 +106,75 @@ For each task in the requirement document:
 
 ## PHASE 5: End-to-End Verification
 
-After all implementation and unit/feature tests pass, verify the functionality works end-to-end:
+After all implementation and per-task tests pass, verify the functionality works end-to-end across the four verification layers documented in `docs/requirements/_TEMPLATE.md`. Pest is the backend regression layer (you ran it incrementally during Phase 3, but you also rerun the full suite here). Laravel Dusk is the committable UI regression layer. Playwright MCP is for ephemeral interactive checks while debugging — it does NOT replace committable regression coverage. curl covers public API endpoints when applicable.
 
-### UI Features (Laravel Dusk)
+### 1. Backend regression — Pest feature tests
 
-If the requirement involves UI pages or components, write and run Laravel Dusk browser tests to verify both functional behavior and visual correctness:
+Run the full suite to catch any cross-cutting breakage from your changes:
 
-1. Ensure the database is seeded: `php artisan migrate:fresh --seed --no-interaction`
-2. Write Dusk tests in `tests/Browser/` that exercise the implemented UI flows.
-3. Use the super admin credentials from environment variables:
+```bash
+./vendor/bin/sail test --compact
+```
+
+The suite must finish green. If any test fails, fix the code (not the test) unless the test itself is wrong.
+
+### 2. UI regression — Laravel Dusk browser tests (REQUIRED for any user-facing UI change)
+
+If the requirement adds or meaningfully changes a user-facing page, write Dusk browser tests in `tests/Browser/` that exercise the implemented UI flows:
+
+1. Ensure the database is seeded: `php artisan migrate:fresh --seed --no-interaction` (or `migrate:fresh` without `--seed` if your test builds its own fixtures inline — preferred for smaller test surfaces).
+2. Use the super admin credentials from environment variables:
    - Email: `env('SUPER_ADMIN_USER')`
    - Password: `env('SUPER_ADMIN_PASSWORD')`
-4. Each Dusk test MUST verify **visual consistency** in addition to functional behavior:
-   - **No errors on screen**: Assert that no exception messages, stack traces, or error banners are visible on the page.
-   - **Key UI elements are visible and correct**: Assert that headings, labels, buttons, tables, and form fields are present and display the expected text.
-   - **Layout makes sense**: Assert that data is rendered in the correct sections (e.g., a table has the expected columns, a form has the expected fields).
-   - **Take screenshots** (`$browser->screenshot('descriptive-name')`) at key steps so visual output can be reviewed. Screenshots are saved to `tests/Browser/screenshots/`.
-5. Run Dusk tests: `php artisan dusk --filter=RelevantTest`
-6. If Dusk tests fail, fix the code and re-run.
+3. Each Dusk test MUST verify **visual consistency** in addition to functional behavior:
+   - **No errors on screen**: Assert that no exception messages, stack traces, or `[role="alert"]` banners are visible.
+   - **Key UI elements are visible and correct**: Assert that headings, labels, buttons, tables, and form fields are present with the expected Spanish text (with diacritics — `Vehículos`, `Información`, `Categoría`).
+   - **Layout makes sense**: Assert that data is rendered in the correct sections (a table has the expected columns, a form has the expected fields).
+   - **Take screenshots** (`$browser->screenshot('descriptive-name')`) at key steps. Screenshots are saved to `tests/Browser/screenshots/`.
+4. Run Dusk tests: `./vendor/bin/sail dusk --filter=RelevantTest`
+5. If Dusk tests fail, fix the code and re-run.
 
-### API Endpoints (curl)
+Dusk is currently disabled in CI but runs locally — it remains the project's committable UI regression mechanism.
 
-If the requirement involves API routes, verify them with `curl`:
+### 3. Interactive verification — Playwright MCP (optional)
+
+If you need to walk through a flow visually as a sanity check before declaring victory, the Playwright MCP is configured locally with a persistent browser profile. Use `mcp__playwright__browser_navigate`, `mcp__playwright__browser_snapshot` (prefer the accessibility tree over screenshots), and `mcp__laravel-boost__browser-logs` (for JS console errors). Reference users live at `admin@sgte.app`, `operator@sgte.app`, `driver@sgte.app`, `accounting@sgte.app` — all password `password`. This layer is ephemeral and is NOT a substitute for the Dusk + Pest regression coverage above.
+
+### 4. API endpoints — curl
+
+If the requirement adds or changes public API routes (not Inertia routes), verify them with `curl`:
 
 1. Ensure the database is seeded: `php artisan migrate:fresh --seed --no-interaction`
-2. Authenticate as super admin using the credentials from environment variables:
-   - Email: `env('SUPER_ADMIN_USER')`
-   - Password: `env('SUPER_ADMIN_PASSWORD')`
+2. Authenticate as super admin using the credentials from environment variables.
 3. Use `curl` to hit the API endpoints and verify responses (status codes, JSON structure, data).
 4. If responses are unexpected, fix the code and re-test.
 
-### Static Analysis & Build
+### 5. Static analysis & build
 
-Run the full verification pipeline:
+Run the full pipeline to catch anything the per-task commits missed:
 
 ```bash
-# 1. Run all tests
-php artisan test --compact
+# 1. Run all tests (already covered above, but rerun if you committed
+#    additional changes after Pest passed)
+./vendor/bin/sail test --compact
 
 # 2. PHP formatting
-vendor/bin/pint --dirty --format agent
+./vendor/bin/pint --dirty --format agent
 
 # 3. TypeScript type check
-npm run types
+./vendor/bin/sail npm run types
 
 # 4. ESLint
-npm run lint
+./vendor/bin/sail npm run lint
 
 # 5. Prettier
-npm run format:check
+./vendor/bin/sail npm run format:check
 
-# 6. Build (ensure no build errors)
-npm run build
+# 6. Build (ensure no build errors and the Vite manifest is up to date)
+./vendor/bin/sail npm run build
 ```
 
-If any step fails, fix the issue, commit the fix, and re-run verification.
+If any step fails, fix the issue, commit the fix, and re-run verification. Note that the project has a small set of pre-existing TypeScript errors in deferred Blueprint scaffold pages — those are tracked in the `project_blueprint_scaffolds_deferred` memory and are not blockers for unrelated work.
 
 ## PHASE 6: Summary
 
