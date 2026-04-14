@@ -140,7 +140,34 @@ test('document alerts include a navigation link', function () {
     expect($warnVehicle['link'])->toBe('/vehicles?filter[docs_status]=expiring_soon');
 
     $driverAlert = collect($payload)->firstWhere('kind', 'driver');
-    expect($driverAlert['link'])->toBe('/drivers');
+    expect($driverAlert['link'])->toBe('/drivers?filter[license_status]=expired');
+});
+
+test('driver alerts use license_status link symmetric with vehicles', function () {
+    $user = User::factory()->create();
+    $user->assignRole(Role::ADMIN->value);
+
+    Driver::factory()->create([
+        'first_name' => 'Pedro',
+        'first_lastname' => 'Ramírez',
+        'license_due_date' => Carbon::today()->subDays(3),
+    ]);
+
+    Driver::factory()->create([
+        'first_name' => 'Lucía',
+        'first_lastname' => 'Castro',
+        'license_due_date' => Carbon::today()->addDays(10),
+    ]);
+
+    actingAs($user);
+
+    $payload = get(route('dashboard'))->viewData('page')['props']['documentAlerts'];
+
+    $expiredDriver = collect($payload)->firstWhere(fn ($a) => $a['kind'] === 'driver' && str_contains($a['subject'], 'Pedro'));
+    expect($expiredDriver['link'])->toBe('/drivers?filter[license_status]=expired');
+
+    $warnDriver = collect($payload)->firstWhere(fn ($a) => $a['kind'] === 'driver' && str_contains($a['subject'], 'Lucía'));
+    expect($warnDriver['link'])->toBe('/drivers?filter[license_status]=expiring_soon');
 });
 
 test('drivers are redirected to the driver dashboard', function () {
