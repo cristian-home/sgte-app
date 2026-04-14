@@ -2,10 +2,10 @@
 name: vehicles-crud
 type: feat
 scope: vehicles
-status: pending
+status: completed
 priority: high
 created_date: 2026-04-13
-completed_date:
+completed_date: 2026-04-13
 srs_refs: ["REQ-004"]
 migration_strategy: new
 ---
@@ -28,20 +28,20 @@ The rebuild MUST reuse every existing piece (`VehicleController`, `VehicleForm`,
 
 ## Acceptance Criteria
 
-- [ ] **AC1**: WHEN an admin or operator navigates to `/vehicles` THEN the page renders a paginated `<DataTable>` (not a JSON dump) with columns: **Placa**, **Cód. Interno**, **Tipo**, **Propietario**, **Estado**, **Documentos**, **Acciones**.
-- [ ] **AC2**: WHEN a vehicle has at least one expired document (SOAT, RTM, or tarjeta de operación) THEN its row background is `bg-destructive/10` AND the corresponding pill in the **Documentos** column renders with the `destructive` Badge variant.
-- [ ] **AC3**: WHEN a vehicle has at least one document expiring within 30 days AND no expired document THEN its row background is `bg-amber-100/50` (light mode) / `bg-amber-900/20` (dark mode) AND the corresponding pill renders with the `secondary` (warning) Badge variant.
-- [ ] **AC4**: WHEN a vehicle has all three documents more than 30 days from expiry THEN its row background is unchanged AND all three pills render with the `outline` Badge variant.
-- [ ] **AC5**: WHEN the user applies the **Estado** filter (Activo / En Mantenimiento / Retirado) THEN only rows whose `vehicles.status` matches the selected value remain visible.
-- [ ] **AC6**: WHEN the user applies the **Municipio** filter (combobox of all municipalities) THEN only rows whose `vehicles.municipality_id` matches the selected value remain visible.
-- [ ] **AC7**: WHEN the user applies the **Documentos** filter with value `expired` THEN only rows with `docs_status = expired` are visible; WHEN the value is `expiring_soon` THEN only rows with `docs_status = expiring_soon` are visible; WHEN the value is `ok` THEN only rows with `docs_status = ok` are visible.
-- [ ] **AC8**: WHEN the user toggles any of the per-document boolean filters (`soat_expired`, `rtm_expired`, `operation_card_expired`) THEN the result set narrows to the specified expiry state. Per-document filters are presented in an "advanced filters" section of the filter bar.
-- [ ] **AC9**: WHEN the user clicks the **Crear Vehículo** action on the index THEN the existing `<VehicleCreateDialog />` modal opens. WHEN a successful submit occurs THEN the modal closes AND the index refreshes with the new row visible.
-- [ ] **AC10**: WHEN the user clicks the **Placa** link in any row THEN the app navigates to `/vehicles/{id}` AND the show page renders five sections in this order: **Header card** (placa + código interno + estado badge), **Información General**, **Documentos** (three due dates + days-to-expiry pills, reusing the same `<VehicleDocumentPills />` component), **Propietario** (Empresa propia or tercero card), **Servicios Recientes** (last 5 services for this vehicle).
-- [ ] **AC11**: WHEN the **Servicios Recientes** card has zero services THEN it renders an empty state message "Sin servicios registrados.".
-- [ ] **AC12**: WHEN a user clicks any row in the dashboard's **Alertas de Documentos** panel that corresponds to a vehicle (kind `vehicle`) THEN the app navigates to `/vehicles?filter[docs_status]=expired` (when the alert is for an expired document) or `/vehicles?filter[docs_status]=expiring_soon` (when the alert is within 30 days).
-- [ ] **AC13**: WHEN an unauthenticated user navigates to `/vehicles` or `/vehicles/{id}` THEN they are redirected to `/login`.
-- [ ] **AC14**: WHEN a driver or accounting user navigates to `/vehicles` or `/vehicles/{id}` THEN they receive a 403 Forbidden response (Driver / Accounting do NOT hold `VIEW_VEHICLES` after Phase A2).
+- [x] **AC1**: WHEN an admin or operator navigates to `/vehicles` THEN the page renders a paginated `<DataTable>` (not a JSON dump) with columns: **Placa**, **Cód. Interno**, **Tipo**, **Propietario**, **Estado**, **Documentos**, **Acciones**.
+- [x] **AC2**: WHEN a vehicle has at least one expired document (SOAT, RTM, or tarjeta de operación) THEN its row background is `bg-destructive/10` AND the corresponding pill in the **Documentos** column renders with the `destructive` Badge variant.
+- [x] **AC3**: WHEN a vehicle has at least one document expiring within 30 days AND no expired document THEN its row background is `bg-amber-100/50` (light mode) / `bg-amber-900/20` (dark mode) AND the corresponding pill renders with the `secondary` (warning) Badge variant.
+- [x] **AC4**: WHEN a vehicle has all three documents more than 30 days from expiry THEN its row background is unchanged AND all three pills render with the `outline` Badge variant.
+- [x] **AC5**: WHEN the user applies the **Estado** filter (Activo / En Mantenimiento / Retirado) THEN only rows whose `vehicles.status` matches the selected value remain visible.
+- [x] **AC6**: WHEN the user applies the **Municipio** filter (combobox of all municipalities) THEN only rows whose `vehicles.municipality_id` matches the selected value remain visible.
+- [x] **AC7**: WHEN the user applies the **Documentos** filter with value `expired` THEN only rows with `docs_status = expired` are visible; WHEN the value is `expiring_soon` THEN only rows with `docs_status = expiring_soon` are visible; WHEN the value is `ok` THEN only rows with `docs_status = ok` are visible.
+- [x] **AC8**: WHEN the user toggles any of the per-document boolean filters (`soat_expired`, `rtm_expired`, `operation_card_expired`) THEN the result set narrows to the specified expiry state. Per-document filters are presented in an "advanced filters" section of the filter bar.
+- [x] **AC9**: WHEN the user clicks the **Crear Vehículo** action on the index THEN the existing `<VehicleCreateDialog />` modal opens. WHEN a successful submit occurs THEN the modal closes AND the index refreshes with the new row visible.
+- [x] **AC10**: WHEN the user clicks the **Placa** link in any row THEN the app navigates to `/vehicles/{id}` AND the show page renders five sections in this order: **Header card** (placa + código interno + estado badge), **Información General**, **Documentos** (three due dates + days-to-expiry pills, reusing the same `<VehicleDocumentPills />` component), **Propietario** (Empresa propia or tercero card), **Servicios Recientes** (last 5 services for this vehicle).
+- [x] **AC11**: WHEN the **Servicios Recientes** card has zero services THEN it renders an empty state message "Sin servicios registrados.".
+- [x] **AC12**: WHEN a user clicks any row in the dashboard's **Alertas de Documentos** panel that corresponds to a vehicle (kind `vehicle`) THEN the app navigates to `/vehicles?filter[docs_status]=expired` (when the alert is for an expired document) or `/vehicles?filter[docs_status]=expiring_soon` (when the alert is within 30 days).
+- [x] **AC13**: WHEN an unauthenticated user navigates to `/vehicles` or `/vehicles/{id}` THEN they are redirected to `/login`.
+- [x] **AC14**: WHEN a driver or accounting user navigates to `/vehicles` or `/vehicles/{id}` THEN they receive a 403 Forbidden response (Driver / Accounting do NOT hold `VIEW_VEHICLES` after Phase A2).
 
 ## Technical Specification
 
@@ -120,14 +120,14 @@ After implementing this requirement, no `php artisan migrate` invocation is requ
 
 ### Backend
 
-- [ ] **Task B1**: Paginate `VehicleController@index` using `Request::perPage()`.
+- [x] **Task B1**: Paginate `VehicleController@index` using `Request::perPage()`.
   - Replace the trailing `->get()` call with `->paginate($request->perPage())` so the response is a `LengthAwarePaginator`.
   - Read the per-page default from the existing `Request::macro('perPage')` (ADR-006 §7) — call it as `$request->perPage()`.
   - Keep the existing `allowedFilters` and `allowedSorts` (`internal_code`, `plate`, `brand`, exact `type`, exact `municipality_id`, exact `is_third_party`, exact `status`).
   - Reference convention: `app/Http/Controllers/ServiceController.php@index`.
   - Update the Inertia render call so the page receives `vehicles` as `PaginatedData<Vehicle>` (matches `services/index.tsx`).
 
-- [ ] **Task B2**: Add the `docs_status` filter to `VehicleController@index`.
+- [x] **Task B2**: Add the `docs_status` filter to `VehicleController@index`.
   - Add a new `AllowedFilter::callback('docs_status', function ($query, $value) { ... })`.
   - Implement three branches:
     - `expired` → `$query->where(function ($q) { $q->whereDate('soat_due_date', '<', now()->toDateString()) ->orWhereDate('rtm_due_date', '<', now()->toDateString()) ->orWhereDate('operation_card_due_date', '<', now()->toDateString()); })`
@@ -135,17 +135,17 @@ After implementing this requirement, no `php artisan migrate` invocation is requ
     - `ok` → all three documents `> today+30`.
   - Reject any other value via `abort(422)` or by simply ignoring it (prefer ignoring).
 
-- [ ] **Task B3**: Add per-document boolean filters to `VehicleController@index`.
+- [x] **Task B3**: Add per-document boolean filters to `VehicleController@index`.
   - Add three `AllowedFilter::callback` entries: `soat_expired`, `rtm_expired`, `operation_card_expired`.
   - Each accepts a truthy value (`true`, `1`, `'true'`) and applies `whereDate('{column}', '<', now()->toDateString())`.
   - These compose with `docs_status` via AND. Document the composition behavior in the controller PHPDoc.
 
-- [ ] **Task B4**: Expand `VehicleController@show` to load relationships and recent services.
+- [x] **Task B4**: Expand `VehicleController@show` to load relationships and recent services.
   - Eager-load `municipality.department`, `thirdParty`.
   - Load the last 5 services for this vehicle ordered by `service_date` DESC, then `planned_start_time` DESC, with `driver:id,first_name,first_lastname` and `contract.thirdParty:id,company_name,first_name,first_lastname,is_natural_person`.
   - Pass them to the Inertia page as `vehicle` (full model) and `recentServices` (array).
 
-- [ ] **Task B5**: Update `DashboardController::buildDocumentAlerts` to include a navigation link.
+- [x] **Task B5**: Update `DashboardController::buildDocumentAlerts` to include a navigation link.
   - For each alert row, compute a `link` field:
     - When `kind === 'vehicle'` AND `days_remaining < 0` → `/vehicles?filter[docs_status]=expired`
     - When `kind === 'vehicle'` AND `days_remaining >= 0` → `/vehicles?filter[docs_status]=expiring_soon`
@@ -155,13 +155,13 @@ After implementing this requirement, no `php artisan migrate` invocation is requ
 
 ### Frontend
 
-- [ ] **Task F1**: Create `resources/js/components/vehicles/vehicle-document-pills.tsx`.
+- [x] **Task F1**: Create `resources/js/components/vehicles/vehicle-document-pills.tsx`.
   - Props: `{ vehicle: Pick<Vehicle, 'soat_due_date' | 'rtm_due_date' | 'operation_card_due_date'>, today?: string }` (`today` defaults to `new Date().toISOString().slice(0,10)`).
   - Renders three `<Badge>` pills labeled `SOAT`, `RTM`, `T.O.` in order.
   - Variant logic per pill: if `due_date == null || due_date < today` → `destructive` with a `!` suffix; else if `due_date <= today+30` → `secondary` with a `!` suffix; else → `outline`.
   - Each pill has a `title` attribute showing the actual due date in `es-CO` format (e.g. `"SOAT vence 15/05/2026"`).
 
-- [ ] **Task F2**: Create `resources/js/pages/vehicles/columns.tsx`.
+- [x] **Task F2**: Create `resources/js/pages/vehicles/columns.tsx`.
   - Export a `columns: ColumnDef<Vehicle, unknown>[]` array following `services/columns.tsx`.
   - Columns:
     1. `plate` — sortable header via `<DataTableColumnHeader />`, cell renders a `<Link>` to `vehicles.show(row.original.id).url` styled `text-primary hover:underline`.
@@ -172,7 +172,7 @@ After implementing this requirement, no `php artisan migrate` invocation is requ
     6. `documentos` (computed, `id: 'documentos'`) — header label "Documentos", cell renders `<VehicleDocumentPills vehicle={row.original} />`.
     7. `actions` — `<DataTableRowActions editUrl={vehicles.edit(row.original.id).url} onDelete={() => router.delete(vehicles.destroy(row.original.id).url, { preserveScroll: true })} />` wrapped in `<Can permission={Permission.DELETE_VEHICLES}>`.
 
-- [ ] **Task F3**: Rewrite `resources/js/pages/vehicles/index.tsx`.
+- [x] **Task F3**: Rewrite `resources/js/pages/vehicles/index.tsx`.
   - Replace the `<pre>` JSON dump with the `services/index.tsx` shape:
     - Import `DataTable`, `useServerTable`, `Permission`, `Can`, `columns`, `Vehicle`, `PaginatedData`, `FilterDefinition`.
     - Define `vehicleFilters: FilterDefinition[]` containing:
@@ -188,7 +188,7 @@ After implementing this requirement, no `php artisan migrate` invocation is requ
   - Type the page props as `{ vehicles: PaginatedData<Vehicle>, municipalities: MunicipalityOption[], thirdParties: ThirdPartyOption[] }`.
   - Reference convention: `resources/js/pages/services/index.tsx`.
 
-- [ ] **Task F4**: Rewrite `resources/js/pages/vehicles/show.tsx`.
+- [x] **Task F4**: Rewrite `resources/js/pages/vehicles/show.tsx`.
   - Five Card sections in this order:
     1. **Header card** — `<CardHeader>` with placa as `<CardTitle className="text-2xl font-mono">`, internal_code as `<CardDescription>`, and an estado `<Badge>` aligned right (use the same variant mapping as the index).
     2. **Información General** — two-column grid: Marca, Línea, Modelo (model_year), Tipo, Capacidad, Número Móvil, Número de Motor, Número de Chasis, Municipio (`municipality.name + ', ' + municipality.department.name`).
@@ -199,20 +199,20 @@ After implementing this requirement, no `php artisan migrate` invocation is requ
   - Breadcrumbs: `[{ title: 'Vehículos', href: vehicles.index().url }, { title: vehicle.plate, href: '#' }]`.
   - Reference convention: `resources/js/pages/services/show.tsx`.
 
-- [ ] **Task F5**: Add row tinting support to `<DataTable>`.
+- [x] **Task F5**: Add row tinting support to `<DataTable>`.
   - Inspect `resources/js/components/data-table/data-table.tsx`. If it doesn't already accept a `getRowClassName?: (row: Row<T>) => string | undefined` prop, add one.
   - Plumb the prop through the `<TableRow>` map so each row can receive an extra className.
   - **Backwards-compatible**: when the prop is absent, behavior is unchanged (no class added).
   - Update the `services/index.tsx` invocation? **No** — leave it unchanged; only the new vehicles index uses the new prop.
 
-- [ ] **Task F6**: Make dashboard alert rows clickable in `resources/js/pages/dashboard.tsx`.
+- [x] **Task F6**: Make dashboard alert rows clickable in `resources/js/pages/dashboard.tsx`.
   - Read the new `link` field from each alert row.
   - Wrap the `<li>` content in a `<Link href={alert.link}>` from `@inertiajs/react`. The hover state SHOULD give visual feedback (`hover:bg-muted/50` or similar).
   - Update the `DocumentAlert` TypeScript interface in `dashboard.tsx` to include `link: string`.
 
 ### Tests
 
-- [ ] **Task T1 (Pest, backend)**: Add to `tests/Feature/Http/Controllers/VehicleControllerTest.php`:
+- [x] **Task T1 (Pest, backend)**: Add to `tests/Feature/Http/Controllers/VehicleControllerTest.php`:
   - `test('index returns paginated payload')` — assert `vehicles.data` is an array, `vehicles.meta.per_page === 15` (the default).
   - `test('index filters by docs_status expired')` — seed 3 vehicles: one with expired SOAT, one with expiring RTM (within 30 days), one with everything > 60 days out. GET `/vehicles?filter[docs_status]=expired`, assert only the first vehicle is in the response.
   - `test('index filters by docs_status expiring_soon')` — same fixture, GET `?filter[docs_status]=expiring_soon`, assert only the second vehicle is in the response.
@@ -221,16 +221,16 @@ After implementing this requirement, no `php artisan migrate` invocation is requ
   - `test('per-document filters compose with docs_status')` — GET `?filter[docs_status]=expired&filter[rtm_expired]=true`, assert the response contains only vehicles that are both globally expired AND specifically RTM-expired.
   - Reference convention: `tests/Feature/Http/Controllers/ServiceControllerTest.php` for filter coverage.
 
-- [ ] **Task T2 (Pest, backend)**: Add to `tests/Feature/Http/Controllers/VehicleControllerTest.php`:
+- [x] **Task T2 (Pest, backend)**: Add to `tests/Feature/Http/Controllers/VehicleControllerTest.php`:
   - `test('show returns vehicle with relationships and recent services')` — seed a vehicle, attach a municipality + third_party, and create 7 services for the vehicle. GET `/vehicles/{id}`, assert the Inertia payload's `recentServices` is an array of length 5, ordered by `service_date` DESC, and that `vehicle.municipality.department.name` is present.
   - `test('show returns empty recentServices when none exist')` — same setup without services, assert `recentServices` is an empty array.
 
-- [ ] **Task T3 (Pest, backend)**: Add to `tests/Feature/DashboardTest.php`:
+- [x] **Task T3 (Pest, backend)**: Add to `tests/Feature/DashboardTest.php`:
   - `test('document alerts include a navigation link')` — seed a vehicle with expired SOAT and a driver with expired license. GET `/dashboard` as admin. Assert each alert row in the `documentAlerts` array has a `link` field. Assert the vehicle alert's link is `/vehicles?filter[docs_status]=expired` and the driver alert's link is `/drivers`.
 
-- [ ] **Task T4 (Pest, backend)**: Update existing `VehicleControllerTest` tests that hit the index to match the new `PaginatedData` shape if they currently assume `->get()` returns a flat array. Run `./vendor/bin/sail test --compact --filter=VehicleControllerTest` to find and fix the regressions.
+- [x] **Task T4 (Pest, backend)**: Update existing `VehicleControllerTest` tests that hit the index to match the new `PaginatedData` shape if they currently assume `->get()` returns a flat array. Run `./vendor/bin/sail test --compact --filter=VehicleControllerTest` to find and fix the regressions.
 
-- [ ] **Task T5 (Dusk, UI regression)**: Create `tests/Browser/Vehicles/IndexRendersAndFiltersExpiredTest.php`:
+- [x] **Task T5 (Dusk, UI regression)**: Create `tests/Browser/Vehicles/IndexRendersAndFiltersExpiredTest.php`:
   - Login as admin (use `env('SUPER_ADMIN_USER')` / `env('SUPER_ADMIN_PASSWORD')`).
   - Seed at least 3 vehicles via `Vehicle::factory()` with mixed expiry states.
   - Visit `/vehicles`. Assert page title contains `Vehículos`, no `[role="alert"]` is visible, and the table headers contain the Spanish strings `Placa`, `Cód. Interno`, `Tipo`, `Propietario`, `Estado`, `Documentos`.
@@ -238,7 +238,7 @@ After implementing this requirement, no `php artisan migrate` invocation is requ
   - Assert at least one row is visible and that row has the destructive tint class (`bg-destructive/10`).
   - Take a screenshot at the initial load and after filter applied.
 
-- [ ] **Task T6 (Dusk, UI regression)**: Create `tests/Browser/Vehicles/DashboardCrossLinkToFilteredIndexTest.php`:
+- [x] **Task T6 (Dusk, UI regression)**: Create `tests/Browser/Vehicles/DashboardCrossLinkToFilteredIndexTest.php`:
   - Login as admin.
   - Seed a vehicle with an expired SOAT.
   - Visit `/dashboard`. Assert the **Alertas de Documentos** card is visible.
@@ -247,7 +247,7 @@ After implementing this requirement, no `php artisan migrate` invocation is requ
   - Assert the matching row is visible with the destructive tint.
   - Take a screenshot at dashboard and at vehicles-after-click.
 
-- [ ] **Task T7 (Dusk, UI regression)**: Create `tests/Browser/Vehicles/ShowPageRendersAllSectionsTest.php`:
+- [x] **Task T7 (Dusk, UI regression)**: Create `tests/Browser/Vehicles/ShowPageRendersAllSectionsTest.php`:
   - Login as admin.
   - Seed a vehicle with a municipality, a third-party owner, and 5+ services.
   - Visit `/vehicles/{id}`.
@@ -255,7 +255,7 @@ After implementing this requirement, no `php artisan migrate` invocation is requ
   - Assert no `[role="alert"]` is visible.
   - Take a screenshot at top of page and after scroll-to `Documentos` (use `$browser->script('document.querySelector(...).scrollIntoView()')`).
 
-- [ ] **Task T8 (Dusk, UI regression)**: Create `tests/Browser/Vehicles/CreateAndOperatorAccessTest.php`:
+- [x] **Task T8 (Dusk, UI regression)**: Create `tests/Browser/Vehicles/CreateAndOperatorAccessTest.php`:
   - **Step 1 (admin)**: Login as admin. Visit `/vehicles`. Click `Crear Vehículo`, the `<VehicleCreateDialog />` modal should open. Fill the form with a unique placa (`TEST-${random}`) and required fields. Submit. Assert the modal closes and the new row appears in the index.
   - **Step 2 (operator)**: Logout. Login as operator (`operator@sgte.app` / `password`). Visit `/vehicles`, assert the table loads (no 403). Click the row-actions menu → Eliminar on the vehicle created in Step 1. Confirm the deletion. Assert the row disappears.
   - This test pins both the create flow AND the operator-can-delete behavior introduced in Phase A2.
@@ -288,11 +288,11 @@ Preferred flow:
 8. Logout. Login as driver. Navigate to `/vehicles` — verify a 403 page appears.
 9. Use `mcp__laravel-boost__browser-logs` to inspect any JS console errors during the flow.
 
-- [ ] Scenario 1: Admin sees the rebuilt index, applies docs_status filter, sees tinted rows.
-- [ ] Scenario 2: Admin clicks dashboard alert, lands on filtered vehicles index.
-- [ ] Scenario 3: Admin opens the show page and verifies all five sections render with real data.
-- [ ] Scenario 4: Operator can create + delete via the modal and the row-actions menu.
-- [ ] Scenario 5: Driver receives 403 on `/vehicles`.
+- [x] Scenario 1: Admin sees the rebuilt index, applies docs_status filter, sees tinted rows.
+- [x] Scenario 2: Admin clicks dashboard alert, lands on filtered vehicles index.
+- [x] Scenario 3: Admin opens the show page and verifies all five sections render with real data.
+- [x] Scenario 4: Operator can create + delete via the modal and the row-actions menu.
+- [x] Scenario 5: Driver receives 403 on `/vehicles`.
 
 ### 2. Backend regression — Pest feature tests (required)
 
