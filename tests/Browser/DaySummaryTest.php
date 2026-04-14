@@ -29,7 +29,7 @@ test('day summary page displays services table with expected columns', function 
     $this->browse(function (Browser $browser) use ($user): void {
         $browser->loginAs($user)
             ->visit('/day-summary')
-            ->waitForText('Resumen del Dia')
+            ->waitForText('Resumen del Día')
             ->assertSee('Placa')
             ->assertSee('Conductor/Proveedor')
             ->assertSee('Horario')
@@ -46,12 +46,12 @@ test('day summary page displays executive summary stats', function (): void {
     $this->browse(function (Browser $browser) use ($user): void {
         $browser->loginAs($user)
             ->visit('/day-summary')
-            ->waitForText('Resumen del Dia')
+            ->waitForText('Resumen del Día')
             ->assertSee('Total Servicios')
             ->assertSee('Cerrados')
             ->assertSee('Abiertos')
             ->assertSee('Con Novedades')
-            ->assertSee('Vehiculos 3ros')
+            ->assertSee('Vehículos 3ros')
             ->screenshot('day-summary-stats');
     });
 });
@@ -62,7 +62,7 @@ test('day summary page has export CSV button', function (): void {
     $this->browse(function (Browser $browser) use ($user): void {
         $browser->loginAs($user)
             ->visit('/day-summary')
-            ->waitForText('Resumen del Dia')
+            ->waitForText('Resumen del Día')
             ->assertSee('Exportar CSV')
             ->screenshot('day-summary-export');
     });
@@ -74,7 +74,7 @@ test('day summary page has day navigation arrows', function (): void {
     $this->browse(function (Browser $browser) use ($user): void {
         $browser->loginAs($user)
             ->visit('/day-summary?date=2026-03-06')
-            ->waitForText('Resumen del Dia')
+            ->waitForText('Resumen del Día')
             ->assertSee('Ver Gantt')
             ->screenshot('day-summary-navigation');
     });
@@ -86,7 +86,7 @@ test('day summary page shows no errors', function (): void {
     $this->browse(function (Browser $browser) use ($user): void {
         $browser->loginAs($user)
             ->visit('/day-summary')
-            ->waitForText('Resumen del Dia')
+            ->waitForText('Resumen del Día')
             ->assertDontSee('Error')
             ->assertDontSee('Exception')
             ->assertDontSee('Stack trace')

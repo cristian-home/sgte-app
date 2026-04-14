@@ -29,6 +29,16 @@ class ServiceSeeder extends Seeder
         $drivers = Driver::where('active', true)->get();
         $invoices = Invoice::all();
 
+        // Defensive guard: in environments where the initialization
+        // migration is skipped (notably `testing`) the catalog/master-
+        // data fixtures don't exist, so the modulo distribution below
+        // would crash with "Division by zero". Idempotent early return
+        // matches the rest of the seeder family (ContractSeeder,
+        // ServiceIncidentSeeder).
+        if ($contracts->isEmpty() || $vehicles->isEmpty() || $drivers->isEmpty()) {
+            return;
+        }
+
         $bogota = Municipality::where('code', '11001')->first();
         $zipaquira = Municipality::where('code', '25899')->first();
 
