@@ -44,7 +44,7 @@ Based on the user's description, analyze what information is needed and ask clar
 - What are the inputs and outputs?
 - Are there edge cases or error scenarios to handle?
 - Does it interact with existing modules? How?
-- Which parts need UI verification (Laravel Dusk) and which need API verification (curl)?
+- Which regression layers apply? Every backend change needs Pest feature tests (`tests/Feature/`); every user-facing UI change needs Laravel Dusk browser tests (`tests/Browser/`); public API endpoints also need curl examples. Playwright MCP is for interactive verification during development and does not replace committable regression coverage.
 
 ### 1.3 Technical Details
 
@@ -135,7 +135,7 @@ Before writing, verify:
 - [ ] Migration strategy is explicitly stated with reasoning
 - [ ] Dependencies are listed (or explicitly "None")
 - [ ] No ambiguous language — avoid "should", "maybe", "consider"; use "MUST", "SHALL", "WILL"
-- [ ] Verification section specifies Dusk tests for UI features and curl commands for API endpoints
+- [ ] Verification section covers all applicable layers: Playwright MCP scenarios for interactive checks, Pest feature tests for backend regression, Dusk browser tests for UI regression, and curl examples for API endpoints
 
 ### Task Granularity Guide
 
@@ -147,13 +147,17 @@ Tasks must be detailed enough for autonomous implementation. Each task should:
 - Include specific test scenarios for test tasks
 - Reference existing files to follow as convention examples
 
-Requirements MUST include a **Verification** section specifying:
-- **UI features**: Laravel Dusk browser tests in `tests/Browser/`. Super admin credentials from `env('SUPER_ADMIN_USER')` / `env('SUPER_ADMIN_PASSWORD')`. Run `php artisan migrate:fresh --seed --no-interaction` when a clean database is needed. Dusk tests MUST verify **visual consistency** — not just functional flows:
+Requirements MUST include a **Verification** section with the following four layers (use all that apply; follow the structure in `docs/requirements/_TEMPLATE.md`):
+
+- **Interactive (Playwright MCP)**: interactive scenarios the developer walks through during implementation. Use the reference users table (`admin@sgte.app`, `operator@sgte.app`, `driver@sgte.app`, `accounting@sgte.app`, all password `password`; super admin via `SUPER_ADMIN_USER` / `SUPER_ADMIN_PASSWORD`). Prefer `mcp__playwright__browser_snapshot` over screenshots. This layer is ephemeral and is NOT committable regression coverage.
+- **Backend regression (Pest)**: required whenever the requirement touches controllers, form requests, models, rules, services, jobs, or notifications. Feature tests in `tests/Feature/` asserting HTTP/Inertia contract, happy path, authorization 403s, validation errors, and edge cases. Run via `./vendor/bin/sail test --compact`.
+- **UI regression (Laravel Dusk)**: required whenever the requirement adds or meaningfully changes a user-facing page. Browser tests in `tests/Browser/`. Run `php artisan migrate:fresh --seed --no-interaction` when a clean database is needed. Dusk tests MUST verify **visual consistency** — not just functional flows:
   - Assert no error messages, exceptions, or error banners are visible on the page.
-  - Assert key UI elements (headings, labels, buttons, tables, form fields) are present with the expected text.
+  - Assert key UI elements (headings, labels, buttons, tables, form fields) are present with the expected Spanish text.
   - Assert layout correctness (correct columns in tables, correct fields in forms, data in the right sections).
   - Take screenshots at key steps for visual review.
-- **API endpoints**: curl commands to test responses. Same credentials for authentication.
+  Dusk is currently disabled in CI but runs locally via `./vendor/bin/sail dusk` — it is still the project's committable UI regression mechanism.
+- **API endpoints (curl)**: curl commands to test public API responses when the requirement adds or changes API routes. Same reference credentials for authentication.
 
 **Example of a GOOD task:**
 ```

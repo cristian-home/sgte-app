@@ -84,9 +84,11 @@ Specify which approach and why.
 
 ## Verification
 
-### UI (Playwright MCP)
+Verification has three distinct layers — use all of them that apply. Playwright MCP is for *interactive* development-time checks and does **not** replace committable regression coverage.
 
-UI changes are verified interactively with the Playwright MCP (see `CLAUDE.md` for setup). The MCP keeps a persistent browser profile in `.claude/playwright-profile/`, so the logged-in session survives between runs.
+### 1. Interactive verification — Playwright MCP
+
+UI changes are verified interactively with the Playwright MCP (see `CLAUDE.md` for setup). The MCP keeps a persistent browser profile in `.claude/playwright-profile/`, so the logged-in session survives between runs. This is ephemeral — nothing here is committed to the repo.
 
 Reference users (all password `password`, except super admin which reads `SUPER_ADMIN_USER` / `SUPER_ADMIN_PASSWORD` from `.env`):
 
@@ -109,13 +111,32 @@ Preferred flow:
 - [ ] Scenario 1: Navigate to page X and verify element Y is visible
 - [ ] Scenario 2: Fill form and verify submission succeeds
 
-### Automated regression (optional)
+### 2. Backend regression — Pest feature tests (required for any backend change)
 
-If the feature needs committable regression coverage, add Pest feature tests (`tests/Feature/`) and/or Laravel Dusk browser tests (`tests/Browser/`). Dusk is currently disabled in CI but the machinery works for local runs via `./vendor/bin/sail dusk`.
+Any requirement that touches controllers, form requests, models, rules, services, jobs, or notifications MUST ship with Pest feature tests in `tests/Feature/` asserting the HTTP / Inertia contract, happy path, and representative failure paths (authorization 403s, validation errors, edge cases).
 
-### API (curl)
+Run locally via `./vendor/bin/sail test --compact`. CI runs the full suite on every push.
 
-curl commands to verify API endpoints. Use the reference users above for authentication.
+- [ ] Feature test N: describe the scenario
+
+### 3. UI regression — Laravel Dusk browser tests (required for any user-facing UI change)
+
+Any requirement that adds or meaningfully changes a user-facing page MUST ship with Laravel Dusk browser tests in `tests/Browser/` asserting:
+
+- The page renders without error banners, exception traces, or visible error UI
+- Key elements (headings, labels, buttons, table columns, form fields, badges) appear with the expected Spanish copy
+- Layout is correct (right columns in tables, right fields in forms, data in the right sections)
+- Screenshots captured at key interaction steps for visual review
+
+Reference users and credentials are the same as the Playwright MCP table above. When a clean database is needed, run `php artisan migrate:fresh --seed --no-interaction` inside the Dusk test.
+
+Dusk is currently disabled in CI but runs locally via `./vendor/bin/sail dusk`. This is the project's committable regression mechanism for the UI; Playwright MCP does not replace it.
+
+- [ ] Dusk test N: describe the scenario
+
+### 4. API endpoints — curl (when applicable)
+
+For public API endpoints, include curl commands to verify responses. Use the reference users above for authentication.
 
 ```bash
 # Example: login and hit a protected endpoint
