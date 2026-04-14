@@ -17,12 +17,16 @@ import type { DocumentType, Municipality, ThirdParty } from '@/types/models';
 // ThirdParty type uses the `relation?: T` (undefined-only) shape.
 type ThirdPartyRow = ThirdParty & {
     document_type?: DocumentType | null;
-    municipality?: (Municipality & { department?: { id: number; name: string } }) | null;
+    municipality?:
+        | (Municipality & { department?: { id: number; name: string } })
+        | null;
 };
 
 function nameFor(tp: ThirdPartyRow): string {
     if (tp.is_natural_person) {
-        return `${tp.first_name ?? ''} ${tp.first_lastname ?? ''}`.trim() || '—';
+        return (
+            `${tp.first_name ?? ''} ${tp.first_lastname ?? ''}`.trim() || '—'
+        );
     }
     return tp.company_name ?? '—';
 }

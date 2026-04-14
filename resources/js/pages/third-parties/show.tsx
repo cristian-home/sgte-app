@@ -100,7 +100,12 @@ const vehicleStatusLabels: Record<string, string> = {
 
 function fullName(tp: ShowThirdParty): string {
     if (tp.is_natural_person) {
-        return [tp.first_name, tp.second_name, tp.first_lastname, tp.second_lastname]
+        return [
+            tp.first_name,
+            tp.second_name,
+            tp.first_lastname,
+            tp.second_lastname,
+        ]
             .filter(Boolean)
             .join(' ')
             .trim();
@@ -108,10 +113,16 @@ function fullName(tp: ShowThirdParty): string {
     return tp.company_name ?? '—';
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+    label,
+    children,
+}: {
+    label: string;
+    children: React.ReactNode;
+}) {
     return (
         <div>
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+            <p className="text-xs tracking-wide text-muted-foreground uppercase">
                 {label}
             </p>
             <p className="font-medium">{children}</p>
@@ -167,14 +178,18 @@ export default function ThirdPartiesShow({
                             <div className="flex items-center gap-2">
                                 <Badge
                                     variant={
-                                        thirdParty.active ? 'default' : 'outline'
+                                        thirdParty.active
+                                            ? 'default'
+                                            : 'outline'
                                     }
                                 >
                                     {thirdParty.active ? 'Activo' : 'Inactivo'}
                                 </Badge>
                                 <Button asChild size="sm" variant="outline">
                                     <Link
-                                        href={thirdParties.edit(thirdParty.id).url}
+                                        href={
+                                            thirdParties.edit(thirdParty.id).url
+                                        }
                                     >
                                         <Pencil className="mr-1 size-4" />
                                         Editar
@@ -213,7 +228,7 @@ export default function ThirdPartiesShow({
                                 )}
                         </div>
                         <div>
-                            <p className="mb-2 text-xs uppercase tracking-wide text-muted-foreground">
+                            <p className="mb-2 text-xs tracking-wide text-muted-foreground uppercase">
                                 Roles
                             </p>
                             <div className="flex flex-wrap gap-2">
@@ -256,8 +271,8 @@ export default function ThirdPartiesShow({
                                     ? `${thirdParty.municipality.name}${
                                           thirdParty.municipality.department
                                               ? ', ' +
-                                                thirdParty.municipality.department
-                                                    .name
+                                                thirdParty.municipality
+                                                    .department.name
                                               : ''
                                       }`
                                     : '—'}
@@ -304,7 +319,8 @@ export default function ThirdPartiesShow({
                                                 <TableCell className="font-mono">
                                                     <Link
                                                         href={
-                                                            vehicles.show(v.id).url
+                                                            vehicles.show(v.id)
+                                                                .url
                                                         }
                                                         className="text-primary hover:underline"
                                                     >
@@ -315,13 +331,15 @@ export default function ThirdPartiesShow({
                                                     {v.internal_code ?? '—'}
                                                 </TableCell>
                                                 <TableCell>
-                                                    {vehicleTypeLabels[v.type] ??
-                                                        v.type}
+                                                    {vehicleTypeLabels[
+                                                        v.type
+                                                    ] ?? v.type}
                                                 </TableCell>
                                                 <TableCell>
                                                     <Badge
                                                         variant={
-                                                            v.status === 'active'
+                                                            v.status ===
+                                                            'active'
                                                                 ? 'default'
                                                                 : 'outline'
                                                         }
@@ -367,7 +385,8 @@ export default function ThirdPartiesShow({
                                                 <TableCell className="font-mono">
                                                     <Link
                                                         href={
-                                                            contracts.show(c.id).url
+                                                            contracts.show(c.id)
+                                                                .url
                                                         }
                                                         className="text-primary hover:underline"
                                                     >
@@ -377,7 +396,7 @@ export default function ThirdPartiesShow({
                                                 <TableCell>
                                                     {c.contract_object}
                                                 </TableCell>
-                                                <TableCell className="whitespace-nowrap text-sm">
+                                                <TableCell className="text-sm whitespace-nowrap">
                                                     {formatDate(c.start_date)} →{' '}
                                                     {formatDate(c.end_date)}
                                                 </TableCell>
