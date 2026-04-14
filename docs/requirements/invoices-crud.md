@@ -2,10 +2,10 @@
 name: invoices-crud
 type: feat
 scope: invoices
-status: pending
+status: completed
 priority: high
 created_date: 2026-04-14
-completed_date:
+completed_date: 2026-04-14
 srs_refs: ["REQ-007", "REQ-011"]
 migration_strategy: new
 ---
@@ -32,36 +32,36 @@ This rebuild **re-uses `<ThirdPartyCombobox />`** (the primitive introduced by c
 
 ## Acceptance Criteria
 
-- [ ] **AC1**: WHEN an admin or accounting user navigates to `/invoices` THEN the page renders a paginated `<DataTable>` (not a JSON dump) with columns **Número**, **Cliente**, **Fecha Emisión**, **Valor Total**, **Estado**, **Acciones**.
-- [ ] **AC2**: WHEN a row renders THEN the **Número** cell shows `invoice.invoice_number` in font-mono and is a `<Link>` to `/invoices/{id}`.
-- [ ] **AC3**: WHEN a row renders THEN the **Cliente** cell shows the computed natural/legal name of `invoice.third_party` as a `<Link>` to `/third-parties/{third_party_id}`.
-- [ ] **AC4**: WHEN a row renders THEN the **Fecha Emisión** cell shows `issue_date` formatted via the shared `dateFormatter` (`es-CO`, `dd/mm/yyyy`).
-- [ ] **AC5**: WHEN a row renders THEN the **Valor Total** cell shows `total_value` formatted via `new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })` and is right-aligned with `tabular-nums`.
-- [ ] **AC6**: WHEN a row renders THEN the **Estado** cell shows a `<PaymentStatusPill />` keyed on `payment_status`:
+- [x] **AC1**: WHEN an admin or accounting user navigates to `/invoices` THEN the page renders a paginated `<DataTable>` (not a JSON dump) with columns **Número**, **Cliente**, **Fecha Emisión**, **Valor Total**, **Estado**, **Acciones**.
+- [x] **AC2**: WHEN a row renders THEN the **Número** cell shows `invoice.invoice_number` in font-mono and is a `<Link>` to `/invoices/{id}`.
+- [x] **AC3**: WHEN a row renders THEN the **Cliente** cell shows the computed natural/legal name of `invoice.third_party` as a `<Link>` to `/third-parties/{third_party_id}`.
+- [x] **AC4**: WHEN a row renders THEN the **Fecha Emisión** cell shows `issue_date` formatted via the shared `dateFormatter` (`es-CO`, `dd/mm/yyyy`).
+- [x] **AC5**: WHEN a row renders THEN the **Valor Total** cell shows `total_value` formatted via `new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })` and is right-aligned with `tabular-nums`.
+- [x] **AC6**: WHEN a row renders THEN the **Estado** cell shows a `<PaymentStatusPill />` keyed on `payment_status`:
     - `pending` → **Pendiente** (secondary Badge)
     - `paid` → **Pagado** (default Badge)
     - `overdue` → **Vencido!** (destructive Badge, exclamation suffix)
-- [ ] **AC7**: WHEN a row's status is `overdue` THEN the row is tinted with `bg-destructive/10 hover:bg-destructive/15`; WHEN the status is `pending` THEN the row is tinted with `bg-amber-100/60 hover:bg-amber-100/80 dark:bg-amber-900/20 dark:hover:bg-amber-900/30`; WHEN the status is `paid` THEN no tint is applied. Implemented via a `getRowClassName` prop passed to `<DataTable>`.
-- [ ] **AC8**: WHEN the user applies the **Estado** filter with value `pending`, `paid`, or `overdue` THEN only rows matching the enum remain. Implemented as `AllowedFilter::exact('payment_status')` on `InvoiceController@index`.
-- [ ] **AC9**: WHEN the user picks a customer from the `<ThirdPartyCombobox role="customer" />` rendered above the table THEN only invoices whose `third_party_id` matches remain. Implemented as `AllowedFilter::exact('third_party_id')`.
-- [ ] **AC10**: WHEN the user clicks the **Crear Factura** action on the index THEN a `<InvoiceCreateDialog />` modal opens. The modal contains the new `<InvoiceForm />` component and, on successful submit, closes AND the index refreshes with the new row visible.
-- [ ] **AC11**: WHEN the user navigates to `/invoices/create` directly THEN the standalone create page renders `<InvoiceForm />` (no `idPrefix`, no modal wrapper) with a Guardar / Cancelar action bar. Cancelar returns to `/invoices`.
-- [ ] **AC12**: WHEN the user navigates to `/invoices/{id}/edit` THEN the edit page renders `<InvoiceForm />` with the invoice's current values pre-filled AND an Actualizar / Cancelar action bar. The `<ThirdPartyCombobox />` inside the edit form receives `forceIncludeCustomer={[invoice.third_party]}` so a customer that has been flipped to `is_customer = false` STILL shows in the option list.
-- [ ] **AC13**: WHEN the user submits the create or update form AND `third_party_id` is empty THEN the request fails with a validation error on `third_party_id` ("El campo cliente es obligatorio." or Laravel's default message). WHEN `total_value` is `0`, negative, or missing THEN the request fails with a validation error on `total_value`. Enforced by the tightened `InvoiceStoreRequest` + `InvoiceUpdateRequest` rules.
-- [ ] **AC14**: WHEN the user clicks the **Número** link in any row THEN the app navigates to `/invoices/{id}` AND the show page renders **five** Card sections in this order:
+- [x] **AC7**: WHEN a row's status is `overdue` THEN the row is tinted with `bg-destructive/10 hover:bg-destructive/15`; WHEN the status is `pending` THEN the row is tinted with `bg-amber-100/60 hover:bg-amber-100/80 dark:bg-amber-900/20 dark:hover:bg-amber-900/30`; WHEN the status is `paid` THEN no tint is applied. Implemented via a `getRowClassName` prop passed to `<DataTable>`.
+- [x] **AC8**: WHEN the user applies the **Estado** filter with value `pending`, `paid`, or `overdue` THEN only rows matching the enum remain. Implemented as `AllowedFilter::exact('payment_status')` on `InvoiceController@index`.
+- [x] **AC9**: WHEN the user picks a customer from the `<ThirdPartyCombobox role="customer" />` rendered above the table THEN only invoices whose `third_party_id` matches remain. Implemented as `AllowedFilter::exact('third_party_id')`.
+- [x] **AC10**: WHEN the user clicks the **Crear Factura** action on the index THEN a `<InvoiceCreateDialog />` modal opens. The modal contains the new `<InvoiceForm />` component and, on successful submit, closes AND the index refreshes with the new row visible.
+- [x] **AC11**: WHEN the user navigates to `/invoices/create` directly THEN the standalone create page renders `<InvoiceForm />` (no `idPrefix`, no modal wrapper) with a Guardar / Cancelar action bar. Cancelar returns to `/invoices`.
+- [x] **AC12**: WHEN the user navigates to `/invoices/{id}/edit` THEN the edit page renders `<InvoiceForm />` with the invoice's current values pre-filled AND an Actualizar / Cancelar action bar. The `<ThirdPartyCombobox />` inside the edit form receives `forceIncludeCustomer={[invoice.third_party]}` so a customer that has been flipped to `is_customer = false` STILL shows in the option list.
+- [x] **AC13**: WHEN the user submits the create or update form AND `third_party_id` is empty THEN the request fails with a validation error on `third_party_id` ("El campo cliente es obligatorio." or Laravel's default message). WHEN `total_value` is `0`, negative, or missing THEN the request fails with a validation error on `total_value`. Enforced by the tightened `InvoiceStoreRequest` + `InvoiceUpdateRequest` rules.
+- [x] **AC14**: WHEN the user clicks the **Número** link in any row THEN the app navigates to `/invoices/{id}` AND the show page renders **five** Card sections in this order:
     1. **Header card** — `invoice_number` (font-mono title), customer name (description), `<PaymentStatusPill />`, Editar button.
     2. **Datos de la Factura** — Número (font-mono), Fecha de Emisión, a **big right-aligned Valor Total hero** (see AC15), and a secondary Estado row that hosts the "Marcar como pagado" action when applicable (see AC16).
     3. **Cliente** — customer computed name, `documentType.code + identification_number` in font-mono, "Ver tercero" Link to `/third-parties/{third_party_id}`.
     4. **Observaciones** — `notes` rendered with `whitespace-pre-wrap`, or the empty-state "Sin observaciones." when `notes` is null or empty.
     5. **Servicios Facturados** — a small `<Table>` with the last 5 services where `services.invoice_id = invoice.id`, ordered by `service_date` DESC, columns **Fecha** (Link to services.show), **Contrato** (Link to contracts.show, or em-dash when the service has no contract), **Vehículo** (plate), **Valor**. Empty state "Sin servicios facturados.".
-- [ ] **AC15**: WHEN the show page renders the Datos de la Factura card THEN the Valor Total renders as a dedicated right-aligned block with `text-3xl font-bold tabular-nums`, formatted via `Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })`. This is the visual focal point of the card — matches how invoices present on paper.
-- [ ] **AC16**: WHEN `invoice.payment_status === 'pending'` THEN a **"Marcar como pagado"** button appears next to the secondary Estado row on the show page. Clicking it fires `POST /invoices/{id}/mark-paid` (via Inertia `router.post`) and, on success, the page reloads with `payment_status === 'paid'` and the button disappears. WHEN `payment_status` is `paid` or `overdue` THEN the button is NOT rendered.
-- [ ] **AC17**: WHEN an unauthenticated user hits `POST /invoices/{id}/mark-paid` THEN the request returns 401. WHEN an authenticated user without `UPDATE_INVOICES` permission hits the endpoint THEN the request returns 403. WHEN the invoice is already `paid` or `overdue` THEN the endpoint returns 422 with a validation error explaining the invoice is not pending.
-- [ ] **AC18**: WHEN a service row inside the Servicios Facturados card has `unit_value` OR `quantity` null THEN the **Valor** cell renders an em-dash `—`. WHEN both are non-null THEN it renders `unit_value * quantity` formatted as COP currency.
-- [ ] **AC19**: WHEN an admin OR accounting user navigates to `/invoices` or `/invoices/{id}` THEN they receive 200 and can see the page. WHEN an operator OR driver OR unauthenticated user hits either route THEN they receive 401/403 (driver and operator do NOT hold `VIEW_INVOICES`).
-- [ ] **AC20**: WHEN an accounting user renders the index THEN the **Acciones** column shows the Editar action but NOT the Eliminar action — the existing `<Can permission={Permission.DELETE_INVOICES}>` wrapper on the `DataTableRowActions` delete button handles this. Admin users see both actions.
-- [ ] **AC21**: WHEN an accounting user clicks Crear Factura on the index AND submits a valid payload THEN the row appears in the index (parallel to admin's flow). WHEN accounting clicks Editar on a row THEN the edit page renders; submitting valid changes returns to the index with the row updated.
-- [ ] **AC22**: WHEN `npm run types` runs THEN the invoices pages contribute zero new errors (the four pages move OUT of the pre-existing deferred-Blueprint TypeScript error bucket tracked in project memory).
+- [x] **AC15**: WHEN the show page renders the Datos de la Factura card THEN the Valor Total renders as a dedicated right-aligned block with `text-3xl font-bold tabular-nums`, formatted via `Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })`. This is the visual focal point of the card — matches how invoices present on paper.
+- [x] **AC16**: WHEN `invoice.payment_status === 'pending'` THEN a **"Marcar como pagado"** button appears next to the secondary Estado row on the show page. Clicking it fires `POST /invoices/{id}/mark-paid` (via Inertia `router.post`) and, on success, the page reloads with `payment_status === 'paid'` and the button disappears. WHEN `payment_status` is `paid` or `overdue` THEN the button is NOT rendered.
+- [x] **AC17**: WHEN an unauthenticated user hits `POST /invoices/{id}/mark-paid` THEN the request returns 401. WHEN an authenticated user without `UPDATE_INVOICES` permission hits the endpoint THEN the request returns 403. WHEN the invoice is already `paid` or `overdue` THEN the endpoint returns 422 with a validation error explaining the invoice is not pending.
+- [x] **AC18**: WHEN a service row inside the Servicios Facturados card has `unit_value` OR `quantity` null THEN the **Valor** cell renders an em-dash `—`. WHEN both are non-null THEN it renders `unit_value * quantity` formatted as COP currency.
+- [x] **AC19**: WHEN an admin OR accounting user navigates to `/invoices` or `/invoices/{id}` THEN they receive 200 and can see the page. WHEN an operator OR driver OR unauthenticated user hits either route THEN they receive 401/403 (driver and operator do NOT hold `VIEW_INVOICES`).
+- [x] **AC20**: WHEN an accounting user renders the index THEN the **Acciones** column shows the Editar action but NOT the Eliminar action — the existing `<Can permission={Permission.DELETE_INVOICES}>` wrapper on the `DataTableRowActions` delete button handles this. Admin users see both actions.
+- [x] **AC21**: WHEN an accounting user clicks Crear Factura on the index AND submits a valid payload THEN the row appears in the index (parallel to admin's flow). WHEN accounting clicks Editar on a row THEN the edit page renders; submitting valid changes returns to the index with the row updated.
+- [x] **AC22**: WHEN `npm run types` runs THEN the invoices pages contribute zero new errors (the four pages move OUT of the pre-existing deferred-Blueprint TypeScript error bucket tracked in project memory).
 
 ## Technical Specification
 
@@ -142,7 +142,7 @@ The existing `<Can permission={Permission.DELETE_INVOICES}>` wrapper on the `Dat
 
 ### Backend
 
-- [ ] **Task B1**: Rewrite `InvoiceController@index` to paginate, eager-load, and accept the new filters.
+- [x] **Task B1**: Rewrite `InvoiceController@index` to paginate, eager-load, and accept the new filters.
   - Replace the trailing `->get()` with `->paginate($request->perPage())->withQueryString()`.
   - Add eager-loads: `'thirdParty:id,document_type_id,identification_number,is_natural_person,first_name,first_lastname,company_name,is_customer,is_provider'`, `'thirdParty.documentType:id,code,name'`.
   - `allowedFilters([ 'invoice_number', AllowedFilter::exact('payment_status'), AllowedFilter::exact('third_party_id') ])`.
@@ -150,17 +150,17 @@ The existing `<Can permission={Permission.DELETE_INVOICES}>` wrapper on the `Dat
   - Pass `thirdParties` (customers only, with documentType eager-loaded) via a new private `customerOptions()` method parallel to `ContractController::customerOptions()`.
   - Reference convention: `ContractController@index` after contracts-crud.
 
-- [ ] **Task B2**: Expand `InvoiceController@show` to load relationships + recent services.
+- [x] **Task B2**: Expand `InvoiceController@show` to load relationships + recent services.
   - Eager-load `thirdParty.documentType`.
   - Load `recentServices` as a separate query: last 5 `Service` records where `invoice_id = $invoice->id`, ordered by `service_date` DESC, with `->with(['vehicle:id,plate', 'contract:id,contract_number'])` and a `select(['id', 'service_date', 'service_status', 'vehicle_id', 'contract_id', 'unit_value', 'quantity', 'invoice_id'])`.
   - Pass them to the Inertia page as `invoice` (full model with relations) and `recentServices`.
   - Reference convention: `ContractController@show` after contracts-crud.
 
-- [ ] **Task B3**: Expand `InvoiceController@create` and `@edit` payloads.
+- [x] **Task B3**: Expand `InvoiceController@create` and `@edit` payloads.
   - `create()`: pass `thirdParties` (customers only, with documentType eager-loaded, via `customerOptions()`).
   - `edit()`: same as `create()`, AND eager-load `$invoice->load('thirdParty.documentType')` so the edit page can build the `forceInclude` array regardless of the customer's current `is_customer` flag.
 
-- [ ] **Task B4**: Add `InvoiceController@markPaid` and the new route.
+- [x] **Task B4**: Add `InvoiceController@markPaid` and the new route.
   - New method in `InvoiceController`:
     ```php
     public function markPaid(Request $request, Invoice $invoice): RedirectResponse
@@ -181,7 +181,7 @@ The existing `<Can permission={Permission.DELETE_INVOICES}>` wrapper on the `Dat
   - Register the route in `routes/web.php`: `Route::post('/invoices/{invoice}/mark-paid', [InvoiceController::class, 'markPaid'])->name('invoices.mark-paid');` placed immediately after the `Route::resource('invoices', ...)` registration so Wayfinder picks it up.
   - Run `php artisan wayfinder:generate` (or let the Vite plugin pick it up) — the frontend calls `InvoiceController.markPaid(id)` via the generated action function.
 
-- [ ] **Task B5**: Tighten `InvoiceStoreRequest` and `InvoiceUpdateRequest` validation rules.
+- [x] **Task B5**: Tighten `InvoiceStoreRequest` and `InvoiceUpdateRequest` validation rules.
   - `InvoiceStoreRequest::rules()`: change `third_party_id` from `['nullable', 'integer', 'exists:third_parties,id']` to `['required', 'integer', 'exists:third_parties,id']`. Change `total_value` from `['required', 'numeric', 'between:-9999999999.99,9999999999.99']` to `['required', 'numeric', 'min:0.01', 'max:9999999999.99']`.
   - Add a custom message: `messages()` returns `['third_party_id.required' => 'El cliente es obligatorio.', 'total_value.min' => 'El valor total debe ser mayor que cero.']`.
   - `InvoiceUpdateRequest::rules()`: same tightenings (check the file — if it currently duplicates the store rules verbatim, copy the same changes; if it has its own shape, adapt).
@@ -189,7 +189,7 @@ The existing `<Can permission={Permission.DELETE_INVOICES}>` wrapper on the `Dat
 
 ### Frontend — shared primitives
 
-- [ ] **Task F1**: Create `resources/js/components/invoices/payment-status-pill.tsx`.
+- [x] **Task F1**: Create `resources/js/components/invoices/payment-status-pill.tsx`.
   - Props: `{ invoice: { payment_status: string }, className?: string }`.
   - Renders a single `<Badge>` keyed on the enum value:
     - `pending` → `variant="secondary"` with text "Pendiente"
@@ -203,7 +203,7 @@ The existing `<Can permission={Permission.DELETE_INVOICES}>` wrapper on the `Dat
 
 ### Frontend — invoices-specific
 
-- [ ] **Task F2**: Create `resources/js/components/invoices/invoice-form.tsx`.
+- [x] **Task F2**: Create `resources/js/components/invoices/invoice-form.tsx`.
   - Flat single-column layout with a 2-col responsive grid (`md:grid-cols-2`).
   - Props: `{ data, setData, errors, thirdParties, idPrefix?, forceIncludeCustomer? }` where `thirdParties: ThirdPartyOption[]` is the customer list from the controller.
   - Field rows in this order:
@@ -214,13 +214,13 @@ The existing `<Can permission={Permission.DELETE_INVOICES}>` wrapper on the `Dat
   - All input ids are prefixed with `idPrefix` so the modal and standalone page can coexist.
   - Currency input: wrap the `<Input>` in a flex-row with a muted `"$"` prefix (`<span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>` + `className="pl-7"` on the Input). Reference convention: search the codebase for an existing currency input, or ship the wrapper inline inside `invoice-form.tsx`.
 
-- [ ] **Task F3**: Create `resources/js/components/invoices/invoice-create-dialog.tsx`.
+- [x] **Task F3**: Create `resources/js/components/invoices/invoice-create-dialog.tsx`.
   - Modal wrapper mirroring `contract-create-dialog.tsx`. Owns its own `useForm` with defaults: `invoice_number: ''`, `third_party_id: ''`, `total_value: ''`, `issue_date: ''`, `payment_status: 'pending'`, `notes: ''`.
   - Submits to `InvoiceController.store()`. On success: `reset()` + `onOpenChange(false)`.
   - Wraps `<InvoiceForm idPrefix="dlg" {...} />` inside a `<DialogContent>` sized `max-h-[calc(100vh-4rem)] flex flex-col px-0 sm:max-w-3xl`.
   - Submit button "Guardar"; cancel via `<DialogClose />`.
 
-- [ ] **Task F4**: Create `resources/js/pages/invoices/columns.tsx`.
+- [x] **Task F4**: Create `resources/js/pages/invoices/columns.tsx`.
   - Six `ColumnDef<InvoiceRow>` entries:
     1. `invoice_number` (`accessorKey`) — header "Número" (sortable), cell renders `<Link>` to `invoices.show(id).url` with `font-mono`.
     2. `cliente` (computed `id: 'cliente'`) — header "Cliente", cell renders the third-party computed name inside a `<Link>` to `/third-parties/{third_party_id}`. Em-dash when `third_party` is null.
@@ -230,7 +230,7 @@ The existing `<Can permission={Permission.DELETE_INVOICES}>` wrapper on the `Dat
     6. `actions` — `<DataTableRowActions editUrl={invoices.edit(id).url} onDelete={...} />` wrapped in `<Can permission={Permission.DELETE_INVOICES}>`.
   - Define a local `type InvoiceRow = Invoice & { third_party?: ThirdParty & { document_type?: DocumentType | null } | null }` using the `Pick<T> & relations` convention.
 
-- [ ] **Task F5**: Rewrite `resources/js/pages/invoices/index.tsx`.
+- [x] **Task F5**: Rewrite `resources/js/pages/invoices/index.tsx`.
   - Replace the Blueprint body with the services/vehicles/drivers/third-parties/contracts index pattern.
   - Define `invoiceFilters: FilterDefinition[]`:
     - `payment_status` → "Estado" with options `pending / paid / overdue` (labels "Pendiente" / "Pagado" / "Vencido").
@@ -240,7 +240,7 @@ The existing `<Can permission={Permission.DELETE_INVOICES}>` wrapper on the `Dat
   - Type the page props as `{ invoices: PaginatedData<InvoiceRow>, thirdParties: ThirdPartyOption[] }`.
   - Reference convention: `resources/js/pages/contracts/index.tsx`.
 
-- [ ] **Task F6**: Rewrite `resources/js/pages/invoices/show.tsx`.
+- [x] **Task F6**: Rewrite `resources/js/pages/invoices/show.tsx`.
   - **Five Card sections** in the order listed in AC14:
     1. Header card (font-mono title + customer description + `<PaymentStatusPill />` + Editar button).
     2. Datos de la Factura with the big right-aligned Valor Total hero (`text-3xl font-bold tabular-nums`) and the secondary Estado row hosting the "Marcar como pagado" button when `payment_status === 'pending'`.
@@ -252,50 +252,50 @@ The existing `<Can permission={Permission.DELETE_INVOICES}>` wrapper on the `Dat
   - Breadcrumbs: `[{ title: 'Facturas', href: invoices.index().url }, { title: invoice.invoice_number, href: '#' }]`.
   - Reference convention: `resources/js/pages/contracts/show.tsx`.
 
-- [ ] **Task F7**: Rewrite `resources/js/pages/invoices/create.tsx`.
+- [x] **Task F7**: Rewrite `resources/js/pages/invoices/create.tsx`.
   - `useForm` with default-empty values (`payment_status: 'pending'` by default).
   - Render `<InvoiceForm {...} thirdParties={thirdParties} />` with a Guardar / Cancelar action bar.
   - Type props as `{ thirdParties: ThirdPartyOption[] }`.
 
-- [ ] **Task F8**: Rewrite `resources/js/pages/invoices/edit.tsx`.
+- [x] **Task F8**: Rewrite `resources/js/pages/invoices/edit.tsx`.
   - `useForm` pre-filled from the `invoice` prop (convert `total_value` decimal string to a form-friendly string, use `parseDueDate` + `toDateInput` helper parallel to `contracts/edit.tsx`).
   - Render `<InvoiceForm {...} thirdParties={thirdParties} forceIncludeCustomer={invoice.third_party ? [invoice.third_party] : []} />` with an Actualizar / Cancelar action bar.
   - Breadcrumbs: `[{ title: 'Facturas', href: ... }, { title: invoice.invoice_number, href: show }, { title: 'Editar', href: edit }]`.
 
 ### Tests
 
-- [ ] **Task T1 (Pest, backend — index + filters)**: Add to `tests/Feature/Http/Controllers/InvoiceControllerTest.php`:
+- [x] **Task T1 (Pest, backend — index + filters)**: Add to `tests/Feature/Http/Controllers/InvoiceControllerTest.php`:
   - `test('index returns paginated payload with third-party relations')` — seed 3 invoices with mixed customers; assert `invoices.data` is array, `per_page`, `current_page`, `total` exist, each row has `third_party.document_type` loaded.
   - `test('index passes customer options for the create modal and the combobox filter')` — assert the `thirdParties` prop contains only `is_customer = true` entries, each with `document_type` loaded.
   - `test('index filters by payment_status = pending / paid / overdue')` — seed 3 invoices (one per state); apply each filter; assert only the matching row remains.
   - `test('index filters by third_party_id exact')` — seed 2 invoices with different customers; apply filter; assert only one row remains.
   - `test('index defaults to -issue_date sort')` — seed 3 invoices with different dates; assert the latest issue_date is first in the default payload.
 
-- [ ] **Task T2 (Pest, backend — show)**:
+- [x] **Task T2 (Pest, backend — show)**:
   - `test('show returns invoice with thirdParty.documentType loaded')` — assert `invoice.third_party.document_type.code` is present.
   - `test('show returns recent services ordered by service_date desc')` — seed an invoice with 7 services; assert `recentServices` length is 5 AND the first row has the latest `service_date`.
   - `test('show returns empty recent services when the invoice has none')` — assert the array is empty.
 
-- [ ] **Task T3 (Pest, backend — store + update validation)**:
+- [x] **Task T3 (Pest, backend — store + update validation)**:
   - `test('store rejects null third_party_id')` — submit without `third_party_id`; assert 422 with a validation error.
   - `test('store rejects total_value <= 0')` — submit with `total_value: 0`; assert 422. Same with `total_value: -100`.
   - `test('store accepts total_value = 0.01')` — minimum edge case, assert 201.
   - `test('update rejects null third_party_id')` — parallel regression.
   - `test('update allows keeping the same invoice_number')` — regression for the `Rule::unique->ignore()` change.
 
-- [ ] **Task T4 (Pest, backend — markPaid endpoint)**:
+- [x] **Task T4 (Pest, backend — markPaid endpoint)**:
   - `test('markPaid transitions pending invoices to paid')` — seed a pending invoice; hit `POST /invoices/{id}/mark-paid`; assert 302 + DB row updated + activity log entry created.
   - `test('markPaid rejects already-paid invoices with 422')` — seed a paid invoice; hit the endpoint; assert 422 + validation error under `payment_status`.
   - `test('markPaid rejects overdue invoices with 422')` — same as above for overdue.
   - `test('markPaid returns 403 for operator and driver')` — seed both; hit the endpoint; assert 403.
   - `test('markPaid returns 403 for accounting is WRONG')` — accounting HAS `UPDATE_INVOICES`, so mark-paid works for them. Pin this with a positive test: `test('accounting can mark invoices as paid')`.
 
-- [ ] **Task T5 (Pest, backend — authorization 403s)**:
+- [x] **Task T5 (Pest, backend — authorization 403s)**:
   - `test('operator cannot view invoices')` — assert 403 on index + show.
   - `test('driver cannot view invoices')` — assert 403 on index + show.
   - `test('accounting cannot delete invoices')` — assert 403 on DELETE.
 
-- [ ] **Task T6 (Dusk, UI regression)**: Create `tests/Browser/InvoicesIndexAndShowTest.php` with four scenarios in a single consolidated file:
+- [x] **Task T6 (Dusk, UI regression)**: Create `tests/Browser/InvoicesIndexAndShowTest.php` with four scenarios in a single consolidated file:
 
   1. **`invoices index renders the table with Spanish headers, overdue filter, and row tint`** — super-admin loads `/invoices`, asserts table headers (Número, Cliente, Fecha Emisión, Valor Total, Estado); applies `payment_status=overdue`; asserts only the overdue rows remain; asserts the currency is formatted with the `$` symbol and thousands separator.
 
@@ -335,14 +335,14 @@ Preferred flow:
 8. Logout. Login as operator. Navigate to `/invoices`. Verify 403.
 9. `mcp__laravel-boost__browser-logs` for any JS console errors during the flow.
 
-- [ ] Scenario 1: Admin sees the rebuilt index with formatting and row tint
-- [ ] Scenario 2: Admin applies the overdue filter
-- [ ] Scenario 3: Admin opens the show page — all five cards render
-- [ ] Scenario 4: Mark-paid transitions state
-- [ ] Scenario 5: Cross-link to third-party show works
-- [ ] Scenario 6: Accounting user can access and Edit but not Delete
-- [ ] Scenario 7: Accounting user can create a new invoice
-- [ ] Scenario 8: Operator receives 403
+- [x] Scenario 1: Admin sees the rebuilt index with formatting and row tint
+- [x] Scenario 2: Admin applies the overdue filter
+- [x] Scenario 3: Admin opens the show page — all five cards render
+- [x] Scenario 4: Mark-paid transitions state
+- [x] Scenario 5: Cross-link to third-party show works
+- [x] Scenario 6: Accounting user can access and Edit but not Delete
+- [x] Scenario 7: Accounting user can create a new invoice
+- [x] Scenario 8: Operator receives 403
 
 ### 2. Backend regression — Pest feature tests (required)
 
