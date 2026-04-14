@@ -6,10 +6,13 @@ use App\Enums\Permission;
 use App\Http\Requests\VehicleStoreRequest;
 use App\Http\Requests\VehicleUpdateRequest;
 use App\Models\Municipality;
+use App\Models\Service;
 use App\Models\ThirdParty;
 use App\Models\Vehicle;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -18,10 +21,23 @@ use Spatie\QueryBuilder\QueryBuilder;
 
 class VehicleController extends Controller
 {
+    /**
+     * Number of days ahead of the service date that counts as
+     * "expiring soon" for the docs_status filter. Mirrors the
+     * dashboard's Alertas de Documentos threshold.
+     */
+    private const DOCS_EXPIRY_WINDOW_DAYS = 30;
+
     public function index(Request $request): Response
     {
         Gate::authorize(Permission::VIEW_VEHICLES->value);
+
         $vehicles = QueryBuilder::for(Vehicle::class)
+            ->with([
+                'thirdParty:id,company_name,first_name,first_lastname,is_natural_person',
+                'municipality:id,name,department_id',
+                'municipality.department:id,name',
+            ])
             ->allowedFilters([
                 'internal_code',
                 'plate',
@@ -30,9 +46,15 @@ class VehicleController extends Controller
                 AllowedFilter::exact('municipality_id'),
                 AllowedFilter::exact('is_third_party'),
                 AllowedFilter::exact('status'),
+                AllowedFilter::callback('docs_status', fn (Builder $query, $value) => $this->applyDocsStatusFilter($query, (string) $value)),
+                AllowedFilter::callback('soat_expired', fn (Builder $query, $value) => $this->applyDocumentExpiredFilter($query, 'soat_due_date', $value)),
+                AllowedFilter::callback('rtm_expired', fn (Builder $query, $value) => $this->applyDocumentExpiredFilter($query, 'rtm_due_date', $value)),
+                AllowedFilter::callback('operation_card_expired', fn (Builder $query, $value) => $this->applyDocumentExpiredFilter($query, 'operation_card_due_date', $value)),
             ])
             ->allowedSorts(['internal_code', 'plate', 'model_year', 'municipality_id', 'status'])
-            ->get();
+            ->defaultSort('plate')
+            ->paginate($request->perPage())
+            ->withQueryString();
 
         return Inertia::render('vehicles/index', [
             'vehicles' => $vehicles,
@@ -45,6 +67,74 @@ class VehicleController extends Controller
                 ->orderBy('name')
                 ->get(['id', 'name', 'code', 'department_id']),
         ]);
+    }
+
+    /**
+     * Filter vehicles by the aggregate state of their three legal documents.
+     *
+     * - expired       → at least one document is in the past today
+     * - expiring_soon → at least one document is within the 30-day window
+     *                   AND no document is already expired
+     * - ok            → all three documents are more than 30 days out
+     *
+     * Composes with the per-document boolean filters via AND.
+     */
+    private function applyDocsStatusFilter(Builder $query, string $value): void
+    {
+        $today = Carbon::today()->toDateString();
+        $threshold = Carbon::today()->addDays(self::DOCS_EXPIRY_WINDOW_DAYS)->toDateString();
+
+        match ($value) {
+            'expired' => $query->where(function (Builder $q) use ($today): void {
+                $q->whereDate('soat_due_date', '<', $today)
+                    ->orWhereDate('rtm_due_date', '<', $today)
+                    ->orWhereDate('operation_card_due_date', '<', $today)
+                    ->orWhereNull('soat_due_date')
+                    ->orWhereNull('rtm_due_date')
+                    ->orWhereNull('operation_card_due_date');
+            }),
+            'expiring_soon' => $query
+                ->where(function (Builder $q) use ($today, $threshold): void {
+                    // At least one document is in the [today, today+30] window.
+                    $q->whereBetween('soat_due_date', [$today, $threshold])
+                        ->orWhereBetween('rtm_due_date', [$today, $threshold])
+                        ->orWhereBetween('operation_card_due_date', [$today, $threshold]);
+                })
+                ->whereNotNull('soat_due_date')
+                ->whereNotNull('rtm_due_date')
+                ->whereNotNull('operation_card_due_date')
+                // …and no document is already expired.
+                ->whereDate('soat_due_date', '>=', $today)
+                ->whereDate('rtm_due_date', '>=', $today)
+                ->whereDate('operation_card_due_date', '>=', $today),
+            'ok' => $query
+                ->whereNotNull('soat_due_date')
+                ->whereNotNull('rtm_due_date')
+                ->whereNotNull('operation_card_due_date')
+                ->whereDate('soat_due_date', '>', $threshold)
+                ->whereDate('rtm_due_date', '>', $threshold)
+                ->whereDate('operation_card_due_date', '>', $threshold),
+            default => null, // ignore unknown values
+        };
+    }
+
+    /**
+     * Filter vehicles by a single expired document column.
+     *
+     * Truthy value → keep only vehicles whose given column is null
+     * or in the past today.
+     */
+    private function applyDocumentExpiredFilter(Builder $query, string $column, mixed $value): void
+    {
+        if (! filter_var($value, FILTER_VALIDATE_BOOLEAN)) {
+            return;
+        }
+
+        $today = Carbon::today()->toDateString();
+
+        $query->where(function (Builder $q) use ($column, $today): void {
+            $q->whereNull($column)->orWhereDate($column, '<', $today);
+        });
     }
 
     public function create(Request $request): Response
