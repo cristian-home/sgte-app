@@ -115,17 +115,15 @@ class DashboardController extends Controller
             ->where('license_due_date', '<=', $expiryThreshold)
             ->get()
             ->map(function (Driver $driver) use ($today) {
+                $daysRemaining = (int) $today->diffInDays($driver->license_due_date, false);
+
                 return [
                     'kind' => 'driver',
                     'label' => 'Licencia',
                     'subject' => trim($driver->first_name.' '.$driver->first_lastname),
                     'due_date' => $driver->license_due_date?->toDateString(),
-                    'days_remaining' => (int) $today->diffInDays($driver->license_due_date, false),
-                    // Drivers index is still a Blueprint scaffold; for now the
-                    // alert lands on the bare /drivers route. The dedicated
-                    // drivers rebuild requirement will refine this with a
-                    // license_status filter mirroring the vehicles one.
-                    'link' => '/drivers',
+                    'days_remaining' => $daysRemaining,
+                    'link' => $this->driverAlertLink($daysRemaining),
                 ];
             });
 
@@ -147,5 +145,18 @@ class DashboardController extends Controller
         return $daysRemaining < 0
             ? '/vehicles?filter[docs_status]=expired'
             : '/vehicles?filter[docs_status]=expiring_soon';
+    }
+
+    /**
+     * Build the deep-link a driver alert should navigate to. Symmetric
+     * with vehicleAlertLink — already-expired licenses jump to the
+     * drivers index filtered by license_status=expired; licenses within
+     * the 30-day window jump to license_status=expiring_soon.
+     */
+    private function driverAlertLink(int $daysRemaining): string
+    {
+        return $daysRemaining < 0
+            ? '/drivers?filter[license_status]=expired'
+            : '/drivers?filter[license_status]=expiring_soon';
     }
 }

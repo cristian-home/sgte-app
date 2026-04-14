@@ -7,6 +7,7 @@ use App\Models\Driver;
 use App\Models\Eps;
 use App\Models\Municipality;
 use App\Models\PensionFund;
+use App\Models\Service;
 use App\Models\SeveranceFund;
 use App\Models\User;
 use Illuminate\Support\Carbon;
@@ -29,6 +30,167 @@ test('index behaves as expected', function (): void {
     $response = get(route('drivers.index'));
 
     $response->assertOk();
+});
+
+test('index returns a paginated payload', function (): void {
+    Driver::factory()->count(3)->create();
+
+    $response = get(route('drivers.index'));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->component('drivers/index')
+            ->has('drivers.data', 3)
+            ->has('drivers.per_page')
+            ->has('drivers.current_page')
+            ->has('drivers.total')
+    );
+});
+
+test('index passes catalog data needed by the create modal', function (): void {
+    DocumentType::factory()->create();
+    Eps::factory()->create();
+    PensionFund::factory()->create();
+    SeveranceFund::factory()->create();
+    Municipality::factory()->create();
+
+    $response = get(route('drivers.index'));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->has('municipalities')
+            ->has('documentTypes')
+            ->has('eps')
+            ->has('pensionFunds')
+            ->has('severanceFunds')
+    );
+});
+
+test('index filters by license_status expired', function (): void {
+    $today = Carbon::today();
+
+    $expired = Driver::factory()->create([
+        'license_due_date' => $today->copy()->subDay(),
+    ]);
+
+    Driver::factory()->create([
+        'license_due_date' => $today->copy()->addDays(15),
+    ]);
+
+    Driver::factory()->create([
+        'license_due_date' => $today->copy()->addYear(),
+    ]);
+
+    $response = get(route('drivers.index', ['filter' => ['license_status' => 'expired']]));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->has('drivers.data', 1)
+            ->where('drivers.data.0.id', $expired->id)
+    );
+});
+
+test('index filters by license_status expiring_soon', function (): void {
+    $today = Carbon::today();
+
+    Driver::factory()->create([
+        'license_due_date' => $today->copy()->subDay(),
+    ]);
+
+    $expiringSoon = Driver::factory()->create([
+        'license_due_date' => $today->copy()->addDays(15),
+    ]);
+
+    Driver::factory()->create([
+        'license_due_date' => $today->copy()->addYear(),
+    ]);
+
+    $response = get(route('drivers.index', ['filter' => ['license_status' => 'expiring_soon']]));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->has('drivers.data', 1)
+            ->where('drivers.data.0.id', $expiringSoon->id)
+    );
+});
+
+test('index filters by license_status ok', function (): void {
+    $today = Carbon::today();
+
+    Driver::factory()->create([
+        'license_due_date' => $today->copy()->subDay(),
+    ]);
+
+    Driver::factory()->create([
+        'license_due_date' => $today->copy()->addDays(15),
+    ]);
+
+    $ok = Driver::factory()->create([
+        'license_due_date' => $today->copy()->addYear(),
+    ]);
+
+    $response = get(route('drivers.index', ['filter' => ['license_status' => 'ok']]));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->has('drivers.data', 1)
+            ->where('drivers.data.0.id', $ok->id)
+    );
+});
+
+test('index filters by has_social_security', function (): void {
+    $with = Driver::factory()->create(['has_social_security' => true]);
+    Driver::factory()->create(['has_social_security' => false]);
+
+    $response = get(route('drivers.index', ['filter' => ['has_social_security' => '1']]));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->has('drivers.data', 1)
+            ->where('drivers.data.0.id', $with->id)
+    );
+});
+
+test('license_status and has_social_security filters compose via AND', function (): void {
+    $today = Carbon::today();
+
+    // Expired but has SS
+    Driver::factory()->create([
+        'license_due_date' => $today->copy()->subDay(),
+        'has_social_security' => true,
+    ]);
+
+    // Expired AND no SS — the only one we expect to match
+    $expectedMatch = Driver::factory()->create([
+        'license_due_date' => $today->copy()->subDay(),
+        'has_social_security' => false,
+    ]);
+
+    // OK + no SS
+    Driver::factory()->create([
+        'license_due_date' => $today->copy()->addYear(),
+        'has_social_security' => false,
+    ]);
+
+    $response = get(route('drivers.index', [
+        'filter' => [
+            'license_status' => 'expired',
+            'has_social_security' => '0',
+        ],
+    ]));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->has('drivers.data', 1)
+            ->where('drivers.data.0.id', $expectedMatch->id)
+    );
 });
 
 test('create behaves as expected', function (): void {
@@ -126,6 +288,80 @@ test('show behaves as expected', function (): void {
     $response = get(route('drivers.show', $driver));
 
     $response->assertOk();
+});
+
+test('show returns driver with relationships and recent services', function (): void {
+    $municipality = Municipality::factory()->create();
+    $driver = Driver::factory()->create([
+        'municipality_id' => $municipality->id,
+    ]);
+
+    Service::factory()->count(7)->sequence(
+        ['service_date' => Carbon::today()->subDays(1)],
+        ['service_date' => Carbon::today()->subDays(2)],
+        ['service_date' => Carbon::today()->subDays(3)],
+        ['service_date' => Carbon::today()->subDays(4)],
+        ['service_date' => Carbon::today()->subDays(5)],
+        ['service_date' => Carbon::today()->subDays(6)],
+        ['service_date' => Carbon::today()->subDays(7)],
+    )->create([
+        'driver_id' => $driver->id,
+    ]);
+
+    $response = get(route('drivers.show', $driver));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->component('drivers/show')
+            ->where('driver.id', $driver->id)
+            ->where('driver.municipality.id', $municipality->id)
+            ->has('driver.municipality.department')
+            ->has('driver.document_type')
+            ->has('driver.eps')
+            ->has('driver.pension_fund')
+            ->has('driver.severance_fund')
+            ->has('recentServices', 5)
+    );
+});
+
+test('show returns empty recentServices when none exist', function (): void {
+    $driver = Driver::factory()->create();
+
+    $response = get(route('drivers.show', $driver));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->component('drivers/show')
+            ->has('recentServices', 0)
+    );
+});
+
+test('show renders user link when user_id is set', function (): void {
+    $linkedUser = User::factory()->create(['email' => 'driver@example.test']);
+    $driver = Driver::factory()->create(['user_id' => $linkedUser->id]);
+
+    $response = get(route('drivers.show', $driver));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->where('driver.user.id', $linkedUser->id)
+            ->where('driver.user.email', 'driver@example.test')
+    );
+});
+
+test('show renders no user link when user_id is null', function (): void {
+    $driver = Driver::factory()->create(['user_id' => null]);
+
+    $response = get(route('drivers.show', $driver));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->where('driver.user', null)
+    );
 });
 
 test('edit behaves as expected', function (): void {
