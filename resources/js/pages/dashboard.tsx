@@ -18,7 +18,7 @@ type KpiBucket = {
 };
 
 type DocumentAlert = {
-    kind: 'vehicle' | 'driver';
+    kind: 'vehicle' | 'driver' | 'contract';
     label: string;
     subject: string;
     due_date: string | null;
@@ -159,8 +159,7 @@ export default function Dashboard({ kpis, documentAlerts }: DashboardProps) {
                             <CardTitle>Alertas de documentos</CardTitle>
                         </div>
                         <CardDescription>
-                            Documentos vencidos o por vencer en los próximos 30
-                            días.
+                            Documentos y contratos vencidos o por vencer.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
