@@ -10,6 +10,7 @@ use App\Models\Driver;
 use App\Models\Eps;
 use App\Models\Municipality;
 use App\Models\PensionFund;
+use App\Models\Service;
 use App\Models\SeveranceFund;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -139,8 +140,31 @@ class DriverController extends Controller
     {
         Gate::authorize(Permission::VIEW_DRIVERS->value);
 
+        $driver->load([
+            'municipality:id,name,department_id',
+            'municipality.department:id,name',
+            'documentType:id,code,name',
+            'eps:id,code,name',
+            'pensionFund:id,code,name',
+            'severanceFund:id,code,name',
+            'user:id,name,email',
+        ]);
+
+        $recentServices = Service::query()
+            ->where('driver_id', $driver->id)
+            ->with([
+                'vehicle:id,plate,internal_code',
+                'contract:id,contract_number,third_party_id',
+                'contract.thirdParty:id,company_name,first_name,first_lastname,is_natural_person',
+            ])
+            ->orderByDesc('service_date')
+            ->orderByDesc('planned_start_time')
+            ->limit(5)
+            ->get();
+
         return Inertia::render('drivers/show', [
             'driver' => $driver,
+            'recentServices' => $recentServices,
         ]);
     }
 

@@ -7,6 +7,7 @@ use App\Models\Driver;
 use App\Models\Eps;
 use App\Models\Municipality;
 use App\Models\PensionFund;
+use App\Models\Service;
 use App\Models\SeveranceFund;
 use App\Models\User;
 use Illuminate\Support\Carbon;
@@ -287,6 +288,80 @@ test('show behaves as expected', function (): void {
     $response = get(route('drivers.show', $driver));
 
     $response->assertOk();
+});
+
+test('show returns driver with relationships and recent services', function (): void {
+    $municipality = Municipality::factory()->create();
+    $driver = Driver::factory()->create([
+        'municipality_id' => $municipality->id,
+    ]);
+
+    Service::factory()->count(7)->sequence(
+        ['service_date' => Carbon::today()->subDays(1)],
+        ['service_date' => Carbon::today()->subDays(2)],
+        ['service_date' => Carbon::today()->subDays(3)],
+        ['service_date' => Carbon::today()->subDays(4)],
+        ['service_date' => Carbon::today()->subDays(5)],
+        ['service_date' => Carbon::today()->subDays(6)],
+        ['service_date' => Carbon::today()->subDays(7)],
+    )->create([
+        'driver_id' => $driver->id,
+    ]);
+
+    $response = get(route('drivers.show', $driver));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->component('drivers/show')
+            ->where('driver.id', $driver->id)
+            ->where('driver.municipality.id', $municipality->id)
+            ->has('driver.municipality.department')
+            ->has('driver.document_type')
+            ->has('driver.eps')
+            ->has('driver.pension_fund')
+            ->has('driver.severance_fund')
+            ->has('recentServices', 5)
+    );
+});
+
+test('show returns empty recentServices when none exist', function (): void {
+    $driver = Driver::factory()->create();
+
+    $response = get(route('drivers.show', $driver));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->component('drivers/show')
+            ->has('recentServices', 0)
+    );
+});
+
+test('show renders user link when user_id is set', function (): void {
+    $linkedUser = User::factory()->create(['email' => 'driver@example.test']);
+    $driver = Driver::factory()->create(['user_id' => $linkedUser->id]);
+
+    $response = get(route('drivers.show', $driver));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->where('driver.user.id', $linkedUser->id)
+            ->where('driver.user.email', 'driver@example.test')
+    );
+});
+
+test('show renders no user link when user_id is null', function (): void {
+    $driver = Driver::factory()->create(['user_id' => null]);
+
+    $response = get(route('drivers.show', $driver));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->where('driver.user', null)
+    );
 });
 
 test('edit behaves as expected', function (): void {
