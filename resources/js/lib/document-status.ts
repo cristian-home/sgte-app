@@ -126,3 +126,95 @@ export function localTodayMs(today?: string): number {
     const todayString = today ?? new Date().toISOString().slice(0, 10);
     return new Date(`${todayString}T00:00:00`).getTime();
 }
+
+/**
+ * Days-ahead window used to flag contracts as "por vencer".
+ * Contracts have a longer renewal lead time than SOAT/RTM/license,
+ * so we surface them earlier. Mirrors `CONTRACT_EXPIRY_ALERT_DAYS`
+ * in DashboardController and the `contract_status` callback filter
+ * in ContractController@index. Keep these in sync.
+ */
+export const CONTRACT_EXPIRY_WINDOW_DAYS = 60;
+
+/**
+ * Four-state temporal model for contracts — emerges from start_date,
+ * end_date, and the manual `active` kill-switch:
+ *
+ * - `inactivo` — `active === false`. Manual close. Outranks the date axis.
+ * - `vencido` — active but today is past `end_date` (action needed).
+ * - `por_vencer` — active and `end_date` is within the next
+ *    CONTRACT_EXPIRY_WINDOW_DAYS days.
+ * - `vigente` — active and `end_date` is further out than the window
+ *    (including future-dated contracts where `start_date > today`).
+ */
+export type ContractPeriodStatus =
+    | 'vigente'
+    | 'por_vencer'
+    | 'vencido'
+    | 'inactivo';
+
+/**
+ * Compute the four-state contract status against the supplied
+ * `today` (defaulting to the local browser date). Mirrors the server
+ * `applyContractStatusFilter` in ContractController — they must agree.
+ */
+export function contractPeriodStatus(
+    contract: {
+        start_date: string | null;
+        end_date: string | null;
+        active: boolean;
+    },
+    today?: string,
+): ContractPeriodStatus {
+    if (!contract.active) {
+        return 'inactivo';
+    }
+    const parsedEnd = parseDueDate(contract.end_date);
+    if (parsedEnd === null) {
+        return 'vencido';
+    }
+    const todayMs = localTodayMs(today);
+    const endMs = parsedEnd.getTime();
+    if (endMs < todayMs) {
+        return 'vencido';
+    }
+    const daysOut = Math.round((endMs - todayMs) / DAYS_IN_MS);
+    if (daysOut <= CONTRACT_EXPIRY_WINDOW_DAYS) {
+        return 'por_vencer';
+    }
+    return 'vigente';
+}
+
+/**
+ * Compute the signed days-remaining from today until `end_date`.
+ * Negative for expired contracts, 0 for "ends today".
+ */
+export function contractDaysRemaining(
+    endDate: string | null,
+    today?: string,
+): number | null {
+    const parsed = parseDueDate(endDate);
+    if (parsed === null) {
+        return null;
+    }
+    const todayMs = localTodayMs(today);
+    return Math.round((parsed.getTime() - todayMs) / DAYS_IN_MS);
+}
+
+/**
+ * Map a contract status to the matching shadcn Badge variant.
+ */
+export function contractStatusBadgeVariant(
+    status: ContractPeriodStatus,
+): 'default' | 'secondary' | 'destructive' | 'outline' {
+    switch (status) {
+        case 'vigente':
+            return 'default';
+        case 'por_vencer':
+            return 'secondary';
+        case 'vencido':
+            return 'destructive';
+        default:
+            return 'outline';
+    }
+}
