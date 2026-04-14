@@ -3,6 +3,7 @@
 namespace Tests\Feature\Http\Controllers;
 
 use App\Models\Municipality;
+use App\Models\Service;
 use App\Models\ThirdParty;
 use App\Models\User;
 use App\Models\Vehicle;
@@ -26,6 +27,172 @@ test('index behaves as expected', function (): void {
     $response = get(route('vehicles.index'));
 
     $response->assertOk();
+});
+
+test('index returns a paginated payload', function (): void {
+    Vehicle::factory()->count(3)->create();
+
+    $response = get(route('vehicles.index'));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->component('vehicles/index')
+            ->has('vehicles.data', 3)
+            ->has('vehicles.per_page')
+            ->has('vehicles.current_page')
+            ->has('vehicles.total')
+    );
+});
+
+test('index filters by docs_status expired', function (): void {
+    $today = Carbon::today();
+
+    $expired = Vehicle::factory()->create([
+        'soat_due_date' => $today->copy()->subDay(),
+        'rtm_due_date' => $today->copy()->addYear(),
+        'operation_card_due_date' => $today->copy()->addYear(),
+    ]);
+
+    Vehicle::factory()->create([
+        'soat_due_date' => $today->copy()->addDays(15),
+        'rtm_due_date' => $today->copy()->addYear(),
+        'operation_card_due_date' => $today->copy()->addYear(),
+    ]);
+
+    Vehicle::factory()->create([
+        'soat_due_date' => $today->copy()->addYear(),
+        'rtm_due_date' => $today->copy()->addYear(),
+        'operation_card_due_date' => $today->copy()->addYear(),
+    ]);
+
+    $response = get(route('vehicles.index', ['filter' => ['docs_status' => 'expired']]));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->has('vehicles.data', 1)
+            ->where('vehicles.data.0.id', $expired->id)
+    );
+});
+
+test('index filters by docs_status expiring_soon', function (): void {
+    $today = Carbon::today();
+
+    Vehicle::factory()->create([
+        'soat_due_date' => $today->copy()->subDay(),
+        'rtm_due_date' => $today->copy()->addYear(),
+        'operation_card_due_date' => $today->copy()->addYear(),
+    ]);
+
+    $expiringSoon = Vehicle::factory()->create([
+        'soat_due_date' => $today->copy()->addDays(15),
+        'rtm_due_date' => $today->copy()->addYear(),
+        'operation_card_due_date' => $today->copy()->addYear(),
+    ]);
+
+    Vehicle::factory()->create([
+        'soat_due_date' => $today->copy()->addYear(),
+        'rtm_due_date' => $today->copy()->addYear(),
+        'operation_card_due_date' => $today->copy()->addYear(),
+    ]);
+
+    $response = get(route('vehicles.index', ['filter' => ['docs_status' => 'expiring_soon']]));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->has('vehicles.data', 1)
+            ->where('vehicles.data.0.id', $expiringSoon->id)
+    );
+});
+
+test('index filters by docs_status ok', function (): void {
+    $today = Carbon::today();
+
+    Vehicle::factory()->create([
+        'soat_due_date' => $today->copy()->subDay(),
+        'rtm_due_date' => $today->copy()->addYear(),
+        'operation_card_due_date' => $today->copy()->addYear(),
+    ]);
+
+    Vehicle::factory()->create([
+        'soat_due_date' => $today->copy()->addDays(15),
+        'rtm_due_date' => $today->copy()->addYear(),
+        'operation_card_due_date' => $today->copy()->addYear(),
+    ]);
+
+    $ok = Vehicle::factory()->create([
+        'soat_due_date' => $today->copy()->addYear(),
+        'rtm_due_date' => $today->copy()->addYear(),
+        'operation_card_due_date' => $today->copy()->addYear(),
+    ]);
+
+    $response = get(route('vehicles.index', ['filter' => ['docs_status' => 'ok']]));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->has('vehicles.data', 1)
+            ->where('vehicles.data.0.id', $ok->id)
+    );
+});
+
+test('index filters by soat_expired boolean', function (): void {
+    $today = Carbon::today();
+
+    $soatExpired = Vehicle::factory()->create([
+        'soat_due_date' => $today->copy()->subDay(),
+        'rtm_due_date' => $today->copy()->addYear(),
+        'operation_card_due_date' => $today->copy()->addYear(),
+    ]);
+
+    Vehicle::factory()->create([
+        'soat_due_date' => $today->copy()->addYear(),
+        'rtm_due_date' => $today->copy()->subDay(),
+        'operation_card_due_date' => $today->copy()->addYear(),
+    ]);
+
+    $response = get(route('vehicles.index', ['filter' => ['soat_expired' => 'true']]));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->has('vehicles.data', 1)
+            ->where('vehicles.data.0.id', $soatExpired->id)
+    );
+});
+
+test('per-document filters compose with docs_status via AND', function (): void {
+    $today = Carbon::today();
+
+    // Vehicle with expired SOAT only
+    Vehicle::factory()->create([
+        'soat_due_date' => $today->copy()->subDay(),
+        'rtm_due_date' => $today->copy()->addYear(),
+        'operation_card_due_date' => $today->copy()->addYear(),
+    ]);
+
+    // Vehicle with expired RTM only — matches docs_status=expired AND rtm_expired=true
+    $expectedMatch = Vehicle::factory()->create([
+        'soat_due_date' => $today->copy()->addYear(),
+        'rtm_due_date' => $today->copy()->subDay(),
+        'operation_card_due_date' => $today->copy()->addYear(),
+    ]);
+
+    $response = get(route('vehicles.index', [
+        'filter' => [
+            'docs_status' => 'expired',
+            'rtm_expired' => 'true',
+        ],
+    ]));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->has('vehicles.data', 1)
+            ->where('vehicles.data.0.id', $expectedMatch->id)
+    );
 });
 
 test('create behaves as expected', function (): void {
@@ -123,6 +290,54 @@ test('show behaves as expected', function (): void {
     $response = get(route('vehicles.show', $vehicle));
 
     $response->assertOk();
+});
+
+test('show returns vehicle with relationships and recent services', function (): void {
+    $municipality = Municipality::factory()->create();
+    $thirdParty = ThirdParty::factory()->create();
+    $vehicle = Vehicle::factory()->create([
+        'municipality_id' => $municipality->id,
+        'is_third_party' => true,
+        'third_party_id' => $thirdParty->id,
+    ]);
+
+    Service::factory()->count(7)->sequence(
+        ['service_date' => Carbon::today()->subDays(1)],
+        ['service_date' => Carbon::today()->subDays(2)],
+        ['service_date' => Carbon::today()->subDays(3)],
+        ['service_date' => Carbon::today()->subDays(4)],
+        ['service_date' => Carbon::today()->subDays(5)],
+        ['service_date' => Carbon::today()->subDays(6)],
+        ['service_date' => Carbon::today()->subDays(7)],
+    )->create([
+        'vehicle_id' => $vehicle->id,
+    ]);
+
+    $response = get(route('vehicles.show', $vehicle));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->component('vehicles/show')
+            ->where('vehicle.id', $vehicle->id)
+            ->where('vehicle.municipality.id', $municipality->id)
+            ->has('vehicle.municipality.department')
+            ->where('vehicle.third_party.id', $thirdParty->id)
+            ->has('recentServices', 5)
+    );
+});
+
+test('show returns empty recentServices when none exist', function (): void {
+    $vehicle = Vehicle::factory()->create();
+
+    $response = get(route('vehicles.show', $vehicle));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->component('vehicles/show')
+            ->has('recentServices', 0)
+    );
 });
 
 test('edit behaves as expected', function (): void {

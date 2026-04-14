@@ -79,7 +79,7 @@ export default function AuditLogIndex({
                                 )}
                                 {activities.map((activity) => (
                                     <TableRow key={activity.id}>
-                                        <TableCell className="whitespace-nowrap font-mono text-xs">
+                                        <TableCell className="font-mono text-xs whitespace-nowrap">
                                             {formatTimestamp(
                                                 activity.created_at,
                                             )}

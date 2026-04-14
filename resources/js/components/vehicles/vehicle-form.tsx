@@ -142,7 +142,7 @@ export default function VehicleForm({
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
                     data-error={invalid('line')}
                 >
-                    <Label htmlFor={id('line')}>Linea</Label>
+                    <Label htmlFor={id('line')}>Línea</Label>
                     <Input
                         id={id('line')}
                         value={data.line}
@@ -155,7 +155,7 @@ export default function VehicleForm({
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
                     data-error={invalid('model_year')}
                 >
-                    <Label htmlFor={id('model_year')}>Ano Modelo</Label>
+                    <Label htmlFor={id('model_year')}>Año Modelo</Label>
                     <Input
                         id={id('model_year')}
                         type="number"
@@ -245,7 +245,7 @@ export default function VehicleForm({
                     data-error={invalid('chassis_number')}
                 >
                     <Label htmlFor={id('chassis_number')}>
-                        Numero de Chasis
+                        Número de Chasis
                     </Label>
                     <Input
                         id={id('chassis_number')}
