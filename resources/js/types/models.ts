@@ -149,11 +149,13 @@ export type Contract = {
 
 export type Invoice = {
     id: number;
+    third_party_id: number;
     invoice_number: string;
     total_value: string;
     issue_date: string;
     payment_status: string;
     notes: string | null;
+    third_party?: ThirdParty;
     services?: Service[];
 } & Timestamps &
     SoftDeletes;
