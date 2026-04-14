@@ -4,9 +4,11 @@ use App\Enums\PaymentStatus;
 use App\Enums\Role;
 use App\Enums\ServiceStatus;
 use App\Enums\VehicleStatus;
+use App\Models\Contract;
 use App\Models\Driver;
 use App\Models\Invoice;
 use App\Models\Service;
+use App\Models\ThirdParty;
 use App\Models\User;
 use App\Models\Vehicle;
 use Illuminate\Support\Carbon;
@@ -177,6 +179,149 @@ test('drivers are redirected to the driver dashboard', function () {
     actingAs($user);
 
     get(route('dashboard'))->assertRedirect(route('driver.dashboard'));
+});
+
+test('dashboard surfaces expired contracts in document alerts', function () {
+    $user = User::factory()->create();
+    $user->assignRole(Role::ADMIN->value);
+
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    Contract::factory()->create([
+        'contract_number' => 'CT-EXPIRED-001',
+        'third_party_id' => $customer->id,
+        'active' => true,
+        'start_date' => Carbon::today()->subMonths(6),
+        'end_date' => Carbon::today()->subDays(3),
+    ]);
+
+    actingAs($user);
+
+    $alerts = get(route('dashboard'))->viewData('page')['props']['documentAlerts'];
+    $contractAlert = collect($alerts)->firstWhere('subject', 'CT-EXPIRED-001');
+
+    expect($contractAlert)->not->toBeNull();
+    expect($contractAlert['kind'])->toBe('contract');
+    expect($contractAlert['label'])->toBe('Contrato');
+    expect($contractAlert['days_remaining'])->toBeLessThan(0);
+    expect($contractAlert['link'])->toBe('/contracts?filter[contract_status]=vencido');
+});
+
+test('dashboard surfaces contracts expiring within 60 days in document alerts', function () {
+    $user = User::factory()->create();
+    $user->assignRole(Role::ADMIN->value);
+
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    Contract::factory()->create([
+        'contract_number' => 'CT-WARN-001',
+        'third_party_id' => $customer->id,
+        'active' => true,
+        'start_date' => Carbon::today()->subMonth(),
+        'end_date' => Carbon::today()->addDays(45),
+    ]);
+
+    actingAs($user);
+
+    $alerts = get(route('dashboard'))->viewData('page')['props']['documentAlerts'];
+    $contractAlert = collect($alerts)->firstWhere('subject', 'CT-WARN-001');
+
+    expect($contractAlert)->not->toBeNull();
+    expect($contractAlert['kind'])->toBe('contract');
+    expect($contractAlert['days_remaining'])->toBeGreaterThanOrEqual(0);
+    expect($contractAlert['link'])->toBe('/contracts?filter[contract_status]=expiring_soon');
+});
+
+test('dashboard does not surface contracts more than 60 days out', function () {
+    $user = User::factory()->create();
+    $user->assignRole(Role::ADMIN->value);
+
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    Contract::factory()->create([
+        'contract_number' => 'CT-FAR-001',
+        'third_party_id' => $customer->id,
+        'active' => true,
+        'start_date' => Carbon::today()->subMonth(),
+        'end_date' => Carbon::today()->addDays(120),
+    ]);
+
+    actingAs($user);
+
+    $alerts = get(route('dashboard'))->viewData('page')['props']['documentAlerts'];
+    $contractAlert = collect($alerts)->firstWhere('subject', 'CT-FAR-001');
+
+    expect($contractAlert)->toBeNull();
+});
+
+test('dashboard does not surface inactive contracts in alerts', function () {
+    $user = User::factory()->create();
+    $user->assignRole(Role::ADMIN->value);
+
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    Contract::factory()->create([
+        'contract_number' => 'CT-OFF-001',
+        'third_party_id' => $customer->id,
+        'active' => false,
+        'start_date' => Carbon::today()->subMonths(6),
+        'end_date' => Carbon::today()->subDays(3),
+    ]);
+
+    actingAs($user);
+
+    $alerts = get(route('dashboard'))->viewData('page')['props']['documentAlerts'];
+    $contractAlert = collect($alerts)->firstWhere('subject', 'CT-OFF-001');
+
+    expect($contractAlert)->toBeNull();
+});
+
+test('dashboard sorts contract alerts into the 10-row cap alongside vehicles and drivers', function () {
+    $user = User::factory()->create();
+    $user->assignRole(Role::ADMIN->value);
+
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+
+    // 4 contracts with varying days_remaining.
+    Contract::factory()->create([
+        'contract_number' => 'CT-EXP',
+        'third_party_id' => $customer->id,
+        'active' => true,
+        'start_date' => Carbon::today()->subMonths(6),
+        'end_date' => Carbon::today()->subDays(10),
+    ]);
+    Contract::factory()->create([
+        'contract_number' => 'CT-10',
+        'third_party_id' => $customer->id,
+        'active' => true,
+        'start_date' => Carbon::today()->subMonth(),
+        'end_date' => Carbon::today()->addDays(10),
+    ]);
+
+    // 2 expiring vehicles + 1 expiring driver.
+    Vehicle::factory()->create([
+        'plate' => 'V-1',
+        'soat_due_date' => Carbon::today()->addDays(5),
+        'rtm_due_date' => Carbon::today()->addYears(1),
+        'operation_card_due_date' => Carbon::today()->addYears(1),
+    ]);
+    Driver::factory()->create([
+        'first_name' => 'Ana',
+        'first_lastname' => 'Gómez',
+        'license_due_date' => Carbon::today()->subDays(2),
+    ]);
+
+    actingAs($user);
+
+    $alerts = get(route('dashboard'))->viewData('page')['props']['documentAlerts'];
+    expect(count($alerts))->toBeLessThanOrEqual(10);
+
+    // Sorted ascending by days_remaining.
+    $days = array_map(fn ($a) => $a['days_remaining'], $alerts);
+    $sorted = $days;
+    sort($sorted);
+    expect($days)->toBe($sorted);
+
+    // The kinds set must include all three.
+    $kinds = array_unique(array_map(fn ($a) => $a['kind'], $alerts));
+    sort($kinds);
+    expect($kinds)->toBe(['contract', 'driver', 'vehicle']);
 });
 
 test('authenticated users without permission cannot visit the dashboard', function () {
