@@ -46,7 +46,13 @@ class VehicleController extends Controller
                 AllowedFilter::exact('municipality_id'),
                 AllowedFilter::exact('is_third_party'),
                 AllowedFilter::exact('status'),
-                AllowedFilter::callback('docs_status', fn (Builder $query, $value) => $this->applyDocsStatusFilter($query, (string) $value)),
+                AllowedFilter::callback('docs_status', function (Builder $query, $value) {
+                    // The faceted filter UI is multi-select but docs_status is
+                    // semantically single-select. If the URL carries multiple
+                    // values (comma-separated), honor the first one.
+                    $first = is_array($value) ? ($value[0] ?? '') : explode(',', (string) $value)[0];
+                    $this->applyDocsStatusFilter($query, $first);
+                }),
                 AllowedFilter::callback('soat_expired', fn (Builder $query, $value) => $this->applyDocumentExpiredFilter($query, 'soat_due_date', $value)),
                 AllowedFilter::callback('rtm_expired', fn (Builder $query, $value) => $this->applyDocumentExpiredFilter($query, 'rtm_due_date', $value)),
                 AllowedFilter::callback('operation_card_expired', fn (Builder $query, $value) => $this->applyDocumentExpiredFilter($query, 'operation_card_due_date', $value)),
