@@ -400,6 +400,55 @@ test('index filters by contract_object exact', function (): void {
     expect($rows[0]['id'])->toBe($business->id);
 });
 
+test('show returns contract with thirdParty.documentType loaded', function (): void {
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    $contract = Contract::factory()->create(['third_party_id' => $customer->id]);
+
+    $response = get(route('contracts.show', $contract));
+    $response->assertOk();
+
+    $payload = $response->viewData('page')['props']['contract'];
+    expect($payload)->toHaveKey('third_party');
+    expect($payload['third_party'])->toHaveKey('document_type');
+});
+
+test('show returns recent services ordered by service_date desc', function (): void {
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    $contract = Contract::factory()->create(['third_party_id' => $customer->id]);
+
+    $vehicle = \App\Models\Vehicle::factory()->create();
+    $driver = \App\Models\Driver::factory()->create();
+
+    foreach (range(1, 7) as $i) {
+        \App\Models\Service::factory()->create([
+            'contract_id' => $contract->id,
+            'vehicle_id' => $vehicle->id,
+            'driver_id' => $driver->id,
+            'service_date' => Carbon::today()->subDays($i),
+        ]);
+    }
+
+    $response = get(route('contracts.show', $contract));
+    $response->assertOk();
+
+    $rows = $response->viewData('page')['props']['recentServices'];
+    expect($rows)->toHaveCount(5);
+    $dates = array_map(fn ($r) => $r['service_date'], $rows);
+    $sorted = $dates;
+    rsort($sorted);
+    expect($dates)->toBe($sorted);
+});
+
+test('show returns empty recent services when the contract has none', function (): void {
+    $contract = Contract::factory()->create();
+
+    $response = get(route('contracts.show', $contract));
+    $response->assertOk();
+
+    $rows = $response->viewData('page')['props']['recentServices'];
+    expect($rows)->toBeArray()->toBeEmpty();
+});
+
 test('index filters by third_party_id exact', function (): void {
     Contract::query()->delete();
 
