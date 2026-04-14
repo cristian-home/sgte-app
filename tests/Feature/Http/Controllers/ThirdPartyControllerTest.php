@@ -27,6 +27,99 @@ test('index behaves as expected', function (): void {
     $response->assertOk();
 });
 
+test('index returns a paginated payload', function (): void {
+    ThirdParty::factory()->count(3)->create();
+
+    $response = get(route('third-parties.index'));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->component('third-parties/index')
+            ->has('thirdParties.data', 3)
+            ->has('thirdParties.per_page')
+            ->has('thirdParties.current_page')
+            ->has('thirdParties.total')
+    );
+});
+
+test('index passes catalog data needed by the create modal', function (): void {
+    DocumentType::factory()->create();
+    Municipality::factory()->create();
+
+    $response = get(route('third-parties.index'));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->has('municipalities')
+            ->has('documentTypes')
+    );
+});
+
+test('index filters by is_customer', function (): void {
+    $customer = ThirdParty::factory()->create(['is_customer' => true, 'is_provider' => false]);
+    ThirdParty::factory()->create(['is_customer' => false, 'is_provider' => true]);
+
+    $response = get(route('third-parties.index', ['filter' => ['is_customer' => '1']]));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->has('thirdParties.data', 1)
+            ->where('thirdParties.data.0.id', $customer->id)
+    );
+});
+
+test('index filters by is_provider', function (): void {
+    ThirdParty::factory()->create(['is_customer' => true, 'is_provider' => false]);
+    $provider = ThirdParty::factory()->create(['is_customer' => false, 'is_provider' => true]);
+
+    $response = get(route('third-parties.index', ['filter' => ['is_provider' => '1']]));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->has('thirdParties.data', 1)
+            ->where('thirdParties.data.0.id', $provider->id)
+    );
+});
+
+test('index filters compose is_customer AND is_provider', function (): void {
+    ThirdParty::factory()->create(['is_customer' => true, 'is_provider' => false]);
+    ThirdParty::factory()->create(['is_customer' => false, 'is_provider' => true]);
+    $both = ThirdParty::factory()->create(['is_customer' => true, 'is_provider' => true]);
+    ThirdParty::factory()->create(['is_customer' => false, 'is_provider' => false]);
+
+    $response = get(route('third-parties.index', [
+        'filter' => [
+            'is_customer' => '1',
+            'is_provider' => '1',
+        ],
+    ]));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->has('thirdParties.data', 1)
+            ->where('thirdParties.data.0.id', $both->id)
+    );
+});
+
+test('index filters by is_natural_person', function (): void {
+    $natural = ThirdParty::factory()->create(['is_natural_person' => true]);
+    ThirdParty::factory()->create(['is_natural_person' => false]);
+
+    $response = get(route('third-parties.index', ['filter' => ['is_natural_person' => '1']]));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->has('thirdParties.data', 1)
+            ->where('thirdParties.data.0.id', $natural->id)
+    );
+});
+
 test('create behaves as expected', function (): void {
     $response = get(route('third-parties.create'));
 
