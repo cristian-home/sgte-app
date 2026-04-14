@@ -2,10 +2,12 @@
 
 namespace Tests\Feature\Http\Controllers;
 
+use App\Models\Contract;
 use App\Models\DocumentType;
 use App\Models\Municipality;
 use App\Models\ThirdParty;
 use App\Models\User;
+use App\Models\Vehicle;
 
 use function Pest\Laravel\assertSoftDeleted;
 use function Pest\Laravel\delete;
@@ -194,6 +196,96 @@ test('show behaves as expected', function (): void {
     $response = get(route('third-parties.show', $thirdParty));
 
     $response->assertOk();
+});
+
+test('show returns recent vehicles when is_provider is true', function (): void {
+    $provider = ThirdParty::factory()->create([
+        'is_provider' => true,
+        'is_customer' => false,
+    ]);
+
+    Vehicle::factory()->count(7)->create([
+        'is_third_party' => true,
+        'third_party_id' => $provider->id,
+    ]);
+
+    $response = get(route('third-parties.show', $provider));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->component('third-parties/show')
+            ->where('thirdParty.id', $provider->id)
+            ->has('recentVehicles', 5)
+            ->has('recentContracts', 0)
+    );
+});
+
+test('show returns empty recent vehicles when is_provider is false', function (): void {
+    $customer = ThirdParty::factory()->create([
+        'is_provider' => false,
+        'is_customer' => true,
+    ]);
+
+    $response = get(route('third-parties.show', $customer));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->has('recentVehicles', 0)
+    );
+});
+
+test('show returns recent contracts when is_customer is true', function (): void {
+    $customer = ThirdParty::factory()->create([
+        'is_customer' => true,
+        'is_provider' => false,
+    ]);
+
+    Contract::factory()->count(7)->create([
+        'third_party_id' => $customer->id,
+    ]);
+
+    $response = get(route('third-parties.show', $customer));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->component('third-parties/show')
+            ->where('thirdParty.id', $customer->id)
+            ->has('recentContracts', 5)
+            ->has('recentVehicles', 0)
+    );
+});
+
+test('show returns empty recent contracts when is_customer is false', function (): void {
+    $provider = ThirdParty::factory()->create([
+        'is_provider' => true,
+        'is_customer' => false,
+    ]);
+
+    $response = get(route('third-parties.show', $provider));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->has('recentContracts', 0)
+    );
+});
+
+test('show eager-loads relationships used by the rebuilt page', function (): void {
+    $municipality = Municipality::factory()->create();
+    $thirdParty = ThirdParty::factory()->create(['municipality_id' => $municipality->id]);
+
+    $response = get(route('third-parties.show', $thirdParty));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->where('thirdParty.municipality.id', $municipality->id)
+            ->has('thirdParty.municipality.department')
+            ->has('thirdParty.document_type')
+    );
 });
 
 test('edit behaves as expected', function (): void {

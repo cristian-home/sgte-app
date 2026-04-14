@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Enums\Permission;
 use App\Http\Requests\ThirdPartyStoreRequest;
 use App\Http\Requests\ThirdPartyUpdateRequest;
+use App\Models\Contract;
 use App\Models\DocumentType;
 use App\Models\Municipality;
 use App\Models\ThirdParty;
+use App\Models\Vehicle;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -87,8 +89,31 @@ class ThirdPartyController extends Controller
     {
         Gate::authorize(Permission::VIEW_THIRD_PARTIES->value);
 
+        $thirdParty->load([
+            'municipality:id,name,department_id',
+            'municipality.department:id,name',
+            'documentType:id,code,name',
+        ]);
+
+        // Always send both arrays — frontend gates the conditional
+        // cards on is_provider / is_customer flags. Empty arrays are a
+        // valid state for either role being false.
+        $recentVehicles = Vehicle::query()
+            ->where('third_party_id', $thirdParty->id)
+            ->orderByDesc('created_at')
+            ->limit(5)
+            ->get(['id', 'plate', 'internal_code', 'type', 'status']);
+
+        $recentContracts = Contract::query()
+            ->where('third_party_id', $thirdParty->id)
+            ->orderByDesc('start_date')
+            ->limit(5)
+            ->get(['id', 'contract_number', 'contract_object', 'start_date', 'end_date', 'active']);
+
         return Inertia::render('third-parties/show', [
             'thirdParty' => $thirdParty,
+            'recentVehicles' => $recentVehicles,
+            'recentContracts' => $recentContracts,
         ]);
     }
 
