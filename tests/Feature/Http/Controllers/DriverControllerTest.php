@@ -31,6 +31,167 @@ test('index behaves as expected', function (): void {
     $response->assertOk();
 });
 
+test('index returns a paginated payload', function (): void {
+    Driver::factory()->count(3)->create();
+
+    $response = get(route('drivers.index'));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->component('drivers/index')
+            ->has('drivers.data', 3)
+            ->has('drivers.per_page')
+            ->has('drivers.current_page')
+            ->has('drivers.total')
+    );
+});
+
+test('index passes catalog data needed by the create modal', function (): void {
+    DocumentType::factory()->create();
+    Eps::factory()->create();
+    PensionFund::factory()->create();
+    SeveranceFund::factory()->create();
+    Municipality::factory()->create();
+
+    $response = get(route('drivers.index'));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->has('municipalities')
+            ->has('documentTypes')
+            ->has('eps')
+            ->has('pensionFunds')
+            ->has('severanceFunds')
+    );
+});
+
+test('index filters by license_status expired', function (): void {
+    $today = Carbon::today();
+
+    $expired = Driver::factory()->create([
+        'license_due_date' => $today->copy()->subDay(),
+    ]);
+
+    Driver::factory()->create([
+        'license_due_date' => $today->copy()->addDays(15),
+    ]);
+
+    Driver::factory()->create([
+        'license_due_date' => $today->copy()->addYear(),
+    ]);
+
+    $response = get(route('drivers.index', ['filter' => ['license_status' => 'expired']]));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->has('drivers.data', 1)
+            ->where('drivers.data.0.id', $expired->id)
+    );
+});
+
+test('index filters by license_status expiring_soon', function (): void {
+    $today = Carbon::today();
+
+    Driver::factory()->create([
+        'license_due_date' => $today->copy()->subDay(),
+    ]);
+
+    $expiringSoon = Driver::factory()->create([
+        'license_due_date' => $today->copy()->addDays(15),
+    ]);
+
+    Driver::factory()->create([
+        'license_due_date' => $today->copy()->addYear(),
+    ]);
+
+    $response = get(route('drivers.index', ['filter' => ['license_status' => 'expiring_soon']]));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->has('drivers.data', 1)
+            ->where('drivers.data.0.id', $expiringSoon->id)
+    );
+});
+
+test('index filters by license_status ok', function (): void {
+    $today = Carbon::today();
+
+    Driver::factory()->create([
+        'license_due_date' => $today->copy()->subDay(),
+    ]);
+
+    Driver::factory()->create([
+        'license_due_date' => $today->copy()->addDays(15),
+    ]);
+
+    $ok = Driver::factory()->create([
+        'license_due_date' => $today->copy()->addYear(),
+    ]);
+
+    $response = get(route('drivers.index', ['filter' => ['license_status' => 'ok']]));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->has('drivers.data', 1)
+            ->where('drivers.data.0.id', $ok->id)
+    );
+});
+
+test('index filters by has_social_security', function (): void {
+    $with = Driver::factory()->create(['has_social_security' => true]);
+    Driver::factory()->create(['has_social_security' => false]);
+
+    $response = get(route('drivers.index', ['filter' => ['has_social_security' => '1']]));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->has('drivers.data', 1)
+            ->where('drivers.data.0.id', $with->id)
+    );
+});
+
+test('license_status and has_social_security filters compose via AND', function (): void {
+    $today = Carbon::today();
+
+    // Expired but has SS
+    Driver::factory()->create([
+        'license_due_date' => $today->copy()->subDay(),
+        'has_social_security' => true,
+    ]);
+
+    // Expired AND no SS — the only one we expect to match
+    $expectedMatch = Driver::factory()->create([
+        'license_due_date' => $today->copy()->subDay(),
+        'has_social_security' => false,
+    ]);
+
+    // OK + no SS
+    Driver::factory()->create([
+        'license_due_date' => $today->copy()->addYear(),
+        'has_social_security' => false,
+    ]);
+
+    $response = get(route('drivers.index', [
+        'filter' => [
+            'license_status' => 'expired',
+            'has_social_security' => '0',
+        ],
+    ]));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->has('drivers.data', 1)
+            ->where('drivers.data.0.id', $expectedMatch->id)
+    );
+});
+
 test('create behaves as expected', function (): void {
     $response = get(route('drivers.create'));
 
