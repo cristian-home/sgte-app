@@ -2,10 +2,10 @@
 name: third-parties-crud
 type: feat
 scope: third-parties
-status: pending
+status: completed
 priority: medium
 created_date: 2026-04-14
-completed_date:
+completed_date: 2026-04-14
 srs_refs: ["REQ-006"]
 migration_strategy: new
 ---
@@ -29,27 +29,27 @@ This requirement also retires a cross-link TODO from the vehicles-crud rebuild: 
 
 ## Acceptance Criteria
 
-- [ ] **AC1**: WHEN an admin or operator navigates to `/third-parties` THEN the page renders a paginated `<DataTable>` (not a JSON dump) with columns: **Documento**, **Nombre**, **Tipo**, **Roles**, **Municipio**, **Vinculación**, **Acciones**.
-- [ ] **AC2**: WHEN a third party has `is_natural_person = true` THEN the **Tipo** cell renders "Natural" AND the **Nombre** cell renders the trimmed full natural-person name (`first_name + first_lastname`).
-- [ ] **AC3**: WHEN a third party has `is_natural_person = false` THEN the **Tipo** cell renders "Jurídica" AND the **Nombre** cell renders `company_name`.
-- [ ] **AC4**: WHEN a third party has `is_customer = true` THEN the **Roles** cell shows a `[Cliente]` Badge; WHEN `is_provider = true` THEN it ALSO shows a `[Proveedor]` Badge. Both badges render side-by-side when both flags are true. When neither is set, the cell renders an em-dash `—`.
-- [ ] **AC5**: WHEN the user applies the **Estado** filter (Activo / Inactivo) THEN only rows whose `active` boolean matches remain.
-- [ ] **AC6**: WHEN the user applies the **Tipo persona** filter (Natural / Jurídica) THEN only rows whose `is_natural_person` matches remain.
-- [ ] **AC7**: WHEN the user applies the **Es cliente** filter (Sí / No) THEN only rows whose `is_customer` matches remain.
-- [ ] **AC8**: WHEN the user applies the **Es proveedor** filter (Sí / No) THEN only rows whose `is_provider` matches remain. Combining with **Es cliente** narrows via AND.
-- [ ] **AC9**: WHEN the user picks a municipality from the `<MunicipalityCombobox />` rendered above the table THEN only rows whose `municipality_id` matches remain.
-- [ ] **AC10**: WHEN the user clicks the **Crear Tercero** action on the index THEN a new `<ThirdPartyCreateDialog />` modal opens. The modal contains the new shared `<ThirdPartyForm />` component preserving the current flat-with-conditional layout (a single `is_natural_person` toggle swaps between the four name fields and `company_name + trade_name`). On successful submit the modal closes AND the index refreshes with the new row visible.
-- [ ] **AC11**: WHEN the user navigates to `/third-parties/create` directly THEN the standalone create page renders the same `<ThirdPartyForm />` (no `idPrefix`, no modal wrapper) with a Guardar / Cancelar action bar. Cancelar returns to `/third-parties`.
-- [ ] **AC12**: WHEN the user navigates to `/third-parties/{id}/edit` THEN the edit page renders `<ThirdPartyForm />` with the third party's current values pre-filled and an Actualizar / Cancelar action bar.
-- [ ] **AC13**: WHEN the user clicks the **Documento** link in any row THEN the app navigates to `/third-parties/{id}` AND the show page renders **three unconditional** Card sections in this order:
+- [x] **AC1**: WHEN an admin or operator navigates to `/third-parties` THEN the page renders a paginated `<DataTable>` (not a JSON dump) with columns: **Documento**, **Nombre**, **Tipo**, **Roles**, **Municipio**, **Vinculación**, **Acciones**.
+- [x] **AC2**: WHEN a third party has `is_natural_person = true` THEN the **Tipo** cell renders "Natural" AND the **Nombre** cell renders the trimmed full natural-person name (`first_name + first_lastname`).
+- [x] **AC3**: WHEN a third party has `is_natural_person = false` THEN the **Tipo** cell renders "Jurídica" AND the **Nombre** cell renders `company_name`.
+- [x] **AC4**: WHEN a third party has `is_customer = true` THEN the **Roles** cell shows a `[Cliente]` Badge; WHEN `is_provider = true` THEN it ALSO shows a `[Proveedor]` Badge. Both badges render side-by-side when both flags are true. When neither is set, the cell renders an em-dash `—`.
+- [x] **AC5**: WHEN the user applies the **Estado** filter (Activo / Inactivo) THEN only rows whose `active` boolean matches remain.
+- [x] **AC6**: WHEN the user applies the **Tipo persona** filter (Natural / Jurídica) THEN only rows whose `is_natural_person` matches remain.
+- [x] **AC7**: WHEN the user applies the **Es cliente** filter (Sí / No) THEN only rows whose `is_customer` matches remain.
+- [x] **AC8**: WHEN the user applies the **Es proveedor** filter (Sí / No) THEN only rows whose `is_provider` matches remain. Combining with **Es cliente** narrows via AND.
+- [x] **AC9**: WHEN the user picks a municipality from the `<MunicipalityCombobox />` rendered above the table THEN only rows whose `municipality_id` matches remain.
+- [x] **AC10**: WHEN the user clicks the **Crear Tercero** action on the index THEN a new `<ThirdPartyCreateDialog />` modal opens. The modal contains the new shared `<ThirdPartyForm />` component preserving the current flat-with-conditional layout (a single `is_natural_person` toggle swaps between the four name fields and `company_name + trade_name`). On successful submit the modal closes AND the index refreshes with the new row visible.
+- [x] **AC11**: WHEN the user navigates to `/third-parties/create` directly THEN the standalone create page renders the same `<ThirdPartyForm />` (no `idPrefix`, no modal wrapper) with a Guardar / Cancelar action bar. Cancelar returns to `/third-parties`.
+- [x] **AC12**: WHEN the user navigates to `/third-parties/{id}/edit` THEN the edit page renders `<ThirdPartyForm />` with the third party's current values pre-filled and an Actualizar / Cancelar action bar.
+- [x] **AC13**: WHEN the user clicks the **Documento** link in any row THEN the app navigates to `/third-parties/{id}` AND the show page renders **three unconditional** Card sections in this order:
     1. **Header card** — full natural-person name OR `company_name` (with `trade_name` shown as a description when present), `documentType.code + identification_number` as the secondary label, an active/inactive Badge, and an Editar button.
     2. **Información General** — Tipo de Documento, Identificación, Tipo Persona (Natural / Jurídica), Cliente Badge (Sí/No variant), Proveedor Badge (Sí/No variant). Includes `trade_name` when the third party is a legal person and `trade_name` is non-empty.
     3. **Datos de Contacto** — Municipio (with department), Dirección, Teléfono, Correo Electrónico.
-- [ ] **AC14**: WHEN the third party has `is_provider = true` THEN a fourth **Vehículos del Tercero** Card renders with a small `<Table>` showing the last 5 vehicles where `vehicles.third_party_id = thirdParty.id`, ordered by `created_at` DESC, with columns **Placa** (Link to `/vehicles/{id}`), **Cód. Interno**, **Tipo**, **Estado**. Empty state "Sin vehículos asociados.".
-- [ ] **AC15**: WHEN the third party has `is_customer = true` THEN a fifth **Contratos** Card renders with a small `<Table>` showing the last 5 contracts where `contracts.third_party_id = thirdParty.id`, ordered by `start_date` DESC, with columns **Número** (Link to `/contracts/{id}`), **Objeto**, **Vigencia** (formatted `start_date → end_date` in `es-CO`), **Estado** (Activo/Inactivo from `active`). Empty state "Sin contratos registrados.".
-- [ ] **AC16**: WHEN the third party has `is_customer = false` AND `is_provider = false` THEN ONLY the three unconditional cards render (Header + Información General + Datos de Contacto). Neither Vehículos del Tercero nor Contratos appears in the DOM.
-- [ ] **AC17**: WHEN the user clicks "Ver tercero" from `vehicles/show.tsx` (the link in the Propietario card from commit `1b58831`) THEN the user lands on the rebuilt `/third-parties/{id}` show page (NOT the Blueprint stub).
-- [ ] **AC18**: WHEN a driver, accounting, or unauthenticated user navigates to `/third-parties` or `/third-parties/{id}` THEN they receive 401 (unauthenticated) or 403 (driver / accounting do NOT hold `VIEW_THIRD_PARTIES`).
+- [x] **AC14**: WHEN the third party has `is_provider = true` THEN a fourth **Vehículos del Tercero** Card renders with a small `<Table>` showing the last 5 vehicles where `vehicles.third_party_id = thirdParty.id`, ordered by `created_at` DESC, with columns **Placa** (Link to `/vehicles/{id}`), **Cód. Interno**, **Tipo**, **Estado**. Empty state "Sin vehículos asociados.".
+- [x] **AC15**: WHEN the third party has `is_customer = true` THEN a fifth **Contratos** Card renders with a small `<Table>` showing the last 5 contracts where `contracts.third_party_id = thirdParty.id`, ordered by `start_date` DESC, with columns **Número** (Link to `/contracts/{id}`), **Objeto**, **Vigencia** (formatted `start_date → end_date` in `es-CO`), **Estado** (Activo/Inactivo from `active`). Empty state "Sin contratos registrados.".
+- [x] **AC16**: WHEN the third party has `is_customer = false` AND `is_provider = false` THEN ONLY the three unconditional cards render (Header + Información General + Datos de Contacto). Neither Vehículos del Tercero nor Contratos appears in the DOM.
+- [x] **AC17**: WHEN the user clicks "Ver tercero" from `vehicles/show.tsx` (the link in the Propietario card from commit `1b58831`) THEN the user lands on the rebuilt `/third-parties/{id}` show page (NOT the Blueprint stub).
+- [x] **AC18**: WHEN a driver, accounting, or unauthenticated user navigates to `/third-parties` or `/third-parties/{id}` THEN they receive 401 (unauthenticated) or 403 (driver / accounting do NOT hold `VIEW_THIRD_PARTIES`).
 
 ## Technical Specification
 
@@ -119,14 +119,14 @@ After implementing this requirement, no `php artisan migrate` invocation is requ
 
 ### Backend
 
-- [ ] **Task B1**: Paginate `ThirdPartyController@index` and enrich its payload.
+- [x] **Task B1**: Paginate `ThirdPartyController@index` and enrich its payload.
   - Replace the trailing `->get()` with `->paginate($request->perPage())->withQueryString()` (per ADR-006 §7).
   - Add eager-loads: `'municipality:id,name,department_id'`, `'municipality.department:id,name'`, `'documentType:id,code,name'`.
   - Add `defaultSort('first_lastname')` (acceptable for legal persons because `first_lastname` is null and Postgres sorts nulls predictably; if test ordering becomes brittle, fall back to sorting by `id`).
   - Pass `municipalities` AND `documentTypes` to the page so the upcoming `<ThirdPartyCreateDialog />` modal has both option lists in a single trip.
   - Reference convention: `DriverController@index` after the drivers-crud rebuild.
 
-- [ ] **Task B2**: Expand `ThirdPartyController@show` to load relationships + recent vehicles + recent contracts.
+- [x] **Task B2**: Expand `ThirdPartyController@show` to load relationships + recent vehicles + recent contracts.
   - Eager-load `municipality.department` and `documentType:id,code,name`.
   - Load `recentVehicles` as a separate query: last 5 `Vehicle` records where `third_party_id = $thirdParty->id`, ordered by `created_at` DESC, with columns `id, plate, internal_code, type, status` selected.
   - Load `recentContracts` as a separate query: last 5 `Contract` records where `third_party_id = $thirdParty->id`, ordered by `start_date` DESC, with columns `id, contract_number, contract_object, start_date, end_date, active` selected. The `contract_object` enum value should serialize to its string value via the model cast.
@@ -135,7 +135,7 @@ After implementing this requirement, no `php artisan migrate` invocation is requ
 
 ### Frontend
 
-- [ ] **Task F1**: Create `resources/js/components/third-parties/third-party-form.tsx`.
+- [x] **Task F1**: Create `resources/js/components/third-parties/third-party-form.tsx`.
   - **Preserves the existing flat-with-conditional layout from create.tsx** (do NOT refactor to sectioned-with-headings).
   - Props: `{ data, setData, errors, documentTypes, municipalities, idPrefix? }`.
   - Field set in this order:
@@ -147,22 +147,22 @@ After implementing this requirement, no `php artisan migrate` invocation is requ
   - Required-field labels carry a small destructive-coloured asterisk via the same `<RequiredMarker />` convention used in `driver-form.tsx`. (Required fields are: `document_type_id`, `identification_number`, `address`, `phone`, `email`. The conditional name fields are also required *for their visible branch* — `first_name + first_lastname` for natural, `company_name` for legal — but this is enforced server-side; the visual marker should follow accordingly.)
   - Reference convention: read the current `resources/js/pages/third-parties/create.tsx` (lines 76–358) and lift its form body wholesale into the new component, parameterizing field ids with `idPrefix`.
 
-- [ ] **Task F2**: Refactor `resources/js/pages/third-parties/create.tsx` to use `<ThirdPartyForm />`.
+- [x] **Task F2**: Refactor `resources/js/pages/third-parties/create.tsx` to use `<ThirdPartyForm />`.
   - Keep the `useForm` initialization with the same default-empty values.
   - Replace the entire `<form>` body (everything inside `<form onSubmit={submit} className="space-y-6">`) with `<ThirdPartyForm data={data} setData={setData} errors={errors} documentTypes={documentTypes} municipalities={municipalities} />` plus the existing Guardar / Cancelar action bar at the bottom.
   - Delete unused imports (the conditional rendering imports — `Switch`, `Checkbox`, `Select*`, etc. — are no longer needed in create.tsx).
   - Net effect: ~250 lines removed, ~10 lines added.
 
-- [ ] **Task F3**: Refactor `resources/js/pages/third-parties/edit.tsx` to use `<ThirdPartyForm />`.
+- [x] **Task F3**: Refactor `resources/js/pages/third-parties/edit.tsx` to use `<ThirdPartyForm />`.
   - Same edit pattern as F2: keep the `useForm` initialization (which reads from the `thirdParty` prop), replace the form body, drop unused imports.
   - May be bundled with F2 in a single commit since both files apply identical edits — left to the agent's judgment.
 
-- [ ] **Task F4**: Create `resources/js/components/third-parties/third-party-create-dialog.tsx`.
+- [x] **Task F4**: Create `resources/js/components/third-parties/third-party-create-dialog.tsx`.
   - Modal wrapper mirroring `driver-create-dialog.tsx`. Owns its own `useForm` with all the default-empty fields. Submits to `ThirdPartyController.store()`. On success: `reset()` + `onOpenChange(false)`.
   - Wraps `<ThirdPartyForm idPrefix="dlg" {...} />` inside a `<DialogContent>` with the standard "max-h-[calc(100vh-4rem)] flex flex-col px-0 sm:max-w-3xl" sizing.
   - Submit button "Guardar"; cancel via `<DialogClose />`.
 
-- [ ] **Task F5**: Create `resources/js/pages/third-parties/columns.tsx`.
+- [x] **Task F5**: Create `resources/js/pages/third-parties/columns.tsx`.
   - Seven `ColumnDef<ThirdPartyRow>` entries:
     1. `documento` (computed `id: 'documento'`) — header "Documento", cell renders `<Link to thirdParties.show(id).url>` with text `${documentType.code} ${identification_number}` in font-mono.
     2. `nombre` (computed `id: 'nombre'`, `accessorFn` for sorting) — header "Nombre" (sortable via `<DataTableColumnHeader />`), cell returns the natural-or-legal name (`is_natural_person ? first_name + first_lastname : company_name`).
@@ -173,7 +173,7 @@ After implementing this requirement, no `php artisan migrate` invocation is requ
     7. `actions` — `<DataTableRowActions editUrl={thirdParties.edit(id).url} onDelete={...} />` wrapped in `<Can permission={Permission.DELETE_THIRD_PARTIES}>`.
   - Use the same `Pick + & relations` pattern that vehicles/columns and drivers/columns settled on. Define a local `type ThirdPartyRow = ThirdParty & { document_type?: DocumentType | null; municipality?: Municipality | null }`.
 
-- [ ] **Task F6**: Rewrite `resources/js/pages/third-parties/index.tsx`.
+- [x] **Task F6**: Rewrite `resources/js/pages/third-parties/index.tsx`.
   - Replace the `<pre>` JSON dump with the services/vehicles/drivers index pattern.
   - Define `thirdPartyFilters: FilterDefinition[]`:
     - `active` → "Estado" (1 → "Activo", 0 → "Inactivo")
@@ -186,7 +186,7 @@ After implementing this requirement, no `php artisan migrate` invocation is requ
   - Type the page props as `{ thirdParties: PaginatedData<ThirdPartyRow>, municipalities: MunicipalityOption[], documentTypes: DocumentTypeOption[] }`.
   - Reference convention: `resources/js/pages/drivers/index.tsx`.
 
-- [ ] **Task F7**: Rewrite `resources/js/pages/third-parties/show.tsx`.
+- [x] **Task F7**: Rewrite `resources/js/pages/third-parties/show.tsx`.
   - **Three unconditional Card sections** in this order:
     1. **Header card** — header includes the full name (natural) OR `company_name`. When `trade_name` is non-empty, show it as the description below. `documentType.code + identification_number` in font-mono. Active Badge + Editar button.
     2. **Información General** — 2-col grid: Tipo de Documento (`code — name`), Identificación, Tipo Persona ("Natural" / "Jurídica"). Plus a dedicated row for Cliente / Proveedor badges (using `default` variant when the flag is true, `outline` when false). Plus `Trade Name` field when `is_natural_person === false` AND `trade_name` is non-empty.
@@ -200,23 +200,23 @@ After implementing this requirement, no `php artisan migrate` invocation is requ
 
 ### Tests
 
-- [ ] **Task T1 (Pest, backend)**: Add to `tests/Feature/Http/Controllers/ThirdPartyControllerTest.php`:
+- [x] **Task T1 (Pest, backend)**: Add to `tests/Feature/Http/Controllers/ThirdPartyControllerTest.php`:
   - `test('index returns paginated payload')` — assert `thirdParties.data` is array, `per_page`, `current_page`, `total` exist.
   - `test('index passes catalog data needed by the create modal')` — assert `municipalities` and `documentTypes` props are present.
 
-- [ ] **Task T2 (Pest, backend)**: Add filter tests:
+- [x] **Task T2 (Pest, backend)**: Add filter tests:
   - `test('index filters by is_customer')` — seed 2 third parties with mixed flags; assert filter narrows correctly.
   - `test('index filters by is_provider')` — same shape.
   - `test('index filters compose is_customer AND is_provider')` — seed 4 third parties (cliente-only, proveedor-only, both, neither); apply both filters set to "Sí"; assert only the "both" row remains.
   - `test('index filters by is_natural_person')` — seed 2; assert filter narrows.
 
-- [ ] **Task T3 (Pest, backend)**: Add show tests:
+- [x] **Task T3 (Pest, backend)**: Add show tests:
   - `test('show returns recent vehicles when is_provider is true')` — seed a provider third party with 7 vehicles; assert `recentVehicles` length is 5 ordered by created_at DESC.
   - `test('show returns empty recent vehicles when is_provider is false')` — assert `recentVehicles` is an empty array.
   - `test('show returns recent contracts when is_customer is true')` — seed a customer third party with 7 contracts; assert `recentContracts` length is 5 ordered by start_date DESC.
   - `test('show returns empty recent contracts when is_customer is false')` — assert `recentContracts` is an empty array.
 
-- [ ] **Task T4 (Dusk, UI regression)**: Create `tests/Browser/ThirdPartiesIndexAndShowTest.php` with four scenarios in a single consolidated file (mirroring `VehiclesIndexAndShowTest.php` and `DriversIndexAndShowTest.php`):
+- [x] **Task T4 (Dusk, UI regression)**: Create `tests/Browser/ThirdPartiesIndexAndShowTest.php` with four scenarios in a single consolidated file (mirroring `VehiclesIndexAndShowTest.php` and `DriversIndexAndShowTest.php`):
 
   1. **`third parties index renders the table with Spanish headers and combines role filters`** — admin loads `/third-parties`, asserts table headers (Documento, Nombre, Tipo, Roles, Municipio, Vinculación), no error banners; applies `is_customer = Sí` AND `is_provider = Sí`, asserts only the "both" row remains.
 
@@ -254,12 +254,12 @@ Preferred flow:
 7. Logout. Login as driver. Navigate to `/third-parties` — verify a 403 page appears.
 8. Use `mcp__laravel-boost__browser-logs` to inspect any JS console errors during the flow.
 
-- [ ] Scenario 1: Admin sees the rebuilt index, applies the role-combination filter.
-- [ ] Scenario 2: Admin opens the show page for a customer-only third party — only Contratos card renders.
-- [ ] Scenario 3: Admin opens the show page for a provider-only third party — only Vehículos card renders.
-- [ ] Scenario 4: Admin opens the show page for a both-roles third party — both conditional cards render.
-- [ ] Scenario 5: "Ver tercero" cross-link from `vehicles/show.tsx` lands on the rebuilt show page.
-- [ ] Scenario 6: Driver receives 403 on `/third-parties`.
+- [x] Scenario 1: Admin sees the rebuilt index, applies the role-combination filter.
+- [x] Scenario 2: Admin opens the show page for a customer-only third party — only Contratos card renders.
+- [x] Scenario 3: Admin opens the show page for a provider-only third party — only Vehículos card renders.
+- [x] Scenario 4: Admin opens the show page for a both-roles third party — both conditional cards render.
+- [x] Scenario 5: "Ver tercero" cross-link from `vehicles/show.tsx` lands on the rebuilt show page.
+- [x] Scenario 6: Driver receives 403 on `/third-parties`.
 
 ### 2. Backend regression — Pest feature tests (required)
 
