@@ -165,8 +165,27 @@ class VehicleController extends Controller
     {
         Gate::authorize(Permission::VIEW_VEHICLES->value);
 
+        $vehicle->load([
+            'municipality:id,name,department_id',
+            'municipality.department:id,name',
+            'thirdParty:id,company_name,first_name,first_lastname,is_natural_person,identification_number',
+        ]);
+
+        $recentServices = Service::query()
+            ->where('vehicle_id', $vehicle->id)
+            ->with([
+                'driver:id,first_name,first_lastname',
+                'contract:id,contract_number,third_party_id',
+                'contract.thirdParty:id,company_name,first_name,first_lastname,is_natural_person',
+            ])
+            ->orderByDesc('service_date')
+            ->orderByDesc('planned_start_time')
+            ->limit(5)
+            ->get();
+
         return Inertia::render('vehicles/show', [
             'vehicle' => $vehicle,
+            'recentServices' => $recentServices,
         ]);
     }
 

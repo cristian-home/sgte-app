@@ -3,6 +3,7 @@
 namespace Tests\Feature\Http\Controllers;
 
 use App\Models\Municipality;
+use App\Models\Service;
 use App\Models\ThirdParty;
 use App\Models\User;
 use App\Models\Vehicle;
@@ -289,6 +290,54 @@ test('show behaves as expected', function (): void {
     $response = get(route('vehicles.show', $vehicle));
 
     $response->assertOk();
+});
+
+test('show returns vehicle with relationships and recent services', function (): void {
+    $municipality = Municipality::factory()->create();
+    $thirdParty = ThirdParty::factory()->create();
+    $vehicle = Vehicle::factory()->create([
+        'municipality_id' => $municipality->id,
+        'is_third_party' => true,
+        'third_party_id' => $thirdParty->id,
+    ]);
+
+    Service::factory()->count(7)->sequence(
+        ['service_date' => Carbon::today()->subDays(1)],
+        ['service_date' => Carbon::today()->subDays(2)],
+        ['service_date' => Carbon::today()->subDays(3)],
+        ['service_date' => Carbon::today()->subDays(4)],
+        ['service_date' => Carbon::today()->subDays(5)],
+        ['service_date' => Carbon::today()->subDays(6)],
+        ['service_date' => Carbon::today()->subDays(7)],
+    )->create([
+        'vehicle_id' => $vehicle->id,
+    ]);
+
+    $response = get(route('vehicles.show', $vehicle));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->component('vehicles/show')
+            ->where('vehicle.id', $vehicle->id)
+            ->where('vehicle.municipality.id', $municipality->id)
+            ->has('vehicle.municipality.department')
+            ->where('vehicle.third_party.id', $thirdParty->id)
+            ->has('recentServices', 5)
+    );
+});
+
+test('show returns empty recentServices when none exist', function (): void {
+    $vehicle = Vehicle::factory()->create();
+
+    $response = get(route('vehicles.show', $vehicle));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->component('vehicles/show')
+            ->has('recentServices', 0)
+    );
 });
 
 test('edit behaves as expected', function (): void {
