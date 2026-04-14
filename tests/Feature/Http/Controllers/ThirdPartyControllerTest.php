@@ -2,10 +2,12 @@
 
 namespace Tests\Feature\Http\Controllers;
 
+use App\Models\Contract;
 use App\Models\DocumentType;
 use App\Models\Municipality;
 use App\Models\ThirdParty;
 use App\Models\User;
+use App\Models\Vehicle;
 
 use function Pest\Laravel\assertSoftDeleted;
 use function Pest\Laravel\delete;
@@ -25,6 +27,99 @@ test('index behaves as expected', function (): void {
     $response = get(route('third-parties.index'));
 
     $response->assertOk();
+});
+
+test('index returns a paginated payload', function (): void {
+    ThirdParty::factory()->count(3)->create();
+
+    $response = get(route('third-parties.index'));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->component('third-parties/index')
+            ->has('thirdParties.data', 3)
+            ->has('thirdParties.per_page')
+            ->has('thirdParties.current_page')
+            ->has('thirdParties.total')
+    );
+});
+
+test('index passes catalog data needed by the create modal', function (): void {
+    DocumentType::factory()->create();
+    Municipality::factory()->create();
+
+    $response = get(route('third-parties.index'));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->has('municipalities')
+            ->has('documentTypes')
+    );
+});
+
+test('index filters by is_customer', function (): void {
+    $customer = ThirdParty::factory()->create(['is_customer' => true, 'is_provider' => false]);
+    ThirdParty::factory()->create(['is_customer' => false, 'is_provider' => true]);
+
+    $response = get(route('third-parties.index', ['filter' => ['is_customer' => '1']]));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->has('thirdParties.data', 1)
+            ->where('thirdParties.data.0.id', $customer->id)
+    );
+});
+
+test('index filters by is_provider', function (): void {
+    ThirdParty::factory()->create(['is_customer' => true, 'is_provider' => false]);
+    $provider = ThirdParty::factory()->create(['is_customer' => false, 'is_provider' => true]);
+
+    $response = get(route('third-parties.index', ['filter' => ['is_provider' => '1']]));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->has('thirdParties.data', 1)
+            ->where('thirdParties.data.0.id', $provider->id)
+    );
+});
+
+test('index filters compose is_customer AND is_provider', function (): void {
+    ThirdParty::factory()->create(['is_customer' => true, 'is_provider' => false]);
+    ThirdParty::factory()->create(['is_customer' => false, 'is_provider' => true]);
+    $both = ThirdParty::factory()->create(['is_customer' => true, 'is_provider' => true]);
+    ThirdParty::factory()->create(['is_customer' => false, 'is_provider' => false]);
+
+    $response = get(route('third-parties.index', [
+        'filter' => [
+            'is_customer' => '1',
+            'is_provider' => '1',
+        ],
+    ]));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->has('thirdParties.data', 1)
+            ->where('thirdParties.data.0.id', $both->id)
+    );
+});
+
+test('index filters by is_natural_person', function (): void {
+    $natural = ThirdParty::factory()->create(['is_natural_person' => true]);
+    ThirdParty::factory()->create(['is_natural_person' => false]);
+
+    $response = get(route('third-parties.index', ['filter' => ['is_natural_person' => '1']]));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->has('thirdParties.data', 1)
+            ->where('thirdParties.data.0.id', $natural->id)
+    );
 });
 
 test('create behaves as expected', function (): void {
@@ -101,6 +196,96 @@ test('show behaves as expected', function (): void {
     $response = get(route('third-parties.show', $thirdParty));
 
     $response->assertOk();
+});
+
+test('show returns recent vehicles when is_provider is true', function (): void {
+    $provider = ThirdParty::factory()->create([
+        'is_provider' => true,
+        'is_customer' => false,
+    ]);
+
+    Vehicle::factory()->count(7)->create([
+        'is_third_party' => true,
+        'third_party_id' => $provider->id,
+    ]);
+
+    $response = get(route('third-parties.show', $provider));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->component('third-parties/show')
+            ->where('thirdParty.id', $provider->id)
+            ->has('recentVehicles', 5)
+            ->has('recentContracts', 0)
+    );
+});
+
+test('show returns empty recent vehicles when is_provider is false', function (): void {
+    $customer = ThirdParty::factory()->create([
+        'is_provider' => false,
+        'is_customer' => true,
+    ]);
+
+    $response = get(route('third-parties.show', $customer));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->has('recentVehicles', 0)
+    );
+});
+
+test('show returns recent contracts when is_customer is true', function (): void {
+    $customer = ThirdParty::factory()->create([
+        'is_customer' => true,
+        'is_provider' => false,
+    ]);
+
+    Contract::factory()->count(7)->create([
+        'third_party_id' => $customer->id,
+    ]);
+
+    $response = get(route('third-parties.show', $customer));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->component('third-parties/show')
+            ->where('thirdParty.id', $customer->id)
+            ->has('recentContracts', 5)
+            ->has('recentVehicles', 0)
+    );
+});
+
+test('show returns empty recent contracts when is_customer is false', function (): void {
+    $provider = ThirdParty::factory()->create([
+        'is_provider' => true,
+        'is_customer' => false,
+    ]);
+
+    $response = get(route('third-parties.show', $provider));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->has('recentContracts', 0)
+    );
+});
+
+test('show eager-loads relationships used by the rebuilt page', function (): void {
+    $municipality = Municipality::factory()->create();
+    $thirdParty = ThirdParty::factory()->create(['municipality_id' => $municipality->id]);
+
+    $response = get(route('third-parties.show', $thirdParty));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->where('thirdParty.municipality.id', $municipality->id)
+            ->has('thirdParty.municipality.department')
+            ->has('thirdParty.document_type')
+    );
 });
 
 test('edit behaves as expected', function (): void {

@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Enums\Permission;
 use App\Http\Requests\ThirdPartyStoreRequest;
 use App\Http\Requests\ThirdPartyUpdateRequest;
+use App\Models\Contract;
 use App\Models\DocumentType;
 use App\Models\Municipality;
 use App\Models\ThirdParty;
+use App\Models\Vehicle;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -21,7 +23,13 @@ class ThirdPartyController extends Controller
     public function index(Request $request): Response
     {
         Gate::authorize(Permission::VIEW_THIRD_PARTIES->value);
+
         $thirdParties = QueryBuilder::for(ThirdParty::class)
+            ->with([
+                'municipality:id,name,department_id',
+                'municipality.department:id,name',
+                'documentType:id,code,name',
+            ])
             ->allowedFilters([
                 'identification_number',
                 AllowedFilter::exact('is_natural_person'),
@@ -34,11 +42,29 @@ class ThirdPartyController extends Controller
                 AllowedFilter::exact('active'),
             ])
             ->allowedSorts(['first_name', 'first_lastname', 'company_name', 'municipality_id', 'active'])
-            ->get();
+            ->defaultSort('id')
+            ->paginate($request->perPage())
+            ->withQueryString();
 
         return Inertia::render('third-parties/index', [
             'thirdParties' => $thirdParties,
+            'municipalities' => $this->municipalitiesPayload(),
+            'documentTypes' => DocumentType::orderBy('code')->get(['id', 'code', 'name']),
         ]);
+    }
+
+    /**
+     * Shared municipality payload — eager-loads department for the
+     * combobox grouping and sorts by name.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, Municipality>
+     */
+    private function municipalitiesPayload(): \Illuminate\Database\Eloquent\Collection
+    {
+        return Municipality::query()
+            ->with('department:id,name')
+            ->orderBy('name')
+            ->get(['id', 'name', 'code', 'department_id']);
     }
 
     public function create(Request $request): Response
@@ -46,11 +72,8 @@ class ThirdPartyController extends Controller
         Gate::authorize(Permission::CREATE_THIRD_PARTIES->value);
 
         return Inertia::render('third-parties/create', [
-            'documentTypes' => DocumentType::all(['id', 'code', 'name']),
-            'municipalities' => Municipality::query()
-                ->with('department:id,name')
-                ->orderBy('name')
-                ->get(['id', 'name', 'code', 'department_id']),
+            'documentTypes' => DocumentType::orderBy('code')->get(['id', 'code', 'name']),
+            'municipalities' => $this->municipalitiesPayload(),
         ]);
     }
 
@@ -66,8 +89,31 @@ class ThirdPartyController extends Controller
     {
         Gate::authorize(Permission::VIEW_THIRD_PARTIES->value);
 
+        $thirdParty->load([
+            'municipality:id,name,department_id',
+            'municipality.department:id,name',
+            'documentType:id,code,name',
+        ]);
+
+        // Always send both arrays — frontend gates the conditional
+        // cards on is_provider / is_customer flags. Empty arrays are a
+        // valid state for either role being false.
+        $recentVehicles = Vehicle::query()
+            ->where('third_party_id', $thirdParty->id)
+            ->orderByDesc('created_at')
+            ->limit(5)
+            ->get(['id', 'plate', 'internal_code', 'type', 'status']);
+
+        $recentContracts = Contract::query()
+            ->where('third_party_id', $thirdParty->id)
+            ->orderByDesc('start_date')
+            ->limit(5)
+            ->get(['id', 'contract_number', 'contract_object', 'start_date', 'end_date', 'active']);
+
         return Inertia::render('third-parties/show', [
             'thirdParty' => $thirdParty,
+            'recentVehicles' => $recentVehicles,
+            'recentContracts' => $recentContracts,
         ]);
     }
 
@@ -77,11 +123,8 @@ class ThirdPartyController extends Controller
 
         return Inertia::render('third-parties/edit', [
             'thirdParty' => $thirdParty,
-            'documentTypes' => DocumentType::all(['id', 'code', 'name']),
-            'municipalities' => Municipality::query()
-                ->with('department:id,name')
-                ->orderBy('name')
-                ->get(['id', 'name', 'code', 'department_id']),
+            'documentTypes' => DocumentType::orderBy('code')->get(['id', 'code', 'name']),
+            'municipalities' => $this->municipalitiesPayload(),
         ]);
     }
 
