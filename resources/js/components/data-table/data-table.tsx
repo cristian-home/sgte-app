@@ -15,11 +15,13 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { cn } from '@/lib/utils';
 import { DataTablePagination } from './data-table-pagination';
 import { DataTableToolbar } from './data-table-toolbar';
 
 import type {
     ColumnDef,
+    Row,
     SortingState,
     Table as TanStackTable,
 } from '@tanstack/react-table';
@@ -39,6 +41,13 @@ interface ServerSideProps<TData> {
     onFilterChange?: (name: string, values: string[]) => void;
     onClearFilters?: () => void;
     actions?: React.ReactNode;
+    /**
+     * Optional row-level classname hook. Returns a className string (or
+     * undefined) to apply to the <TableRow>. Useful for tinting rows by
+     * domain state — e.g., the vehicles index tints rows whose documents
+     * are expired or expiring soon.
+     */
+    getRowClassName?: (row: Row<TData>) => string | undefined;
 }
 
 interface ClientSideProps<TData, TValue> {
@@ -81,6 +90,7 @@ function ServerSideDataTable<TData>({
     onFilterChange,
     onClearFilters,
     actions,
+    getRowClassName,
 }: ServerSideProps<TData>) {
     'use no memo';
 
@@ -103,7 +113,10 @@ function ServerSideDataTable<TData>({
                     loading ? 'pointer-events-none opacity-50' : undefined
                 }
             >
-                <DataTableBody table={table} />
+                <DataTableBody
+                    table={table}
+                    getRowClassName={getRowClassName}
+                />
             </div>
 
             <DataTablePagination
@@ -168,7 +181,13 @@ function ClientSideDataTable<TData, TValue>({
     );
 }
 
-function DataTableBody<TData>({ table }: { table: TanStackTable<TData> }) {
+function DataTableBody<TData>({
+    table,
+    getRowClassName,
+}: {
+    table: TanStackTable<TData>;
+    getRowClassName?: (row: Row<TData>) => string | undefined;
+}) {
     'use no memo';
     const columnCount = table.getAllColumns().length;
 
@@ -194,7 +213,10 @@ function DataTableBody<TData>({ table }: { table: TanStackTable<TData> }) {
                 <TableBody>
                     {table.getRowModel().rows.length ? (
                         table.getRowModel().rows.map((row) => (
-                            <TableRow key={row.id}>
+                            <TableRow
+                                key={row.id}
+                                className={cn(getRowClassName?.(row))}
+                            >
                                 {row.getVisibleCells().map((cell) => (
                                     <TableCell key={cell.id}>
                                         {flexRender(

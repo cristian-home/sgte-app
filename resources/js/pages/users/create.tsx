@@ -1,5 +1,4 @@
 import { Head, useForm } from '@inertiajs/react';
-import { FormEventHandler } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -12,6 +11,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
+import type { FormEventHandler } from 'react';
 import type { BreadcrumbItem } from '@/types';
 
 interface RoleOption {
