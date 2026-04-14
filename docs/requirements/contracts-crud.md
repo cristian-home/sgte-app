@@ -2,10 +2,10 @@
 name: contracts-crud
 type: feat
 scope: contracts
-status: pending
+status: completed
 priority: high
 created_date: 2026-04-13
-completed_date:
+completed_date: 2026-04-14
 srs_refs: ["REQ-006", "REQ-011"]
 migration_strategy: new
 ---
@@ -34,38 +34,38 @@ Finally, this rebuild retires the cross-link TODO from third-parties-crud: the *
 
 ## Acceptance Criteria
 
-- [ ] **AC1**: WHEN an admin or operator navigates to `/contracts` THEN the page renders a paginated `<DataTable>` (not a JSON dump) with columns **Número**, **Cliente**, **Objeto**, **Vigencia**, **Estado**, **Acciones**.
-- [ ] **AC2**: WHEN a contract row renders THEN the **Número** cell shows `contract.contract_number` in font-mono and is a `<Link>` to `/contracts/{id}`.
-- [ ] **AC3**: WHEN a contract row renders THEN the **Cliente** cell shows the computed third-party name (natural `first_name + first_lastname` OR `company_name`) as a `<Link>` to `/third-parties/{third_party_id}`.
-- [ ] **AC4**: WHEN a contract row renders THEN the **Objeto** cell shows the Spanish label for `contract_object` (Empresarial / Turismo / Salud / Ocasional).
-- [ ] **AC5**: WHEN a contract row renders THEN the **Vigencia** cell shows `start_date → end_date` formatted via the shared `dateFormatter` (`es-CO`, `dd/mm/yyyy`).
-- [ ] **AC6**: WHEN a contract row renders THEN the **Estado** cell shows a `<ContractPeriodPill />` computing the four-state machine against today:
+- [x] **AC1**: WHEN an admin or operator navigates to `/contracts` THEN the page renders a paginated `<DataTable>` (not a JSON dump) with columns **Número**, **Cliente**, **Objeto**, **Vigencia**, **Estado**, **Acciones**.
+- [x] **AC2**: WHEN a contract row renders THEN the **Número** cell shows `contract.contract_number` in font-mono and is a `<Link>` to `/contracts/{id}`.
+- [x] **AC3**: WHEN a contract row renders THEN the **Cliente** cell shows the computed third-party name (natural `first_name + first_lastname` OR `company_name`) as a `<Link>` to `/third-parties/{third_party_id}`.
+- [x] **AC4**: WHEN a contract row renders THEN the **Objeto** cell shows the Spanish label for `contract_object` (Empresarial / Turismo / Salud / Ocasional).
+- [x] **AC5**: WHEN a contract row renders THEN the **Vigencia** cell shows `start_date → end_date` formatted via the shared `dateFormatter` (`es-CO`, `dd/mm/yyyy`).
+- [x] **AC6**: WHEN a contract row renders THEN the **Estado** cell shows a `<ContractPeriodPill />` computing the four-state machine against today:
     - `active === false` → **Inactivo** (outline Badge, no suffix).
     - `active === true AND today > end_date` → **Vencido!** (destructive Badge with exclamation suffix).
     - `active === true AND end_date within 60 days of today` → **Por vencer** (secondary Badge).
     - `active === true AND start_date <= today <= end_date` AND `end_date > today + 60d` → **Vigente** (default Badge).
     - `active === true AND today < start_date` → still **Vigente** (future-dated contracts are considered in-force once `active` is true; this mirrors the current-backend behavior).
-- [ ] **AC7**: WHEN the user applies the **Estado** filter with value `vigente`, `por_vencer`, `vencido`, or `inactivo` THEN only rows matching the four-state machine remain. The filter MUST be implemented as a `Spatie\QueryBuilder\AllowedFilter::callback` named `contract_status` on `ContractController@index`.
-- [ ] **AC8**: WHEN the user applies the **Objeto** filter with any of the 4 `ContractObject` enum values THEN only rows whose `contract_object` matches remain. The filter is `AllowedFilter::exact('contract_object')` (current backend has it as a partial filter — this rebuild tightens it to exact).
-- [ ] **AC9**: WHEN the user picks a customer from the `<ThirdPartyCombobox role="customer" />` rendered above the table THEN only contracts whose `third_party_id` matches remain.
-- [ ] **AC10**: WHEN the user applies the **Activo** filter (Sí / No) THEN only rows whose `active` boolean matches remain.
-- [ ] **AC11**: WHEN a row's state is `vencido` THEN the row is tinted with `bg-destructive/10`; WHEN a row's state is `por_vencer` THEN the row is tinted with `bg-amber-500/10`; WHEN a row's state is `inactivo` THEN the row is tinted with `bg-muted/60`; WHEN the state is `vigente` THEN no tint is applied. Implemented via a `getRowClassName` prop passed to `<DataTable>` (reuses the hook added in vehicles-crud).
-- [ ] **AC12**: WHEN the user clicks the **Crear Contrato** action on the index THEN a `<ContractCreateDialog />` modal opens. The modal contains the new shared `<ContractForm />` component and, on successful submit, closes AND the index refreshes with the new row visible.
-- [ ] **AC13**: WHEN the user navigates to `/contracts/create` directly THEN the standalone create page renders `<ContractForm />` (no `idPrefix`, no modal wrapper) with a Guardar / Cancelar action bar. Cancelar returns to `/contracts`.
-- [ ] **AC14**: WHEN the user navigates to `/contracts/{id}/edit` THEN the edit page renders `<ContractForm />` with the contract's current values pre-filled AND an Actualizar / Cancelar action bar. The `<ThirdPartyCombobox />` inside the edit form receives `forceInclude={[thirdParty]}` so a contract whose customer has been flipped to `is_customer=false` STILL shows the current value in the option list.
-- [ ] **AC15**: WHEN the user toggles `is_generic` to `true` inside `<ContractForm />` THEN the `contract_number` Input HIDES AND a muted description replaces it reading **"Se generará automáticamente al guardar (GEN-####-YYYY)."**. WHEN the user toggles `is_generic` back to `false` THEN the Input re-appears; any previously-typed value is preserved (no reset).
-- [ ] **AC16**: WHEN the user submits a generic contract with an empty `contract_number` THEN the existing backend auto-generation logic (`GEN-####-YYYY` with a per-year sequence count) applies unchanged. **This load-bearing logic in `ContractController@store` MUST be preserved as-is — the rebuild only touches the Inertia layer above it.**
-- [ ] **AC17**: WHEN the user clicks the **Número** link in any row THEN the app navigates to `/contracts/{id}` AND the show page renders **five** Card sections in this order:
+- [x] **AC7**: WHEN the user applies the **Estado** filter with value `vigente`, `por_vencer`, `vencido`, or `inactivo` THEN only rows matching the four-state machine remain. The filter MUST be implemented as a `Spatie\QueryBuilder\AllowedFilter::callback` named `contract_status` on `ContractController@index`.
+- [x] **AC8**: WHEN the user applies the **Objeto** filter with any of the 4 `ContractObject` enum values THEN only rows whose `contract_object` matches remain. The filter is `AllowedFilter::exact('contract_object')` (current backend has it as a partial filter — this rebuild tightens it to exact).
+- [x] **AC9**: WHEN the user picks a customer from the `<ThirdPartyCombobox role="customer" />` rendered above the table THEN only contracts whose `third_party_id` matches remain.
+- [x] **AC10**: WHEN the user applies the **Activo** filter (Sí / No) THEN only rows whose `active` boolean matches remain.
+- [x] **AC11**: WHEN a row's state is `vencido` THEN the row is tinted with `bg-destructive/10`; WHEN a row's state is `por_vencer` THEN the row is tinted with `bg-amber-500/10`; WHEN a row's state is `inactivo` THEN the row is tinted with `bg-muted/60`; WHEN the state is `vigente` THEN no tint is applied. Implemented via a `getRowClassName` prop passed to `<DataTable>` (reuses the hook added in vehicles-crud).
+- [x] **AC12**: WHEN the user clicks the **Crear Contrato** action on the index THEN a `<ContractCreateDialog />` modal opens. The modal contains the new shared `<ContractForm />` component and, on successful submit, closes AND the index refreshes with the new row visible.
+- [x] **AC13**: WHEN the user navigates to `/contracts/create` directly THEN the standalone create page renders `<ContractForm />` (no `idPrefix`, no modal wrapper) with a Guardar / Cancelar action bar. Cancelar returns to `/contracts`.
+- [x] **AC14**: WHEN the user navigates to `/contracts/{id}/edit` THEN the edit page renders `<ContractForm />` with the contract's current values pre-filled AND an Actualizar / Cancelar action bar. The `<ThirdPartyCombobox />` inside the edit form receives `forceInclude={[thirdParty]}` so a contract whose customer has been flipped to `is_customer=false` STILL shows the current value in the option list.
+- [x] **AC15**: WHEN the user toggles `is_generic` to `true` inside `<ContractForm />` THEN the `contract_number` Input HIDES AND a muted description replaces it reading **"Se generará automáticamente al guardar (GEN-####-YYYY)."**. WHEN the user toggles `is_generic` back to `false` THEN the Input re-appears; any previously-typed value is preserved (no reset).
+- [x] **AC16**: WHEN the user submits a generic contract with an empty `contract_number` THEN the existing backend auto-generation logic (`GEN-####-YYYY` with a per-year sequence count) applies unchanged. **This load-bearing logic in `ContractController@store` MUST be preserved as-is — the rebuild only touches the Inertia layer above it.**
+- [x] **AC17**: WHEN the user clicks the **Número** link in any row THEN the app navigates to `/contracts/{id}` AND the show page renders **five** Card sections in this order:
     1. **Header card** — `contract_number` (font-mono) as the title, the customer's computed name as the description, a `<ContractPeriodPill />`, an Activo/Inactivo Badge, and an Editar button.
     2. **Datos del Contrato** — Objeto (Spanish label), Contrato Genérico (Sí/No Badge), Recorrido / Ruta (`route_description` rendered as a multi-line paragraph preserving whitespace).
     3. **Cliente** — a tiny summary block: customer name, `documentType.code + identification_number` in font-mono, a "Ver tercero" `<Link>` to `/third-parties/{third_party_id}`.
     4. **Vigencia** — 3-column layout: Fecha de Inicio (`start_date`), Fecha de Fin (`end_date`), Días restantes (computed from today relative to `end_date`, signed — negative for expired — displayed with the same four-state Badge variant as the pill).
     5. **Servicios Recientes** — a small `<Table>` with the last 5 services where `services.contract_id = contract.id`, ordered by `service_date` DESC, columns **Fecha** (Link to `/services/{id}`), **Vehículo** (plate), **Conductor** (computed name), **Estado** (ServiceStatus Badge). Empty state "Sin servicios registrados." inside the table when the array is empty.
-- [ ] **AC18**: WHEN the user clicks "Ver contrato" from any row in the Contratos card on `third-parties/show.tsx` (commit `ebedc3a`) THEN the user lands on the rebuilt `/contracts/{id}` show page (NOT a Blueprint stub).
-- [ ] **AC19**: WHEN an admin loads `/dashboard` AND at least one contract is `vencido` or within 60 days of `end_date` with `active = true` THEN the **Alertas de Documentos** panel shows one row per alerting contract with `kind = 'contract'`, `label = 'Contrato'`, `subject = contract_number`, `due_date = end_date`, `days_remaining` signed, AND a deep-link to `/contracts?filter[contract_status]=vencido` (when `days_remaining < 0`) or `/contracts?filter[contract_status]=expiring_soon` (when `>= 0`). The panel remains capped at `ALERTS_MAX_ROWS = 10` and continues to sort all rows by `days_remaining` ascending.
-- [ ] **AC20**: WHEN an admin loads `/dashboard` THEN the **Alertas de Documentos** card description MUST read **"Documentos y contratos vencidos o por vencer."** (it currently says "Documentos vencidos o por vencer en los próximos 30 días." — the 30-day reference is removed because contracts use a 60-day window).
-- [ ] **AC21**: WHEN a driver, accounting, or unauthenticated user navigates to `/contracts` or `/contracts/{id}` THEN they receive 401 (unauthenticated) or 403 (driver / accounting do NOT hold `VIEW_CONTRACTS`).
-- [ ] **AC22**: WHEN the TypeScript type-check runs (`npm run types`) THEN the contracts pages MUST contribute zero new errors (the pre-existing deferred-Blueprint errors tracked in project memory are NOT acceptable as a floor — contracts moves OUT of that bucket after this rebuild).
+- [x] **AC18**: WHEN the user clicks "Ver contrato" from any row in the Contratos card on `third-parties/show.tsx` (commit `ebedc3a`) THEN the user lands on the rebuilt `/contracts/{id}` show page (NOT a Blueprint stub).
+- [x] **AC19**: WHEN an admin loads `/dashboard` AND at least one contract is `vencido` or within 60 days of `end_date` with `active = true` THEN the **Alertas de Documentos** panel shows one row per alerting contract with `kind = 'contract'`, `label = 'Contrato'`, `subject = contract_number`, `due_date = end_date`, `days_remaining` signed, AND a deep-link to `/contracts?filter[contract_status]=vencido` (when `days_remaining < 0`) or `/contracts?filter[contract_status]=expiring_soon` (when `>= 0`). The panel remains capped at `ALERTS_MAX_ROWS = 10` and continues to sort all rows by `days_remaining` ascending.
+- [x] **AC20**: WHEN an admin loads `/dashboard` THEN the **Alertas de Documentos** card description MUST read **"Documentos y contratos vencidos o por vencer."** (it currently says "Documentos vencidos o por vencer en los próximos 30 días." — the 30-day reference is removed because contracts use a 60-day window).
+- [x] **AC21**: WHEN a driver, accounting, or unauthenticated user navigates to `/contracts` or `/contracts/{id}` THEN they receive 401 (unauthenticated) or 403 (driver / accounting do NOT hold `VIEW_CONTRACTS`).
+- [x] **AC22**: WHEN the TypeScript type-check runs (`npm run types`) THEN the contracts pages MUST contribute zero new errors (the pre-existing deferred-Blueprint errors tracked in project memory are NOT acceptable as a floor — contracts moves OUT of that bucket after this rebuild).
 
 ## Technical Specification
 
@@ -136,7 +136,7 @@ After implementing this requirement, no `php artisan migrate` invocation is requ
 
 ### Backend
 
-- [ ] **Task B1**: Paginate `ContractController@index` and expand filters + eager-loads.
+- [x] **Task B1**: Paginate `ContractController@index` and expand filters + eager-loads.
   - Replace the trailing `->get()` with `->paginate($request->perPage())->withQueryString()`.
   - Add eager-loads: `'thirdParty:id,document_type_id,identification_number,is_natural_person,first_name,first_lastname,company_name'`, `'thirdParty.documentType:id,code,name'`.
   - Tighten `contract_object` from a partial filter to `AllowedFilter::exact('contract_object')`.
@@ -146,18 +146,18 @@ After implementing this requirement, no `php artisan migrate` invocation is requ
   - Pass `thirdPartyOptions` and (optionally) `customerCount` payloads so the upcoming `<ContractCreateDialog />` modal + the `<ThirdPartyCombobox />` above the table have their options in one trip. Pull customers via `ThirdParty::query()->where('is_customer', true)->with('documentType:id,code,name')->orderBy(...)->get([...])`.
   - Reference convention: `VehicleController@index` after vehicles-crud.
 
-- [ ] **Task B2**: Expand `ContractController@show` to load relationships + recent services.
+- [x] **Task B2**: Expand `ContractController@show` to load relationships + recent services.
   - Eager-load `thirdParty.documentType`.
   - Load `recentServices` as a separate query: last 5 `Service` records where `contract_id = $contract->id`, ordered by `service_date` DESC, `select(['id', 'service_date', 'service_status', 'vehicle_id', 'driver_id'])`, with `->with(['vehicle:id,plate', 'driver:id,first_name,first_lastname'])`.
   - Pass them to the Inertia page as `contract` (full model with `thirdParty.documentType`) and `recentServices`.
   - Reference convention: `ThirdPartyController@show` after third-parties-crud.
 
-- [ ] **Task B3**: Expand `ContractController@create` and `ContractController@edit` payloads.
+- [x] **Task B3**: Expand `ContractController@create` and `ContractController@edit` payloads.
   - `create()`: pass `thirdParties` (customers only, with documentType eager-loaded, `get(['id','document_type_id','identification_number','is_natural_person','first_name','first_lastname','company_name'])`).
   - `edit()`: same as `create()`, AND eager-load `$contract->load('thirdParty.documentType')` so the edit page can build the `forceInclude` array regardless of the customer's current `is_customer` flag.
   - Both methods must preserve the existing `Gate::authorize(...)` call exactly.
 
-- [ ] **Task B4**: Extend `DashboardController::buildDocumentAlerts` with a contracts branch.
+- [x] **Task B4**: Extend `DashboardController::buildDocumentAlerts` with a contracts branch.
   - Add `private const CONTRACT_EXPIRY_ALERT_DAYS = 60;` near the existing `EXPIRY_ALERT_DAYS` constant (keep the existing 30-day constant for vehicles + drivers).
   - Query `Contract::query()->select(['id', 'contract_number', 'end_date', 'active'])->where('active', true)->whereNotNull('end_date')->where('end_date', '<=', $today->copy()->addDays(self::CONTRACT_EXPIRY_ALERT_DAYS))->get()`.
   - Map each row to an alert array with `kind => 'contract'`, `label => 'Contrato'`, `subject => $contract->contract_number`, `due_date => $contract->end_date?->toDateString()`, `days_remaining => (int) $today->diffInDays($contract->end_date, false)`, `link => $this->contractAlertLink($daysRemaining)`.
@@ -165,13 +165,13 @@ After implementing this requirement, no `php artisan migrate` invocation is requ
   - Concat `$contractAlerts` into the existing `$vehicleAlerts->concat($driverAlerts)` pipeline. Preserve `sortBy('days_remaining')` and the `take(self::ALERTS_MAX_ROWS)` cap.
   - Update the PHPDoc `@return` tuple shape on `buildDocumentAlerts` (kind widens to `'vehicle'|'driver'|'contract'`).
 
-- [ ] **Task B5**: Update the dashboard card description in `resources/js/pages/dashboard.tsx`.
+- [x] **Task B5**: Update the dashboard card description in `resources/js/pages/dashboard.tsx`.
   - Change the "Alertas de Documentos" card subtitle from **"Documentos vencidos o por vencer en los próximos 30 días."** to **"Documentos y contratos vencidos o por vencer."**.
   - No other frontend dashboard wiring needed — the existing alert row renderer already uses `kind`, `label`, `subject`, `due_date`, `days_remaining`, `link`. Just confirm the renderer maps `kind === 'contract'` through the same row shape without crashing (it should — the keys are identical).
 
 ### Frontend — shared primitives
 
-- [ ] **Task F1**: Extend `resources/js/lib/document-status.ts`.
+- [x] **Task F1**: Extend `resources/js/lib/document-status.ts`.
   - Add `export const CONTRACT_EXPIRY_WINDOW_DAYS = 60;` near the existing `EXPIRY_WINDOW_DAYS = 30`.
   - Add `export type ContractPeriodStatus = 'vigente' | 'por_vencer' | 'vencido' | 'inactivo';`.
   - Add `export function contractPeriodStatus(contract: { start_date: string | null; end_date: string | null; active: boolean }, today?: string): ContractPeriodStatus`.
@@ -184,7 +184,7 @@ After implementing this requirement, no `php artisan migrate` invocation is requ
   - **Do NOT** rename or re-scope the existing `DocumentStatus` / `statusFor` / `documentStatus` exports — vehicles + drivers pills still use them.
   - Add a PHPDoc-style block at the top of the `contractPeriodStatus` helper noting that the 60-day window mirrors the server-side `CONTRACT_EXPIRY_ALERT_DAYS` constant in `DashboardController`.
 
-- [ ] **Task F2**: Create `resources/js/components/contracts/contract-period-pill.tsx`.
+- [x] **Task F2**: Create `resources/js/components/contracts/contract-period-pill.tsx`.
   - Props: `{ contract: { start_date: string | null; end_date: string | null; active: boolean }, today?: string, showDays?: boolean }`.
   - Renders a single `<Badge>` with variant from `contractStatusBadgeVariant()` and Spanish label:
     - `vigente` → "Vigente"
@@ -194,7 +194,7 @@ After implementing this requirement, no `php artisan migrate` invocation is requ
   - When `showDays === true` AND the status is `por_vencer` OR `vencido`, append "(X días)" where X is the days-remaining (signed, negative for expired).
   - Also exports `contractRowTint(contract): string | undefined` — returns `'bg-destructive/10 hover:bg-destructive/15'` for `vencido`, `'bg-amber-500/10 hover:bg-amber-500/15'` for `por_vencer`, `'bg-muted/60 hover:bg-muted/70'` for `inactivo`, `undefined` for `vigente`. The pill and the tint helper share the same `contractPeriodStatus()` call so they can never disagree.
 
-- [ ] **Task F3**: Create `resources/js/components/third-parties/third-party-combobox.tsx`.
+- [x] **Task F3**: Create `resources/js/components/third-parties/third-party-combobox.tsx`.
   - Reference convention: `resources/js/components/municipality-combobox.tsx`.
   - Props: `{ thirdParties: ThirdPartyOption[]; value: string | null; onChange: (value: string | null) => void; role?: 'customer' | 'provider'; forceInclude?: ThirdPartyOption[]; placeholder?: string; disabled?: boolean; invalid?: boolean; id?: string; className?: string }`.
   - Define and export `type ThirdPartyOption = Pick<ThirdParty, 'id' | 'identification_number' | 'is_natural_person' | 'first_name' | 'first_lastname' | 'company_name' | 'is_customer' | 'is_provider'> & { document_type?: Pick<DocumentType, 'id' | 'code' | 'name'> | null }`.
@@ -205,7 +205,7 @@ After implementing this requirement, no `php artisan migrate` invocation is requ
 
 ### Frontend — contracts-specific
 
-- [ ] **Task F4**: Create `resources/js/components/contracts/contract-form.tsx`.
+- [x] **Task F4**: Create `resources/js/components/contracts/contract-form.tsx`.
   - Flat single-column layout with a 2-col responsive grid (`md:grid-cols-2`).
   - Props: `{ data, setData, errors, thirdParties, idPrefix?, forceIncludeCustomer? }` where `thirdParties: ThirdPartyOption[]` is the customer list from the controller.
   - Field rows in this order:
@@ -218,13 +218,13 @@ After implementing this requirement, no `php artisan migrate` invocation is requ
   - When toggling `is_generic` from `true` → `false`, **preserve** any previously-typed `contract_number` value in `data` (do NOT clear it — the user might be un-selecting a generic and want to keep what they had).
   - Error messages render below each field from the `errors` object.
 
-- [ ] **Task F5**: Create `resources/js/components/contracts/contract-create-dialog.tsx`.
+- [x] **Task F5**: Create `resources/js/components/contracts/contract-create-dialog.tsx`.
   - Modal wrapper mirroring `third-party-create-dialog.tsx`. Owns its own `useForm` with defaults: `contract_number: ''`, `third_party_id: ''`, `contract_object: 'business'`, `start_date: ''`, `end_date: ''`, `route_description: ''`, `is_generic: false`, `active: true`.
   - Submits to `ContractController.store()`. On success: `reset()` + `onOpenChange(false)`.
   - Wraps `<ContractForm idPrefix="dlg" {...} />` inside a `<DialogContent>` sized `max-h-[calc(100vh-4rem)] flex flex-col px-0 sm:max-w-3xl`.
   - Submit button "Guardar"; cancel via `<DialogClose />`.
 
-- [ ] **Task F6**: Create `resources/js/pages/contracts/columns.tsx`.
+- [x] **Task F6**: Create `resources/js/pages/contracts/columns.tsx`.
   - Six `ColumnDef<ContractRow>` entries:
     1. `contract_number` (`accessorKey`) — header "Número" (sortable via `<DataTableColumnHeader />`), cell renders `<Link>` to `contracts.show(id).url` with `font-mono` text.
     2. `cliente` (computed `id: 'cliente'`) — header "Cliente", cell renders the third-party computed name inside a `<Link>` to `/third-parties/{third_party_id}`.
@@ -234,7 +234,7 @@ After implementing this requirement, no `php artisan migrate` invocation is requ
     6. `actions` — `<DataTableRowActions editUrl={contracts.edit(id).url} onDelete={...} />` wrapped in `<Can permission={Permission.DELETE_CONTRACTS}>`.
   - Define a local `type ContractRow = Contract & { third_party?: ThirdParty & { document_type?: DocumentType | null } | null }` using the `Pick<T> & relations` convention.
 
-- [ ] **Task F7**: Rewrite `resources/js/pages/contracts/index.tsx`.
+- [x] **Task F7**: Rewrite `resources/js/pages/contracts/index.tsx`.
   - Replace the `<pre>` JSON dump with the services/vehicles/drivers/third-parties index pattern.
   - Define `contractFilters: FilterDefinition[]`:
     - `contract_status` → "Estado" with options `vigente / por_vencer / vencido / inactivo`.
@@ -246,7 +246,7 @@ After implementing this requirement, no `php artisan migrate` invocation is requ
   - Type the page props as `{ contracts: PaginatedData<ContractRow>, thirdParties: ThirdPartyOption[] }`.
   - Reference convention: `resources/js/pages/vehicles/index.tsx`.
 
-- [ ] **Task F8**: Rewrite `resources/js/pages/contracts/show.tsx`.
+- [x] **Task F8**: Rewrite `resources/js/pages/contracts/show.tsx`.
   - **Five Card sections** in the order listed in AC17:
     1. Header card (title + description + `<ContractPeriodPill showDays />` + Activo Badge + Editar button).
     2. Datos del Contrato (Objeto label, Contrato Genérico Badge, Recorrido / Ruta preserving whitespace via `whitespace-pre-wrap`).
@@ -257,18 +257,18 @@ After implementing this requirement, no `php artisan migrate` invocation is requ
   - Breadcrumbs: `[{ title: 'Contratos', href: contracts.index().url }, { title: contract.contract_number, href: '#' }]`.
   - Reference convention: `resources/js/pages/third-parties/show.tsx`.
 
-- [ ] **Task F9**: Rewrite `resources/js/pages/contracts/create.tsx` and `edit.tsx` (bundled).
+- [x] **Task F9**: Rewrite `resources/js/pages/contracts/create.tsx` and `edit.tsx` (bundled).
   - `create.tsx`: `useForm` with the default-empty values, render `<ContractForm {...} thirdParties={thirdParties} />` with a Guardar / Cancelar action bar.
   - `edit.tsx`: `useForm` with values pre-filled from the `contract` prop, render `<ContractForm {...} thirdParties={thirdParties} forceIncludeCustomer={contract.third_party ? [contract.third_party] : []} />` with an Actualizar / Cancelar action bar.
   - Both pages type their props to include `thirdParties: ThirdPartyOption[]`; the edit page additionally accepts the full loaded `contract` with the `third_party.document_type` relation.
 
 ### Tests
 
-- [ ] **Task T1 (Pest, backend — shared helpers + controller index)**: Add to `tests/Feature/Http/Controllers/ContractControllerTest.php`:
+- [x] **Task T1 (Pest, backend — shared helpers + controller index)**: Add to `tests/Feature/Http/Controllers/ContractControllerTest.php`:
   - `test('index returns paginated payload with third-party relations')` — seed 3 contracts each with a distinct customer; assert `contracts.data` is array, `per_page`, `current_page`, `total` exist, each row has `third_party.document_type` loaded.
   - `test('index passes customer options for the create modal and the combobox filter')` — assert `thirdParties` prop is present, contains only `is_customer = true` entries, and each option has `document_type` eager-loaded.
 
-- [ ] **Task T2 (Pest, backend — filters)**: Add to the same test file:
+- [x] **Task T2 (Pest, backend — filters)**: Add to the same test file:
   - `test('index filters by contract_status = vigente')` — seed 4 contracts (vigente, por_vencer, vencido, inactivo); apply `filter[contract_status]=vigente`; assert only the vigente row remains.
   - `test('index filters by contract_status = por_vencer')` — same shape, 60-day window boundary cases (e.g. `end_date = today+59d`, `today+61d`, `today+0d`).
   - `test('index filters by contract_status = vencido')` — same shape, assert `active=false` does NOT pollute the `vencido` bucket (inactivo wins).
@@ -277,24 +277,24 @@ After implementing this requirement, no `php artisan migrate` invocation is requ
   - `test('index filters by contract_object exact')` — seed 2 contracts (business + tourism); apply `filter[contract_object]=business`; assert only the business row remains. This pins the "tightened from partial to exact" change.
   - `test('index filters by third_party_id exact')` — seed 2 customers + 2 contracts; apply the filter; assert only one row remains.
 
-- [ ] **Task T3 (Pest, backend — show)**:
+- [x] **Task T3 (Pest, backend — show)**:
   - `test('show returns contract with thirdParty.documentType loaded')` — assert `contract.third_party.document_type.code` is present.
   - `test('show returns recent services ordered by service_date desc')` — seed a contract with 7 services; assert `recentServices` length is 5 AND the first row has the latest `service_date`.
   - `test('show returns empty recent services when the contract has none')` — assert `recentServices` is an empty array.
 
-- [ ] **Task T4 (Pest, backend — store + generic preservation)**:
+- [x] **Task T4 (Pest, backend — store + generic preservation)**:
   - `test('store auto-generates contract_number when is_generic is true and contract_number is blank')` — assert the resulting DB row has `contract_number = 'GEN-0001-{year}'` with the correct year. This pins the load-bearing domain logic.
   - `test('store preserves the user-supplied contract_number when is_generic is true and contract_number is non-blank')` — the user said "I want this specific number, but mark it generic". Assert the user value wins.
   - `test('store enforces end_date >= start_date')` — regression test for commit `2f3b402` (should already exist; if not, add it).
 
-- [ ] **Task T5 (Pest, backend — dashboard alerts)**: Add to `tests/Feature/Http/Controllers/DashboardControllerTest.php`:
+- [x] **Task T5 (Pest, backend — dashboard alerts)**: Add to `tests/Feature/Http/Controllers/DashboardControllerTest.php`:
   - `test('dashboard surfaces expired contracts in document alerts')` — seed 1 active contract with `end_date = today - 3d`; assert the dashboard payload's `documentAlerts` contains a row with `kind = 'contract'`, `label = 'Contrato'`, `days_remaining < 0`, and the deep-link ending with `filter[contract_status]=vencido`.
   - `test('dashboard surfaces contracts expiring within 60 days in document alerts')` — seed 1 active contract with `end_date = today + 45d`; assert a row with `kind = 'contract'`, `days_remaining = 45`, and the deep-link ending with `filter[contract_status]=expiring_soon`.
   - `test('dashboard does not surface contracts more than 60 days out')` — seed 1 active contract with `end_date = today + 120d`; assert zero contract rows in alerts.
   - `test('dashboard does not surface inactive contracts in alerts')` — seed 1 inactive contract with `end_date = today - 3d`; assert zero contract rows in alerts.
   - `test('dashboard sorts contract alerts into the 10-row cap alongside vehicles and drivers')` — seed a mix; assert the panel is capped at 10 and sorted by `days_remaining` ascending regardless of `kind`.
 
-- [ ] **Task T6 (Dusk, UI regression)**: Create `tests/Browser/ContractsIndexAndShowTest.php` with four scenarios in a single consolidated file (mirroring `VehiclesIndexAndShowTest.php`, `DriversIndexAndShowTest.php`, and `ThirdPartiesIndexAndShowTest.php`):
+- [x] **Task T6 (Dusk, UI regression)**: Create `tests/Browser/ContractsIndexAndShowTest.php` with four scenarios in a single consolidated file (mirroring `VehiclesIndexAndShowTest.php`, `DriversIndexAndShowTest.php`, and `ThirdPartiesIndexAndShowTest.php`):
 
   1. **`contracts index renders the table with Spanish headers and the four-state filter`** — admin loads `/contracts`, asserts table headers (Número, Cliente, Objeto, Vigencia, Estado), no error banners; applies `contract_status = vencido` and asserts only the expired rows remain with destructive row tint visible.
 
@@ -337,14 +337,14 @@ Preferred flow:
 11. Logout. Login as driver. Navigate to `/contracts` — verify a 403 page appears. Same for accounting.
 12. Use `mcp__laravel-boost__browser-logs` to inspect any JS console errors during the flow.
 
-- [ ] Scenario 1: Admin sees the rebuilt index, applies the four-state filter, verifies row tinting.
-- [ ] Scenario 2: Admin opens the show page — all five cards render correctly.
-- [ ] Scenario 3: Admin creates a generic contract via the modal — the auto-gen flow works end-to-end.
-- [ ] Scenario 4: Admin edits a contract whose customer has `is_customer = false` — the combobox preserves the value via `forceInclude`.
-- [ ] Scenario 5: Admin sees the dashboard panel with contract alerts AND the updated subtitle AND the deep-link works.
-- [ ] Scenario 6: "Ver contrato" cross-link from `third-parties/show.tsx` lands on the rebuilt show page.
-- [ ] Scenario 7: Driver receives 403 on `/contracts`.
-- [ ] Scenario 8: Accounting receives 403 on `/contracts`.
+- [x] Scenario 1: Admin sees the rebuilt index, applies the four-state filter, verifies row tinting.
+- [x] Scenario 2: Admin opens the show page — all five cards render correctly.
+- [x] Scenario 3: Admin creates a generic contract via the modal — the auto-gen flow works end-to-end.
+- [x] Scenario 4: Admin edits a contract whose customer has `is_customer = false` — the combobox preserves the value via `forceInclude`.
+- [x] Scenario 5: Admin sees the dashboard panel with contract alerts AND the updated subtitle AND the deep-link works.
+- [x] Scenario 6: "Ver contrato" cross-link from `third-parties/show.tsx` lands on the rebuilt show page.
+- [x] Scenario 7: Driver receives 403 on `/contracts`.
+- [x] Scenario 8: Accounting receives 403 on `/contracts`.
 
 ### 2. Backend regression — Pest feature tests (required)
 
