@@ -6,8 +6,12 @@ use App\Enums\Permission;
 use App\Http\Requests\ContractStoreRequest;
 use App\Http\Requests\ContractUpdateRequest;
 use App\Models\Contract;
+use App\Models\Service;
+use App\Models\ThirdParty;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -16,29 +20,115 @@ use Spatie\QueryBuilder\QueryBuilder;
 
 class ContractController extends Controller
 {
+    /**
+     * Days-ahead window used by the `por_vencer` bucket of the
+     * contract_status filter. Mirrors `CONTRACT_EXPIRY_ALERT_DAYS`
+     * in DashboardController and `CONTRACT_EXPIRY_WINDOW_DAYS` in
+     * `resources/js/lib/document-status.ts`.
+     */
+    private const CONTRACT_EXPIRY_WINDOW_DAYS = 60;
+
     public function index(Request $request): Response
     {
         Gate::authorize(Permission::VIEW_CONTRACTS->value);
+
         $contracts = QueryBuilder::for(Contract::class)
+            ->with([
+                'thirdParty:id,document_type_id,identification_number,is_natural_person,first_name,first_lastname,company_name,is_customer,is_provider',
+                'thirdParty.documentType:id,code,name',
+            ])
             ->allowedFilters([
                 'contract_number',
-                'contract_object',
+                AllowedFilter::exact('contract_object'),
                 AllowedFilter::exact('is_generic'),
                 AllowedFilter::exact('active'),
+                AllowedFilter::exact('third_party_id'),
+                AllowedFilter::callback('contract_status', function (Builder $query, $value) {
+                    $first = is_array($value) ? ($value[0] ?? '') : explode(',', (string) $value)[0];
+                    $this->applyContractStatusFilter($query, $first);
+                }),
             ])
-            ->allowedSorts(['contract_number', 'start_date', 'end_date'])
-            ->get();
+            ->allowedSorts(['contract_number', 'start_date', 'end_date', 'created_at'])
+            ->defaultSort('-created_at')
+            ->paginate($request->perPage())
+            ->withQueryString();
 
         return Inertia::render('contracts/index', [
             'contracts' => $contracts,
+            'thirdParties' => $this->customerOptions(),
         ]);
+    }
+
+    /**
+     * Filter contracts by the four-state temporal model
+     * (vigente / por_vencer / vencido / inactivo). The dashboard
+     * deep-links use the aliased `expiring_soon` / `expired` vocabulary;
+     * both forms MUST resolve to the same bucket.
+     */
+    private function applyContractStatusFilter(Builder $query, string $value): void
+    {
+        $today = Carbon::today()->toDateString();
+        $threshold = Carbon::today()->addDays(self::CONTRACT_EXPIRY_WINDOW_DAYS)->toDateString();
+
+        $normalized = match ($value) {
+            'expiring_soon' => 'por_vencer',
+            'expired' => 'vencido',
+            default => $value,
+        };
+
+        match ($normalized) {
+            'inactivo' => $query->where('active', false),
+            'vencido' => $query
+                ->where('active', true)
+                ->where(function (Builder $q) use ($today): void {
+                    $q->whereNull('end_date')->orWhereDate('end_date', '<', $today);
+                }),
+            'por_vencer' => $query
+                ->where('active', true)
+                ->whereNotNull('end_date')
+                ->whereDate('end_date', '>=', $today)
+                ->whereDate('end_date', '<=', $threshold),
+            'vigente' => $query
+                ->where('active', true)
+                ->whereNotNull('end_date')
+                ->whereDate('end_date', '>', $threshold),
+            default => null,
+        };
+    }
+
+    /**
+     * Build the customer option list used by the create modal, the
+     * above-the-table combobox filter, and the create/edit standalone
+     * pages. Returns only `is_customer = true` third parties with the
+     * minimum fields the `<ThirdPartyCombobox />` needs.
+     */
+    private function customerOptions(): \Illuminate\Database\Eloquent\Collection
+    {
+        return ThirdParty::query()
+            ->where('is_customer', true)
+            ->with('documentType:id,code,name')
+            ->orderBy('company_name')
+            ->orderBy('first_lastname')
+            ->get([
+                'id',
+                'document_type_id',
+                'identification_number',
+                'is_natural_person',
+                'first_name',
+                'first_lastname',
+                'company_name',
+                'is_customer',
+                'is_provider',
+            ]);
     }
 
     public function create(Request $request): Response
     {
         Gate::authorize(Permission::CREATE_CONTRACTS->value);
 
-        return Inertia::render('contracts/create');
+        return Inertia::render('contracts/create', [
+            'thirdParties' => $this->customerOptions(),
+        ]);
     }
 
     public function store(ContractStoreRequest $request): RedirectResponse
@@ -64,8 +154,25 @@ class ContractController extends Controller
     {
         Gate::authorize(Permission::VIEW_CONTRACTS->value);
 
+        $contract->load([
+            'thirdParty:id,document_type_id,identification_number,is_natural_person,first_name,first_lastname,company_name,is_customer,is_provider',
+            'thirdParty.documentType:id,code,name',
+        ]);
+
+        $recentServices = Service::query()
+            ->where('contract_id', $contract->id)
+            ->with([
+                'vehicle:id,plate',
+                'driver:id,first_name,first_lastname',
+            ])
+            ->orderByDesc('service_date')
+            ->orderByDesc('planned_start_time')
+            ->limit(5)
+            ->get(['id', 'service_date', 'service_status', 'vehicle_id', 'driver_id', 'contract_id', 'planned_start_time']);
+
         return Inertia::render('contracts/show', [
             'contract' => $contract,
+            'recentServices' => $recentServices,
         ]);
     }
 
@@ -73,8 +180,11 @@ class ContractController extends Controller
     {
         Gate::authorize(Permission::UPDATE_CONTRACTS->value);
 
+        $contract->load('thirdParty.documentType');
+
         return Inertia::render('contracts/edit', [
             'contract' => $contract,
+            'thirdParties' => $this->customerOptions(),
         ]);
     }
 

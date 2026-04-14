@@ -6,6 +6,7 @@ use App\Enums\PaymentStatus;
 use App\Enums\Role;
 use App\Enums\ServiceStatus;
 use App\Enums\VehicleStatus;
+use App\Models\Contract;
 use App\Models\Driver;
 use App\Models\Invoice;
 use App\Models\Service;
@@ -19,9 +20,18 @@ use Inertia\Response;
 class DashboardController extends Controller
 {
     /**
-     * Days-ahead window used to flag "por vencer" documents.
+     * Days-ahead window used to flag "por vencer" vehicle + driver
+     * documents (SOAT, RTM, operation card, driver license).
      */
     private const EXPIRY_ALERT_DAYS = 30;
+
+    /**
+     * Days-ahead window used to flag contracts as "por vencer".
+     * Contracts have a longer renewal lead time than SOAT/RTM/license,
+     * so we surface them earlier. Mirrors CONTRACT_EXPIRY_WINDOW_DAYS
+     * in resources/js/lib/document-status.ts.
+     */
+    private const CONTRACT_EXPIRY_ALERT_DAYS = 60;
 
     /**
      * Maximum rows returned in the document-alerts panel.
@@ -38,6 +48,7 @@ class DashboardController extends Controller
 
         $today = Carbon::today();
         $expiryThreshold = $today->copy()->addDays(self::EXPIRY_ALERT_DAYS);
+        $contractExpiryThreshold = $today->copy()->addDays(self::CONTRACT_EXPIRY_ALERT_DAYS);
 
         return Inertia::render('dashboard', [
             'kpis' => [
@@ -65,14 +76,14 @@ class DashboardController extends Controller
                     'overdue' => Invoice::where('payment_status', PaymentStatus::Overdue->value)->count(),
                 ],
             ],
-            'documentAlerts' => $this->buildDocumentAlerts($today, $expiryThreshold),
+            'documentAlerts' => $this->buildDocumentAlerts($today, $expiryThreshold, $contractExpiryThreshold),
         ]);
     }
 
     /**
-     * @return array<int, array{kind: string, label: string, subject: string, due_date: string|null, days_remaining: int, link: string}>
+     * @return array<int, array{kind: 'vehicle'|'driver'|'contract', label: string, subject: string, due_date: string|null, days_remaining: int, link: string}>
      */
-    private function buildDocumentAlerts(Carbon $today, Carbon $expiryThreshold): array
+    private function buildDocumentAlerts(Carbon $today, Carbon $expiryThreshold, Carbon $contractExpiryThreshold): array
     {
         $vehicleAlerts = Vehicle::query()
             ->select(['id', 'plate', 'internal_code', 'soat_due_date', 'rtm_due_date', 'operation_card_due_date'])
@@ -127,8 +138,28 @@ class DashboardController extends Controller
                 ];
             });
 
+        $contractAlerts = Contract::query()
+            ->select(['id', 'contract_number', 'end_date', 'active'])
+            ->where('active', true)
+            ->whereNotNull('end_date')
+            ->where('end_date', '<=', $contractExpiryThreshold)
+            ->get()
+            ->map(function (Contract $contract) use ($today) {
+                $daysRemaining = (int) $today->diffInDays($contract->end_date, false);
+
+                return [
+                    'kind' => 'contract',
+                    'label' => 'Contrato',
+                    'subject' => $contract->contract_number,
+                    'due_date' => $contract->end_date?->toDateString(),
+                    'days_remaining' => $daysRemaining,
+                    'link' => $this->contractAlertLink($daysRemaining),
+                ];
+            });
+
         return $vehicleAlerts
             ->concat($driverAlerts)
+            ->concat($contractAlerts)
             ->sortBy('days_remaining')
             ->values()
             ->take(self::ALERTS_MAX_ROWS)
@@ -158,5 +189,20 @@ class DashboardController extends Controller
         return $daysRemaining < 0
             ? '/drivers?filter[license_status]=expired'
             : '/drivers?filter[license_status]=expiring_soon';
+    }
+
+    /**
+     * Build the deep-link a contract alert should navigate to. Symmetric
+     * with vehicleAlertLink / driverAlertLink — already-expired contracts
+     * jump to the contracts index filtered by contract_status=vencido;
+     * contracts within the 60-day window jump to expiring_soon. The
+     * backend accepts both `vencido`/`expired` and
+     * `por_vencer`/`expiring_soon` as aliases for the same bucket.
+     */
+    private function contractAlertLink(int $daysRemaining): string
+    {
+        return $daysRemaining < 0
+            ? '/contracts?filter[contract_status]=vencido'
+            : '/contracts?filter[contract_status]=expiring_soon';
     }
 }
