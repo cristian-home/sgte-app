@@ -51,8 +51,9 @@ export default function DriversCreate({
     pensionFunds: CatalogOption[];
     severanceFunds: CatalogOption[];
 }) {
-    const { data, setData, post, processing, errors } =
-        useForm<DriverFormData>({ ...initialData });
+    const { data, setData, post, processing, errors } = useForm<DriverFormData>(
+        { ...initialData },
+    );
 
     function submit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();

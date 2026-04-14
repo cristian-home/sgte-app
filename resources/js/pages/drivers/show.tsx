@@ -100,15 +100,23 @@ function recentServiceClient(service: RecentServiceRow): string {
     const tp = service.contract?.third_party;
     if (!tp) return '—';
     if (tp.is_natural_person) {
-        return `${tp.first_name ?? ''} ${tp.first_lastname ?? ''}`.trim() || '—';
+        return (
+            `${tp.first_name ?? ''} ${tp.first_lastname ?? ''}`.trim() || '—'
+        );
     }
     return tp.company_name ?? '—';
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+    label,
+    children,
+}: {
+    label: string;
+    children: React.ReactNode;
+}) {
     return (
         <div>
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+            <p className="text-xs tracking-wide text-muted-foreground uppercase">
                 {label}
             </p>
             <p className="font-medium">{children}</p>
@@ -153,7 +161,9 @@ export default function DriversShow({
                             </div>
                             <div className="flex items-center gap-2">
                                 <Badge
-                                    variant={driver.active ? 'default' : 'outline'}
+                                    variant={
+                                        driver.active ? 'default' : 'outline'
+                                    }
                                 >
                                     {driver.active ? 'Activo' : 'Inactivo'}
                                 </Badge>

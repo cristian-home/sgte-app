@@ -432,7 +432,9 @@ export default function DriverForm({
                     <Switch
                         id={id('active')}
                         checked={data.active}
-                        onCheckedChange={(checked) => setData('active', checked)}
+                        onCheckedChange={(checked) =>
+                            setData('active', checked)
+                        }
                     />
                     <Label htmlFor={id('active')}>Conductor activo</Label>
                 </div>

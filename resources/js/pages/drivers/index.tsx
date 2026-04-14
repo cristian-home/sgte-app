@@ -3,9 +3,7 @@ import { PlusIcon } from 'lucide-react';
 import { useState } from 'react';
 import { DataTable } from '@/components/data-table';
 import DriverCreateDialog from '@/components/drivers/driver-create-dialog';
-import {
-    driverLicenseStatus,
-} from '@/components/drivers/driver-license-pill';
+import { driverLicenseStatus } from '@/components/drivers/driver-license-pill';
 import MunicipalityCombobox, {
     type MunicipalityOption,
 } from '@/components/municipality-combobox';

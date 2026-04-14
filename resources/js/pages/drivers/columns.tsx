@@ -10,26 +10,30 @@ import { Permission } from '@/enums/Permission';
 import drivers from '@/routes/drivers';
 
 import type { ColumnDef } from '@tanstack/react-table';
-import type { Driver, DocumentType } from '@/types/models';
+import type { Driver } from '@/types/models';
 
-interface DriverWithRelations extends Driver {
-    document_type?: DocumentType | null;
-}
+// Driver as it arrives from DriverController@index — the controller
+// eager-loads the document_type relation and serializes it as null
+// when missing, while the global Driver type uses the
+// `relation?: T` (undefined-only) shape.
+type DriverRow = Driver & {
+    document_type?: { id: number; code: string; name: string } | null;
+};
 
-function fullName(driver: DriverWithRelations): string {
+function fullName(driver: DriverRow): string {
     return [driver.first_name, driver.first_lastname]
         .filter(Boolean)
         .join(' ')
         .trim();
 }
 
-function documentLabel(driver: DriverWithRelations): string {
+function documentLabel(driver: DriverRow): string {
     const code = driver.document_type?.code ?? '';
     const number = driver.identification_number ?? '';
     return `${code} ${number}`.trim();
 }
 
-export const columns: ColumnDef<DriverWithRelations, unknown>[] = [
+export const columns: ColumnDef<DriverRow, unknown>[] = [
     {
         id: 'documento',
         meta: { label: 'Documento' },
