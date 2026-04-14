@@ -16,6 +16,15 @@ class ContractSeeder extends Seeder
     {
         $customers = ThirdParty::where('is_customer', true)->get();
 
+        // Defensive guard: in environments where the initialization
+        // migration is skipped (notably `testing`) there are no
+        // pre-seeded third parties, and the previous index-modulo math
+        // crashed with "Division by zero". Idempotent early return
+        // matches the rest of the seeder family.
+        if ($customers->isEmpty()) {
+            return;
+        }
+
         $contractData = [
             [
                 'contract_number' => 'CT-0001-2026',

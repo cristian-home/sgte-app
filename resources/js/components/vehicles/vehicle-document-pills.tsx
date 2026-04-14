@@ -22,12 +22,39 @@ const dateFormatter = new Intl.DateTimeFormat('es-CO', {
     day: '2-digit',
 });
 
+/**
+ * Parse a backend-supplied due date into a Date instance. Accepts both
+ * the short `Y-m-d` form (returned by helper methods like
+ * `Carbon::toDateString()`) and the long ISO form
+ * `Y-m-d\TH:i:s.uP` (returned by the default Eloquent `date` cast
+ * serializer).
+ *
+ * Returns null when the input is null, empty, or unparseable.
+ */
+function parseDueDate(dueDate: string | null): Date | null {
+    if (!dueDate) {
+        return null;
+    }
+    // Y-m-d is parsed as UTC midnight by the JS Date constructor on most
+    // engines, which can yield "yesterday" in negative timezones. Append
+    // a local-time component to anchor it to the user's wall clock.
+    const isoCandidate = /^\d{4}-\d{2}-\d{2}$/.test(dueDate)
+        ? `${dueDate}T00:00:00`
+        : dueDate;
+    const parsed = new Date(isoCandidate);
+    if (Number.isNaN(parsed.getTime())) {
+        return null;
+    }
+    return parsed;
+}
+
 function statusFor(dueDate: string | null, todayMs: number): DocumentStatus {
-    if (dueDate === null) {
+    const parsed = parseDueDate(dueDate);
+    if (parsed === null) {
         return 'expired';
     }
-    const dueMs = new Date(`${dueDate}T00:00:00`).getTime();
-    if (Number.isNaN(dueMs) || dueMs < todayMs) {
+    const dueMs = parsed.getTime();
+    if (dueMs < todayMs) {
         return 'expired';
     }
     const daysOut = Math.round((dueMs - todayMs) / DAYS_IN_MS);
@@ -49,10 +76,11 @@ function variantFor(status: DocumentStatus): 'destructive' | 'secondary' | 'outl
 }
 
 function tooltipFor(label: string, dueDate: string | null, status: DocumentStatus): string {
-    if (dueDate === null) {
+    const parsed = parseDueDate(dueDate);
+    if (parsed === null) {
         return `${label} sin registrar`;
     }
-    const formatted = dateFormatter.format(new Date(`${dueDate}T00:00:00`));
+    const formatted = dateFormatter.format(parsed);
     if (status === 'expired') {
         return `${label} vencido (${formatted})`;
     }

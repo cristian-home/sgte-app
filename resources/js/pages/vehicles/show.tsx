@@ -61,7 +61,15 @@ const dateFormatter = new Intl.DateTimeFormat('es-CO', {
 
 function formatDate(date: string | null): string {
     if (!date) return '—';
-    return dateFormatter.format(new Date(`${date}T00:00:00`));
+    // Accept both 'Y-m-d' and full ISO datetime strings — Eloquent's
+    // default `date` cast serializer returns the long form, while
+    // helper methods like Carbon::toDateString() return the short one.
+    const isoCandidate = /^\d{4}-\d{2}-\d{2}$/.test(date) ? `${date}T00:00:00` : date;
+    const parsed = new Date(isoCandidate);
+    if (Number.isNaN(parsed.getTime())) {
+        return '—';
+    }
+    return dateFormatter.format(parsed);
 }
 
 function statusVariant(
