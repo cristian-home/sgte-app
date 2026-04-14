@@ -1,0 +1,443 @@
+import InputError from '@/components/input-error';
+import MunicipalityCombobox, {
+    type MunicipalityOption,
+} from '@/components/municipality-combobox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+
+export interface CatalogOption {
+    id: number;
+    code: string;
+    name: string;
+}
+
+export interface DocumentTypeOption {
+    id: number;
+    code: string;
+    name: string;
+}
+
+export interface DriverFormData {
+    document_type_id: string;
+    identification_number: string;
+    first_name: string;
+    second_name: string;
+    first_lastname: string;
+    second_lastname: string;
+    municipality_id: string;
+    address: string;
+    phone: string;
+    email: string;
+    license_category: string;
+    license_due_date: string;
+    eps_id: string;
+    pension_fund_id: string;
+    severance_fund_id: string;
+    has_social_security: boolean;
+    active: boolean;
+}
+
+interface DriverFormProps {
+    data: DriverFormData;
+    setData: <K extends keyof DriverFormData>(
+        key: K,
+        value: DriverFormData[K],
+    ) => void;
+    errors: Partial<Record<keyof DriverFormData, string>>;
+    municipalities: MunicipalityOption[];
+    documentTypes: DocumentTypeOption[];
+    eps: CatalogOption[];
+    pensionFunds: CatalogOption[];
+    severanceFunds: CatalogOption[];
+    /**
+     * When set, every field id is prefixed (e.g. `dlg_first_name`).
+     * Use this when rendering inside a modal that coexists with
+     * another instance of the form on the same page.
+     */
+    idPrefix?: string;
+}
+
+function RequiredMarker() {
+    return <span className="text-destructive"> *</span>;
+}
+
+export default function DriverForm({
+    data,
+    setData,
+    errors,
+    municipalities,
+    documentTypes,
+    eps,
+    pensionFunds,
+    severanceFunds,
+    idPrefix = '',
+}: DriverFormProps) {
+    const id = (name: string) => (idPrefix ? `${idPrefix}_${name}` : name);
+    const invalid = (field: keyof DriverFormData) =>
+        errors[field] ? true : undefined;
+
+    return (
+        <div className="space-y-8">
+            {/* Section 1: Identificación */}
+            <section className="space-y-4">
+                <h3 className="text-base font-semibold">Identificación</h3>
+                <div className="grid gap-4 md:grid-cols-2">
+                    <div className="grid gap-2">
+                        <Label htmlFor={id('document_type_id')}>
+                            Tipo de Documento
+                            <RequiredMarker />
+                        </Label>
+                        <Select
+                            value={data.document_type_id}
+                            onValueChange={(value) =>
+                                setData('document_type_id', value)
+                            }
+                        >
+                            <SelectTrigger
+                                id={id('document_type_id')}
+                                aria-invalid={invalid('document_type_id')}
+                            >
+                                <SelectValue placeholder="Selecciona un tipo" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {documentTypes.map((dt) => (
+                                    <SelectItem
+                                        key={dt.id}
+                                        value={String(dt.id)}
+                                    >
+                                        {dt.code} — {dt.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <InputError message={errors.document_type_id} />
+                    </div>
+
+                    <div className="grid gap-2">
+                        <Label htmlFor={id('identification_number')}>
+                            Número de Identificación
+                            <RequiredMarker />
+                        </Label>
+                        <Input
+                            id={id('identification_number')}
+                            value={data.identification_number}
+                            aria-invalid={invalid('identification_number')}
+                            onChange={(e) =>
+                                setData('identification_number', e.target.value)
+                            }
+                        />
+                        <InputError message={errors.identification_number} />
+                    </div>
+
+                    <div className="grid gap-2">
+                        <Label htmlFor={id('first_name')}>
+                            Primer Nombre
+                            <RequiredMarker />
+                        </Label>
+                        <Input
+                            id={id('first_name')}
+                            value={data.first_name}
+                            aria-invalid={invalid('first_name')}
+                            onChange={(e) =>
+                                setData('first_name', e.target.value)
+                            }
+                        />
+                        <InputError message={errors.first_name} />
+                    </div>
+
+                    <div className="grid gap-2">
+                        <Label htmlFor={id('second_name')}>
+                            Segundo Nombre
+                        </Label>
+                        <Input
+                            id={id('second_name')}
+                            value={data.second_name}
+                            aria-invalid={invalid('second_name')}
+                            onChange={(e) =>
+                                setData('second_name', e.target.value)
+                            }
+                        />
+                        <InputError message={errors.second_name} />
+                    </div>
+
+                    <div className="grid gap-2">
+                        <Label htmlFor={id('first_lastname')}>
+                            Primer Apellido
+                            <RequiredMarker />
+                        </Label>
+                        <Input
+                            id={id('first_lastname')}
+                            value={data.first_lastname}
+                            aria-invalid={invalid('first_lastname')}
+                            onChange={(e) =>
+                                setData('first_lastname', e.target.value)
+                            }
+                        />
+                        <InputError message={errors.first_lastname} />
+                    </div>
+
+                    <div className="grid gap-2">
+                        <Label htmlFor={id('second_lastname')}>
+                            Segundo Apellido
+                        </Label>
+                        <Input
+                            id={id('second_lastname')}
+                            value={data.second_lastname}
+                            aria-invalid={invalid('second_lastname')}
+                            onChange={(e) =>
+                                setData('second_lastname', e.target.value)
+                            }
+                        />
+                        <InputError message={errors.second_lastname} />
+                    </div>
+                </div>
+            </section>
+
+            {/* Section 2: Datos de Contacto */}
+            <section className="space-y-4">
+                <h3 className="text-base font-semibold">Datos de Contacto</h3>
+                <div className="grid gap-4 md:grid-cols-2">
+                    <div className="grid gap-2 md:col-span-2">
+                        <Label htmlFor={id('municipality_id')}>Municipio</Label>
+                        <MunicipalityCombobox
+                            id={id('municipality_id')}
+                            municipalities={municipalities}
+                            value={data.municipality_id || null}
+                            onChange={(value) =>
+                                setData('municipality_id', value)
+                            }
+                            invalid={invalid('municipality_id')}
+                            placeholder="Selecciona un municipio"
+                        />
+                        <InputError message={errors.municipality_id} />
+                    </div>
+
+                    <div className="grid gap-2 md:col-span-2">
+                        <Label htmlFor={id('address')}>
+                            Dirección
+                            <RequiredMarker />
+                        </Label>
+                        <Input
+                            id={id('address')}
+                            value={data.address}
+                            aria-invalid={invalid('address')}
+                            onChange={(e) => setData('address', e.target.value)}
+                        />
+                        <InputError message={errors.address} />
+                    </div>
+
+                    <div className="grid gap-2">
+                        <Label htmlFor={id('phone')}>
+                            Teléfono
+                            <RequiredMarker />
+                        </Label>
+                        <Input
+                            id={id('phone')}
+                            value={data.phone}
+                            aria-invalid={invalid('phone')}
+                            onChange={(e) => setData('phone', e.target.value)}
+                        />
+                        <InputError message={errors.phone} />
+                    </div>
+
+                    <div className="grid gap-2">
+                        <Label htmlFor={id('email')}>
+                            Correo Electrónico
+                            <RequiredMarker />
+                        </Label>
+                        <Input
+                            id={id('email')}
+                            type="email"
+                            value={data.email}
+                            aria-invalid={invalid('email')}
+                            onChange={(e) => setData('email', e.target.value)}
+                        />
+                        <InputError message={errors.email} />
+                    </div>
+                </div>
+            </section>
+
+            {/* Section 3: Licencia */}
+            <section className="space-y-4">
+                <h3 className="text-base font-semibold">Licencia</h3>
+                <div className="grid gap-4 md:grid-cols-2">
+                    <div className="grid gap-2">
+                        <Label htmlFor={id('license_category')}>
+                            Categoría
+                            <RequiredMarker />
+                        </Label>
+                        <Select
+                            value={data.license_category}
+                            onValueChange={(value) =>
+                                setData('license_category', value)
+                            }
+                        >
+                            <SelectTrigger
+                                id={id('license_category')}
+                                aria-invalid={invalid('license_category')}
+                            >
+                                <SelectValue placeholder="Selecciona una categoría" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="C1">C1</SelectItem>
+                                <SelectItem value="C2">C2</SelectItem>
+                                <SelectItem value="C3">C3</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <InputError message={errors.license_category} />
+                    </div>
+
+                    <div className="grid gap-2">
+                        <Label htmlFor={id('license_due_date')}>
+                            Fecha de Vencimiento
+                            <RequiredMarker />
+                        </Label>
+                        <Input
+                            id={id('license_due_date')}
+                            type="date"
+                            value={data.license_due_date}
+                            aria-invalid={invalid('license_due_date')}
+                            onChange={(e) =>
+                                setData('license_due_date', e.target.value)
+                            }
+                        />
+                        <InputError message={errors.license_due_date} />
+                    </div>
+                </div>
+            </section>
+
+            {/* Section 4: Afiliaciones */}
+            <section className="space-y-4">
+                <h3 className="text-base font-semibold">Afiliaciones</h3>
+                <div className="grid gap-4 md:grid-cols-3">
+                    <div className="grid gap-2">
+                        <Label htmlFor={id('eps_id')}>
+                            EPS
+                            <RequiredMarker />
+                        </Label>
+                        <Select
+                            value={data.eps_id}
+                            onValueChange={(value) => setData('eps_id', value)}
+                        >
+                            <SelectTrigger
+                                id={id('eps_id')}
+                                aria-invalid={invalid('eps_id')}
+                            >
+                                <SelectValue placeholder="Selecciona una EPS" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {eps.map((entry) => (
+                                    <SelectItem
+                                        key={entry.id}
+                                        value={String(entry.id)}
+                                    >
+                                        {entry.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <InputError message={errors.eps_id} />
+                    </div>
+
+                    <div className="grid gap-2">
+                        <Label htmlFor={id('pension_fund_id')}>
+                            Fondo de Pensiones
+                            <RequiredMarker />
+                        </Label>
+                        <Select
+                            value={data.pension_fund_id}
+                            onValueChange={(value) =>
+                                setData('pension_fund_id', value)
+                            }
+                        >
+                            <SelectTrigger
+                                id={id('pension_fund_id')}
+                                aria-invalid={invalid('pension_fund_id')}
+                            >
+                                <SelectValue placeholder="Selecciona un fondo" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {pensionFunds.map((entry) => (
+                                    <SelectItem
+                                        key={entry.id}
+                                        value={String(entry.id)}
+                                    >
+                                        {entry.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <InputError message={errors.pension_fund_id} />
+                    </div>
+
+                    <div className="grid gap-2">
+                        <Label htmlFor={id('severance_fund_id')}>
+                            Fondo de Cesantías
+                            <RequiredMarker />
+                        </Label>
+                        <Select
+                            value={data.severance_fund_id}
+                            onValueChange={(value) =>
+                                setData('severance_fund_id', value)
+                            }
+                        >
+                            <SelectTrigger
+                                id={id('severance_fund_id')}
+                                aria-invalid={invalid('severance_fund_id')}
+                            >
+                                <SelectValue placeholder="Selecciona un fondo" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {severanceFunds.map((entry) => (
+                                    <SelectItem
+                                        key={entry.id}
+                                        value={String(entry.id)}
+                                    >
+                                        {entry.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <InputError message={errors.severance_fund_id} />
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                    <Switch
+                        id={id('has_social_security')}
+                        checked={data.has_social_security}
+                        onCheckedChange={(checked) =>
+                            setData('has_social_security', checked)
+                        }
+                    />
+                    <Label htmlFor={id('has_social_security')}>
+                        Seguridad social activa
+                    </Label>
+                </div>
+                <InputError message={errors.has_social_security} />
+            </section>
+
+            {/* Section 5: Estado */}
+            <section className="space-y-4">
+                <h3 className="text-base font-semibold">Estado</h3>
+                <div className="flex items-center gap-3">
+                    <Switch
+                        id={id('active')}
+                        checked={data.active}
+                        onCheckedChange={(checked) => setData('active', checked)}
+                    />
+                    <Label htmlFor={id('active')}>Conductor activo</Label>
+                </div>
+                <InputError message={errors.active} />
+            </section>
+        </div>
+    );
+}
