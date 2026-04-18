@@ -1,6 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
 import {
     CheckCircle2,
+    FileDown,
     FileText,
     ListPlus,
     Pencil,
@@ -236,6 +237,22 @@ export default function InvoicesShow({
                                     >
                                         <ListPlus className="mr-1 size-4" />
                                         Asignar Servicios
+                                    </Button>
+                                </Can>
+                                <Can permission={Permission.VIEW_INVOICES}>
+                                    <Button asChild size="sm" variant="outline">
+                                        <a
+                                            href={
+                                                InvoiceController.pdf(
+                                                    invoice.id,
+                                                ).url
+                                            }
+                                            target="_blank"
+                                            rel="noreferrer"
+                                        >
+                                            <FileDown className="mr-1 size-4" />
+                                            Descargar PDF
+                                        </a>
                                     </Button>
                                 </Can>
                                 <Button asChild size="sm" variant="outline">
