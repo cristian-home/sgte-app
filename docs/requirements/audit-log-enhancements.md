@@ -2,10 +2,10 @@
 name: audit-log-enhancements
 type: feat
 scope: audit-log
-status: pending
+status: completed
 priority: high
 created_date: 2026-04-18
-completed_date:
+completed_date: 2026-04-18
 srs_refs: ["REQ-009"]
 migration_strategy: new
 ---
@@ -39,29 +39,29 @@ After this requirement lands, `REQ-009` is complete and Phase 4 (Billing and Aud
 
 ## Acceptance Criteria
 
-- [ ] **AC1**: WHEN an admin navigates to `/audit-log` THEN the page renders a paginated `<DataTable>` (not a 50-row capped list), using `useServerTable` with the same per-page / sort / filter contract as the six rebuilt CRUD modules.
-- [ ] **AC2**: WHEN `AuditLogController@index` runs THEN the response projects, for every row: `id`, `log_name`, `description`, `event`, `subject_type` (basename), `subject_id`, `causer` (id/name/email or null), `created_at` (ISO 8601), **AND** the full `properties` bag, `attributes`, and `old_attributes` — the current implementation drops these and MUST be rewritten to include them.
-- [ ] **AC3**: WHEN the user applies `filter[subject_type]=App\\Models\\Service` THEN only activity rows whose `subject_type` matches remain. The filter is `AllowedFilter::exact('subject_type')` (current filter is already present — verify it survives the rewrite).
-- [ ] **AC4**: WHEN the user applies `filter[causer_id]={userId}` THEN only rows authored by that user remain. The filter is `AllowedFilter::exact('causer_id')`.
-- [ ] **AC5**: WHEN the user applies `filter[event]=updated` (or `created` / `deleted` / `restored`) THEN only rows matching that event remain. The filter is `AllowedFilter::exact('event')`.
-- [ ] **AC6**: WHEN the user applies `filter[created_from]=2026-04-01` THEN only rows with `created_at >= 2026-04-01 00:00:00` remain. WHEN the user applies `filter[created_to]=2026-04-15` THEN only rows with `created_at <= 2026-04-15 23:59:59` remain. Both filters are `AllowedFilter::callback` instances that accept `YYYY-MM-DD` strings and apply `whereDate('created_at', '>=', …)` / `whereDate('created_at', '<=', …)` respectively. Both filters MUST be safe to combine.
-- [ ] **AC7**: WHEN `AuditLogController@index` runs THEN the payload ALSO includes `users: User::orderBy('name')->get(['id', 'name', 'email'])` (no role filter — any user can be a causer) and `subjectTypes: [{ value, label }, ...]` — distinct `subject_type` values from the last 1000 `activity_log` rows, each mapped to its human label via a new `SUBJECT_TYPE_LABELS` constant defined on `AuditLogController`. The list is sorted by label ascending.
-- [ ] **AC8**: WHEN the page renders THEN the columns, in order, are: **Fecha** (dateTimeFormatter `es-CO`, font-mono text-xs), **Usuario** (causer name primary + email muted, or `—` when null), **Acción** (event Badge, outline variant), **Entidad** (Spanish label + `#{subject_id}`; a `<Link>` to `/services/{id}` / `/invoices/{id}` / `/contracts/{id}` / `/service-incidents/{id}` / `/day-statuses/{id}` when `subject_type` maps to a linkable module, otherwise plain text), **Descripción** (truncate `max-w-md`), **Justificación** (renders `properties.justification` inline with `truncate max-w-sm`, or `—` when absent), **Acciones** (single "Ver detalles" icon button, `Eye` icon from lucide-react).
-- [ ] **AC9**: WHEN a row has `properties.edited_on_executed_day === true` THEN the row is tinted with `bg-amber-500/10 hover:bg-amber-500/15` via `getRowClassName` passed to `<DataTable>`. Every other row gets no tint.
-- [ ] **AC10**: WHEN the user clicks the "Ver detalles" icon on any row THEN a shadcn `<Sheet side="right">` opens showing:
+- [x] **AC1**: WHEN an admin navigates to `/audit-log` THEN the page renders a paginated `<DataTable>` (not a 50-row capped list), using `useServerTable` with the same per-page / sort / filter contract as the six rebuilt CRUD modules.
+- [x] **AC2**: WHEN `AuditLogController@index` runs THEN the response projects, for every row: `id`, `log_name`, `description`, `event`, `subject_type` (basename), `subject_id`, `causer` (id/name/email or null), `created_at` (ISO 8601), **AND** the full `properties` bag, `attributes`, and `old_attributes` — the current implementation drops these and MUST be rewritten to include them.
+- [x] **AC3**: WHEN the user applies `filter[subject_type]=App\\Models\\Service` THEN only activity rows whose `subject_type` matches remain. The filter is `AllowedFilter::exact('subject_type')` (current filter is already present — verify it survives the rewrite).
+- [x] **AC4**: WHEN the user applies `filter[causer_id]={userId}` THEN only rows authored by that user remain. The filter is `AllowedFilter::exact('causer_id')`.
+- [x] **AC5**: WHEN the user applies `filter[event]=updated` (or `created` / `deleted` / `restored`) THEN only rows matching that event remain. The filter is `AllowedFilter::exact('event')`.
+- [x] **AC6**: WHEN the user applies `filter[created_from]=2026-04-01` THEN only rows with `created_at >= 2026-04-01 00:00:00` remain. WHEN the user applies `filter[created_to]=2026-04-15` THEN only rows with `created_at <= 2026-04-15 23:59:59` remain. Both filters are `AllowedFilter::callback` instances that accept `YYYY-MM-DD` strings and apply `whereDate('created_at', '>=', …)` / `whereDate('created_at', '<=', …)` respectively. Both filters MUST be safe to combine.
+- [x] **AC7**: WHEN `AuditLogController@index` runs THEN the payload ALSO includes `users: User::orderBy('name')->get(['id', 'name', 'email'])` (no role filter — any user can be a causer) and `subjectTypes: [{ value, label }, ...]` — distinct `subject_type` values from the last 1000 `activity_log` rows, each mapped to its human label via a new `SUBJECT_TYPE_LABELS` constant defined on `AuditLogController`. The list is sorted by label ascending.
+- [x] **AC8**: WHEN the page renders THEN the columns, in order, are: **Fecha** (dateTimeFormatter `es-CO`, font-mono text-xs), **Usuario** (causer name primary + email muted, or `—` when null), **Acción** (event Badge, outline variant), **Entidad** (Spanish label + `#{subject_id}`; a `<Link>` to `/services/{id}` / `/invoices/{id}` / `/contracts/{id}` / `/service-incidents/{id}` / `/day-statuses/{id}` when `subject_type` maps to a linkable module, otherwise plain text), **Descripción** (truncate `max-w-md`), **Justificación** (renders `properties.justification` inline with `truncate max-w-sm`, or `—` when absent), **Acciones** (single "Ver detalles" icon button, `Eye` icon from lucide-react).
+- [x] **AC9**: WHEN a row has `properties.edited_on_executed_day === true` THEN the row is tinted with `bg-amber-500/10 hover:bg-amber-500/15` via `getRowClassName` passed to `<DataTable>`. Every other row gets no tint.
+- [x] **AC10**: WHEN the user clicks the "Ver detalles" icon on any row THEN a shadcn `<Sheet side="right">` opens showing:
     1. A header with the causer name + email + `{event}` Badge + formatted timestamp.
     2. The activity `description` rendered in a muted block.
     3. A **Justificación** card rendering `properties.justification` in a blockquote style — only when present. Includes an amber "Día ejecutado" Badge when `properties.edited_on_executed_day === true`.
     4. A 2-column **Cambios** card rendering `old_attributes` / `attributes` as "Antes" / "Después" with per-key rows; each key gets one line per column; unchanged keys are omitted (compute intersection of the two objects; render only the keys present in at least one of them).
     5. A collapsible **Propiedades adicionales** `<details>` block rendering the rest of `properties` (everything except `justification` and `edited_on_executed_day`) as formatted JSON (`JSON.stringify(..., null, 2)` in a `<pre>`).
     6. A "Cerrar" `<SheetClose>` button at the bottom.
-- [ ] **AC11**: WHEN the above-the-table filter bar renders THEN it contains, in order: **Usuario** (`<UserCombobox />` filtered against the payload's `users` list, wired to `causer_id`), **Entidad** (`<Select>` with the payload's `subjectTypes` options, wired to `subject_type`), **Acción** (`<Select>` with fixed options `created / updated / deleted / restored`, wired to `event`), **Desde** (`<Input type="date">` wired to `created_from`), **Hasta** (`<Input type="date">` wired to `created_to`). All filters wire through the existing `useServerTable` filter channel.
-- [ ] **AC12**: WHEN the user edits a Service whose day is in `DayStatusEnum::Executed` state AND they are an Admin THEN a shadcn `<Alert variant="destructive">` renders **above** the existing "Justificación del cambio *" textarea in `service-form.tsx`, containing an `<AlertTriangle>` icon, title "Día ejecutado", and description "Este servicio pertenece a un día ejecutado. La modificación requiere justificación obligatoria y quedará registrada en la auditoría." The textarea's existing behavior and validation are unchanged.
-- [ ] **AC13**: WHEN an operator, driver, accounting, or unauthenticated user navigates to `/audit-log` THEN they receive 401 (unauthenticated) or 403 (operator / driver / accounting do NOT hold `VIEW_AUDIT_LOG`).
-- [ ] **AC14**: WHEN an admin edits an executed-day Service with a valid justification AND the controller persists the record THEN exactly **one** new `activity_log` row exists afterwards where `causer_id === admin.id`, `subject_type === 'App\\Models\\Service'`, `subject_id === $service->id`, `properties.justification` equals the submitted string, AND `properties.edited_on_executed_day === true`. This AC is load-bearing: REQ-009 AC#4 requires the audit trail to record the justification, and this pin ensures the existing `ServiceController@update` logic is not silently regressed by any refactor inside this requirement.
-- [ ] **AC15**: WHEN `npm run types` runs THEN the new pages and components contribute zero new TypeScript errors. The existing deferred-scaffold pre-existing errors (kibo-ui Gantt + unrebuilt catalog/fuec/vehicle-location scaffold pages) are NOT acceptable as a floor for new files added by this requirement.
-- [ ] **AC16**: WHEN the `<UserCombobox />` primitive is reused by any other screen (planned: invoices filter bar, service-incidents filter bar) THEN the component MUST import cleanly from `@/components/users/user-combobox` with the signature `{ users, value, onChange, placeholder?, disabled?, invalid?, id?, className? }` — no audit-log-specific assumptions baked into the primitive.
-- [ ] **AC17**: WHEN this requirement is merged THEN `docs/phases/phase-4-billing-reports.md` §4.3 MUST be updated to check off the REQ-009 justification UX item AND `docs/phases/README.md` Phase 4 row MUST flip from 🔶 In progress to ✅ Completed. (Status text update is part of the final docs commit in this requirement.)
+- [x] **AC11**: WHEN the above-the-table filter bar renders THEN it contains, in order: **Usuario** (`<UserCombobox />` filtered against the payload's `users` list, wired to `causer_id`), **Entidad** (`<Select>` with the payload's `subjectTypes` options, wired to `subject_type`), **Acción** (`<Select>` with fixed options `created / updated / deleted / restored`, wired to `event`), **Desde** (`<Input type="date">` wired to `created_from`), **Hasta** (`<Input type="date">` wired to `created_to`). All filters wire through the existing `useServerTable` filter channel.
+- [x] **AC12**: WHEN the user edits a Service whose day is in `DayStatusEnum::Executed` state AND they are an Admin THEN a shadcn `<Alert variant="destructive">` renders **above** the existing "Justificación del cambio *" textarea in `service-form.tsx`, containing an `<AlertTriangle>` icon, title "Día ejecutado", and description "Este servicio pertenece a un día ejecutado. La modificación requiere justificación obligatoria y quedará registrada en la auditoría." The textarea's existing behavior and validation are unchanged.
+- [x] **AC13**: WHEN an operator, driver, accounting, or unauthenticated user navigates to `/audit-log` THEN they receive 401 (unauthenticated) or 403 (operator / driver / accounting do NOT hold `VIEW_AUDIT_LOG`).
+- [x] **AC14**: WHEN an admin edits an executed-day Service with a valid justification AND the controller persists the record THEN exactly **one** new `activity_log` row exists afterwards where `causer_id === admin.id`, `subject_type === 'App\\Models\\Service'`, `subject_id === $service->id`, `properties.justification` equals the submitted string, AND `properties.edited_on_executed_day === true`. This AC is load-bearing: REQ-009 AC#4 requires the audit trail to record the justification, and this pin ensures the existing `ServiceController@update` logic is not silently regressed by any refactor inside this requirement.
+- [x] **AC15**: WHEN `npm run types` runs THEN the new pages and components contribute zero new TypeScript errors. The existing deferred-scaffold pre-existing errors (kibo-ui Gantt + unrebuilt catalog/fuec/vehicle-location scaffold pages) are NOT acceptable as a floor for new files added by this requirement.
+- [x] **AC16**: WHEN the `<UserCombobox />` primitive is reused by any other screen (planned: invoices filter bar, service-incidents filter bar) THEN the component MUST import cleanly from `@/components/users/user-combobox` with the signature `{ users, value, onChange, placeholder?, disabled?, invalid?, id?, className? }` — no audit-log-specific assumptions baked into the primitive.
+- [x] **AC17**: WHEN this requirement is merged THEN `docs/phases/phase-4-billing-reports.md` §4.3 MUST be updated to check off the REQ-009 justification UX item AND `docs/phases/README.md` Phase 4 row MUST flip from 🔶 In progress to ✅ Completed. (Status text update is part of the final docs commit in this requirement.)
 
 ## Technical Specification
 
@@ -103,7 +103,7 @@ After this requirement lands, `REQ-009` is complete and Phase 4 (Billing and Aud
 
 ### Backend
 
-- [ ] **Task B1**: Rewrite `AuditLogController@index` to paginate, project the full activity shape, and add the date-range + combobox payloads.
+- [x] **Task B1**: Rewrite `AuditLogController@index` to paginate, project the full activity shape, and add the date-range + combobox payloads.
   - Replace the current `->limit(...)->get()->map(...)` chain with `QueryBuilder::for(Activity::class)->with(['causer:id,name,email'])->allowedFilters([...])->allowedSorts(['created_at', 'log_name', 'event'])->defaultSort('-created_at')->paginate($request->perPage())->withQueryString()`.
   - Extend `allowedFilters` with `AllowedFilter::callback('created_from', fn ($query, $value) => $query->whereDate('created_at', '>=', $value))` and a mirroring `created_to` using `'<='`. Both MUST coerce `$value` to string and ignore empty strings (return early without modifying the query) so an empty form field doesn't break the SQL.
   - Use a `through()` transformer on the paginator to shape each row (use `Spatie\LaravelPackageTools\...` or `->through(fn (Activity $a) => [...])`) so the paginator wrapper (`data`, `per_page`, `current_page`, `total`, `links`) is preserved for `<DataTable>`.
@@ -112,7 +112,7 @@ After this requirement lands, `REQ-009` is complete and Phase 4 (Billing and Aud
   - Pass `subjectTypes: $this->subjectTypeOptions()` as a third page prop — see Task B2 for the helper.
   - Reference convention: `VehicleController@index` after vehicles-crud for the pagination + filter wiring; `InvoiceController@index` for the combobox-payload pattern.
 
-- [ ] **Task B2**: Add `SUBJECT_TYPE_LABELS` constant + `subjectTypeOptions()` helper on `AuditLogController`.
+- [x] **Task B2**: Add `SUBJECT_TYPE_LABELS` constant + `subjectTypeOptions()` helper on `AuditLogController`.
   - Define `private const SUBJECT_TYPE_LABELS = [Service::class => 'Servicio', Invoice::class => 'Factura', Contract::class => 'Contrato', ServiceIncident::class => 'Novedad', DayStatus::class => 'Día', Vehicle::class => 'Vehículo', Driver::class => 'Conductor', ThirdParty::class => 'Tercero', User::class => 'Usuario', Fuec::class => 'FUEC', VehicleLocation::class => 'Ubicación', IncidentType::class => 'Tipo de Novedad', DocumentType::class => 'Tipo de Documento', Eps::class => 'EPS', PensionFund::class => 'Fondo de Pensiones', SeveranceFund::class => 'Fondo de Cesantías'];` — 16 entries covering every model with the `LogsActivity` trait.
   - Implement `private function subjectTypeOptions(): array`:
     - Query `Activity::query()->orderByDesc('created_at')->limit(1000)->distinct()->pluck('subject_type')->filter()->unique()->values()`.
@@ -121,7 +121,7 @@ After this requirement lands, `REQ-009` is complete and Phase 4 (Billing and Aud
     - Return as a plain PHP array (not a Collection), so Inertia serializes it as a JSON array.
   - Reference convention: any controller that exposes a reference/option list (e.g. `VehicleController::documentTypeOptions`).
 
-- [ ] **Task B3**: Add `tests/Feature/Http/Controllers/AuditLogControllerTest.php` (new file) covering pagination, projection, filters, and authorization.
+- [x] **Task B3**: Add `tests/Feature/Http/Controllers/AuditLogControllerTest.php` (new file) covering pagination, projection, filters, and authorization.
   - `test('index returns paginated payload with users and subjectTypes props')` — seed 3 activity rows, log in as admin, assert response has `activities.data`, `activities.per_page`, `activities.current_page`, `activities.total`, `users` is array with at least one `{id, name, email}`, `subjectTypes` is array with `[{value, label}]` entries.
   - `test('index projects the properties bag including justification and edited_on_executed_day')` — directly create an `Activity` via `activity()->performedOn($service)->causedBy($admin)->withProperties(['justification' => 'test reason', 'edited_on_executed_day' => true])->log('updated')`; load `/audit-log`; assert the row's `properties.justification === 'test reason'` AND `properties.edited_on_executed_day === true`.
   - `test('index projects attributes and old_attributes for diff rendering')` — create an `Activity` with `->withProperties(['attributes' => ['unit_value' => 100], 'old' => ['unit_value' => 50]])` (matches spatie's default shape); assert the projected row includes both.
@@ -134,13 +134,13 @@ After this requirement lands, `REQ-009` is complete and Phase 4 (Billing and Aud
   - `test('subjectTypes is dynamically computed from distinct subject_type values in the last 1000 activity rows')` — seed activities on Service + Vehicle + DayStatus; assert `subjectTypes` array contains exactly those three `value`s with their correct Spanish labels, sorted.
   - Reference convention: `tests/Feature/Http/Controllers/ContractControllerTest.php` after contracts-crud.
 
-- [ ] **Task B4**: Extend `tests/Feature/Http/Controllers/ServiceLockingTest.php` with the REQ-009 AC#4 activity-log pin.
+- [x] **Task B4**: Extend `tests/Feature/Http/Controllers/ServiceLockingTest.php` with the REQ-009 AC#4 activity-log pin.
   - `test('admin editing an executed-day service with justification writes exactly one activity_log row with the justification in properties')` — following the existing test fixtures (contract + vehicle + driver + service on an executed day), act as admin, PUT `/services/{id}` with a valid payload including `justification => 'Corrección de fecha por error de captura inicial — aprobado por supervisor.'`, assert `Activity::query()->where('causer_id', $admin->id)->where('subject_type', Service::class)->where('subject_id', $service->id)->count() === 1`, load the row and assert `$activity->properties['justification'] === 'Corrección de fecha por error de captura inicial — aprobado por supervisor.'` AND `$activity->properties['edited_on_executed_day'] === true`.
   - Reference convention: the existing tests in the same file for Carbon + Service + DayStatus fixture setup.
 
 ### Frontend — shared primitive
 
-- [ ] **Task F1**: Create `resources/js/components/users/user-combobox.tsx`.
+- [x] **Task F1**: Create `resources/js/components/users/user-combobox.tsx`.
   - Reference convention: `resources/js/components/third-parties/third-party-combobox.tsx` after contracts-crud.
   - Define and export `type UserOption = Pick<User, 'id' | 'name' | 'email'>`.
   - Props: `{ users: UserOption[]; value: number | null; onChange: (value: number | null) => void; placeholder?: string; disabled?: boolean; invalid?: boolean; id?: string; className?: string }`.
@@ -151,7 +151,7 @@ After this requirement lands, `REQ-009` is complete and Phase 4 (Billing and Aud
 
 ### Frontend — audit-log-specific
 
-- [ ] **Task F2**: Create `resources/js/components/audit-log/audit-log-detail-sheet.tsx`.
+- [x] **Task F2**: Create `resources/js/components/audit-log/audit-log-detail-sheet.tsx`.
   - Shadcn `<Sheet side="right">` wrapping a `<SheetContent className="w-full sm:max-w-xl overflow-y-auto">`.
   - Props: `{ open: boolean; onOpenChange: (open: boolean) => void; activity: ActivityRow | null }` where `ActivityRow` is imported from `./index.tsx` (or extracted to a shared types file under `resources/js/types/audit-log.ts`).
   - Sheet header: causer name (or "Sistema" when null) + email muted + event Badge + formatted timestamp (reuse `dateTimeFormatter` from the index).
@@ -163,12 +163,12 @@ After this requirement lands, `REQ-009` is complete and Phase 4 (Billing and Aud
   - Sheet footer: a `<SheetClose asChild><Button variant="outline">Cerrar</Button></SheetClose>`.
   - Activity row `null` case: the Sheet content renders a muted "Sin actividad seleccionada." block (defensive — the index should never pass null when `open === true`, but the guard prevents a crash).
 
-- [ ] **Task F3**: Extract `ActivityRow` type to `resources/js/types/audit-log.ts` (new).
+- [x] **Task F3**: Extract `ActivityRow` type to `resources/js/types/audit-log.ts` (new).
   - Shape: `{ id: number; log_name: string | null; description: string; event: string | null; subject_type: string | null; subject_id: number | null; causer: { id: number; name: string; email: string } | null; created_at: string | null; properties: Record<string, unknown>; attributes: Record<string, unknown>; old_attributes: Record<string, unknown>; }`.
   - Also export `type SubjectTypeOption = { value: string; label: string }`.
   - Also export a `SUBJECT_TYPE_LINK_MAP` constant mapping `'App\\Models\\Service' → '/services'`, `'App\\Models\\Invoice' → '/invoices'`, `'App\\Models\\Contract' → '/contracts'`, `'App\\Models\\ServiceIncident' → '/service-incidents'`, `'App\\Models\\DayStatus' → '/day-statuses'`. Other subject types land on `null` (not linkable). The index's Entidad cell uses this map to decide whether to wrap in `<Link>`.
 
-- [ ] **Task F4**: Rewrite `resources/js/pages/audit-log/index.tsx` around `<DataTable>` + `useServerTable`.
+- [x] **Task F4**: Rewrite `resources/js/pages/audit-log/index.tsx` around `<DataTable>` + `useServerTable`.
   - Replace the current bare table with the pattern used by `resources/js/pages/services/index.tsx`, but with audit-log-specific columns.
   - Define `auditLogFilters: FilterDefinition[]`:
     - `causer_id` (label: "Usuario") — renders via a custom channel (the `<UserCombobox />` is rendered above the table, not inline in the filter popover).
@@ -185,12 +185,12 @@ After this requirement lands, `REQ-009` is complete and Phase 4 (Billing and Aud
   - Breadcrumbs: `[{ title: 'Administración' }, { title: 'Auditoría', href: '/audit-log' }]`.
   - Reference conventions: `resources/js/pages/vehicles/index.tsx` for the DataTable skeleton; `resources/js/pages/contracts/index.tsx` for the above-the-table combobox pattern.
 
-- [ ] **Task F5**: Extract an `auditLogColumns` const from `index.tsx` into `resources/js/pages/audit-log/columns.tsx` if inline defs push past ~60 lines.
+- [x] **Task F5**: Extract an `auditLogColumns` const from `index.tsx` into `resources/js/pages/audit-log/columns.tsx` if inline defs push past ~60 lines.
   - Follows the same `ColumnDef<ActivityRow>[]` shape used by every rebuilt CRUD.
   - Entidad cell logic: `const linkPath = subject_type ? SUBJECT_TYPE_LINK_MAP[subject_type] : null; return linkPath && subject_id ? <Link href={`${linkPath}/${subject_id}`}>{`${label} #${subject_id}`}</Link> : <span>{label + (subject_id ? ` #${subject_id}` : '')}</span>` — where `label` resolves from `subjectTypes` or defaults to `class_basename(subject_type)` via a client-side helper.
   - Justificación cell logic: `return properties?.justification ? <span className="truncate max-w-sm">{properties.justification}</span> : <span className="text-muted-foreground">—</span>`.
 
-- [ ] **Task F6**: Add the destructive `<Alert>` banner to `resources/js/components/services/service-form.tsx` above the existing justification textarea.
+- [x] **Task F6**: Add the destructive `<Alert>` banner to `resources/js/components/services/service-form.tsx` above the existing justification textarea.
   - Inside the existing `{isAdminEdit && (<>...</>)}` block, prepend a `<Alert variant="destructive">` with:
     - `<AlertTriangle className="h-4 w-4" />` icon.
     - `<AlertTitle>Día ejecutado</AlertTitle>`.
@@ -200,7 +200,7 @@ After this requirement lands, `REQ-009` is complete and Phase 4 (Billing and Aud
 
 ### Tests
 
-- [ ] **Task T1**: Create `tests/Browser/AuditLogIndexTest.php` — Dusk suite covering the filter + detail-sheet flow.
+- [x] **Task T1**: Create `tests/Browser/AuditLogIndexTest.php` — Dusk suite covering the filter + detail-sheet flow.
   - `beforeEach`: `php artisan migrate:fresh --no-interaction` (build fixtures inline, not via `--seed`). Create admin, operator, and driver users via factories with matching Spatie roles. Create 3 `Activity` rows via raw `activity()` calls (one on a Service with `edited_on_executed_day => true` + a justification, one on a Vehicle as `updated`, one on an Invoice as `created`).
   - Scenario 1: `test('admin sees the audit log index with filter bar and table')` — login as admin, visit `/audit-log`, assert no `[role="alert"]` exception banner, assert the table headers Fecha / Usuario / Acción / Entidad / Descripción / Justificación / Acciones are visible, assert all 3 seeded rows appear, assert the executed-day row has a `bg-amber-500/10` style (probe via `attribute` selector or class presence via a `data-testid` the implementation adds).
   - Scenario 2: `test('admin filters audit log by subject_type = Service')` — on the same page, apply the subject_type filter to "Servicio" (the Spanish label in the Select); assert only the Service row remains; assert the URL query string contains `filter[subject_type]=App\\Models\\Service` (URL-encoded).
@@ -209,15 +209,15 @@ After this requirement lands, `REQ-009` is complete and Phase 4 (Billing and Aud
   - Each scenario takes a screenshot at a key step (e.g. `$browser->screenshot('audit-log-index-admin')`, `$browser->screenshot('audit-log-detail-sheet-justification')`). Screenshots land in `tests/Browser/screenshots/`.
   - Reference convention: `tests/Browser/InvoicesIndexAndShowTest.php` for the consolidated-file pattern.
 
-- [ ] **Task T2**: Document the Playwright MCP walkthrough (in the Verification section below). This is not a committable test but an explicit checklist for manual verification during implementation.
+- [x] **Task T2**: Document the Playwright MCP walkthrough (in the Verification section below). This is not a committable test but an explicit checklist for manual verification during implementation.
 
 ### Docs
 
-- [ ] **Task D1**: Update `docs/phases/phase-4-billing-reports.md` §4.3 once this requirement ships.
+- [x] **Task D1**: Update `docs/phases/phase-4-billing-reports.md` §4.3 once this requirement ships.
   - Add a ✅ bullet under §4.3 noting `audit-log-enhancements` merged + the justification UX is surfaced on `/audit-log` with filters.
   - Update the top-of-file status line to reflect Phase 4 as complete (pending the final merge, to be flipped in the final docs commit of this requirement).
 
-- [ ] **Task D2**: Update `docs/phases/README.md` Phase 4 row from 🔶 to ✅.
+- [x] **Task D2**: Update `docs/phases/README.md` Phase 4 row from 🔶 to ✅.
 
 ## Verification
 
@@ -249,13 +249,13 @@ Preferred flow:
 11. Logout. Login as operator. Navigate to `/audit-log` — verify 403. Same for driver and accounting.
 12. Use `mcp__laravel-boost__browser-logs` to inspect any JS console errors during the flow.
 
-- [ ] Scenario 1: Admin sees the destructive Alert banner on the service edit form for an executed-day service.
-- [ ] Scenario 2: Admin submits an edit + justification; the activity appears on `/audit-log` with amber tint and the justification in the Justificación cell.
-- [ ] Scenario 3: Admin clicks "Ver detalles" — Sheet renders with the justification, diff, and raw properties.
-- [ ] Scenario 4: Admin filters by Usuario + Entidad + date range; table narrows correctly.
-- [ ] Scenario 5: Operator receives 403 on `/audit-log`.
-- [ ] Scenario 6: Driver receives 403 on `/audit-log`.
-- [ ] Scenario 7: Accounting receives 403 on `/audit-log`.
+- [x] Scenario 1: Admin sees the destructive Alert banner on the service edit form for an executed-day service.
+- [x] Scenario 2: Admin submits an edit + justification; the activity appears on `/audit-log` with amber tint and the justification in the Justificación cell.
+- [x] Scenario 3: Admin clicks "Ver detalles" — Sheet renders with the justification, diff, and raw properties.
+- [x] Scenario 4: Admin filters by Usuario + Entidad + date range; table narrows correctly.
+- [x] Scenario 5: Operator receives 403 on `/audit-log`.
+- [x] Scenario 6: Driver receives 403 on `/audit-log`.
+- [x] Scenario 7: Accounting receives 403 on `/audit-log`.
 
 ### 2. Backend regression — Pest feature tests (required)
 
