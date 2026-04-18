@@ -3,44 +3,62 @@
 namespace App\Models;
 
 use App\Enums\FuecStatus;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Laravel\Scout\Searchable;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
+/**
+ * A generated FUEC document (REQ-007). Persistent + immutable
+ * post-creation — the only state transition is `active → cancelled`
+ * via the `cancel` controller action (writes an activity log entry
+ * with the cancellation reason). FUECs are never edited or hard-
+ * deleted; regeneration is handled by cancelling + creating a new
+ * FUEC with the next consecutive.
+ */
 class Fuec extends Model
 {
-    use HasFactory, LogsActivity, Searchable;
+    use HasFactory;
+    use HasUuids;
+    use LogsActivity;
+    use Searchable;
+    use SoftDeletes;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array
-     */
     protected $fillable = [
+        'uuid',
         'service_id',
+        'fuec_number_range_id',
         'consecutive_number',
         'generated_at',
         'qr_code',
         'status',
-        'pdf_url',
+        'pdf_path',
+        'pdf_disk',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
             'id' => 'integer',
             'service_id' => 'integer',
+            'fuec_number_range_id' => 'integer',
+            'consecutive_number' => 'integer',
             'generated_at' => 'timestamp',
             'status' => FuecStatus::class,
         ];
+    }
+
+    /**
+     * Only the `uuid` column is a generated UUID; `id` remains a
+     * bigint auto-increment so every other FK relation keeps working.
+     */
+    public function uniqueIds(): array
+    {
+        return ['uuid'];
     }
 
     public function service(): BelongsTo
@@ -48,10 +66,26 @@ class Fuec extends Model
         return $this->belongsTo(Service::class);
     }
 
+    public function fuecNumberRange(): BelongsTo
+    {
+        return $this->belongsTo(FuecNumberRange::class);
+    }
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['id', 'service_id', 'consecutive_number', 'generated_at', 'qr_code', 'status', 'pdf_url']);
+            ->logOnly([
+                'id',
+                'uuid',
+                'service_id',
+                'fuec_number_range_id',
+                'consecutive_number',
+                'generated_at',
+                'qr_code',
+                'status',
+                'pdf_path',
+                'pdf_disk',
+            ]);
     }
 
     /**
@@ -71,12 +105,15 @@ class Fuec extends Model
     {
         return [
             'id' => (string) $this->id,
+            'uuid' => $this->uuid,
             'service_id' => $this->service_id,
+            'fuec_number_range_id' => $this->fuec_number_range_id,
             'consecutive_number' => (string) $this->consecutive_number,
             'generated_at' => $this->generated_at !== null ? date('c', $this->generated_at) : null,
             'qr_code' => $this->qr_code,
             'status' => $this->status?->value,
-            'pdf_url' => $this->pdf_url,
+            'pdf_path' => $this->pdf_path,
+            'pdf_disk' => $this->pdf_disk,
         ];
     }
 }

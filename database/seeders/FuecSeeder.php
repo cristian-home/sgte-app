@@ -3,8 +3,10 @@
 namespace Database\Seeders;
 
 use App\Models\Fuec;
+use App\Models\FuecNumberRange;
 use App\Models\Service;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 class FuecSeeder extends Seeder
 {
@@ -19,16 +21,29 @@ class FuecSeeder extends Seeder
             return;
         }
 
+        $range = FuecNumberRange::firstOrCreate(
+            ['resolution_number' => 'RES-0001', 'resolution_year' => (int) now()->format('Y')],
+            [
+                'range_from' => 1000,
+                'range_to' => 9999,
+                'active' => true,
+                'notes' => 'Rango inicial de demostración para el entorno de staging.',
+            ],
+        );
+
         foreach ($closedServices as $index => $service) {
             Fuec::firstOrCreate(
                 ['service_id' => $service->id],
                 [
+                    'uuid' => (string) Str::uuid(),
                     'service_id' => $service->id,
-                    'consecutive_number' => 1000 + $index + 1,
+                    'fuec_number_range_id' => $range->id,
+                    'consecutive_number' => $range->range_from + $index,
                     'generated_at' => $service->service_date->format('Y-m-d').' 18:00:00',
-                    'qr_code' => 'FUEC-'.str_pad($index + 1, 5, '0', STR_PAD_LEFT),
+                    'qr_code' => (string) Str::uuid(),
                     'status' => 'active',
-                    'pdf_url' => null,
+                    'pdf_path' => null,
+                    'pdf_disk' => 's3',
                 ],
             );
         }
