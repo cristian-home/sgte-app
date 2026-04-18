@@ -668,6 +668,15 @@ export default function ServiceForm({
 
             {isAdminEdit && (
                 <>
+                    <Alert variant="destructive">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertTitle>Día ejecutado</AlertTitle>
+                        <AlertDescription>
+                            Este servicio pertenece a un día ejecutado. La
+                            modificación requiere justificación obligatoria y
+                            quedará registrada en la auditoría.
+                        </AlertDescription>
+                    </Alert>
                     <h3 className="text-lg font-semibold">
                         Justificación del cambio
                     </h3>
