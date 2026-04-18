@@ -1,6 +1,6 @@
 # Phase 4: Billing and Audit
 
-> **Status: IN PROGRESS** — Invoice CRUD + service-invoice association + informational PDF generation are complete (rebuilds `invoices-crud`, `service-incidents-crud`, `invoice-service-assignment`, `invoice-pdf-generation` merged to `develop`). Still pending: REQ-009 accounting-immutability justification UX (§4.3). Requires Phase 2 (completed); Phase 3 recommended.
+> **Status: ✅ COMPLETED** — Invoice CRUD + service-invoice association + informational PDF generation + REQ-009 accounting-immutability justification UX all merged to `develop` (rebuilds `invoices-crud`, `service-incidents-crud`, `invoice-service-assignment`, `invoice-pdf-generation`, `audit-log-enhancements`). Requires Phase 2 (completed); Phase 3 recommended.
 
 ## Objective
 
@@ -35,13 +35,13 @@ Implement the service billing module, enforce accounting immutability of execute
 - [x] Only the Administrador and Contabilidad roles can bill — `ASSIGN_SERVICES_TO_INVOICES` now enforced at route + controller + UI (`invoice-service-assignment` merged).
 - [x] Invoice PDF generation (informational, not fiscal) — `invoice-pdf-generation` merged. `barryvdh/laravel-dompdf` ^3.1 installed; `GET /invoices/{invoice}/pdf` streams inline; INFORMATIVO badge + footer disclaimer on every page.
 
-### 4.3 Accounting immutability (REQ-009 complement)
+### 4.3 Accounting immutability (REQ-009 complement) — ✅ done
 
-- In the EJECUTADO state:
-  - Operación role: read-only
-  - Administrador role: editing with mandatory justification
-  - Contabilidad role: can associate invoices and edit accounting fields
-- Every modification of an executed record must be recorded in the audit log
+- [x] In the EJECUTADO state:
+  - Operación role: read-only — enforced by `ServiceUpdateRequest::authorize()` (403 for operators).
+  - Administrador role: editing with mandatory justification — `ServiceUpdateRequest::rules()` requires `justification` min:10, max:500.
+  - Contabilidad role: can associate invoices and edit accounting fields — accounting branch of `ServiceUpdateRequest::rules()` returns billing-only field list.
+- [x] Every modification of an executed record recorded in the audit log — `ServiceController@update` writes an `activity()` entry with `properties => ['justification' => ..., 'edited_on_executed_day' => true]` + causer; `audit-log-enhancements` merged — `/audit-log` surfaces these via filters (subject_type, causer, event, date range) + a `<Sheet>` detail view that renders the justification, the before/after diff, and the full properties bag. A destructive-variant `<Alert>` banner on the service edit form makes the compliance contract explicit before typing.
 
 ### 4.4 Audit log
 
@@ -58,7 +58,7 @@ Backed by **`spatie/laravel-activitylog`** (already installed and trait'd on all
   - Old attributes / attributes (before/after)
   - Description
   - Subject (the model affected)
-- Pending work: add a "justification" field for executed-record edits (stored in the activity log `properties` bag) and surface filter/search UI on `/audit-log` (by model type, by causer, by date range).
+- ✅ done — `audit-log-enhancements` merged. Justification stored in `properties.justification` + `properties.edited_on_executed_day`. `/audit-log` now carries filters (subject_type, causer, event, date range) and a detail Sheet rendering the full diff + justification.
 
 ---
 
