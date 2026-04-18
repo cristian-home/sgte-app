@@ -9,6 +9,12 @@ Route::get('/', function () {
 
 Route::get('dashboard', [DashboardController::class, 'show'])->middleware(['auth', 'verified', 'can:dashboard.view'])->name('dashboard');
 
+// Public FUEC verification endpoint (REQ-007 AC#4) — scanned from the
+// QR embedded on the PDF. No auth; gated only by the feature flag.
+Route::get('fuec/verify/{uuid}', [App\Http\Controllers\FuecVerifyController::class, 'show'])
+    ->middleware('fuec.enabled')
+    ->name('fuec.verify');
+
 require __DIR__.'/settings.php';
 
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -45,7 +51,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('services', App\Http\Controllers\ServiceController::class);
     Route::resource('incident-types', App\Http\Controllers\IncidentTypeController::class);
     Route::resource('service-incidents', App\Http\Controllers\ServiceIncidentController::class);
-    Route::resource('fuecs', App\Http\Controllers\FuecController::class);
+    // FUEC module (REQ-007) — gated behind the sgte.fuec_enabled feature
+    // flag so the whole group 404s when the module is disabled.
+    Route::middleware('fuec.enabled')->group(function (): void {
+        Route::get('fuecs/candidate-services', [App\Http\Controllers\FuecController::class, 'candidateServices'])
+            ->middleware('can:'.App\Enums\Permission::GENERATE_FUEC->value)
+            ->name('fuecs.candidate-services');
+        Route::get('fuecs/{fuec}/pdf', [App\Http\Controllers\FuecController::class, 'pdf'])
+            ->middleware('can:'.App\Enums\Permission::VIEW_FUEC->value)
+            ->name('fuecs.pdf');
+        Route::post('fuecs/{fuec}/cancel', [App\Http\Controllers\FuecController::class, 'cancel'])
+            ->middleware('can:'.App\Enums\Permission::GENERATE_FUEC->value)
+            ->name('fuecs.cancel');
+        Route::resource('fuecs', App\Http\Controllers\FuecController::class)
+            ->only(['index', 'create', 'store', 'show']);
+        Route::resource('fuec-number-ranges', App\Http\Controllers\FuecNumberRangeController::class)
+            ->middleware('can:'.App\Enums\Permission::MANAGE_FUEC_NUMBER_RANGES->value);
+    });
+
     Route::resource('vehicle-locations', App\Http\Controllers\VehicleLocationController::class);
 
     // Administración (admin only)
