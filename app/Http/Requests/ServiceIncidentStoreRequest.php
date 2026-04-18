@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Enums\Permission;
+use App\Rules\ServiceBelongsToAuthenticatedDriver;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Gate;
 
@@ -22,11 +23,21 @@ class ServiceIncidentStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'service_id' => ['required', 'integer', 'exists:services,id'],
+            'service_id' => ['required', 'integer', 'exists:services,id', new ServiceBelongsToAuthenticatedDriver],
             'incident_type_id' => ['required', 'integer', 'exists:incident_types,id'],
             'description' => ['required', 'string'],
             'affects_billing' => ['boolean'],
-            'additional_value' => ['nullable', 'numeric', 'between:-9999999999.99,9999999999.99'],
+            'additional_value' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'additional_value.min' => 'El valor adicional no puede ser negativo.',
         ];
     }
 }

@@ -101,9 +101,32 @@ class ServiceController extends Controller
 
         $dayStatus = DayStatus::with('executor')->whereDate('date', $service->service_date)->first();
 
+        // Dedicated payload for the Novedades card — limits to the last
+        // 5 incidents and pins the ordering. The full serviceIncidents
+        // relation on $service still carries everything for any card
+        // that needs it.
+        $recentIncidents = \App\Models\ServiceIncident::query()
+            ->where('service_id', $service->id)
+            ->with([
+                'incidentType:id,name,severity',
+                'registrar:id,name',
+            ])
+            ->orderByDesc('reported_at')
+            ->limit(5)
+            ->get([
+                'id',
+                'service_id',
+                'incident_type_id',
+                'registrar_id',
+                'reported_at',
+                'is_driver_report',
+                'affects_billing',
+            ]);
+
         return Inertia::render('services/show', [
             'service' => $service,
             'dayStatus' => $dayStatus,
+            'recentIncidents' => $recentIncidents,
         ]);
     }
 
