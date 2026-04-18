@@ -92,7 +92,7 @@ class AuditLogController extends Controller
                 }),
             ])
             ->allowedSorts(['created_at', 'log_name', 'event'])
-            ->defaultSort('-created_at')
+            ->defaultSort('-created_at', '-id')
             ->paginate($request->perPage())
             ->withQueryString()
             ->through(fn (Activity $activity): array => $this->projectActivity($activity));
