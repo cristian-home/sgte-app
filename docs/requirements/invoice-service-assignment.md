@@ -2,10 +2,10 @@
 name: invoice-service-assignment
 type: feat
 scope: invoices
-status: pending
+status: completed
 priority: high
 created_date: 2026-04-18
-completed_date:
+completed_date: 2026-04-18
 srs_refs: ["REQ-011"]
 migration_strategy: new
 ---
@@ -33,28 +33,28 @@ Scope: four interconnected deliverables.
 
 ## Acceptance Criteria
 
-- [ ] **AC1**: WHEN an admin or accounting user navigates to `/invoices/{id}` AND the invoice has zero attached services THEN the page renders an **"Asignar Servicios"** button on the header card action row. WHEN the user lacks `ASSIGN_SERVICES_TO_INVOICES` THEN the button is NOT rendered (gated via `<Can permission={Permission.ASSIGN_SERVICES_TO_INVOICES}>`).
-- [ ] **AC2**: WHEN the user clicks "Asignar Servicios" THEN a `<ServicePickerDialog />` modal opens, displaying a multi-select table with columns **(checkbox)**, **Fecha**, **Vehículo**, **Conductor**, **Contrato**, **Valor estimado**, **Novedades**.
-- [ ] **AC3**: WHEN the picker renders THEN only services matching ALL of these conditions appear: `service.contract.third_party_id === invoice.third_party_id` AND `invoice_id IS NULL` AND `service_status === 'closed'` AND `service_date >= today - 90 days`.
-- [ ] **AC4**: WHEN the picker has services listed THEN the user CAN search by plate / contract number / driver name (client-side filter on the loaded list).
-- [ ] **AC5**: WHEN the user selects one or more services and clicks "Asignar" THEN the app fires `POST /invoices/{invoice}/services` with a `service_ids: [1,2,3]` payload AND on success the dialog closes AND the page refreshes with the attached services visible in the Servicios Facturados card AND the Valor Total hero reflects the new computed total.
-- [ ] **AC6**: WHEN the attach request includes a `service_id` whose `service.contract.third_party_id !== invoice.third_party_id` THEN the request fails with 422 AND the response error attaches to `service_ids` with message "Los servicios deben pertenecer al cliente de la factura.".
-- [ ] **AC7**: WHEN the attach request includes a `service_id` whose `service.invoice_id` is already set to a DIFFERENT invoice id THEN the request fails with 422 AND the response error message "Uno o más servicios ya están asociados a otra factura.". WHEN the `service_id` is already attached to the SAME invoice (idempotency case) THEN the request succeeds and the service's `invoice_id` stays unchanged.
-- [ ] **AC8**: WHEN the attach request includes a `service_id` whose `service_status !== 'closed'` THEN the request fails with 422 with message "Solo servicios cerrados pueden facturarse.".
-- [ ] **AC9**: WHEN the attach request's `service_ids` array is empty OR missing THEN the request fails with 422 on `service_ids`.
-- [ ] **AC10**: WHEN an admin or accounting user navigates to `/invoices/{id}` AND the invoice has AT LEAST ONE attached service THEN each row in the **Servicios Facturados** card gains a trailing `<Button variant="destructive" size="icon">` with a `Trash2` icon (visible only to users with `ASSIGN_SERVICES_TO_INVOICES`).
-- [ ] **AC11**: WHEN the user clicks the Trash2 icon THEN a shadcn `<AlertDialog>` opens with title "¿Desvincular servicio?" and description "Esta acción quitará el servicio de la factura y recalculará el valor total.", Cancelar / Confirmar buttons. WHEN the user clicks Confirmar THEN the app fires `DELETE /invoices/{invoice}/services/{service}` AND on success the row disappears AND the Valor Total hero updates AND, if this was the last attached service, the "(calculado automáticamente)" subtitle disappears and the total becomes manually editable again.
-- [ ] **AC12**: WHEN the invoice show page loads AND `total_value !== computed_total` THEN a small amber pill **"Total desactualizado"** renders next to the Valor Total hero with an adjacent **"Recalcular"** button. The controller passes `computed_total` alongside `invoice` in the show payload; drift detection runs client-side (both values formatted identically for comparison).
-- [ ] **AC13**: WHEN the user clicks **"Recalcular"** THEN the app fires `POST /invoices/{invoice}/recompute-total` AND on success the page refreshes AND the pill disappears AND the Valor Total matches `computed_total`.
-- [ ] **AC14**: WHEN `invoice.services_count > 0` THEN the Valor Total hero on the show page has a muted subtitle **"(calculado automáticamente)"** beneath the number.
-- [ ] **AC15**: WHEN the user navigates to `/invoices/{id}/edit` AND `invoice.services_count > 0` THEN the `total_value` Input is rendered with `readOnly` + muted and a note reads "(calculado automáticamente — hay {N} servicios asociados)".
-- [ ] **AC16**: WHEN the user submits `PUT /invoices/{invoice}` with any `total_value` value AND the invoice has at least one attached service THEN the request fails with 422 on `total_value` with message "El valor total se calcula automáticamente cuando hay servicios asociados.".
-- [ ] **AC17**: WHEN the invoice has zero attached services THEN the `total_value` field is fully editable on the edit form AND `PUT /invoices/{invoice}` accepts the field normally (preserves current behaviour for existing manual-total invoices).
-- [ ] **AC18**: WHEN `App\Services\InvoiceTotalCalculator::recomputeFor($invoice)` is called THEN it computes `sum(service.unit_value * service.quantity) + sum(service_incident.additional_value)` where incidents are filtered by `service_id IN attached_services AND affects_billing = true` AND overwrites `invoice.total_value` AND persists the change.
-- [ ] **AC19**: WHEN any of the three endpoints (attach / detach / recompute) runs THEN it calls `InvoiceTotalCalculator::recomputeFor($invoice)` as its single path to the computation. The calculator is the single source of truth.
-- [ ] **AC20**: WHEN an unauthenticated user hits any of the three new routes THEN the response is 401. WHEN an authenticated user without `ASSIGN_SERVICES_TO_INVOICES` (operator, driver) hits them THEN the response is 403.
-- [ ] **AC21**: WHEN accounting user (who has `ASSIGN_SERVICES_TO_INVOICES`) hits any of the three routes THEN the request succeeds, pinning the seeder's grant of the permission to that role.
-- [ ] **AC22**: WHEN `npm run types` runs THEN the invoices pages contribute zero new errors (the four invoices pages already moved OUT of the pre-existing deferred-Blueprint bucket after invoices-crud).
+- [x] **AC1**: WHEN an admin or accounting user navigates to `/invoices/{id}` AND the invoice has zero attached services THEN the page renders an **"Asignar Servicios"** button on the header card action row. WHEN the user lacks `ASSIGN_SERVICES_TO_INVOICES` THEN the button is NOT rendered (gated via `<Can permission={Permission.ASSIGN_SERVICES_TO_INVOICES}>`).
+- [x] **AC2**: WHEN the user clicks "Asignar Servicios" THEN a `<ServicePickerDialog />` modal opens, displaying a multi-select table with columns **(checkbox)**, **Fecha**, **Vehículo**, **Conductor**, **Contrato**, **Valor estimado**, **Novedades**.
+- [x] **AC3**: WHEN the picker renders THEN only services matching ALL of these conditions appear: `service.contract.third_party_id === invoice.third_party_id` AND `invoice_id IS NULL` AND `service_status === 'closed'` AND `service_date >= today - 90 days`.
+- [x] **AC4**: WHEN the picker has services listed THEN the user CAN search by plate / contract number / driver name (client-side filter on the loaded list).
+- [x] **AC5**: WHEN the user selects one or more services and clicks "Asignar" THEN the app fires `POST /invoices/{invoice}/services` with a `service_ids: [1,2,3]` payload AND on success the dialog closes AND the page refreshes with the attached services visible in the Servicios Facturados card AND the Valor Total hero reflects the new computed total.
+- [x] **AC6**: WHEN the attach request includes a `service_id` whose `service.contract.third_party_id !== invoice.third_party_id` THEN the request fails with 422 AND the response error attaches to `service_ids` with message "Los servicios deben pertenecer al cliente de la factura.".
+- [x] **AC7**: WHEN the attach request includes a `service_id` whose `service.invoice_id` is already set to a DIFFERENT invoice id THEN the request fails with 422 AND the response error message "Uno o más servicios ya están asociados a otra factura.". WHEN the `service_id` is already attached to the SAME invoice (idempotency case) THEN the request succeeds and the service's `invoice_id` stays unchanged.
+- [x] **AC8**: WHEN the attach request includes a `service_id` whose `service_status !== 'closed'` THEN the request fails with 422 with message "Solo servicios cerrados pueden facturarse.".
+- [x] **AC9**: WHEN the attach request's `service_ids` array is empty OR missing THEN the request fails with 422 on `service_ids`.
+- [x] **AC10**: WHEN an admin or accounting user navigates to `/invoices/{id}` AND the invoice has AT LEAST ONE attached service THEN each row in the **Servicios Facturados** card gains a trailing `<Button variant="destructive" size="icon">` with a `Trash2` icon (visible only to users with `ASSIGN_SERVICES_TO_INVOICES`).
+- [x] **AC11**: WHEN the user clicks the Trash2 icon THEN a shadcn `<AlertDialog>` opens with title "¿Desvincular servicio?" and description "Esta acción quitará el servicio de la factura y recalculará el valor total.", Cancelar / Confirmar buttons. WHEN the user clicks Confirmar THEN the app fires `DELETE /invoices/{invoice}/services/{service}` AND on success the row disappears AND the Valor Total hero updates AND, if this was the last attached service, the "(calculado automáticamente)" subtitle disappears and the total becomes manually editable again.
+- [x] **AC12**: WHEN the invoice show page loads AND `total_value !== computed_total` THEN a small amber pill **"Total desactualizado"** renders next to the Valor Total hero with an adjacent **"Recalcular"** button. The controller passes `computed_total` alongside `invoice` in the show payload; drift detection runs client-side (both values formatted identically for comparison).
+- [x] **AC13**: WHEN the user clicks **"Recalcular"** THEN the app fires `POST /invoices/{invoice}/recompute-total` AND on success the page refreshes AND the pill disappears AND the Valor Total matches `computed_total`.
+- [x] **AC14**: WHEN `invoice.services_count > 0` THEN the Valor Total hero on the show page has a muted subtitle **"(calculado automáticamente)"** beneath the number.
+- [x] **AC15**: WHEN the user navigates to `/invoices/{id}/edit` AND `invoice.services_count > 0` THEN the `total_value` Input is rendered with `readOnly` + muted and a note reads "(calculado automáticamente — hay {N} servicios asociados)".
+- [x] **AC16**: WHEN the user submits `PUT /invoices/{invoice}` with any `total_value` value AND the invoice has at least one attached service THEN the request fails with 422 on `total_value` with message "El valor total se calcula automáticamente cuando hay servicios asociados.".
+- [x] **AC17**: WHEN the invoice has zero attached services THEN the `total_value` field is fully editable on the edit form AND `PUT /invoices/{invoice}` accepts the field normally (preserves current behaviour for existing manual-total invoices).
+- [x] **AC18**: WHEN `App\Services\InvoiceTotalCalculator::recomputeFor($invoice)` is called THEN it computes `sum(service.unit_value * service.quantity) + sum(service_incident.additional_value)` where incidents are filtered by `service_id IN attached_services AND affects_billing = true` AND overwrites `invoice.total_value` AND persists the change.
+- [x] **AC19**: WHEN any of the three endpoints (attach / detach / recompute) runs THEN it calls `InvoiceTotalCalculator::recomputeFor($invoice)` as its single path to the computation. The calculator is the single source of truth.
+- [x] **AC20**: WHEN an unauthenticated user hits any of the three new routes THEN the response is 401. WHEN an authenticated user without `ASSIGN_SERVICES_TO_INVOICES` (operator, driver) hits them THEN the response is 403.
+- [x] **AC21**: WHEN accounting user (who has `ASSIGN_SERVICES_TO_INVOICES`) hits any of the three routes THEN the request succeeds, pinning the seeder's grant of the permission to that role.
+- [x] **AC22**: WHEN `npm run types` runs THEN the invoices pages contribute zero new errors (the four invoices pages already moved OUT of the pre-existing deferred-Blueprint bucket after invoices-crud).
 
 ## Technical Specification
 
@@ -132,25 +132,25 @@ Authorization additionally guarded at the action level with `Gate::authorize(Per
 
 ### Backend
 
-- [ ] **Task B1**: Create `app/Services/InvoiceTotalCalculator.php` with method `recomputeFor(Invoice $invoice): void`.
+- [x] **Task B1**: Create `app/Services/InvoiceTotalCalculator.php` with method `recomputeFor(Invoice $invoice): void`.
   - Eager-load attached services + their billing-affecting incidents.
   - Compute `$servicesTotal = sum(service.unit_value * service.quantity)` where both are non-null; services with either null contribute 0 to the sum.
   - Compute `$incidentsTotal = sum(service_incident.additional_value)` where `affects_billing = true` AND `service_id IN attached_service_ids` AND `additional_value` is non-null.
   - Persist via `$invoice->update(['total_value' => $servicesTotal + $incidentsTotal])`.
   - Add a unit test in `tests/Unit/InvoiceTotalCalculatorTest.php` covering: empty services list → 0; services-only; services + one billing incident; services + one non-billing incident (should NOT be included); null unit_value / null quantity / null additional_value edge cases.
 
-- [ ] **Task B2**: Create `app/Rules/TotalValueLockedWhenServicesAttached.php`.
+- [x] **Task B2**: Create `app/Rules/TotalValueLockedWhenServicesAttached.php`.
   - `ValidationRule` implementing `validate($attribute, $value, $fail)`.
   - Reads `$this->route('invoice')` (via a constructor-injected invoice, OR the rule receives the Invoice as a parameter — prefer explicit constructor injection `new TotalValueLockedWhenServicesAttached($invoice)`).
   - If `$invoice->services()->count() > 0` AND the incoming `total_value` differs from the current `$invoice->total_value` (to allow passthrough on untouched form submits) → `$fail('El valor total se calcula automáticamente cuando hay servicios asociados.')`.
   - Reference convention: `app/Rules/ServiceBelongsToAuthenticatedDriver.php`.
 
-- [ ] **Task B3**: Wire the rule into `InvoiceUpdateRequest::rules()`.
+- [x] **Task B3**: Wire the rule into `InvoiceUpdateRequest::rules()`.
   - Inside `rules()`, instantiate the rule with the current invoice resolved from `$this->route('invoice')`.
   - Append to the existing `total_value` rule array: `new TotalValueLockedWhenServicesAttached($this->route('invoice'))`.
   - Regression test: `tests/Feature/Http/Controllers/InvoiceControllerTest.php` → new test `test('update rejects total_value when services are attached')`.
 
-- [ ] **Task B4**: Create `app/Http/Requests/InvoiceServiceAttachRequest.php`.
+- [x] **Task B4**: Create `app/Http/Requests/InvoiceServiceAttachRequest.php`.
   - `authorize()`: `Gate::allows(Permission::ASSIGN_SERVICES_TO_INVOICES->value)`.
   - `rules()`:
     - `service_ids` → `['required', 'array', 'min:1']`.
@@ -161,7 +161,7 @@ Authorization additionally guarded at the action level with `Gate::authorize(Per
     - For each service: ensure `service.invoice_id IS NULL OR service.invoice_id === invoice.id` → else add error: "Uno o más servicios ya están asociados a otra factura.".
     - For each service: ensure `service.service_status === ServiceStatus::Closed` → else add error: "Solo servicios cerrados pueden facturarse.".
 
-- [ ] **Task B5**: Add three controller actions to `app/Http/Controllers/InvoiceController.php`.
+- [x] **Task B5**: Add three controller actions to `app/Http/Controllers/InvoiceController.php`.
   - `attachServices(InvoiceServiceAttachRequest $request, Invoice $invoice, InvoiceTotalCalculator $calculator): RedirectResponse`:
     - `Gate::authorize(Permission::ASSIGN_SERVICES_TO_INVOICES->value);`
     - Inside a DB transaction: `Service::whereIn('id', $validated['service_ids'])->update(['invoice_id' => $invoice->id]);`
@@ -178,29 +178,29 @@ Authorization additionally guarded at the action level with `Gate::authorize(Per
     - `$calculator->recomputeFor($invoice);`
     - Redirect back to `invoices.show` with flash `success` "Total recalculado.".
 
-- [ ] **Task B6**: Add private method `candidateServices(Invoice $invoice): Collection` to `InvoiceController`.
+- [x] **Task B6**: Add private method `candidateServices(Invoice $invoice): Collection` to `InvoiceController`.
   - Select from `services` WHERE `invoice_id IS NULL` AND `service_status = 'closed'` AND `service_date >= today - 90 days` AND `contract.third_party_id = invoice.third_party_id` (via `whereHas('contract', fn ($q) => $q->where('third_party_id', $invoice->third_party_id))`).
   - Eager-load `vehicle:id,plate`, `driver:id,first_name,first_lastname`, `contract:id,contract_number`, `serviceIncidents` (with `affects_billing` + `additional_value`).
   - Order by `service_date DESC, id DESC`.
   - Return the collection with only the fields the picker needs: `id, service_date, vehicle_id, driver_id, contract_id, unit_value, quantity, service_status`.
 
-- [ ] **Task B7**: Extend `InvoiceController@show` with `computed_total`, `services_count`, and `candidateServices` props.
+- [x] **Task B7**: Extend `InvoiceController@show` with `computed_total`, `services_count`, and `candidateServices` props.
   - `$computedTotal = $calculator->computeFor($invoice);` (a new read-only companion method on the calculator that returns the computed value WITHOUT persisting — OR, simpler: use the existing service classes to run the compute inline in the controller).
   - **Preferred shape**: add a `computeFor(Invoice $invoice): string` method to the calculator that returns the computed total as a decimal string without side effects. `recomputeFor` internally calls `computeFor` then persists.
   - Pass `computed_total`, `services_count` (from `$invoice->services()->count()` or a `loadCount('services')`), and `candidate_services` to the Inertia response.
 
-- [ ] **Task B8**: Extend `InvoiceController@edit` with `services_count`.
+- [x] **Task B8**: Extend `InvoiceController@edit` with `services_count`.
   - Add `$invoice->loadCount('services')` before the Inertia render, or pass the count explicitly.
   - The edit page already receives `invoice`; the new count rides along on the model attribute (`services_count`).
 
-- [ ] **Task B9**: Register the three routes in `routes/web.php` immediately before the `Route::resource('invoices', ...)` registration.
+- [x] **Task B9**: Register the three routes in `routes/web.php` immediately before the `Route::resource('invoices', ...)` registration.
   - All three `->middleware('can:invoices.assign-services')`.
   - Names: `invoices.services.attach`, `invoices.services.detach`, `invoices.recompute-total`.
   - Run `./vendor/bin/sail artisan wayfinder:generate` after adding the routes so the frontend has generated action functions.
 
 ### Frontend
 
-- [ ] **Task F1**: Create `resources/js/components/invoices/service-picker-dialog.tsx`.
+- [x] **Task F1**: Create `resources/js/components/invoices/service-picker-dialog.tsx`.
   - Reference convention: `resources/js/components/invoices/invoice-create-dialog.tsx` for the Dialog shell + form submit pattern.
   - Props: `{ open, onOpenChange, invoiceId, candidates: ServicePickerRow[] }`.
   - Define and export `type ServicePickerRow` with the fields from B6's candidate payload plus eager-loaded relations.
@@ -211,7 +211,7 @@ Authorization additionally guarded at the action level with `Gate::authorize(Per
   - Novedades cell: count badge (secondary variant) with the number of `service_incidents` where `affects_billing = true`. If zero → em-dash.
   - Footer: Cancelar (DialogClose) + Asignar button (disabled when `selectedIds.length === 0`). Asignar fires `router.post(InvoiceController.attachServices(invoiceId).url, { service_ids: selectedIds }, { onSuccess: () => { reset(); onOpenChange(false); } })`.
 
-- [ ] **Task F2**: Extend `resources/js/pages/invoices/show.tsx` with the Asignar Servicios button, stale-total pill, Recalcular button, and Quitar + AlertDialog per row.
+- [x] **Task F2**: Extend `resources/js/pages/invoices/show.tsx` with the Asignar Servicios button, stale-total pill, Recalcular button, and Quitar + AlertDialog per row.
   - Props change: accept `computed_total: string`, `services_count: number`, `candidate_services: ServicePickerRow[]` alongside the existing `invoice` + `recentServices`.
   - Header card action row: before the existing Editar button, render a `<Can permission={Permission.ASSIGN_SERVICES_TO_INVOICES}>` + `<Button onClick={() => setPickerOpen(true)}>Asignar Servicios</Button>`.
   - Render `<ServicePickerDialog open={pickerOpen} onOpenChange={setPickerOpen} invoiceId={invoice.id} candidates={candidate_services} />` at the bottom of the main container.
@@ -222,18 +222,18 @@ Authorization additionally guarded at the action level with `Gate::authorize(Per
   - Servicios Facturados card: add a 6th column header "" (empty for the Quitar button). Body cell at the end renders `<Can permission={Permission.ASSIGN_SERVICES_TO_INVOICES}><Button variant="ghost" size="icon" onClick={() => setDetachingServiceId(service.id)}><Trash2 className="size-4 text-destructive" /></Button></Can>`.
   - At the bottom of the container, render an `<AlertDialog open={detachingServiceId !== null} onOpenChange={(open) => !open && setDetachingServiceId(null)}>` with title "¿Desvincular servicio?", description "Esta acción quitará el servicio de la factura y recalculará el valor total.", AlertDialogAction "Confirmar" that fires `router.delete(InvoiceController.detachService(invoice.id, detachingServiceId).url, { preserveScroll: true, onFinish: () => setDetachingServiceId(null) })`.
 
-- [ ] **Task F3**: Extend `resources/js/components/invoices/invoice-form.tsx` with `isTotalLocked` prop.
+- [x] **Task F3**: Extend `resources/js/components/invoices/invoice-form.tsx` with `isTotalLocked` prop.
   - New optional prop `isTotalLocked: boolean` (default false) + `servicesCount: number` (default 0).
   - When `isTotalLocked` is true: the `total_value` Input gets `readOnly`, the `$` prefix stays, and a muted `<p className="text-xs text-muted-foreground">(calculado automáticamente — hay {servicesCount} servicio(s) asociado(s))</p>` renders beneath the Input.
   - When false: behavior unchanged.
 
-- [ ] **Task F4**: Extend `resources/js/pages/invoices/edit.tsx` to pass `isTotalLocked`.
+- [x] **Task F4**: Extend `resources/js/pages/invoices/edit.tsx` to pass `isTotalLocked`.
   - Read `services_count` from the invoice payload (either as `invoice.services_count` from `loadCount`, or as a separate prop if the controller passes it that way — prefer the `loadCount` convention).
   - Pass `isTotalLocked={(invoice.services_count ?? 0) > 0}` and `servicesCount={invoice.services_count ?? 0}` to `<InvoiceForm />`.
 
 ### Tests
 
-- [ ] **Task T1 (Pest unit — InvoiceTotalCalculator)**: Create `tests/Unit/InvoiceTotalCalculatorTest.php`.
+- [x] **Task T1 (Pest unit — InvoiceTotalCalculator)**: Create `tests/Unit/InvoiceTotalCalculatorTest.php`.
   - `test('recomputeFor returns zero for an invoice with no services')` — seed invoice with 0 services, call recomputeFor, assert `$invoice->total_value === '0.00'`.
   - `test('recomputeFor sums unit_value times quantity across attached services')` — seed invoice + 2 services (1000 * 2, 500 * 3) → expect 3500.
   - `test('recomputeFor adds billing-affecting incident additional_value to the sum')` — seed 1 service (1000 * 1) + 1 incident with `affects_billing=true, additional_value=250` → expect 1250.
@@ -242,7 +242,7 @@ Authorization additionally guarded at the action level with `Gate::authorize(Per
   - `test('recomputeFor persists the new total to the database')` — assert `$invoice->fresh()->total_value` after the call.
   - `test('computeFor returns the same value without persisting')` — seed + call, assert the return value AND assert the DB row is unchanged.
 
-- [ ] **Task T2 (Pest feature — attach endpoint)**: Add to `tests/Feature/Http/Controllers/InvoiceControllerTest.php`:
+- [x] **Task T2 (Pest feature — attach endpoint)**: Add to `tests/Feature/Http/Controllers/InvoiceControllerTest.php`:
   - `test('admin can attach multiple closed services and the total recomputes')` — seed invoice + 2 closed services belonging to the customer, POST attach with both ids, assert redirect + both services' `invoice_id === invoice.id` + `invoice.total_value` matches the computed sum.
   - `test('attach rejects services whose contract belongs to a different customer')` — seed 1 service with a different customer's contract, POST attach, assert 422 on `service_ids` with the cross-customer message.
   - `test('attach rejects services already attached to a different invoice')` — seed 1 service pre-attached to another invoice, POST attach, assert 422.
@@ -250,21 +250,21 @@ Authorization additionally guarded at the action level with `Gate::authorize(Per
   - `test('attach rejects open-status services')` — seed 1 service with `service_status = open`, POST attach, assert 422 with the closed-only message.
   - `test('attach rejects empty service_ids array')` — POST with `service_ids: []`, assert 422 on `service_ids`.
 
-- [ ] **Task T3 (Pest feature — detach endpoint)**: Add:
+- [x] **Task T3 (Pest feature — detach endpoint)**: Add:
   - `test('admin can detach a service and the total recomputes')` — seed invoice + 2 attached services, DELETE one, assert redirect + the service's `invoice_id` is null + the total matches the remaining service's computed value.
   - `test('detach returns 404 when the service is not attached to the invoice')` — seed service with `invoice_id` null OR pointing to a different invoice, DELETE on `/invoices/{invoice}/services/{service}`, assert 404.
   - `test('detaching the last service clears the auto-compute lock')` — seed invoice with 1 attached service, detach it, assert `invoice.fresh()->services_count === 0`.
 
-- [ ] **Task T4 (Pest feature — recompute endpoint)**:
+- [x] **Task T4 (Pest feature — recompute endpoint)**:
   - `test('recompute endpoint updates the total when upstream values change')` — seed invoice + 1 service (1000 * 1), attach + assert total=1000, then update the service's `unit_value` to 2000 directly on the model (bypassing any observers), hit the recompute endpoint, assert `invoice.fresh()->total_value === 2000`.
   - `test('recompute picks up new billing-affecting incidents')` — seed invoice + 1 service, attach, add an incident with `affects_billing=true, additional_value=500`, hit recompute, assert total grew by 500.
 
-- [ ] **Task T5 (Pest feature — update lock)**:
+- [x] **Task T5 (Pest feature — update lock)**:
   - `test('update rejects total_value changes when services are attached')` — seed invoice + 1 attached service, PUT `{ total_value: 9999, ... }` with other valid fields, assert 422 on `total_value` with the Spanish lock message.
   - `test('update allows other field changes when services are attached')` — same scenario, PUT with unchanged `total_value` but new `notes`, assert 302 + notes updated.
   - `test('update allows total_value changes when no services are attached')` — seed invoice with 0 services, PUT `{ total_value: 5000, ... }`, assert 302 + total_value updated (preserves existing behaviour).
 
-- [ ] **Task T6 (Pest feature — authorization)**:
+- [x] **Task T6 (Pest feature — authorization)**:
   - `test('accounting user can attach and detach services')` — seed accounting user, attach + detach, assert both 302.
   - `test('operator receives 403 on attach endpoint')`.
   - `test('operator receives 403 on detach endpoint')`.
@@ -272,14 +272,14 @@ Authorization additionally guarded at the action level with `Gate::authorize(Per
   - `test('driver receives 403 on all three endpoints')`.
   - `test('unauthenticated user receives 302 redirect to login on all three endpoints')`.
 
-- [ ] **Task T7 (Pest feature — show payload)**:
+- [x] **Task T7 (Pest feature — show payload)**:
   - `test('show payload includes computed_total, services_count, and candidate_services')` — seed invoice + 1 attached service, GET show, assert all three props present with expected values.
   - `test('candidate_services excludes open-status services')` — seed customer + 2 services (1 closed + 1 open), GET show, assert only the closed one is in candidates.
   - `test('candidate_services excludes services from other customers')` — seed 2 customers + 1 closed service each, GET show for customer A's invoice, assert only customer A's service is in candidates.
   - `test('candidate_services excludes already-billed services')` — seed 2 closed services both attached to other invoices, assert neither appears.
   - `test('candidate_services respects the 90-day window')` — seed 1 closed service with `service_date = today - 95 days`, assert it is NOT in candidates.
 
-- [ ] **Task T8 (Dusk)**: Create `tests/Browser/InvoiceBillingWorkflowTest.php`.
+- [x] **Task T8 (Dusk)**: Create `tests/Browser/InvoiceBillingWorkflowTest.php`.
   - Follow the `tests/Browser/InvoicesIndexAndShowTest.php` shape.
   - `beforeEach`: `migrate:fresh --no-interaction` (fixtures built inline).
   - Scenario 1: **admin attach flow** — super-admin logs in, seeds invoice + 2 closed services belonging to its customer, visits `/invoices/{id}`, asserts "Asignar Servicios" button visible, clicks it, asserts the picker dialog renders with both candidate rows, selects both checkboxes, clicks Asignar, asserts the dialog closes + both services appear in the Servicios Facturados card + the Valor Total hero shows the sum + "(calculado automáticamente)" subtitle is visible.
@@ -311,11 +311,11 @@ Preferred flow:
 6. Logout; login as operator; visit `/invoices/{id}`; verify NO Asignar Servicios button and NO Quitar icons.
 7. `mcp__laravel-boost__browser-logs` to confirm no JS errors during the flow.
 
-- [ ] Scenario 1: Admin attach flow
-- [ ] Scenario 2: Admin detach flow
-- [ ] Scenario 3: Stale-total detection + Recalcular
-- [ ] Scenario 4: Accounting user walkthrough
-- [ ] Scenario 5: Operator UI omits affordances
+- [x] Scenario 1: Admin attach flow
+- [x] Scenario 2: Admin detach flow
+- [x] Scenario 3: Stale-total detection + Recalcular
+- [x] Scenario 4: Accounting user walkthrough
+- [x] Scenario 5: Operator UI omits affordances
 
 ### 2. Backend regression — Pest feature tests (required)
 
