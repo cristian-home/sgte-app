@@ -2,10 +2,10 @@
 name: invoice-pdf-generation
 type: feat
 scope: invoices
-status: pending
+status: completed
 priority: high
 created_date: 2026-04-18
-completed_date:
+completed_date: 2026-04-18
 srs_refs: ["REQ-011"]
 migration_strategy: new
 ---
@@ -31,22 +31,22 @@ Four decisions locked up front:
 
 ## Acceptance Criteria
 
-- [ ] **AC1**: WHEN an authenticated admin, accounting, or super-admin user navigates to `GET /invoices/{invoice}/pdf` for any invoice they can view THEN the response is 200 with `Content-Type: application/pdf`.
-- [ ] **AC2**: WHEN the PDF response is returned THEN the `Content-Disposition` header begins with `inline;` AND contains `filename="factura-{invoice_number}.pdf"`.
-- [ ] **AC3**: WHEN the PDF response body is inspected THEN the first bytes match the PDF magic number `%PDF-`.
-- [ ] **AC4**: WHEN an unauthenticated user hits `GET /invoices/{invoice}/pdf` THEN the response is a redirect to `/login`.
-- [ ] **AC5**: WHEN an authenticated operator OR driver hits `GET /invoices/{invoice}/pdf` THEN the response is 403.
-- [ ] **AC6**: WHEN an authenticated accounting user hits `GET /invoices/{invoice}/pdf` THEN the response is 200 (pinning the VIEW_INVOICES grant for accounting).
-- [ ] **AC7**: WHEN the PDF handler is invoked THEN `InvoiceTotalCalculator::recomputeFor($invoice->fresh())` is called BEFORE the Blade template is rendered, so the printed total reflects the current attached services + billing-affecting incidents (even if `invoice.total_value` was stale in the DB).
-- [ ] **AC8**: WHEN the invoice has at least one attached service THEN the PDF Servicios Facturados table renders one row per attached service (ordered by `service_date` ASC) with columns **Fecha**, **Contrato**, **Vehículo**, **Valor Unit.**, **Cant.**, **Subtotal**.
-- [ ] **AC9**: WHEN the invoice has ZERO attached services THEN the Servicios Facturados section renders an italic muted note "Sin servicios asociados — valor total manual." INSTEAD of the table (existing manual-total invoices still print correctly).
-- [ ] **AC10**: WHEN at least one attached service has a `service_incidents` row with `affects_billing = true` THEN a separate **Novedades que afectan facturación** table renders below the services table with columns **Fecha**, **Servicio**, **Tipo**, **Descripción**, **Valor adicional**. WHEN none do, the section is omitted entirely.
-- [ ] **AC11**: WHEN `invoice.notes` is null OR empty THEN the Observaciones section is omitted. WHEN it has content THEN it renders preserving whitespace (newlines honored).
-- [ ] **AC12**: WHEN the PDF renders THEN the header contains the "SGTE" company placeholder text, the "Sistema de Gestión de Transporte Especial" subtitle, the "FACTURA INFORMATIVA" title, the invoice_number in font-mono, AND a small red "INFORMATIVO" badge.
-- [ ] **AC13**: WHEN ANY page of the PDF renders THEN the footer reads "Documento informativo — no constituye factura fiscal." on the left and "Generado el {now es-CO} — página X / Y" on the right.
-- [ ] **AC14**: WHEN an authenticated admin or accounting user loads `/invoices/{id}` THEN a "Descargar PDF" button is visible in the header card action row (between "Asignar Servicios" and "Editar"). WHEN a user lacks `VIEW_INVOICES` THEN the button is NOT rendered (gate via `<Can permission={Permission.VIEW_INVOICES}>`).
-- [ ] **AC15**: WHEN the user clicks "Descargar PDF" THEN a new browser tab opens pointing at `/invoices/{id}/pdf` (the anchor uses `href` + `target="_blank" rel="noreferrer"` — NOT an Inertia router.get, because the response is binary).
-- [ ] **AC16**: WHEN `npm run types` runs THEN the invoices pages contribute zero new errors.
+- [x] **AC1**: WHEN an authenticated admin, accounting, or super-admin user navigates to `GET /invoices/{invoice}/pdf` for any invoice they can view THEN the response is 200 with `Content-Type: application/pdf`.
+- [x] **AC2**: WHEN the PDF response is returned THEN the `Content-Disposition` header begins with `inline;` AND contains `filename="factura-{invoice_number}.pdf"`.
+- [x] **AC3**: WHEN the PDF response body is inspected THEN the first bytes match the PDF magic number `%PDF-`.
+- [x] **AC4**: WHEN an unauthenticated user hits `GET /invoices/{invoice}/pdf` THEN the response is a redirect to `/login`.
+- [x] **AC5**: WHEN an authenticated operator OR driver hits `GET /invoices/{invoice}/pdf` THEN the response is 403.
+- [x] **AC6**: WHEN an authenticated accounting user hits `GET /invoices/{invoice}/pdf` THEN the response is 200 (pinning the VIEW_INVOICES grant for accounting).
+- [x] **AC7**: WHEN the PDF handler is invoked THEN `InvoiceTotalCalculator::recomputeFor($invoice->fresh())` is called BEFORE the Blade template is rendered, so the printed total reflects the current attached services + billing-affecting incidents (even if `invoice.total_value` was stale in the DB).
+- [x] **AC8**: WHEN the invoice has at least one attached service THEN the PDF Servicios Facturados table renders one row per attached service (ordered by `service_date` ASC) with columns **Fecha**, **Contrato**, **Vehículo**, **Valor Unit.**, **Cant.**, **Subtotal**.
+- [x] **AC9**: WHEN the invoice has ZERO attached services THEN the Servicios Facturados section renders an italic muted note "Sin servicios asociados — valor total manual." INSTEAD of the table (existing manual-total invoices still print correctly).
+- [x] **AC10**: WHEN at least one attached service has a `service_incidents` row with `affects_billing = true` THEN a separate **Novedades que afectan facturación** table renders below the services table with columns **Fecha**, **Servicio**, **Tipo**, **Descripción**, **Valor adicional**. WHEN none do, the section is omitted entirely.
+- [x] **AC11**: WHEN `invoice.notes` is null OR empty THEN the Observaciones section is omitted. WHEN it has content THEN it renders preserving whitespace (newlines honored).
+- [x] **AC12**: WHEN the PDF renders THEN the header contains the "SGTE" company placeholder text, the "Sistema de Gestión de Transporte Especial" subtitle, the "FACTURA INFORMATIVA" title, the invoice_number in font-mono, AND a small red "INFORMATIVO" badge.
+- [x] **AC13**: WHEN ANY page of the PDF renders THEN the footer reads "Documento informativo — no constituye factura fiscal." on the left and "Generado el {now es-CO} — página X / Y" on the right.
+- [x] **AC14**: WHEN an authenticated admin or accounting user loads `/invoices/{id}` THEN a "Descargar PDF" button is visible in the header card action row (between "Asignar Servicios" and "Editar"). WHEN a user lacks `VIEW_INVOICES` THEN the button is NOT rendered (gate via `<Can permission={Permission.VIEW_INVOICES}>`).
+- [x] **AC15**: WHEN the user clicks "Descargar PDF" THEN a new browser tab opens pointing at `/invoices/{id}/pdf` (the anchor uses `href` + `target="_blank" rel="noreferrer"` — NOT an Inertia router.get, because the response is binary).
+- [x] **AC16**: WHEN `npm run types` runs THEN the invoices pages contribute zero new errors.
 
 ## Technical Specification
 
@@ -89,12 +89,12 @@ Four decisions locked up front:
 
 ### Backend
 
-- [ ] **Task B1**: Install `barryvdh/laravel-dompdf`.
+- [x] **Task B1**: Install `barryvdh/laravel-dompdf`.
   - Run `./vendor/bin/sail composer require barryvdh/laravel-dompdf` — verify the version installed is compatible with Laravel 12 (composer will resolve; if it errors, pin to `^3.0`).
   - Publish the config only if needed for custom defaults (default package config is fine — letter paper, DejaVu Sans, etc. — we override paper at the Pdf::loadView level anyway).
   - Commit message: `chore(deps): ⬆️ add barryvdh/laravel-dompdf for invoice PDF generation`.
 
-- [ ] **Task B2**: Add `InvoiceController@pdf` action.
+- [x] **Task B2**: Add `InvoiceController@pdf` action.
   - Signature: `public function pdf(Request $request, Invoice $invoice, InvoiceTotalCalculator $calculator): \Illuminate\Http\Response`.
   - At the top: `Gate::authorize(Permission::VIEW_INVOICES->value);` matching the show action's pattern.
   - `$calculator->recomputeFor($invoice->fresh());` to ensure the total is current at print-time.
@@ -124,7 +124,7 @@ Four decisions locked up front:
   - `Pdf` is the facade `Barryvdh\DomPDF\Facade\Pdf`.
   - Reference convention: `InvoiceController@markPaid` for the permission + return shape, `InvoiceController@show` for the eager-load pattern.
 
-- [ ] **Task B3**: Register the route.
+- [x] **Task B3**: Register the route.
   - Add in `routes/web.php` immediately after the existing `Route::post('invoices/{invoice}/mark-paid', ...)` line:
     ```php
     Route::get('invoices/{invoice}/pdf', [App\Http\Controllers\InvoiceController::class, 'pdf'])
@@ -133,7 +133,7 @@ Four decisions locked up front:
     ```
   - Run `./vendor/bin/sail artisan wayfinder:generate` so the frontend picks up `InvoiceController.pdf(id)` as an action URL.
 
-- [ ] **Task B4**: Create `resources/views/invoices/pdf.blade.php`.
+- [x] **Task B4**: Create `resources/views/invoices/pdf.blade.php`.
   - DOMPDF constraints:
     - Use `<table>` for layout (no flex/grid).
     - Inline `style=""` attributes for colors/sizes (no CSS variables, limited class support depending on package setup — safest is inline).
@@ -152,7 +152,7 @@ Four decisions locked up front:
 
 ### Frontend
 
-- [ ] **Task F1**: Add the "Descargar PDF" button to `resources/js/pages/invoices/show.tsx`.
+- [x] **Task F1**: Add the "Descargar PDF" button to `resources/js/pages/invoices/show.tsx`.
   - In the header card action row (the flex row containing `<PaymentStatusPill />`, `Asignar Servicios`, `Editar`), add the button **between Asignar Servicios and Editar**.
   - Markup:
     ```tsx
@@ -178,31 +178,31 @@ Four decisions locked up front:
 
 ### Tests
 
-- [ ] **Task T1 (Pest feature — happy path)**: Add to `tests/Feature/Http/Controllers/InvoiceControllerTest.php`:
+- [x] **Task T1 (Pest feature — happy path)**: Add to `tests/Feature/Http/Controllers/InvoiceControllerTest.php`:
   - `test('admin can download the invoice PDF')` — seed an invoice with 2 attached services + 1 billing-affecting incident, request `GET /invoices/{id}/pdf` as super-admin, assert:
     - Response status 200.
     - `Content-Type` header begins with `application/pdf`.
     - `Content-Disposition` header contains `inline; filename="factura-`.
     - The first 5 bytes of the response body are `%PDF-` (assert via `str_starts_with($response->getContent(), '%PDF-')`).
 
-- [ ] **Task T2 (Pest feature — accounting grant)**:
+- [x] **Task T2 (Pest feature — accounting grant)**:
   - `test('accounting user can download the invoice PDF')` — same shape but authenticated as an accounting-role user. Assert 200.
 
-- [ ] **Task T3 (Pest feature — unauth + 403)**:
+- [x] **Task T3 (Pest feature — unauth + 403)**:
   - `test('operator receives 403 on the invoice PDF endpoint')`.
   - `test('driver receives 403 on the invoice PDF endpoint')`.
   - `test('unauthenticated user is redirected to login from the invoice PDF endpoint')` — assert 302 redirect to `/login`.
 
-- [ ] **Task T4 (Pest feature — recompute-on-render)**:
+- [x] **Task T4 (Pest feature — recompute-on-render)**:
   - `test('PDF regenerates invoice total from the calculator on every request')` — seed an invoice with 1 attached service (unit_value=1000, quantity=1); manually overwrite `invoice.total_value = 9999` via direct query builder to bypass any observer; request the PDF as super-admin; after the request completes, assert `$invoice->fresh()->total_value` equals `1000.00`.
 
-- [ ] **Task T5 (Pest feature — inline disposition)**:
+- [x] **Task T5 (Pest feature — inline disposition)**:
   - `test('invoice PDF downloads inline not as attachment')` — seed a minimal invoice, request the PDF, assert `Content-Disposition` header starts with `inline;` (using `str_starts_with` or `assertHeader`).
 
-- [ ] **Task T6 (Pest feature — content smoke test)**:
+- [x] **Task T6 (Pest feature — content smoke test)**:
   - `test('PDF response content includes key invoice fields')` — seed an invoice with a distinctive invoice_number (e.g. `FAC-PDF-TEST-001`) and a customer with a distinctive company_name (e.g. `Cliente PDF Prueba S.A.`), request the PDF, capture the response body as a string, and assert BOTH strings appear in the raw bytes. (Note: dompdf embeds text in a way that's usually plaintext-searchable for ASCII, but font subsetting can obscure characters in dense pages — if this assertion fails for unrelated reasons under dompdf's behavior, fall back to rendering the Blade view directly via `view('invoices.pdf', [...])->render()` in a sibling test and asserting against that HTML output instead.)
 
-- [ ] **Task T7 (Dusk — button visible + target blank)**: Create `tests/Browser/InvoicePdfDownloadTest.php`:
+- [x] **Task T7 (Dusk — button visible + target blank)**: Create `tests/Browser/InvoicePdfDownloadTest.php`:
   - `beforeEach`: `migrate:fresh --no-interaction`.
   - Scenario 1: `test('admin sees the Descargar PDF button on the invoice show page')` — super-admin logs in, seeds an invoice, visits `/invoices/{id}`, asserts `assertSee('Descargar PDF')` AND `assertSourceHas('target="_blank"')` on the PDF anchor. Take a screenshot.
   - Scenario 2: `test('operator cannot see the Descargar PDF button')` — operator logs in, visits an invoice show URL. Operator will likely hit a 403 page at that route since they lack `VIEW_INVOICES`. The assertion that matters: `assertSourceMissing('Descargar PDF')`. Take a screenshot.
@@ -231,12 +231,12 @@ Preferred flow:
 6. Logout; login as operator; visit an invoice URL directly; verify 403 AND verify the "Descargar PDF" text is not in the page source.
 7. `mcp__laravel-boost__browser-logs` — no JS errors during the flow.
 
-- [ ] Scenario 1: Admin clicks Descargar PDF, verifies tab opens and PDF renders with attached services
-- [ ] Scenario 2: Zero-services invoice renders the fallback note
-- [ ] Scenario 3: Billing-incidents table is omitted when not applicable
-- [ ] Scenario 4: Accounting can download
-- [ ] Scenario 5: Operator blocked (403)
-- [ ] Scenario 6: Footer disclaimer visible on every page
+- [x] Scenario 1: Admin clicks Descargar PDF, verifies tab opens and PDF renders with attached services
+- [x] Scenario 2: Zero-services invoice renders the fallback note
+- [x] Scenario 3: Billing-incidents table is omitted when not applicable
+- [x] Scenario 4: Accounting can download
+- [x] Scenario 5: Operator blocked (403)
+- [x] Scenario 6: Footer disclaimer visible on every page
 
 ### 2. Backend regression — Pest feature tests (required)
 
