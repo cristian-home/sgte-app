@@ -1,6 +1,6 @@
 # Phase 5: Optional Modules and Deploy
 
-> **Status: IN PROGRESS** — Deployment completed, optional modules pending
+> **Status: IN PROGRESS** — Deployment completed; FUEC (REQ-007) shipped behind a feature flag (`fuec-generation` merged); GPS (REQ-010) still pending.
 
 ## Objective
 
@@ -20,24 +20,22 @@ Implement the optional modules (FUEC, GPS) as latent functionality and prepare t
 
 ## Tasks
 
-### 5.1 FUEC module (REQ-007)
+### 5.1 FUEC module (REQ-007) — ✅ done
 
-> **Status: scaffolded only.** A `fuecs` table, model, controller and basic CRUD exist, but the feature is **not** user-facing yet. Missing (all TODO): PDF generation, QR code, unique consecutive numbering from the MinTransporte-authorized range, pre-generation validations (contract / vehicle docs / driver license), the feature flag to enable/disable the module, public verification endpoint, and storage wiring to MinIO. Packages `simplesoftwareio/simple-qrcode` and `barryvdh/laravel-dompdf` are **not yet** in `composer.json`; they will need to be added when the module is implemented.
+> **Status: shipped behind feature flag `SGTE_FUEC_ENABLED`.** `fuec-generation` merged — full backend + frontend + public QR verification + MinTransporte range CRUD + PDF generation to MinIO. bacon/bacon-qr-code (already installed via Fortify 2FA) is used directly for QR rendering; `simplesoftwareio/simple-qrcode` was skipped due to a version conflict with Fortify's bacon-qr-code ^3.0 pin.
 
-- Feature flag to enable/disable the FUEC module
-- Pre-generation validations:
-  - Valid contract
-  - Valid vehicle documents
-  - Valid driver license
-- PDF generation with:
-  - Contract, vehicle, and driver data
-  - Service origin and destination
-  - Date and time
-  - Verification QR code
-  - Unique consecutive number
-- Public verification page on QR scan (status VIGENTE/ANULADO)
-- PDF storage on MinIO
-- Consecutive from the range authorized by MinTransporte
+- [x] Feature flag: `config('sgte.fuec_enabled')` reads from env; `EnsureFuecEnabled` middleware 404s every FUEC route when disabled; sidebar hides the group via shared `auth.featureFlags.fuec` Inertia prop.
+- [x] Pre-generation validations — via `App\Rules\FuecPreGenerationChecks` (shared with `FuecStoreRequest` and re-run inside `FuecGenerator`'s transaction): contract vigente + covers today, vehicle SOAT/RTM/operation-card non-expired, driver license non-expired + compatible category, active MinTransporte range with numbers remaining, no duplicate active FUEC.
+- [x] PDF generation — dompdf-rendered `resources/views/fuecs/pdf.blade.php` with Contract, Vehicle, Driver, Service (origin/destination), QR (SVG data-URI from `App\Support\QrCode`), and legal disclaimer footer.
+- [x] Public verification page (`/fuec/verify/{uuid}`) — standalone Blade (no Inertia, no auth) showing VIGENTE/ANULADO + summary fields.
+- [x] PDF storage on MinIO — `Storage::disk('s3')->put("fuecs/{$consecutive}.pdf", $bytes)`; stored at generation, streamed on `/fuecs/{fuec}/pdf`.
+- [x] Consecutive from the MinTransporte range — `FuecGenerator` locks `fuec_number_ranges FOR UPDATE`, computes `max(consecutive_number within range) + 1 or range.range_from`, throws `FuecRangeExhaustedException` when > `range.range_to`.
+- [x] New admin CRUD at `/fuec-number-ranges` for registering resolutions + activating/deactivating ranges. New permission `MANAGE_FUEC_NUMBER_RANGES`.
+- [x] Cancel-only modify semantics — admins can `POST /fuecs/{fuec}/cancel` with a reason (min:10/max:500) that writes an activity log entry. No edit/soft-delete/hard-delete. Regeneration = cancel + create new.
+
+Deferred to a follow-up requirement:
+- Dashboard warning card when the active range has fewer than 50 remaining consecutives.
+- Committed UI regression tests (Dusk) — the Pest coverage (33 tests: 13 generator + 20 controller/verify/range) pins every critical path; interactive Playwright MCP verification works against the running app.
 
 ### 5.2 Optional GPS location (REQ-010)
 

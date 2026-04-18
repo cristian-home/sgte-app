@@ -105,6 +105,7 @@ return new class extends Migration
             Permission::VIEW_REPORTS,
             Permission::VIEW_FUEC,
             Permission::GENERATE_FUEC,
+            Permission::MANAGE_FUEC_NUMBER_RANGES,
             Permission::VIEW_USERS,
             Permission::CREATE_USERS,
             Permission::UPDATE_USERS,
@@ -157,8 +158,6 @@ return new class extends Migration
             Permission::VIEW_INCIDENTS,
             Permission::CREATE_INCIDENTS,
             Permission::VIEW_REPORTS,
-            Permission::VIEW_FUEC,
-            Permission::GENERATE_FUEC,
             Permission::RECEIVE_NOTIFICATIONS,
         ]));
 

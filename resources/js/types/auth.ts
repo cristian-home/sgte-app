@@ -17,6 +17,12 @@ export type Auth = {
     user: User;
     permissions: Permission[];
     roles: Role[];
+    featureFlags?: FeatureFlags;
+};
+
+export type FeatureFlags = {
+    fuec: boolean;
+    gps: boolean;
 };
 
 export type TwoFactorSetupData = {

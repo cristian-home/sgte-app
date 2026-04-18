@@ -63,6 +63,7 @@ enum Permission: string
     // FUEC (optional)
     case VIEW_FUEC = 'fuec.view';
     case GENERATE_FUEC = 'fuec.generate';
+    case MANAGE_FUEC_NUMBER_RANGES = 'fuec-number-ranges.manage';
 
     // Users
     case VIEW_USERS = 'users.view';
@@ -126,6 +127,7 @@ enum Permission: string
             self::VIEW_REPORTS => 'Ver reportes',
             self::VIEW_FUEC => 'Ver FUEC',
             self::GENERATE_FUEC => 'Generar FUEC',
+            self::MANAGE_FUEC_NUMBER_RANGES => 'Gestionar rangos MinTransporte',
             self::VIEW_USERS => 'Ver usuarios',
             self::CREATE_USERS => 'Crear usuarios',
             self::UPDATE_USERS => 'Editar usuarios',

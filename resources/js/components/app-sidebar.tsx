@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import {
     Calendar,
     FileText,
@@ -19,6 +19,7 @@ import { index as driversIndex } from '@/actions/App/Http/Controllers/DriverCont
 import { index as driverDashboardIndex } from '@/actions/App/Http/Controllers/DriverDashboardController';
 import { index as epsIndex } from '@/actions/App/Http/Controllers/EpsController';
 import { index as fuecsIndex } from '@/actions/App/Http/Controllers/FuecController';
+import { index as fuecNumberRangesIndex } from '@/actions/App/Http/Controllers/FuecNumberRangeController';
 import { index as ganttIndex } from '@/actions/App/Http/Controllers/GanttController';
 import { index as incidentTypesIndex } from '@/actions/App/Http/Controllers/IncidentTypeController';
 import { index as invoicesIndex } from '@/actions/App/Http/Controllers/InvoiceController';
@@ -160,11 +161,17 @@ const navGroups: NavGroup[] = [
         label: 'FUEC',
         icon: FileText,
         permission: Permission.VIEW_FUEC,
+        featureFlag: 'fuec',
         items: [
             {
                 title: 'Documentos FUEC',
                 href: fuecsIndex(),
                 permission: Permission.VIEW_FUEC,
+            },
+            {
+                title: 'Rangos MinTransporte',
+                href: fuecNumberRangesIndex(),
+                permission: Permission.MANAGE_FUEC_NUMBER_RANGES,
             },
         ],
     },
@@ -214,6 +221,19 @@ const navGroups: NavGroup[] = [
 ];
 
 export function AppSidebar() {
+    const page = usePage<{
+        auth?: { featureFlags?: { fuec?: boolean; gps?: boolean } };
+    }>();
+    const featureFlags = page.props.auth?.featureFlags ?? {
+        fuec: false,
+        gps: false,
+    };
+
+    const visibleGroups = navGroups.filter((group) => {
+        if (!group.featureFlag) return true;
+        return featureFlags[group.featureFlag] === true;
+    });
+
     return (
         <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader>
@@ -229,7 +249,7 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                <NavMain items={mainNavItems} groups={navGroups} />
+                <NavMain items={mainNavItems} groups={visibleGroups} />
             </SidebarContent>
 
             <SidebarFooter>

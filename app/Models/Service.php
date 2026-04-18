@@ -109,6 +109,11 @@ class Service extends Model
         return $this->hasOne(Fuec::class);
     }
 
+    public function fuecs(): HasMany
+    {
+        return $this->hasMany(Fuec::class);
+    }
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()

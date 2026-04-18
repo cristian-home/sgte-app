@@ -10,7 +10,7 @@ Technical documentation of the development phases of SGTE (Special Transport Man
 | 2 | [Operational Core](phase-2-operations.md) | ✅ Completed | REQ-001, REQ-002, REQ-003, REQ-008, REQ-009 |
 | 3 | [Driver and Incidents](phase-3-driver-incidents.md) | ✅ Completed | REQ-012, REQ-013 |
 | 4 | [Billing and Audit](phase-4-billing-reports.md) | ✅ Completed | REQ-011, REQ-009 |
-| 5 | [Optional Modules and Deploy](phase-5-optionals-deploy.md) | 🔶 In progress — deploy ready; FUEC & GPS are scaffolded stubs only | REQ-007, REQ-010 |
+| 5 | [Optional Modules and Deploy](phase-5-optionals-deploy.md) | 🔶 In progress — deploy ready; FUEC shipped behind feature flag; GPS still scaffolded | REQ-007, REQ-010 |
 
 ## Dependencies between phases
 

@@ -15,9 +15,17 @@ export type NavItem = {
     permission?: Permission;
 };
 
+export type FeatureFlagKey = 'fuec' | 'gps';
+
 export type NavGroup = {
     label: string;
     icon?: LucideIcon;
     permission?: Permission;
+    /**
+     * When set, the group is only rendered when
+     * `auth.featureFlags[featureFlag] === true`. Used by optional
+     * modules (FUEC, GPS) that ship behind a config flag.
+     */
+    featureFlag?: FeatureFlagKey;
     items: NavItem[];
 };
