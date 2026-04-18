@@ -855,3 +855,181 @@ test('show: candidateServices respects the 90-day window', function (): void {
     $props = $response->viewData('page')['props'];
     expect($props['candidateServices'])->toHaveCount(1);
 });
+
+// ================================================================
+// Invoice PDF generation
+// ================================================================
+
+test('pdf: admin can download the invoice PDF inline', function (): void {
+    $customer = ThirdParty::factory()->create([
+        'is_customer' => true,
+        'is_natural_person' => false,
+        'company_name' => 'Cliente PDF Prueba S.A.',
+    ]);
+    $contract = Contract::factory()->create(['third_party_id' => $customer->id]);
+    $invoice = Invoice::factory()->create([
+        'third_party_id' => $customer->id,
+        'invoice_number' => 'FAC-PDF-TEST-001',
+    ]);
+    Service::factory()->create([
+        'contract_id' => $contract->id,
+        'service_status' => ServiceStatus::Closed,
+        'invoice_id' => $invoice->id,
+        'unit_value' => 100000,
+        'quantity' => 1,
+    ]);
+
+    $response = get(route('invoices.pdf', $invoice));
+
+    $response->assertOk();
+    expect($response->headers->get('Content-Type'))->toStartWith('application/pdf');
+    expect($response->headers->get('Content-Disposition'))->toContain('filename=factura-FAC-PDF-TEST-001.pdf');
+    expect($response->getContent())->toStartWith('%PDF-');
+});
+
+test('pdf: accounting user can download the invoice PDF', function (): void {
+    $accounting = User::factory()->create();
+    $accounting->assignRole('accounting');
+    $this->actingAs($accounting);
+
+    $invoice = Invoice::factory()->create();
+
+    $response = get(route('invoices.pdf', $invoice));
+
+    $response->assertOk();
+    expect($response->headers->get('Content-Type'))->toStartWith('application/pdf');
+});
+
+test('pdf: operator receives 403 on the invoice PDF endpoint', function (): void {
+    $operator = User::factory()->create();
+    $operator->assignRole('operator');
+    $this->actingAs($operator);
+
+    $invoice = Invoice::factory()->create();
+
+    get(route('invoices.pdf', $invoice))->assertForbidden();
+});
+
+test('pdf: driver receives 403 on the invoice PDF endpoint', function (): void {
+    $driver = User::factory()->create();
+    $driver->assignRole('driver');
+    $this->actingAs($driver);
+
+    $invoice = Invoice::factory()->create();
+
+    get(route('invoices.pdf', $invoice))->assertForbidden();
+});
+
+test('pdf: unauthenticated user is redirected to login', function (): void {
+    auth()->logout();
+
+    $invoice = Invoice::factory()->create();
+
+    $response = $this->get(route('invoices.pdf', $invoice));
+    $response->assertRedirect(route('login'));
+});
+
+test('pdf: regenerates invoice total from the calculator on every request', function (): void {
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    $contract = Contract::factory()->create(['third_party_id' => $customer->id]);
+    $invoice = Invoice::factory()->create([
+        'third_party_id' => $customer->id,
+        'total_value' => 9999,
+    ]);
+    Service::factory()->create([
+        'contract_id' => $contract->id,
+        'service_status' => ServiceStatus::Closed,
+        'invoice_id' => $invoice->id,
+        'unit_value' => 1000,
+        'quantity' => 1,
+    ]);
+
+    // Force the stale total back in place after the factory/calculator
+    // side-effects settle — simulate drift from an upstream field change.
+    \App\Models\Invoice::query()->where('id', $invoice->id)->update(['total_value' => 9999]);
+    expect($invoice->fresh()->total_value)->toBe('9999.00');
+
+    get(route('invoices.pdf', $invoice))->assertOk();
+
+    expect($invoice->fresh()->total_value)->toBe('1000.00');
+});
+
+test('pdf: response Content-Disposition starts with inline', function (): void {
+    $invoice = Invoice::factory()->create();
+
+    $response = get(route('invoices.pdf', $invoice));
+
+    expect($response->headers->get('Content-Disposition'))->toStartWith('inline');
+});
+
+test('pdf: rendered HTML content includes key invoice fields', function (): void {
+    $customer = ThirdParty::factory()->create([
+        'is_customer' => true,
+        'is_natural_person' => false,
+        'company_name' => 'Cliente PDF Smoke S.A.',
+    ]);
+    $invoice = Invoice::factory()->create([
+        'third_party_id' => $customer->id,
+        'invoice_number' => 'FAC-SMOKE-002',
+    ]);
+
+    // Render the Blade view directly to assert text presence — more
+    // reliable than grepping the dompdf-compressed binary output.
+    $calculator = new \App\Services\InvoiceTotalCalculator;
+    $calculator->recomputeFor($invoice->fresh());
+    $invoice = $invoice->fresh()->load([
+        'thirdParty.documentType',
+        'thirdParty.municipality.department',
+        'services',
+        'services.vehicle:id,plate',
+        'services.contract:id,contract_number',
+        'services.serviceIncidents' => fn ($q) => $q->where('affects_billing', true),
+        'services.serviceIncidents.incidentType:id,name',
+    ]);
+    $services = $invoice->services;
+    $billingIncidents = $services->flatMap(fn ($s) => $s->serviceIncidents)->values();
+    $subtotalServices = (float) $services->sum(fn ($s) => (float) $s->unit_value * (int) $s->quantity);
+    $subtotalIncidents = (float) $billingIncidents->sum(fn ($i) => (float) ($i->additional_value ?? 0));
+
+    $html = view('invoices.pdf', [
+        'invoice' => $invoice,
+        'services' => $services,
+        'billing_incidents' => $billingIncidents,
+        'subtotal_services' => $subtotalServices,
+        'subtotal_incidents' => $subtotalIncidents,
+        'grand_total' => $subtotalServices + $subtotalIncidents,
+        'customer_name' => 'Cliente PDF Smoke S.A.',
+        'customer_document' => 'NIT 900000001',
+        'customer_address_line' => '',
+        'now_formatted' => 'domingo, 18 de abril de 2026 12:00',
+    ])->render();
+
+    expect($html)->toContain('FAC-SMOKE-002');
+    expect($html)->toContain('Cliente PDF Smoke S.A.');
+    expect($html)->toContain('INFORMATIVO');
+    expect($html)->toContain('no constituye factura fiscal');
+});
+
+test('pdf: zero-services invoice renders the manual-total fallback note', function (): void {
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    $invoice = Invoice::factory()->create([
+        'third_party_id' => $customer->id,
+        'invoice_number' => 'FAC-MANUAL-003',
+        'total_value' => 750000,
+    ]);
+
+    $html = view('invoices.pdf', [
+        'invoice' => $invoice->fresh(),
+        'services' => collect(),
+        'billing_incidents' => collect(),
+        'subtotal_services' => 0.0,
+        'subtotal_incidents' => 0.0,
+        'grand_total' => 750000.0,
+        'customer_name' => 'Test',
+        'customer_document' => '',
+        'customer_address_line' => '',
+        'now_formatted' => 'ahora',
+    ])->render();
+
+    expect($html)->toContain('Sin servicios asociados — valor total manual.');
+});
