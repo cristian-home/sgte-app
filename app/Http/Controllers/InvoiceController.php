@@ -4,13 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Enums\PaymentStatus;
 use App\Enums\Permission;
+use App\Enums\ServiceStatus;
+use App\Http\Requests\InvoiceServiceAttachRequest;
 use App\Http\Requests\InvoiceStoreRequest;
 use App\Http\Requests\InvoiceUpdateRequest;
 use App\Models\Invoice;
 use App\Models\Service;
 use App\Models\ThirdParty;
+use App\Services\InvoiceTotalCalculator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -89,7 +94,7 @@ class InvoiceController extends Controller
         return redirect()->route('invoices.index');
     }
 
-    public function show(Request $request, Invoice $invoice): Response
+    public function show(Request $request, Invoice $invoice, InvoiceTotalCalculator $calculator): Response
     {
         Gate::authorize(Permission::VIEW_INVOICES->value);
 
@@ -97,11 +102,13 @@ class InvoiceController extends Controller
             'thirdParty:id,document_type_id,identification_number,is_natural_person,first_name,first_lastname,company_name,is_customer,is_provider',
             'thirdParty.documentType:id,code,name',
         ]);
+        $invoice->loadCount('services');
 
         $recentServices = Service::query()
             ->where('invoice_id', $invoice->id)
             ->with([
                 'vehicle:id,plate',
+                'driver:id,first_name,first_lastname',
                 'contract:id,contract_number',
             ])
             ->orderByDesc('service_date')
@@ -112,6 +119,7 @@ class InvoiceController extends Controller
                 'service_date',
                 'service_status',
                 'vehicle_id',
+                'driver_id',
                 'contract_id',
                 'invoice_id',
                 'unit_value',
@@ -122,6 +130,8 @@ class InvoiceController extends Controller
         return Inertia::render('invoices/show', [
             'invoice' => $invoice,
             'recentServices' => $recentServices,
+            'computedTotal' => $calculator->computeFor($invoice),
+            'candidateServices' => $this->candidateServices($invoice),
         ]);
     }
 
@@ -130,6 +140,7 @@ class InvoiceController extends Controller
         Gate::authorize(Permission::UPDATE_INVOICES->value);
 
         $invoice->load('thirdParty.documentType');
+        $invoice->loadCount('services');
 
         return Inertia::render('invoices/edit', [
             'invoice' => $invoice,
@@ -173,5 +184,116 @@ class InvoiceController extends Controller
         $invoice->update(['payment_status' => PaymentStatus::Paid]);
 
         return redirect()->route('invoices.show', $invoice);
+    }
+
+    /**
+     * Attach one or more closed services to the invoice and recompute
+     * the total. The InvoiceServiceAttachRequest after() hook validates
+     * that all target services belong to the invoice's customer, are
+     * closed, and are not already attached to a different invoice.
+     */
+    public function attachServices(
+        InvoiceServiceAttachRequest $request,
+        Invoice $invoice,
+        InvoiceTotalCalculator $calculator,
+    ): RedirectResponse {
+        Gate::authorize(Permission::ASSIGN_SERVICES_TO_INVOICES->value);
+
+        $ids = $request->validated('service_ids');
+
+        DB::transaction(function () use ($ids, $invoice) {
+            Service::query()
+                ->whereIn('id', $ids)
+                ->update(['invoice_id' => $invoice->id]);
+        });
+
+        $calculator->recomputeFor($invoice->fresh());
+
+        return redirect()
+            ->route('invoices.show', $invoice)
+            ->with('success', count($ids).' servicio(s) asociado(s).');
+    }
+
+    /**
+     * Detach a service from the invoice by nulling its invoice_id and
+     * recomputing the total. Returns 404 if the service is not attached
+     * to this invoice (defensive; the route already binds both params).
+     */
+    public function detachService(
+        Request $request,
+        Invoice $invoice,
+        Service $service,
+        InvoiceTotalCalculator $calculator,
+    ): RedirectResponse {
+        Gate::authorize(Permission::ASSIGN_SERVICES_TO_INVOICES->value);
+
+        if ($service->invoice_id !== $invoice->id) {
+            abort(404);
+        }
+
+        $service->update(['invoice_id' => null]);
+        $calculator->recomputeFor($invoice->fresh());
+
+        return redirect()
+            ->route('invoices.show', $invoice)
+            ->with('success', 'Servicio desvinculado.');
+    }
+
+    /**
+     * Idempotent recompute. Covers the drift case where a linked
+     * service's unit_value/quantity or a linked incident's
+     * affects_billing/additional_value changes after attach-time.
+     */
+    public function recomputeTotal(
+        Request $request,
+        Invoice $invoice,
+        InvoiceTotalCalculator $calculator,
+    ): RedirectResponse {
+        Gate::authorize(Permission::ASSIGN_SERVICES_TO_INVOICES->value);
+
+        $calculator->recomputeFor($invoice);
+
+        return redirect()
+            ->route('invoices.show', $invoice)
+            ->with('success', 'Total recalculado.');
+    }
+
+    /**
+     * Services the <ServicePickerDialog /> on the invoice show page
+     * can offer for attachment: closed, unbilled, within the last
+     * 90 days, and belonging to the invoice's customer.
+     *
+     * Shipped alongside `invoice` on the show payload so the picker's
+     * first open is hydrated (see Notes in the requirement doc).
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, Service>
+     */
+    private function candidateServices(Invoice $invoice): \Illuminate\Database\Eloquent\Collection
+    {
+        $cutoff = Carbon::today()->subDays(90);
+
+        return Service::query()
+            ->whereNull('invoice_id')
+            ->where('service_status', ServiceStatus::Closed->value)
+            ->whereDate('service_date', '>=', $cutoff)
+            ->whereHas('contract', fn ($q) => $q->where('third_party_id', $invoice->third_party_id))
+            ->with([
+                'vehicle:id,plate',
+                'driver:id,first_name,first_lastname',
+                'contract:id,contract_number',
+                'serviceIncidents:id,service_id,affects_billing,additional_value',
+            ])
+            ->orderByDesc('service_date')
+            ->orderByDesc('id')
+            ->get([
+                'id',
+                'service_date',
+                'vehicle_id',
+                'driver_id',
+                'contract_id',
+                'unit_value',
+                'quantity',
+                'service_status',
+            ]);
     }
 }

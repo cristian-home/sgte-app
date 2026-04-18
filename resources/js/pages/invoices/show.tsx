@@ -1,7 +1,30 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { CheckCircle2, FileText, Pencil } from 'lucide-react';
+import {
+    CheckCircle2,
+    FileText,
+    ListPlus,
+    Pencil,
+    RefreshCw,
+    Trash2,
+} from 'lucide-react';
+import { useState } from 'react';
 import InvoiceController from '@/actions/App/Http/Controllers/InvoiceController';
+import { Can } from '@/components/can';
 import { PaymentStatusPill } from '@/components/invoices/payment-status-pill';
+import ServicePickerDialog, {
+    type ServicePickerRow,
+} from '@/components/invoices/service-picker-dialog';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -12,6 +35,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { Permission } from '@/enums/Permission';
 import AppLayout from '@/layouts/app-layout';
 import { dateFormatter, parseDueDate } from '@/lib/document-status';
 import contracts from '@/routes/contracts';
@@ -36,6 +60,7 @@ type ShowInvoice = Pick<
     | 'payment_status'
     | 'notes'
 > & {
+    services_count?: number;
     third_party?:
         | (Pick<
               ThirdParty,
@@ -121,9 +146,13 @@ function Field({
 export default function InvoicesShow({
     invoice,
     recentServices,
+    computedTotal,
+    candidateServices,
 }: {
     invoice: ShowInvoice;
     recentServices: RecentServiceRow[];
+    computedTotal: string;
+    candidateServices: ServicePickerRow[];
 }) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Facturas', href: invoices.index().url },
@@ -135,12 +164,42 @@ export default function InvoicesShow({
         Number(invoice.total_value),
     );
     const isPending = invoice.payment_status === 'pending';
+    const servicesCount = invoice.services_count ?? 0;
+    const hasAttachedServices = servicesCount > 0;
+    const isTotalStale =
+        hasAttachedServices &&
+        Number(invoice.total_value) !== Number(computedTotal);
+
+    const [pickerOpen, setPickerOpen] = useState(false);
+    const [detachingServiceId, setDetachingServiceId] = useState<number | null>(
+        null,
+    );
 
     function handleMarkPaid() {
         router.post(
             InvoiceController.markPaid(invoice.id).url,
             {},
             { preserveScroll: true },
+        );
+    }
+
+    function handleRecompute() {
+        router.post(
+            InvoiceController.recomputeTotal(invoice.id).url,
+            {},
+            { preserveScroll: true },
+        );
+    }
+
+    function handleDetachConfirm() {
+        if (detachingServiceId === null) return;
+        router.delete(
+            InvoiceController.detachService([invoice.id, detachingServiceId])
+                .url,
+            {
+                preserveScroll: true,
+                onFinish: () => setDetachingServiceId(null),
+            },
         );
     }
 
@@ -165,6 +224,20 @@ export default function InvoicesShow({
                             </div>
                             <div className="flex items-center gap-2">
                                 <PaymentStatusPill invoice={invoice} />
+                                <Can
+                                    permission={
+                                        Permission.ASSIGN_SERVICES_TO_INVOICES
+                                    }
+                                >
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => setPickerOpen(true)}
+                                    >
+                                        <ListPlus className="mr-1 size-4" />
+                                        Asignar Servicios
+                                    </Button>
+                                </Can>
                                 <Button asChild size="sm" variant="outline">
                                     <Link href={invoices.edit(invoice.id).url}>
                                         <Pencil className="mr-1 size-4" />
@@ -198,6 +271,41 @@ export default function InvoicesShow({
                                 <p className="text-3xl font-bold tabular-nums">
                                     {totalValueFormatted}
                                 </p>
+                                {hasAttachedServices && (
+                                    <p className="text-xs text-muted-foreground italic">
+                                        (calculado automáticamente)
+                                    </p>
+                                )}
+                                {hasAttachedServices && (
+                                    <div className="mt-2 flex flex-wrap items-center gap-2 md:justify-end">
+                                        {isTotalStale && (
+                                            <Badge
+                                                variant="outline"
+                                                className="border-amber-500 text-amber-700 dark:text-amber-400"
+                                            >
+                                                Total desactualizado
+                                            </Badge>
+                                        )}
+                                        <Can
+                                            permission={
+                                                Permission.ASSIGN_SERVICES_TO_INVOICES
+                                            }
+                                        >
+                                            <Button
+                                                size="sm"
+                                                variant={
+                                                    isTotalStale
+                                                        ? 'default'
+                                                        : 'ghost'
+                                                }
+                                                onClick={handleRecompute}
+                                            >
+                                                <RefreshCw className="mr-1 size-4" />
+                                                Recalcular
+                                            </Button>
+                                        </Can>
+                                    </div>
+                                )}
                             </div>
                         </div>
                         <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t pt-4">
@@ -291,6 +399,7 @@ export default function InvoicesShow({
                                         <TableHead className="text-right">
                                             Valor
                                         </TableHead>
+                                        <TableHead className="w-10" />
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -338,6 +447,26 @@ export default function InvoicesShow({
                                             <TableCell className="text-right tabular-nums">
                                                 {serviceValue(service)}
                                             </TableCell>
+                                            <TableCell>
+                                                <Can
+                                                    permission={
+                                                        Permission.ASSIGN_SERVICES_TO_INVOICES
+                                                    }
+                                                >
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        aria-label="Desvincular"
+                                                        onClick={() =>
+                                                            setDetachingServiceId(
+                                                                service.id,
+                                                            )
+                                                        }
+                                                    >
+                                                        <Trash2 className="size-4 text-destructive" />
+                                                    </Button>
+                                                </Can>
+                                            </TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>
@@ -346,6 +475,38 @@ export default function InvoicesShow({
                     </CardContent>
                 </Card>
             </div>
+
+            <ServicePickerDialog
+                open={pickerOpen}
+                onOpenChange={setPickerOpen}
+                invoiceId={invoice.id}
+                candidates={candidateServices}
+            />
+
+            <AlertDialog
+                open={detachingServiceId !== null}
+                onOpenChange={(open) => {
+                    if (!open) setDetachingServiceId(null);
+                }}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>
+                            ¿Desvincular servicio?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Esta acción quitará el servicio de la factura y
+                            recalculará el valor total.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDetachConfirm}>
+                            Confirmar
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </AppLayout>
     );
 }

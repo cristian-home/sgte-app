@@ -3,6 +3,8 @@
 namespace Tests\Feature\Http\Controllers;
 
 use App\Enums\PaymentStatus;
+use App\Enums\ServiceStatus;
+use App\Models\Contract;
 use App\Models\Invoice;
 use App\Models\Service;
 use App\Models\ThirdParty;
@@ -423,4 +425,433 @@ test('accounting cannot delete invoices', function (): void {
     $invoice = Invoice::factory()->create();
 
     delete(route('invoices.destroy', $invoice))->assertForbidden();
+});
+
+// ================================================================
+// Phase 4 billing workflow — attach/detach/recompute + total lock
+// ================================================================
+
+test('attach: admin can attach closed services and total recomputes', function (): void {
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    $contract = Contract::factory()->create(['third_party_id' => $customer->id]);
+    $invoice = Invoice::factory()->create([
+        'third_party_id' => $customer->id,
+        'total_value' => 0,
+    ]);
+    $s1 = Service::factory()->create([
+        'contract_id' => $contract->id,
+        'service_status' => ServiceStatus::Closed,
+        'unit_value' => 1000,
+        'quantity' => 2,
+        'invoice_id' => null,
+    ]);
+    $s2 = Service::factory()->create([
+        'contract_id' => $contract->id,
+        'service_status' => ServiceStatus::Closed,
+        'unit_value' => 500,
+        'quantity' => 1,
+        'invoice_id' => null,
+    ]);
+
+    $response = post(route('invoices.services.attach', $invoice), [
+        'service_ids' => [$s1->id, $s2->id],
+    ]);
+
+    $response->assertRedirect(route('invoices.show', $invoice));
+    expect($s1->fresh()->invoice_id)->toBe($invoice->id);
+    expect($s2->fresh()->invoice_id)->toBe($invoice->id);
+    expect($invoice->fresh()->total_value)->toBe('2500.00');
+});
+
+test('attach: rejects services from a different customer', function (): void {
+    $customerA = ThirdParty::factory()->create(['is_customer' => true]);
+    $customerB = ThirdParty::factory()->create(['is_customer' => true]);
+    $contractB = Contract::factory()->create(['third_party_id' => $customerB->id]);
+    $invoice = Invoice::factory()->create(['third_party_id' => $customerA->id]);
+    $service = Service::factory()->create([
+        'contract_id' => $contractB->id,
+        'service_status' => ServiceStatus::Closed,
+        'invoice_id' => null,
+    ]);
+
+    $response = post(route('invoices.services.attach', $invoice), [
+        'service_ids' => [$service->id],
+    ]);
+
+    $response->assertSessionHasErrors('service_ids');
+    expect($service->fresh()->invoice_id)->toBeNull();
+});
+
+test('attach: rejects services already attached to another invoice', function (): void {
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    $contract = Contract::factory()->create(['third_party_id' => $customer->id]);
+    $otherInvoice = Invoice::factory()->create(['third_party_id' => $customer->id]);
+    $invoice = Invoice::factory()->create(['third_party_id' => $customer->id]);
+    $service = Service::factory()->create([
+        'contract_id' => $contract->id,
+        'service_status' => ServiceStatus::Closed,
+        'invoice_id' => $otherInvoice->id,
+    ]);
+
+    $response = post(route('invoices.services.attach', $invoice), [
+        'service_ids' => [$service->id],
+    ]);
+
+    $response->assertSessionHasErrors('service_ids');
+    expect($service->fresh()->invoice_id)->toBe($otherInvoice->id);
+});
+
+test('attach: is idempotent for services already attached to this invoice', function (): void {
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    $contract = Contract::factory()->create(['third_party_id' => $customer->id]);
+    $invoice = Invoice::factory()->create(['third_party_id' => $customer->id]);
+    $service = Service::factory()->create([
+        'contract_id' => $contract->id,
+        'service_status' => ServiceStatus::Closed,
+        'unit_value' => 1000,
+        'quantity' => 1,
+        'invoice_id' => $invoice->id,
+    ]);
+
+    $response = post(route('invoices.services.attach', $invoice), [
+        'service_ids' => [$service->id],
+    ]);
+
+    $response->assertRedirect();
+    expect($service->fresh()->invoice_id)->toBe($invoice->id);
+});
+
+test('attach: rejects open-status services', function (): void {
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    $contract = Contract::factory()->create(['third_party_id' => $customer->id]);
+    $invoice = Invoice::factory()->create(['third_party_id' => $customer->id]);
+    $service = Service::factory()->create([
+        'contract_id' => $contract->id,
+        'service_status' => ServiceStatus::Open,
+        'invoice_id' => null,
+    ]);
+
+    $response = post(route('invoices.services.attach', $invoice), [
+        'service_ids' => [$service->id],
+    ]);
+
+    $response->assertSessionHasErrors('service_ids');
+    expect($service->fresh()->invoice_id)->toBeNull();
+});
+
+test('attach: rejects empty service_ids array', function (): void {
+    $invoice = Invoice::factory()->create();
+
+    $response = post(route('invoices.services.attach', $invoice), [
+        'service_ids' => [],
+    ]);
+
+    $response->assertSessionHasErrors('service_ids');
+});
+
+test('detach: admin can detach a service and total recomputes', function (): void {
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    $contract = Contract::factory()->create(['third_party_id' => $customer->id]);
+    $invoice = Invoice::factory()->create(['third_party_id' => $customer->id]);
+    $s1 = Service::factory()->create([
+        'contract_id' => $contract->id,
+        'service_status' => ServiceStatus::Closed,
+        'invoice_id' => $invoice->id,
+        'unit_value' => 1000,
+        'quantity' => 2,
+    ]);
+    $s2 = Service::factory()->create([
+        'contract_id' => $contract->id,
+        'service_status' => ServiceStatus::Closed,
+        'invoice_id' => $invoice->id,
+        'unit_value' => 500,
+        'quantity' => 1,
+    ]);
+
+    $response = delete(route('invoices.services.detach', [$invoice, $s2]));
+
+    $response->assertRedirect(route('invoices.show', $invoice));
+    expect($s2->fresh()->invoice_id)->toBeNull();
+    expect($s1->fresh()->invoice_id)->toBe($invoice->id);
+    expect($invoice->fresh()->total_value)->toBe('2000.00');
+});
+
+test('detach: returns 404 when service is not attached to the invoice', function (): void {
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    $invoice = Invoice::factory()->create(['third_party_id' => $customer->id]);
+    $otherInvoice = Invoice::factory()->create(['third_party_id' => $customer->id]);
+    $service = Service::factory()->create([
+        'invoice_id' => $otherInvoice->id,
+    ]);
+
+    $response = delete(route('invoices.services.detach', [$invoice, $service]));
+
+    $response->assertNotFound();
+});
+
+test('recompute: endpoint updates total when upstream values change', function (): void {
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    $contract = Contract::factory()->create(['third_party_id' => $customer->id]);
+    $invoice = Invoice::factory()->create(['third_party_id' => $customer->id, 'total_value' => 1000]);
+    $service = Service::factory()->create([
+        'contract_id' => $contract->id,
+        'service_status' => ServiceStatus::Closed,
+        'invoice_id' => $invoice->id,
+        'unit_value' => 1000,
+        'quantity' => 1,
+    ]);
+
+    // Simulate an upstream change: unit_value doubles.
+    $service->update(['unit_value' => 2000]);
+
+    // invoice.total_value is now stale (still 1000).
+    expect($invoice->fresh()->total_value)->toBe('1000.00');
+
+    $response = post(route('invoices.recompute-total', $invoice));
+
+    $response->assertRedirect(route('invoices.show', $invoice));
+    expect($invoice->fresh()->total_value)->toBe('2000.00');
+});
+
+test('recompute: picks up new billing-affecting incidents', function (): void {
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    $contract = Contract::factory()->create(['third_party_id' => $customer->id]);
+    $invoice = Invoice::factory()->create(['third_party_id' => $customer->id, 'total_value' => 1000]);
+    $service = Service::factory()->create([
+        'contract_id' => $contract->id,
+        'service_status' => ServiceStatus::Closed,
+        'invoice_id' => $invoice->id,
+        'unit_value' => 1000,
+        'quantity' => 1,
+    ]);
+
+    // Add an affects_billing incident after attach.
+    \App\Models\ServiceIncident::factory()->create([
+        'service_id' => $service->id,
+        'incident_type_id' => \App\Models\IncidentType::factory()->create()->id,
+        'affects_billing' => true,
+        'additional_value' => 500,
+    ]);
+
+    $response = post(route('invoices.recompute-total', $invoice));
+
+    $response->assertRedirect();
+    expect($invoice->fresh()->total_value)->toBe('1500.00');
+});
+
+test('update: rejects total_value changes when services are attached', function (): void {
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    $contract = Contract::factory()->create(['third_party_id' => $customer->id]);
+    $invoice = Invoice::factory()->create(['third_party_id' => $customer->id, 'total_value' => 2500]);
+    Service::factory()->create([
+        'contract_id' => $contract->id,
+        'invoice_id' => $invoice->id,
+        'service_status' => ServiceStatus::Closed,
+    ]);
+
+    $response = put(route('invoices.update', $invoice), [
+        'third_party_id' => $customer->id,
+        'invoice_number' => $invoice->invoice_number,
+        'total_value' => 9999,
+        'issue_date' => $invoice->issue_date->toDateString(),
+        'payment_status' => PaymentStatus::Pending->value,
+        'notes' => 'attempt to change',
+    ]);
+
+    $response->assertSessionHasErrors('total_value');
+});
+
+test('update: allows other field changes when services are attached if total_value unchanged', function (): void {
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    $contract = Contract::factory()->create(['third_party_id' => $customer->id]);
+    $invoice = Invoice::factory()->create(['third_party_id' => $customer->id, 'total_value' => 2500]);
+    Service::factory()->create([
+        'contract_id' => $contract->id,
+        'invoice_id' => $invoice->id,
+        'service_status' => ServiceStatus::Closed,
+    ]);
+
+    $response = put(route('invoices.update', $invoice), [
+        'third_party_id' => $customer->id,
+        'invoice_number' => $invoice->invoice_number,
+        'total_value' => 2500,
+        'issue_date' => $invoice->issue_date->toDateString(),
+        'payment_status' => PaymentStatus::Pending->value,
+        'notes' => 'new notes',
+    ]);
+
+    $response->assertRedirect();
+    expect($invoice->fresh()->notes)->toBe('new notes');
+});
+
+test('update: allows total_value changes when no services are attached', function (): void {
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    $invoice = Invoice::factory()->create(['third_party_id' => $customer->id, 'total_value' => 1000]);
+
+    $response = put(route('invoices.update', $invoice), [
+        'third_party_id' => $customer->id,
+        'invoice_number' => $invoice->invoice_number,
+        'total_value' => 5000,
+        'issue_date' => $invoice->issue_date->toDateString(),
+        'payment_status' => PaymentStatus::Pending->value,
+    ]);
+
+    $response->assertRedirect();
+    expect((float) $invoice->fresh()->total_value)->toBe(5000.0);
+});
+
+test('attach: operator receives 403', function (): void {
+    $operator = User::factory()->create();
+    $operator->assignRole('operator');
+    $this->actingAs($operator);
+
+    $invoice = Invoice::factory()->create();
+
+    post(route('invoices.services.attach', $invoice), [
+        'service_ids' => [1],
+    ])->assertForbidden();
+});
+
+test('detach: operator receives 403', function (): void {
+    $operator = User::factory()->create();
+    $operator->assignRole('operator');
+    $this->actingAs($operator);
+
+    $invoice = Invoice::factory()->create();
+    $service = Service::factory()->create(['invoice_id' => $invoice->id]);
+
+    delete(route('invoices.services.detach', [$invoice, $service]))->assertForbidden();
+});
+
+test('recompute: operator receives 403', function (): void {
+    $operator = User::factory()->create();
+    $operator->assignRole('operator');
+    $this->actingAs($operator);
+
+    $invoice = Invoice::factory()->create();
+
+    post(route('invoices.recompute-total', $invoice))->assertForbidden();
+});
+
+test('attach: accounting can attach services', function (): void {
+    $accounting = User::factory()->create();
+    $accounting->assignRole('accounting');
+    $this->actingAs($accounting);
+
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    $contract = Contract::factory()->create(['third_party_id' => $customer->id]);
+    $invoice = Invoice::factory()->create(['third_party_id' => $customer->id]);
+    $service = Service::factory()->create([
+        'contract_id' => $contract->id,
+        'service_status' => ServiceStatus::Closed,
+        'invoice_id' => null,
+        'unit_value' => 1000,
+        'quantity' => 1,
+    ]);
+
+    $response = post(route('invoices.services.attach', $invoice), [
+        'service_ids' => [$service->id],
+    ]);
+
+    $response->assertRedirect(route('invoices.show', $invoice));
+    expect($service->fresh()->invoice_id)->toBe($invoice->id);
+});
+
+test('show: includes computedTotal, services_count, and candidateServices props', function (): void {
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    $contract = Contract::factory()->create(['third_party_id' => $customer->id]);
+    $invoice = Invoice::factory()->create(['third_party_id' => $customer->id]);
+    Service::factory()->create([
+        'contract_id' => $contract->id,
+        'invoice_id' => $invoice->id,
+        'service_status' => ServiceStatus::Closed,
+        'unit_value' => 1000,
+        'quantity' => 3,
+    ]);
+    // Also a candidate
+    Service::factory()->create([
+        'contract_id' => $contract->id,
+        'invoice_id' => null,
+        'service_status' => ServiceStatus::Closed,
+        'service_date' => now()->subDays(5),
+    ]);
+
+    $response = get(route('invoices.show', $invoice));
+    $response->assertOk();
+
+    $props = $response->viewData('page')['props'];
+    expect($props)->toHaveKey('computedTotal');
+    expect($props['computedTotal'])->toBe('3000.00');
+    expect($props['invoice']['services_count'])->toBe(1);
+    expect($props['candidateServices'])->toHaveCount(1);
+});
+
+test('show: candidateServices excludes open-status services', function (): void {
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    $contract = Contract::factory()->create(['third_party_id' => $customer->id]);
+    $invoice = Invoice::factory()->create(['third_party_id' => $customer->id]);
+    Service::factory()->create([
+        'contract_id' => $contract->id,
+        'invoice_id' => null,
+        'service_status' => ServiceStatus::Closed,
+        'service_date' => now()->subDays(5),
+    ]);
+    Service::factory()->create([
+        'contract_id' => $contract->id,
+        'invoice_id' => null,
+        'service_status' => ServiceStatus::Open,
+        'service_date' => now()->subDays(5),
+    ]);
+
+    $response = get(route('invoices.show', $invoice));
+    $props = $response->viewData('page')['props'];
+    expect($props['candidateServices'])->toHaveCount(1);
+});
+
+test('show: candidateServices excludes services from other customers', function (): void {
+    $customerA = ThirdParty::factory()->create(['is_customer' => true]);
+    $customerB = ThirdParty::factory()->create(['is_customer' => true]);
+    $contractA = Contract::factory()->create(['third_party_id' => $customerA->id]);
+    $contractB = Contract::factory()->create(['third_party_id' => $customerB->id]);
+    $invoice = Invoice::factory()->create(['third_party_id' => $customerA->id]);
+
+    Service::factory()->create([
+        'contract_id' => $contractA->id,
+        'invoice_id' => null,
+        'service_status' => ServiceStatus::Closed,
+        'service_date' => now()->subDays(5),
+    ]);
+    Service::factory()->create([
+        'contract_id' => $contractB->id,
+        'invoice_id' => null,
+        'service_status' => ServiceStatus::Closed,
+        'service_date' => now()->subDays(5),
+    ]);
+
+    $response = get(route('invoices.show', $invoice));
+    $props = $response->viewData('page')['props'];
+    expect($props['candidateServices'])->toHaveCount(1);
+});
+
+test('show: candidateServices respects the 90-day window', function (): void {
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    $contract = Contract::factory()->create(['third_party_id' => $customer->id]);
+    $invoice = Invoice::factory()->create(['third_party_id' => $customer->id]);
+
+    Service::factory()->create([
+        'contract_id' => $contract->id,
+        'invoice_id' => null,
+        'service_status' => ServiceStatus::Closed,
+        'service_date' => now()->subDays(5),
+    ]);
+    Service::factory()->create([
+        'contract_id' => $contract->id,
+        'invoice_id' => null,
+        'service_status' => ServiceStatus::Closed,
+        'service_date' => now()->subDays(95),
+    ]);
+
+    $response = get(route('invoices.show', $invoice));
+    $props = $response->viewData('page')['props'];
+    expect($props['candidateServices'])->toHaveCount(1);
 });

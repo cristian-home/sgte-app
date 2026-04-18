@@ -1,6 +1,6 @@
 # Phase 4: Billing and Audit
 
-> **Status: IN PROGRESS** — Invoice model, migration, and CRUD are scaffolded (including the `invoices.third_party_id` FK added in the Phase D refactor); the full billing workflow (aggregation of multiple services, total computation, PDF, REQ-009 justification UX) is pending. Requires Phase 2 (completed); Phase 3 recommended.
+> **Status: IN PROGRESS** — Invoice CRUD + service-invoice association workflow are complete (rebuilds `invoices-crud`, `service-incidents-crud`, and `invoice-service-assignment` merged to `develop`). Still pending: informational PDF generation (§4.2 final bullet), REQ-009 accounting-immutability justification UX (§4.3). Requires Phase 2 (completed); Phase 3 recommended.
 
 ## Objective
 
@@ -20,24 +20,20 @@ Implement the service billing module, enforce accounting immutability of execute
 
 ## Tasks
 
-### 4.1 Service billing (REQ-011)
+### 4.1 Service billing (REQ-011) — ✅ done
 
-- Link invoice number to closed services
-- Invoice form:
-  - Invoice number
-  - Total amount (computed from service + incidents)
-  - Issue date
-  - Payment status (Pendiente, Pagada, Anulada)
-- Billing view: list of services pending invoicing
-- Filters: by tercero, by date, by payment status
-- Total amount computed taking billing-affecting incidents into account
+- [x] Link invoice number to closed services — `invoice-service-assignment` merged.
+- [x] Invoice form with Invoice number / Total amount / Issue date / Payment status — `invoices-crud` merged.
+- [ ] Billing view: list of services pending invoicing (dedicated `/billing/pending-services` screen) — deferred to a future requirement; currently surfaced per-invoice via the `<ServicePickerDialog />`.
+- [x] Filters (by tercero, by payment status) on the invoices index — `invoices-crud` merged. Date-range filter deferred.
+- [x] Total amount computed taking billing-affecting incidents into account — `App\Services\InvoiceTotalCalculator` (`invoice-service-assignment` merged).
 
-### 4.2 Service-invoice association
+### 4.2 Service-invoice association — ✅ done (PDF pending)
 
-- A closed service can be associated with an invoice
-- View to select multiple services from the same tercero and link them to a single invoice
-- Only the Administrador and Contabilidad roles can bill
-- Invoice PDF generation (informational, not fiscal)
+- [x] A closed service can be associated with an invoice — `invoice-service-assignment` merged.
+- [x] View to select multiple services from the same tercero and link them to a single invoice — `<ServicePickerDialog />` (`invoice-service-assignment` merged).
+- [x] Only the Administrador and Contabilidad roles can bill — `ASSIGN_SERVICES_TO_INVOICES` now enforced at route + controller + UI (`invoice-service-assignment` merged).
+- [ ] Invoice PDF generation (informational, not fiscal) — deferred to a future requirement (needs `barryvdh/laravel-dompdf` or similar).
 
 ### 4.3 Accounting immutability (REQ-009 complement)
 
