@@ -36,6 +36,17 @@ interface InvoiceFormProps {
      */
     forceIncludeCustomer?: ThirdPartyOption[];
     idPrefix?: string;
+    /**
+     * When true, the total_value Input is rendered read-only with a
+     * muted "(calculado automáticamente)" note. Driven by the parent
+     * from invoice.services_count > 0.
+     */
+    isTotalLocked?: boolean;
+    /**
+     * Services-count used in the locked-state note. Only rendered
+     * when isTotalLocked is true.
+     */
+    servicesCount?: number;
 }
 
 function RequiredMarker() {
@@ -58,6 +69,8 @@ export default function InvoiceForm({
     thirdParties,
     forceIncludeCustomer,
     idPrefix = '',
+    isTotalLocked = false,
+    servicesCount = 0,
 }: InvoiceFormProps) {
     const id = (name: string) => (idPrefix ? `${idPrefix}_${name}` : name);
     const invalid = (field: keyof InvoiceFormData) =>
@@ -132,6 +145,7 @@ export default function InvoiceForm({
                             step="0.01"
                             min="0.01"
                             value={data.total_value}
+                            readOnly={isTotalLocked}
                             aria-invalid={invalid('total_value')}
                             onChange={(e) =>
                                 setData('total_value', e.target.value)
@@ -139,6 +153,14 @@ export default function InvoiceForm({
                             className="pl-7 tabular-nums"
                         />
                     </div>
+                    {isTotalLocked && (
+                        <p className="text-xs text-muted-foreground italic">
+                            (calculado automáticamente — hay {servicesCount}{' '}
+                            servicio
+                            {servicesCount === 1 ? '' : 's'} asociado
+                            {servicesCount === 1 ? '' : 's'})
+                        </p>
+                    )}
                     <InputError message={errors.total_value} />
                 </div>
 

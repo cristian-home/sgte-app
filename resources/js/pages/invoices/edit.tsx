@@ -22,6 +22,7 @@ type EditInvoice = Pick<
     | 'payment_status'
     | 'notes'
 > & {
+    services_count?: number;
     third_party?:
         | (Pick<
               ThirdParty,
@@ -85,6 +86,7 @@ export default function InvoicesEdit({
     const forceIncludeCustomer = invoice.third_party
         ? [invoice.third_party]
         : [];
+    const servicesCount = invoice.services_count ?? 0;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -102,6 +104,8 @@ export default function InvoicesEdit({
                                 errors={errors}
                                 thirdParties={thirdParties}
                                 forceIncludeCustomer={forceIncludeCustomer}
+                                isTotalLocked={servicesCount > 0}
+                                servicesCount={servicesCount}
                             />
 
                             <div className="flex items-center gap-4">
