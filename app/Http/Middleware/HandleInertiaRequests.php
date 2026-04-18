@@ -43,6 +43,10 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user(),
                 'permissions' => $request->user()?->getAllPermissions()->pluck('name')->toArray() ?? [],
                 'roles' => $request->user()?->getRoleNames()->toArray() ?? [],
+                'featureFlags' => [
+                    'fuec' => (bool) config('sgte.fuec_enabled'),
+                    'gps' => (bool) config('sgte.gps_enabled'),
+                ],
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
