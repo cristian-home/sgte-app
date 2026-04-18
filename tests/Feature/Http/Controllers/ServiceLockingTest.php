@@ -168,6 +168,52 @@ test('admin update on executed day with justification creates activity log entry
     expect($activity->properties['edited_on_executed_day'])->toBeTrue();
 });
 
+test('admin update on executed day with justification writes exactly one justification entry keyed to the admin causer', function (): void {
+    $admin = User::factory()->create();
+    $admin->assignRole('admin');
+    $this->actingAs($admin);
+
+    DayStatus::whereDate('date', $this->serviceDate)->update([
+        'status' => DayStatusEnum::Executed,
+        'executor_id' => $admin->id,
+        'executed_at' => now(),
+    ]);
+
+    $data = validUpdateData($this);
+    $data['justification'] = 'Corrección de fecha por error de captura inicial — aprobado por supervisor.';
+
+    // Snapshot the count of "justification-bearing" activities before the request
+    // so the strict "exactly one" assertion below excludes any factory-triggered
+    // noise that could already be in the log (e.g. Service::created from setup).
+    $justificationsBefore = Activity::query()
+        ->where('subject_type', Service::class)
+        ->where('subject_id', $this->service->id)
+        ->whereJsonContains('properties->edited_on_executed_day', true)
+        ->count();
+
+    put(route('services.update', $this->service), $data);
+
+    $justificationsAfter = Activity::query()
+        ->where('subject_type', Service::class)
+        ->where('subject_id', $this->service->id)
+        ->whereJsonContains('properties->edited_on_executed_day', true)
+        ->count();
+
+    expect($justificationsAfter - $justificationsBefore)->toBe(1);
+
+    $activity = Activity::query()
+        ->where('subject_type', Service::class)
+        ->where('subject_id', $this->service->id)
+        ->whereJsonContains('properties->edited_on_executed_day', true)
+        ->latest('id')
+        ->first();
+
+    // REQ-009 AC#4: audit trail MUST record causer + justification.
+    expect($activity->causer_id)->toBe($admin->id);
+    expect($activity->properties['justification'])->toBe($data['justification']);
+    expect($activity->properties['edited_on_executed_day'])->toBeTrue();
+});
+
 test('creating a service on an executed day is rejected', function (): void {
     $user = User::factory()->create();
     $user->assignRole('admin');
