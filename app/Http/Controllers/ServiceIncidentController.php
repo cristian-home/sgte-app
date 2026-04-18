@@ -11,8 +11,10 @@ use App\Models\Service;
 use App\Models\ServiceIncident;
 use App\Models\User;
 use App\Notifications\BillingIncidentNotification;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Notification;
 use Inertia\Inertia;
@@ -22,24 +24,74 @@ use Spatie\QueryBuilder\QueryBuilder;
 
 class ServiceIncidentController extends Controller
 {
+    /**
+     * Days-back window used when building the service option list for
+     * the new <ServiceCombobox /> on the create page. Keeps the
+     * payload small on projects with thousands of services while still
+     * covering the typical incident-registration lookback.
+     */
+    private const RECENT_SERVICES_WINDOW_DAYS = 60;
+
     public function index(Request $request): Response
     {
         Gate::authorize(Permission::VIEW_INCIDENTS->value);
+
         $serviceIncidents = QueryBuilder::for(ServiceIncident::class)
-            ->with(['service', 'incidentType', 'registrar'])
+            ->with([
+                'service:id,service_date,vehicle_id,contract_id,driver_id',
+                'service.vehicle:id,plate',
+                'service.contract:id,contract_number',
+                'incidentType:id,code,name,severity',
+                'registrar:id,name',
+            ])
             ->allowedFilters([
                 AllowedFilter::exact('service_id'),
                 AllowedFilter::exact('incident_type_id'),
                 AllowedFilter::exact('is_driver_report'),
                 AllowedFilter::exact('affects_billing'),
+                AllowedFilter::callback('severity', function (Builder $query, $value) {
+                    $first = is_array($value) ? ($value[0] ?? '') : explode(',', (string) $value)[0];
+                    if ($first === '') {
+                        return;
+                    }
+                    $query->whereHas('incidentType', fn (Builder $q) => $q->where('severity', $first));
+                }),
             ])
-            ->allowedSorts(['reported_at', 'incident_type_id'])
-            ->latest('reported_at')
-            ->get();
+            ->allowedSorts(['reported_at', 'service_id', 'incident_type_id'])
+            ->defaultSort('-reported_at')
+            ->paginate($request->perPage())
+            ->withQueryString();
 
         return Inertia::render('service-incidents/index', [
             'serviceIncidents' => $serviceIncidents,
+            'incidentTypes' => IncidentType::query()
+                ->orderBy('name')
+                ->get(['id', 'code', 'name', 'severity', 'affects_billing_default']),
         ]);
+    }
+
+    /**
+     * Build the "last 60 days of services" option list for the
+     * <ServiceCombobox /> primitive. Only returned when the user
+     * hits /service-incidents/create without a ?service_id= query
+     * param — otherwise the form skips the picker entirely.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, Service>
+     */
+    private function recentServiceOptions(): \Illuminate\Database\Eloquent\Collection
+    {
+        $cutoff = Carbon::today()->subDays(self::RECENT_SERVICES_WINDOW_DAYS);
+
+        return Service::query()
+            ->whereDate('service_date', '>=', $cutoff)
+            ->with([
+                'vehicle:id,plate',
+                'contract:id,contract_number',
+                'driver:id,first_name,first_lastname',
+            ])
+            ->orderByDesc('service_date')
+            ->orderByDesc('planned_start_time')
+            ->get(['id', 'service_date', 'vehicle_id', 'contract_id', 'driver_id']);
     }
 
     public function create(Request $request): Response
@@ -48,12 +100,17 @@ class ServiceIncidentController extends Controller
 
         $service = null;
         if ($request->has('service_id')) {
-            $service = Service::with(['vehicle', 'contract.thirdParty'])->find($request->integer('service_id'));
+            $service = Service::with(['vehicle', 'contract.thirdParty', 'driver:id,first_name,first_lastname'])
+                ->find($request->integer('service_id'));
         }
 
         return Inertia::render('service-incidents/create', [
             'incidentTypes' => IncidentType::orderBy('name')->get(),
             'service' => $service,
+            // Only ship the full options list when the form actually
+            // needs the picker — driver-portal + services/show paths
+            // preselect the service and don't need the combobox.
+            'services' => $service ? null : $this->recentServiceOptions(),
         ]);
     }
 
@@ -83,7 +140,14 @@ class ServiceIncidentController extends Controller
     {
         Gate::authorize(Permission::VIEW_INCIDENTS->value);
 
-        $serviceIncident->load(['service', 'incidentType', 'registrar']);
+        $serviceIncident->load([
+            'service:id,service_date,vehicle_id,contract_id,driver_id',
+            'service.vehicle:id,plate',
+            'service.contract:id,contract_number,third_party_id',
+            'service.contract.thirdParty:id,is_natural_person,first_name,first_lastname,company_name',
+            'incidentType:id,code,name,severity,affects_billing_default',
+            'registrar:id,name',
+        ]);
 
         return Inertia::render('service-incidents/show', [
             'serviceIncident' => $serviceIncident,
@@ -94,7 +158,13 @@ class ServiceIncidentController extends Controller
     {
         Gate::authorize(Permission::UPDATE_INCIDENTS->value);
 
-        $serviceIncident->load(['service.vehicle', 'service.contract.thirdParty']);
+        $serviceIncident->load([
+            'service:id,service_date,vehicle_id,contract_id,driver_id',
+            'service.vehicle:id,plate',
+            'service.contract:id,contract_number,third_party_id',
+            'service.contract.thirdParty:id,is_natural_person,first_name,first_lastname,company_name',
+            'incidentType:id,code,name,severity,affects_billing_default',
+        ]);
 
         return Inertia::render('service-incidents/edit', [
             'serviceIncident' => $serviceIncident,

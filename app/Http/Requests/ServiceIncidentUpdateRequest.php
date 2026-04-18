@@ -25,7 +25,17 @@ class ServiceIncidentUpdateRequest extends FormRequest
             'incident_type_id' => ['required', 'integer', 'exists:incident_types,id'],
             'description' => ['required', 'string'],
             'affects_billing' => ['boolean'],
-            'additional_value' => ['nullable', 'numeric', 'between:-9999999999.99,9999999999.99'],
+            'additional_value' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'additional_value.min' => 'El valor adicional no puede ser negativo.',
         ];
     }
 }
