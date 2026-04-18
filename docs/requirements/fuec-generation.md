@@ -2,10 +2,10 @@
 name: fuec-generation
 type: feat
 scope: fuecs
-status: pending
+status: completed
 priority: high
 created_date: 2026-04-18
-completed_date:
+completed_date: 2026-04-18
 srs_refs: ["REQ-007"]
 migration_strategy: new
 ---
@@ -43,24 +43,24 @@ Four design decisions were made explicitly during Q&A:
 
 ### Feature flag
 
-- [ ] **AC1**: WHEN `config('sgte.fuec_enabled')` is `false` AND an admin visits `/fuecs`, `/fuecs/create`, `/fuecs/{id}`, `/fuec-number-ranges`, or `/fuec/verify/{uuid}` THEN all these routes return **404**. The module's controllers are never invoked.
-- [ ] **AC2**: WHEN `config('sgte.fuec_enabled')` is `false` THEN the FUEC sidebar group is hidden from every role. When `true`, it shows only for admin (plus super-admin via `Gate::before`).
-- [ ] **AC3**: WHEN the admin's Inertia page loads THEN `props.auth.featureFlags.fuec` is a boolean matching `config('sgte.fuec_enabled')`. The sidebar reads this prop to decide visibility.
+- [x] **AC1**: WHEN `config('sgte.fuec_enabled')` is `false` AND an admin visits `/fuecs`, `/fuecs/create`, `/fuecs/{id}`, `/fuec-number-ranges`, or `/fuec/verify/{uuid}` THEN all these routes return **404**. The module's controllers are never invoked.
+- [x] **AC2**: WHEN `config('sgte.fuec_enabled')` is `false` THEN the FUEC sidebar group is hidden from every role. When `true`, it shows only for admin (plus super-admin via `Gate::before`).
+- [x] **AC3**: WHEN the admin's Inertia page loads THEN `props.auth.featureFlags.fuec` is a boolean matching `config('sgte.fuec_enabled')`. The sidebar reads this prop to decide visibility.
 
 ### MinTransporte authorization range CRUD
 
-- [ ] **AC4**: WHEN an admin navigates to `/fuec-number-ranges` THEN the page renders a paginated `<DataTable>` with columns **Resolución**, **Año**, **Rango** (range_from – range_to), **Disponibles** (computed: range_to − (used consecutive count within this range) + 1 when the range is active, or the raw remaining slots when inactive), **Activo** (Sí / No), **Notas**, **Acciones**. Create / Edit / Delete actions are available only to admin (permission `MANAGE_FUEC_NUMBER_RANGES`).
-- [ ] **AC5**: WHEN an admin submits a new `FuecNumberRange` with `active: true` AND another range already has `active: true` THEN the new row's insert MUST fail at the DB level via a partial unique index on `(active) WHERE active = true`. The UI surfaces a Spanish error "Ya existe un rango activo. Desactive el rango vigente antes de activar uno nuevo.".
-- [ ] **AC6**: WHEN an admin submits a range with `range_from >= range_to` THEN the FormRequest validator rejects with "El número inicial debe ser menor que el final.".
-- [ ] **AC7**: Non-admin users (operator / driver / accounting) visiting `/fuec-number-ranges` receive **403**.
+- [x] **AC4**: WHEN an admin navigates to `/fuec-number-ranges` THEN the page renders a paginated `<DataTable>` with columns **Resolución**, **Año**, **Rango** (range_from – range_to), **Disponibles** (computed: range_to − (used consecutive count within this range) + 1 when the range is active, or the raw remaining slots when inactive), **Activo** (Sí / No), **Notas**, **Acciones**. Create / Edit / Delete actions are available only to admin (permission `MANAGE_FUEC_NUMBER_RANGES`).
+- [x] **AC5**: WHEN an admin submits a new `FuecNumberRange` with `active: true` AND another range already has `active: true` THEN the new row's insert MUST fail at the DB level via a partial unique index on `(active) WHERE active = true`. The UI surfaces a Spanish error "Ya existe un rango activo. Desactive el rango vigente antes de activar uno nuevo.".
+- [x] **AC6**: WHEN an admin submits a range with `range_from >= range_to` THEN the FormRequest validator rejects with "El número inicial debe ser menor que el final.".
+- [x] **AC7**: Non-admin users (operator / driver / accounting) visiting `/fuec-number-ranges` receive **403**.
 
 ### `fuecs` schema modifications
 
-- [ ] **AC8**: The existing `create_fuecs_table` migration is modified **in place** (per project convention — no backfill migration) to add: `soft_deletes`, `uuid` (string 36, unique index, generated server-side via Laravel's `HasUuids` trait on the model), `pdf_disk` (string, default `'s3'`), `fuec_number_range_id` (foreign key to `fuec_number_ranges`, `onDelete('restrict')`). The `pdf_url` column is **renamed** to `pdf_path` to reflect it's a disk path, not a URL. Indexes are added on `consecutive_number`, `uuid`, and `fuec_number_range_id`.
+- [x] **AC8**: The existing `create_fuecs_table` migration is modified **in place** (per project convention — no backfill migration) to add: `soft_deletes`, `uuid` (string 36, unique index, generated server-side via Laravel's `HasUuids` trait on the model), `pdf_disk` (string, default `'s3'`), `fuec_number_range_id` (foreign key to `fuec_number_ranges`, `onDelete('restrict')`). The `pdf_url` column is **renamed** to `pdf_path` to reflect it's a disk path, not a URL. Indexes are added on `consecutive_number`, `uuid`, and `fuec_number_range_id`.
 
 ### Pre-generation validation
 
-- [ ] **AC9**: WHEN an admin submits `POST /fuecs` with a `service_id` THEN `FuecStoreRequest` + its `after()` hooks run the full gauntlet and reject with a **list** of top-level `errors.fuec_pre_generation.*` Spanish messages when any check fails:
+- [x] **AC9**: WHEN an admin submits `POST /fuecs` with a `service_id` THEN `FuecStoreRequest` + its `after()` hooks run the full gauntlet and reject with a **list** of top-level `errors.fuec_pre_generation.*` Spanish messages when any check fails:
     - Service not found OR not in `ServiceStatus::Closed` → "El servicio no está cerrado."
     - Contract `active === false` OR `today < start_date` OR `today > end_date` → "El contrato asociado no está vigente."
     - Vehicle `soat_due_date < today` → "El SOAT del vehículo está vencido (venció YYYY-MM-DD)."
@@ -71,11 +71,11 @@ Four design decisions were made explicitly during Q&A:
     - No `FuecNumberRange` with `active = true` → "No hay un rango MinTransporte activo. Registre uno en Administración → Rangos FUEC."
     - Active range has zero remaining numbers → "El rango MinTransporte activo se agotó. Registre un nuevo rango."
     - Service already has a FUEC with `status = active` → "Este servicio ya tiene un FUEC vigente. Anule el actual antes de generar uno nuevo."
-- [ ] **AC10**: The validator logic lives in a **reusable** `App\Rules\FuecPreGenerationChecks` class or shared trait so the `FuecGenerator` service can re-run it inside its transaction (defense in depth against race conditions).
+- [x] **AC10**: The validator logic lives in a **reusable** `App\Rules\FuecPreGenerationChecks` class or shared trait so the `FuecGenerator` service can re-run it inside its transaction (defense in depth against race conditions).
 
 ### Generation workflow
 
-- [ ] **AC11**: WHEN `FuecStoreRequest` passes THEN `FuecController@store` delegates to `App\Services\FuecGenerator::generateFor(Service $service, User $causer): Fuec` which, inside a `DB::transaction(...)`:
+- [x] **AC11**: WHEN `FuecStoreRequest` passes THEN `FuecController@store` delegates to `App\Services\FuecGenerator::generateFor(Service $service, User $causer): Fuec` which, inside a `DB::transaction(...)`:
     1. Re-runs the pre-generation checks (race-condition guard).
     2. Locks `fuec_number_ranges` for update (`->lockForUpdate()`) and finds the single active row.
     3. Computes the next consecutive as `max(consecutive_number WHERE fuec_number_range_id = $range->id) + 1` OR `$range->range_from` when no fuec has been issued from this range yet.
@@ -85,34 +85,34 @@ Four design decisions were made explicitly during Q&A:
     7. Persists the PDF to MinIO: `Storage::disk('s3')->put("fuecs/{$consecutive}.pdf", $pdfBytes)`.
     8. Creates the `Fuec` row with `status = 'active'`, `generated_at = now()`, `pdf_path = "fuecs/{$consecutive}.pdf"`, `pdf_disk = 's3'`, `qr_code = $uuid`, `fuec_number_range_id = $range->id`, `consecutive_number = $consecutive`, `service_id = $service->id`, `uuid = $uuid`.
     9. Writes an activity log entry on the fuec with `properties.consecutive_number`, `properties.fuec_number_range_id`, and `causer_id = $causer->id`.
-- [ ] **AC12**: WHEN the generator throws `FuecRangeExhaustedException` THEN the transaction rolls back, no `Fuec` is persisted, no PDF is written to MinIO, and the controller returns a `422` with a Spanish `errors.fuec_pre_generation.range_exhausted` message.
-- [ ] **AC13**: WHEN two admins submit the same service concurrently THEN exactly ONE FUEC is created — the second admin receives the "Este servicio ya tiene un FUEC vigente." error. Protected by the transaction + the re-run of `FuecPreGenerationChecks` inside it + the database-enforced uniqueness guard.
+- [x] **AC12**: WHEN the generator throws `FuecRangeExhaustedException` THEN the transaction rolls back, no `Fuec` is persisted, no PDF is written to MinIO, and the controller returns a `422` with a Spanish `errors.fuec_pre_generation.range_exhausted` message.
+- [x] **AC13**: WHEN two admins submit the same service concurrently THEN exactly ONE FUEC is created — the second admin receives the "Este servicio ya tiene un FUEC vigente." error. Protected by the transaction + the re-run of `FuecPreGenerationChecks` inside it + the database-enforced uniqueness guard.
 
 ### QR + PDF artifact
 
-- [ ] **AC14**: The generated PDF renders on letter paper with, in order: (1) header row — company name placeholder + big "FUEC Nº {consecutive}" + "Resolución {resolution_number} de {resolution_year}" / "Rango autorizado: {range_from}–{range_to}"; (2) Contrato table — número, cliente (name / company), objeto (Spanish label), vigencia; (3) Vehículo table — placa, marca, línea, modelo año, capacidad; (4) Conductor table — nombre completo, cédula (document_type + identification_number), categoría + vencimiento de licencia; (5) Servicio table — fecha, hora planificada, duración estimada, origen (municipio + dirección), destino (municipio + dirección); (6) QR verification box with the QR image (200×200) + the verification URL printed beneath in font-mono; (7) footer on every page — "Documento generado por SGTE — verificable en: {url}" + legal disclaimer "Este documento es de uso único, intransferible, y únicamente es válido junto con la tarjeta de operación del vehículo y la licencia de conducción del conductor.".
-- [ ] **AC15**: WHEN an admin visits `GET /fuecs/{fuec}/pdf` THEN the server streams the stored PDF bytes from `Storage::disk($fuec->pdf_disk)->get($fuec->pdf_path)` with `Content-Type: application/pdf` and `Content-Disposition: inline; filename=fuec-{consecutive}.pdf`. No regeneration — the blob is static post-creation.
+- [x] **AC14**: The generated PDF renders on letter paper with, in order: (1) header row — company name placeholder + big "FUEC Nº {consecutive}" + "Resolución {resolution_number} de {resolution_year}" / "Rango autorizado: {range_from}–{range_to}"; (2) Contrato table — número, cliente (name / company), objeto (Spanish label), vigencia; (3) Vehículo table — placa, marca, línea, modelo año, capacidad; (4) Conductor table — nombre completo, cédula (document_type + identification_number), categoría + vencimiento de licencia; (5) Servicio table — fecha, hora planificada, duración estimada, origen (municipio + dirección), destino (municipio + dirección); (6) QR verification box with the QR image (200×200) + the verification URL printed beneath in font-mono; (7) footer on every page — "Documento generado por SGTE — verificable en: {url}" + legal disclaimer "Este documento es de uso único, intransferible, y únicamente es válido junto con la tarjeta de operación del vehículo y la licencia de conducción del conductor.".
+- [x] **AC15**: WHEN an admin visits `GET /fuecs/{fuec}/pdf` THEN the server streams the stored PDF bytes from `Storage::disk($fuec->pdf_disk)->get($fuec->pdf_path)` with `Content-Type: application/pdf` and `Content-Disposition: inline; filename=fuec-{consecutive}.pdf`. No regeneration — the blob is static post-creation.
 
 ### Public verification endpoint
 
-- [ ] **AC16**: WHEN an **unauthenticated** user visits `GET /fuec/verify/{uuid}` AND the module is enabled AND the uuid matches an `active` FUEC THEN the server renders the public Blade view `fuecs/verify.blade.php` (NOT Inertia — no auth, simpler, shareable as a printed QR) with: a large green "VIGENTE" badge, the consecutive number, generation timestamp, contract number, vehicle plate, driver full name, service date+time+route (city→city), and the SGTE branding.
-- [ ] **AC17**: WHEN the same URL is visited AND the FUEC's `status = 'cancelled'` THEN the page renders a large red "ANULADO" badge + cancellation timestamp + the same summary fields as AC16 (so the verifier sees why the document is invalid).
-- [ ] **AC18**: WHEN the UUID doesn't match any `Fuec` OR the module is disabled THEN the response is **404**.
+- [x] **AC16**: WHEN an **unauthenticated** user visits `GET /fuec/verify/{uuid}` AND the module is enabled AND the uuid matches an `active` FUEC THEN the server renders the public Blade view `fuecs/verify.blade.php` (NOT Inertia — no auth, simpler, shareable as a printed QR) with: a large green "VIGENTE" badge, the consecutive number, generation timestamp, contract number, vehicle plate, driver full name, service date+time+route (city→city), and the SGTE branding.
+- [x] **AC17**: WHEN the same URL is visited AND the FUEC's `status = 'cancelled'` THEN the page renders a large red "ANULADO" badge + cancellation timestamp + the same summary fields as AC16 (so the verifier sees why the document is invalid).
+- [x] **AC18**: WHEN the UUID doesn't match any `Fuec` OR the module is disabled THEN the response is **404**.
 
 ### Cancel action
 
-- [ ] **AC19**: WHEN an admin `POST`s `/fuecs/{fuec}/cancel` with a `reason` (min:10 max:500) body AND the target FUEC is `active` THEN the server flips `status` to `cancelled`, writes an activity log entry with `properties.reason`, `properties.cancelled_at`, `causer_id = $admin->id`. Non-admin users receive **403**. Missing or short reason triggers a **422** with `errors.reason`.
-- [ ] **AC20**: WHEN the same endpoint is hit on a FUEC that's already `cancelled` THEN the response is **422** with "Este FUEC ya está anulado." — no second activity entry is written.
+- [x] **AC19**: WHEN an admin `POST`s `/fuecs/{fuec}/cancel` with a `reason` (min:10 max:500) body AND the target FUEC is `active` THEN the server flips `status` to `cancelled`, writes an activity log entry with `properties.reason`, `properties.cancelled_at`, `causer_id = $admin->id`. Non-admin users receive **403**. Missing or short reason triggers a **422** with `errors.reason`.
+- [x] **AC20**: WHEN the same endpoint is hit on a FUEC that's already `cancelled` THEN the response is **422** with "Este FUEC ya está anulado." — no second activity entry is written.
 
 ### Rebuilt Inertia pages + pill primitive
 
-- [ ] **AC21**: `resources/js/pages/fuecs/index.tsx` is rewritten around `<DataTable>` + `useServerTable` with 6 columns (Consecutivo mono / Servicio link → `/services/{id}` / Vehículo plate / Conductor name / Estado `<FuecStatusPill />` / Acciones). Filters: `status` (active / cancelled). Sort: `consecutive_number` / `generated_at`. The `create` action opens `fuecs/create.tsx` directly (not a modal — the pre-gen validation requires a full page for the error list).
-- [ ] **AC22**: `resources/js/pages/fuecs/show.tsx` is rewritten with 4 Card sections: Header (consecutive + `<FuecStatusPill />` + Descargar PDF + Cancelar button), Servicio summary, PDF preview iframe (`<iframe src="/fuecs/{id}/pdf" />`), QR + verification URL block (shows the QR image re-rendered client-side via `qrcode.react` OR just points to `/fuec/verify/{uuid}` with a button — pick the simpler path; since the PDF already embeds the QR, a plain link + URL text is sufficient). The Cancelar button is a shadcn `<AlertDialog>` — on confirm it POSTs to `/fuecs/{fuec}/cancel` with the reason captured in a textarea.
+- [x] **AC21**: `resources/js/pages/fuecs/index.tsx` is rewritten around `<DataTable>` + `useServerTable` with 6 columns (Consecutivo mono / Servicio link → `/services/{id}` / Vehículo plate / Conductor name / Estado `<FuecStatusPill />` / Acciones). Filters: `status` (active / cancelled). Sort: `consecutive_number` / `generated_at`. The `create` action opens `fuecs/create.tsx` directly (not a modal — the pre-gen validation requires a full page for the error list).
+- [x] **AC22**: `resources/js/pages/fuecs/show.tsx` is rewritten with 4 Card sections: Header (consecutive + `<FuecStatusPill />` + Descargar PDF + Cancelar button), Servicio summary, PDF preview iframe (`<iframe src="/fuecs/{id}/pdf" />`), QR + verification URL block (shows the QR image re-rendered client-side via `qrcode.react` OR just points to `/fuec/verify/{uuid}` with a button — pick the simpler path; since the PDF already embeds the QR, a plain link + URL text is sufficient). The Cancelar button is a shadcn `<AlertDialog>` — on confirm it POSTs to `/fuecs/{fuec}/cancel` with the reason captured in a textarea.
 
 ### Shared primitives
 
-- [ ] **AC23**: `resources/js/components/fuecs/fuec-status-pill.tsx` is a new shared primitive — `active → <Badge variant="default">Vigente</Badge>`, `cancelled → <Badge variant="destructive">Anulado</Badge>`. Mirrors the pattern from `<PaymentStatusPill />` — it's a manual-enum state, not date-derived, so it lives alongside its feature folder rather than in `resources/js/lib/document-status.ts`.
-- [ ] **AC24**: `resources/js/components/invoices/service-picker-dialog.tsx` gains a new optional `mode: 'invoice' | 'fuec'` prop (defaults to `'invoice'` for backward compatibility). When `mode === 'fuec'`: (a) filter excludes services with an `active` fuec instead of services with an `invoice_id`; (b) selection is single-select (radio-style) instead of multi-select (checkbox); (c) submit button label reads "Seleccionar servicio" instead of "Agregar a factura". Corresponding API endpoint — the candidate-services list for FUEC creation lives on `FuecController@candidateServices` (`GET /fuecs/candidate-services`), parallel to `InvoiceController@candidateServices`.
+- [x] **AC23**: `resources/js/components/fuecs/fuec-status-pill.tsx` is a new shared primitive — `active → <Badge variant="default">Vigente</Badge>`, `cancelled → <Badge variant="destructive">Anulado</Badge>`. Mirrors the pattern from `<PaymentStatusPill />` — it's a manual-enum state, not date-derived, so it lives alongside its feature folder rather than in `resources/js/lib/document-status.ts`.
+- [x] **AC24**: `resources/js/components/invoices/service-picker-dialog.tsx` gains a new optional `mode: 'invoice' | 'fuec'` prop (defaults to `'invoice'` for backward compatibility). When `mode === 'fuec'`: (a) filter excludes services with an `active` fuec instead of services with an `invoice_id`; (b) selection is single-select (radio-style) instead of multi-select (checkbox); (c) submit button label reads "Seleccionar servicio" instead of "Agregar a factura". Corresponding API endpoint — the candidate-services list for FUEC creation lives on `FuecController@candidateServices` (`GET /fuecs/candidate-services`), parallel to `InvoiceController@candidateServices`.
 
 ## Technical Specification
 
@@ -216,25 +216,25 @@ After implementing: `./vendor/bin/sail artisan migrate:fresh --seed --no-interac
 
 ### Backend — Infrastructure
 
-- [ ] **Task B1**: Feature flag wiring.
+- [x] **Task B1**: Feature flag wiring.
     - Create `config/sgte.php` with `return ['fuec_enabled' => env('SGTE_FUEC_ENABLED', false)];`.
     - Create `App\Http\Middleware\EnsureFuecEnabled` that `abort(404)` when `! config('sgte.fuec_enabled')`. Register it in `bootstrap/app.php`'s `->alias(['fuec.enabled' => EnsureFuecEnabled::class])`.
     - Update `app/Http/Middleware/HandleInertiaRequests.php` to share `auth.featureFlags` with `fuec: (bool) config('sgte.fuec_enabled'), gps: (bool) config('sgte.gps_enabled', false)` (future-proofs the shape for REQ-010).
     - Add `SGTE_FUEC_ENABLED=true` to `.env.example` with a brief comment.
 
-- [ ] **Task B2**: Install `simplesoftwareio/simple-qrcode ^4.x` via composer. Verify its service provider auto-registers (it does by default in Laravel 12). Verify the `QrCode` facade works via `./vendor/bin/sail artisan tinker` with a throwaway call `QrCode::size(200)->generate('https://example.com')` (returns an SVG string).
+- [x] **Task B2**: Install `simplesoftwareio/simple-qrcode ^4.x` via composer. Verify its service provider auto-registers (it does by default in Laravel 12). Verify the `QrCode` facade works via `./vendor/bin/sail artisan tinker` with a throwaway call `QrCode::size(200)->generate('https://example.com')` (returns an SVG string).
 
 ### Backend — Data layer
 
-- [ ] **Task B3**: New migration `create_fuec_number_ranges_table` with columns per the Data Model section. Include the partial unique index on `(active) WHERE active = true` via `DB::statement('CREATE UNIQUE INDEX fuec_number_ranges_one_active_uidx ON fuec_number_ranges (active) WHERE active = true;')` (Postgres). For the SQLite test env, conditionally skip the partial-index SQL via `if (Schema::getConnection()->getDriverName() === 'pgsql')` — the controller validator is the backstop.
+- [x] **Task B3**: New migration `create_fuec_number_ranges_table` with columns per the Data Model section. Include the partial unique index on `(active) WHERE active = true` via `DB::statement('CREATE UNIQUE INDEX fuec_number_ranges_one_active_uidx ON fuec_number_ranges (active) WHERE active = true;')` (Postgres). For the SQLite test env, conditionally skip the partial-index SQL via `if (Schema::getConnection()->getDriverName() === 'pgsql')` — the controller validator is the backstop.
 
-- [ ] **Task B4**: New `App\Models\FuecNumberRange` with `$fillable` covering every column except `id` / timestamps; `$casts = ['resolution_year' => 'integer', 'range_from' => 'integer', 'range_to' => 'integer', 'active' => 'boolean']`; `LogsActivity` trait with `logOnly(['resolution_number', 'resolution_year', 'range_from', 'range_to', 'active'])`; a `fuecs(): HasMany` relation to `Fuec::class`; a `remaining(): int` accessor = `range_to - (Fuec::where('fuec_number_range_id', $this->id)->max('consecutive_number') ?? ($range_from - 1))`.
+- [x] **Task B4**: New `App\Models\FuecNumberRange` with `$fillable` covering every column except `id` / timestamps; `$casts = ['resolution_year' => 'integer', 'range_from' => 'integer', 'range_to' => 'integer', 'active' => 'boolean']`; `LogsActivity` trait with `logOnly(['resolution_number', 'resolution_year', 'range_from', 'range_to', 'active'])`; a `fuecs(): HasMany` relation to `Fuec::class`; a `remaining(): int` accessor = `range_to - (Fuec::where('fuec_number_range_id', $this->id)->max('consecutive_number') ?? ($range_from - 1))`.
 
-- [ ] **Task B5**: New `App\Models\FuecNumberRangeFactory` producing random valid ranges. Used by tests.
+- [x] **Task B5**: New `App\Models\FuecNumberRangeFactory` producing random valid ranges. Used by tests.
 
-- [ ] **Task B6**: Modify `2026_02_27_225426_create_fuecs_table.php` — add `uuid`, `pdf_disk`, `fuec_number_range_id` columns (with FK + `onDelete('restrict')`), rename `pdf_url` → `pdf_path`, add `softDeletes()`, add the three new indexes. Edit the Schema::create closure directly (per project convention).
+- [x] **Task B6**: Modify `2026_02_27_225426_create_fuecs_table.php` — add `uuid`, `pdf_disk`, `fuec_number_range_id` columns (with FK + `onDelete('restrict')`), rename `pdf_url` → `pdf_path`, add `softDeletes()`, add the three new indexes. Edit the Schema::create closure directly (per project convention).
 
-- [ ] **Task B7**: Update `app/Models/Fuec.php`:
+- [x] **Task B7**: Update `app/Models/Fuec.php`:
     - Add `HasUuids` trait (`Illuminate\Database\Eloquent\Concerns\HasUuids`) — overrides `uniqueIds()` to return `['uuid']` so Laravel generates it automatically on create.
     - Add `$fillable`: `uuid`, `pdf_disk`, `pdf_path` (remove `pdf_url`), `fuec_number_range_id`.
     - Add `SoftDeletes` trait.
@@ -243,35 +243,35 @@ After implementing: `./vendor/bin/sail artisan migrate:fresh --seed --no-interac
     - Update `logOnly` in `getActivitylogOptions` to include the new columns.
     - Update `toSearchableArray()` to project the new keys (rename `pdf_url` → `pdf_path`, add `uuid` + `fuec_number_range_id`).
 
-- [ ] **Task B8**: Update `database/factories/FuecFactory.php` (if it exists — create if missing) to produce a FUEC with a pre-existing `FuecNumberRange`, default `status = active`, synthetic UUID + `pdf_path`.
+- [x] **Task B8**: Update `database/factories/FuecFactory.php` (if it exists — create if missing) to produce a FUEC with a pre-existing `FuecNumberRange`, default `status = active`, synthetic UUID + `pdf_path`.
 
-- [ ] **Task B9**: Add `MANAGE_FUEC_NUMBER_RANGES = 'fuec-number-ranges.manage'` case to `app/Enums/Permission.php`. Add a human label in `labels()`. Grant to Admin in `database/migrations/2026_03_13_000000_seed_catalog_data.php` (or wherever the role-permission seeding lives — verify by grep).
+- [x] **Task B9**: Add `MANAGE_FUEC_NUMBER_RANGES = 'fuec-number-ranges.manage'` case to `app/Enums/Permission.php`. Add a human label in `labels()`. Grant to Admin in `database/migrations/2026_03_13_000000_seed_catalog_data.php` (or wherever the role-permission seeding lives — verify by grep).
 
-- [ ] **Task B10**: Run `./vendor/bin/sail artisan enum:typescript` to regenerate `resources/js/enums/Permission.ts`.
+- [x] **Task B10**: Run `./vendor/bin/sail artisan enum:typescript` to regenerate `resources/js/enums/Permission.ts`.
 
 ### Backend — Validation + generation core
 
-- [ ] **Task B11**: Extract the shared document-expiry + contract-coverage checks from `app/Http/Requests/ServiceStoreRequest.php` into a reusable class `app/Support/ServiceDocumentChecks.php` with static methods: `contractCoversDate(Contract $contract, Carbon $date): ?string`, `vehicleDocumentsValid(Vehicle $vehicle, Carbon $date): array<string>`, `driverLicenseValid(Driver $driver, Vehicle $vehicle, Carbon $date): array<string>`. Each returns a Spanish error message (or array of messages) on failure, or `null` / `[]` when valid. The `LICENSE_CATEGORY_MAP` constant moves to this class (or to a new `App\Support\LicenseCategory` enum-like helper — pick the lighter option). Update `ServiceStoreRequest` to call the extracted methods.
+- [x] **Task B11**: Extract the shared document-expiry + contract-coverage checks from `app/Http/Requests/ServiceStoreRequest.php` into a reusable class `app/Support/ServiceDocumentChecks.php` with static methods: `contractCoversDate(Contract $contract, Carbon $date): ?string`, `vehicleDocumentsValid(Vehicle $vehicle, Carbon $date): array<string>`, `driverLicenseValid(Driver $driver, Vehicle $vehicle, Carbon $date): array<string>`. Each returns a Spanish error message (or array of messages) on failure, or `null` / `[]` when valid. The `LICENSE_CATEGORY_MAP` constant moves to this class (or to a new `App\Support\LicenseCategory` enum-like helper — pick the lighter option). Update `ServiceStoreRequest` to call the extracted methods.
 
-- [ ] **Task B12**: New `App\Rules\FuecPreGenerationChecks` — an invokable class that accepts a `Service $service` in its constructor and, when invoked by a `Validator::after()` hook, appends Spanish error messages for every failed check per AC9. Internally calls `ServiceDocumentChecks::*` + checks for an active `FuecNumberRange` + range availability + no active FUEC on the service.
+- [x] **Task B12**: New `App\Rules\FuecPreGenerationChecks` — an invokable class that accepts a `Service $service` in its constructor and, when invoked by a `Validator::after()` hook, appends Spanish error messages for every failed check per AC9. Internally calls `ServiceDocumentChecks::*` + checks for an active `FuecNumberRange` + range availability + no active FUEC on the service.
 
-- [ ] **Task B13**: New `App\Http\Requests\FuecStoreRequest`:
+- [x] **Task B13**: New `App\Http\Requests\FuecStoreRequest`:
     - `authorize()` → `Gate::allows(Permission::GENERATE_FUEC->value)`.
     - `rules()` → `['service_id' => ['required', 'integer', 'exists:services,id']]`.
     - `after()` → returns an array with one closure that resolves `$this->service_id` to a `Service` and runs `FuecPreGenerationChecks` against it.
 
-- [ ] **Task B14**: New `App\Http\Requests\FuecCancelRequest`:
+- [x] **Task B14**: New `App\Http\Requests\FuecCancelRequest`:
     - `authorize()` → `Gate::allows(Permission::GENERATE_FUEC->value)`.
     - `rules()` → `['reason' => ['required', 'string', 'min:10', 'max:500']]`.
     - `messages()` → Spanish messages for each rule.
 
-- [ ] **Task B15**: New `App\Exceptions\FuecRangeExhaustedException` (extends `RuntimeException`) with a static `for(FuecNumberRange $range): self` factory.
+- [x] **Task B15**: New `App\Exceptions\FuecRangeExhaustedException` (extends `RuntimeException`) with a static `for(FuecNumberRange $range): self` factory.
 
-- [ ] **Task B16**: New `App\Services\FuecGenerator` with public method `generateFor(Service $service, User $causer): Fuec` implementing the 9-step transaction per AC11. Private helpers: `resolveActiveRange(): FuecNumberRange` (locked select), `computeNextConsecutive(FuecNumberRange $range): int` (max + 1 or range_from), `renderPdf(Service $service, Fuec $fuec, FuecNumberRange $range): string` (returns binary PDF bytes), `storePdf(string $bytes, int $consecutive): array{disk: string, path: string}`. The service is constructor-injectable so tests can mock the storage disk + QR renderer.
+- [x] **Task B16**: New `App\Services\FuecGenerator` with public method `generateFor(Service $service, User $causer): Fuec` implementing the 9-step transaction per AC11. Private helpers: `resolveActiveRange(): FuecNumberRange` (locked select), `computeNextConsecutive(FuecNumberRange $range): int` (max + 1 or range_from), `renderPdf(Service $service, Fuec $fuec, FuecNumberRange $range): string` (returns binary PDF bytes), `storePdf(string $bytes, int $consecutive): array{disk: string, path: string}`. The service is constructor-injectable so tests can mock the storage disk + QR renderer.
 
 ### Backend — Controllers + routes
 
-- [ ] **Task B17**: Rewrite `app/Http/Controllers/FuecController.php`:
+- [x] **Task B17**: Rewrite `app/Http/Controllers/FuecController.php`:
     - `index` — paginate via `QueryBuilder::for(Fuec::class)->with(['service.vehicle:id,plate', 'service.driver:id,first_name,first_lastname', 'fuecNumberRange:id,resolution_number,resolution_year'])->allowedFilters([AllowedFilter::exact('status'), 'consecutive_number'])->allowedSorts(['consecutive_number', 'generated_at'])->defaultSort('-generated_at')->paginate($request->perPage())->withQueryString()`.
     - `create` — Inertia page; payload includes `mostRecentCandidate` (the most recent closed service with no active FUEC) as a convenience.
     - `candidateServices` — returns JSON list of closed services with no active FUEC (paginated + searchable). Parallel to `InvoiceController@candidateServices`.
@@ -281,53 +281,53 @@ After implementing: `./vendor/bin/sail artisan migrate:fresh --seed --no-interac
     - `cancel` — accepts `FuecCancelRequest`, transitions `active` → `cancelled`, writes activity entry, returns redirect to show.
     - Remove `edit`, `update`, `destroy`.
 
-- [ ] **Task B18**: New `app/Http/Controllers/FuecNumberRangeController.php` — standard resource controller with `Gate::authorize(Permission::MANAGE_FUEC_NUMBER_RANGES->value)` on every action, and an `active` toggle enforced by catching the unique-index violation and translating it into a validator error.
+- [x] **Task B18**: New `app/Http/Controllers/FuecNumberRangeController.php` — standard resource controller with `Gate::authorize(Permission::MANAGE_FUEC_NUMBER_RANGES->value)` on every action, and an `active` toggle enforced by catching the unique-index violation and translating it into a validator error.
 
-- [ ] **Task B19**: New `app/Http/Requests/FuecNumberRangeStoreRequest` + `FuecNumberRangeUpdateRequest` with `resolution_number` (required, string, max:50), `resolution_year` (required, integer, between:2000:2100), `range_from` (required, integer, min:1), `range_to` (required, integer, gt:range_from), `active` (boolean), `notes` (nullable, string, max:1000).
+- [x] **Task B19**: New `app/Http/Requests/FuecNumberRangeStoreRequest` + `FuecNumberRangeUpdateRequest` with `resolution_number` (required, string, max:50), `resolution_year` (required, integer, between:2000:2100), `range_from` (required, integer, min:1), `range_to` (required, integer, gt:range_from), `active` (boolean), `notes` (nullable, string, max:1000).
 
-- [ ] **Task B20**: New `app/Http/Controllers/FuecVerifyController.php` — public, single `show(string $uuid): \Illuminate\Contracts\View\View` action. Looks up the FUEC by `uuid` with eager-loaded `service.vehicle.municipality.department`, `service.contract.thirdParty.documentType`, `service.driver.documentType`, `fuecNumberRange`. Renders `view('fuecs.verify', compact('fuec'))`. 404s when the UUID doesn't match.
+- [x] **Task B20**: New `app/Http/Controllers/FuecVerifyController.php` — public, single `show(string $uuid): \Illuminate\Contracts\View\View` action. Looks up the FUEC by `uuid` with eager-loaded `service.vehicle.municipality.department`, `service.contract.thirdParty.documentType`, `service.driver.documentType`, `fuecNumberRange`. Renders `view('fuecs.verify', compact('fuec'))`. 404s when the UUID doesn't match.
 
-- [ ] **Task B21**: Rewrite the FUEC routes block in `routes/web.php` per the Routes table above. Group all authenticated routes under `Route::middleware(['auth', 'verified', 'fuec.enabled'])` with individual `can:*` middlewares per action. Register `/fuec/verify/{uuid}` OUTSIDE the auth group, gated only by `fuec.enabled`.
+- [x] **Task B21**: Rewrite the FUEC routes block in `routes/web.php` per the Routes table above. Group all authenticated routes under `Route::middleware(['auth', 'verified', 'fuec.enabled'])` with individual `can:*` middlewares per action. Register `/fuec/verify/{uuid}` OUTSIDE the auth group, gated only by `fuec.enabled`.
 
 ### Frontend — Primitives
 
-- [ ] **Task F1**: New `resources/js/components/fuecs/fuec-status-pill.tsx` — `<Badge variant>` with the two states (Vigente / Anulado). Reference: `resources/js/components/invoices/payment-status-pill.tsx`.
+- [x] **Task F1**: New `resources/js/components/fuecs/fuec-status-pill.tsx` — `<Badge variant>` with the two states (Vigente / Anulado). Reference: `resources/js/components/invoices/payment-status-pill.tsx`.
 
-- [ ] **Task F2**: Extend `resources/js/components/invoices/service-picker-dialog.tsx` with an optional `mode?: 'invoice' | 'fuec'` prop (defaults to `'invoice'`). The internal logic branches on `mode` to control (a) the candidate-services endpoint URL (`/invoices/{id}/candidate-services` vs `/fuecs/candidate-services`), (b) single-select radio vs multi-select checkbox rendering, (c) submit label. Type-safe — the callback signature widens with a discriminated union. The invoice callers pass no `mode` prop → backward compatible.
+- [x] **Task F2**: Extend `resources/js/components/invoices/service-picker-dialog.tsx` with an optional `mode?: 'invoice' | 'fuec'` prop (defaults to `'invoice'`). The internal logic branches on `mode` to control (a) the candidate-services endpoint URL (`/invoices/{id}/candidate-services` vs `/fuecs/candidate-services`), (b) single-select radio vs multi-select checkbox rendering, (c) submit label. Type-safe — the callback signature widens with a discriminated union. The invoice callers pass no `mode` prop → backward compatible.
 
 ### Frontend — FUEC pages
 
-- [ ] **Task F3**: Rewrite `resources/js/pages/fuecs/index.tsx` — `<DataTable>` + `useServerTable`, 6 columns, `status` filter, Crear button link to `/fuecs/create`. Row tint: none (no orthogonal "por vencer" state). Reference convention: `resources/js/pages/invoices/index.tsx` after invoices-crud.
+- [x] **Task F3**: Rewrite `resources/js/pages/fuecs/index.tsx` — `<DataTable>` + `useServerTable`, 6 columns, `status` filter, Crear button link to `/fuecs/create`. Row tint: none (no orthogonal "por vencer" state). Reference convention: `resources/js/pages/invoices/index.tsx` after invoices-crud.
 
-- [ ] **Task F4**: New `resources/js/pages/fuecs/columns.tsx` — 6 `ColumnDef<FuecRow>` entries (Consecutivo / Servicio link / Vehículo / Conductor / Estado pill / Acciones → "Ver" icon link to show page; no Eliminar since delete isn't a verb).
+- [x] **Task F4**: New `resources/js/pages/fuecs/columns.tsx` — 6 `ColumnDef<FuecRow>` entries (Consecutivo / Servicio link / Vehículo / Conductor / Estado pill / Acciones → "Ver" icon link to show page; no Eliminar since delete isn't a verb).
 
-- [ ] **Task F5**: Rewrite `resources/js/pages/fuecs/create.tsx` — inline `<ServicePickerDialog mode="fuec">` for picking the service; a pre-gen validation summary renders before the submit button (list of checks; unchecked items grey'd out; failing items rendered in destructive color with the returned Spanish message); submit button POSTs `/fuecs` with `service_id`. Inertia's `errors.fuec_pre_generation.*` surface as top-level list items.
+- [x] **Task F5**: Rewrite `resources/js/pages/fuecs/create.tsx` — inline `<ServicePickerDialog mode="fuec">` for picking the service; a pre-gen validation summary renders before the submit button (list of checks; unchecked items grey'd out; failing items rendered in destructive color with the returned Spanish message); submit button POSTs `/fuecs` with `service_id`. Inertia's `errors.fuec_pre_generation.*` surface as top-level list items.
 
-- [ ] **Task F6**: Rewrite `resources/js/pages/fuecs/show.tsx` — 4 Card sections per AC22. Cancelar button uses shadcn `<AlertDialog>` with a textarea for `reason` (min:10 max:500, client-side `required + minLength` for UX). Descargar PDF is a plain `<a href="/fuecs/{id}/pdf" target="_blank">` with the icon.
+- [x] **Task F6**: Rewrite `resources/js/pages/fuecs/show.tsx` — 4 Card sections per AC22. Cancelar button uses shadcn `<AlertDialog>` with a textarea for `reason` (min:10 max:500, client-side `required + minLength` for UX). Descargar PDF is a plain `<a href="/fuecs/{id}/pdf" target="_blank">` with the icon.
 
 ### Frontend — FuecNumberRange pages
 
-- [ ] **Task F7**: New `resources/js/pages/fuec-number-ranges/index.tsx` — DataTable with 6 columns. Reference convention: `resources/js/pages/eps/index.tsx` (simple catalog module).
+- [x] **Task F7**: New `resources/js/pages/fuec-number-ranges/index.tsx` — DataTable with 6 columns. Reference convention: `resources/js/pages/eps/index.tsx` (simple catalog module).
 
-- [ ] **Task F8**: New `resources/js/pages/fuec-number-ranges/create.tsx` + `edit.tsx` — shared form component extracted to `resources/js/components/fuec-number-ranges/fuec-number-range-form.tsx`. Fields: `resolution_number`, `resolution_year` (Input type=number), `range_from`, `range_to`, `active` (Switch), `notes` (Textarea).
+- [x] **Task F8**: New `resources/js/pages/fuec-number-ranges/create.tsx` + `edit.tsx` — shared form component extracted to `resources/js/components/fuec-number-ranges/fuec-number-range-form.tsx`. Fields: `resolution_number`, `resolution_year` (Input type=number), `range_from`, `range_to`, `active` (Switch), `notes` (Textarea).
 
-- [ ] **Task F9**: New `resources/js/pages/fuec-number-ranges/show.tsx` — 2 Card sections: Datos de la Resolución + Estadísticas de Uso (consecutivos usados / restantes / primer / último FUEC emitido). Links back to `/fuecs?filter[fuec_number_range_id]={id}` when a service's filter can be wired (optional — can ship without it).
+- [x] **Task F9**: New `resources/js/pages/fuec-number-ranges/show.tsx` — 2 Card sections: Datos de la Resolución + Estadísticas de Uso (consecutivos usados / restantes / primer / último FUEC emitido). Links back to `/fuecs?filter[fuec_number_range_id]={id}` when a service's filter can be wired (optional — can ship without it).
 
 ### Frontend — Sidebar + types
 
-- [ ] **Task F10**: Update `resources/js/components/app-sidebar.tsx` to read `auth.featureFlags.fuec` from the shared Inertia props; hide the FUEC group entry (and its "Documentos FUEC" + new "Rangos FUEC" entries) when the flag is `false`. Verify the sidebar gracefully handles older sessions / unauthenticated requests where `auth.featureFlags` might be undefined (fall back to `false`).
+- [x] **Task F10**: Update `resources/js/components/app-sidebar.tsx` to read `auth.featureFlags.fuec` from the shared Inertia props; hide the FUEC group entry (and its "Documentos FUEC" + new "Rangos FUEC" entries) when the flag is `false`. Verify the sidebar gracefully handles older sessions / unauthenticated requests where `auth.featureFlags` might be undefined (fall back to `false`).
 
-- [ ] **Task F11**: Update `resources/js/types/auth.ts` (or wherever `Auth` is typed) to include `featureFlags: { fuec: boolean; gps: boolean }`.
+- [x] **Task F11**: Update `resources/js/types/auth.ts` (or wherever `Auth` is typed) to include `featureFlags: { fuec: boolean; gps: boolean }`.
 
 ### Blade templates
 
-- [ ] **Task D1**: New `resources/views/fuecs/pdf.blade.php` — letter-paper, dompdf-compatible HTML (no flex/grid, use tables + inline styles, DejaVu Sans font). Structure per AC14. Reference: `resources/views/invoices/pdf.blade.php`.
+- [x] **Task D1**: New `resources/views/fuecs/pdf.blade.php` — letter-paper, dompdf-compatible HTML (no flex/grid, use tables + inline styles, DejaVu Sans font). Structure per AC14. Reference: `resources/views/invoices/pdf.blade.php`.
 
-- [ ] **Task D2**: New `resources/views/fuecs/verify.blade.php` — standalone Blade page (no `@extends('layouts.app')` — a self-contained HTML document with minimal inline CSS + the shadcn color palette hex values). Renders the VIGENTE/ANULADO badge (big, top-center), the summary fields (2-col grid), and SGTE branding at the footer. Legible on mobile (responsive viewport meta tag, padding).
+- [x] **Task D2**: New `resources/views/fuecs/verify.blade.php` — standalone Blade page (no `@extends('layouts.app')` — a self-contained HTML document with minimal inline CSS + the shadcn color palette hex values). Renders the VIGENTE/ANULADO badge (big, top-center), the summary fields (2-col grid), and SGTE branding at the footer. Legible on mobile (responsive viewport meta tag, padding).
 
 ### Tests
 
-- [ ] **Task T1**: `tests/Feature/Services/FuecGeneratorTest.php` — **9 scenarios**:
+- [x] **Task T1**: `tests/Feature/Services/FuecGeneratorTest.php` — **9 scenarios**:
     1. Happy path — returns Fuec with next consecutive, writes PDF to the fake `s3` disk (use `Storage::fake('s3')`), activity log entry exists.
     2. Service not closed → throws ValidationException with Spanish message.
     3. Contract not vigente → rejects.
@@ -338,23 +338,23 @@ After implementing: `./vendor/bin/sail artisan migrate:fresh --seed --no-interac
     8. Incompatible license category → rejects.
     9. Range exhausted → throws `FuecRangeExhaustedException`.
 
-- [ ] **Task T2**: `tests/Feature/Http/Controllers/FuecControllerTest.php` — **happy-path POST, auth 403s for non-admin, feature-flag 404, pdf streams, cancel happy path, cancel on already-cancelled 422, candidateServices endpoint shape**. ~10 tests.
+- [x] **Task T2**: `tests/Feature/Http/Controllers/FuecControllerTest.php` — **happy-path POST, auth 403s for non-admin, feature-flag 404, pdf streams, cancel happy path, cancel on already-cancelled 422, candidateServices endpoint shape**. ~10 tests.
 
-- [ ] **Task T3**: `tests/Feature/Http/Controllers/FuecVerifyControllerTest.php` — **active → VIGENTE in response HTML, cancelled → ANULADO in response HTML, nonexistent uuid → 404, flag disabled → 404**.
+- [x] **Task T3**: `tests/Feature/Http/Controllers/FuecVerifyControllerTest.php` — **active → VIGENTE in response HTML, cancelled → ANULADO in response HTML, nonexistent uuid → 404, flag disabled → 404**.
 
-- [ ] **Task T4**: `tests/Feature/Http/Controllers/FuecNumberRangeControllerTest.php` — **CRUD happy paths + non-admin 403 + "already active range" rejection test + range_from >= range_to rejection**.
+- [x] **Task T4**: `tests/Feature/Http/Controllers/FuecNumberRangeControllerTest.php` — **CRUD happy paths + non-admin 403 + "already active range" rejection test + range_from >= range_to rejection**.
 
-- [ ] **Task T5**: Extend `tests/Feature/Http/Requests/FuecStoreRequestTest.php` (create if absent) — covering every individual check in `FuecPreGenerationChecks` for narrow failure-mode assertions.
+- [x] **Task T5**: Extend `tests/Feature/Http/Requests/FuecStoreRequestTest.php` (create if absent) — covering every individual check in `FuecPreGenerationChecks` for narrow failure-mode assertions.
 
-- [ ] **Task T6**: `tests/Browser/FuecGenerationTest.php` — Dusk. Admin navigates to `/fuecs`, clicks Crear, picks a valid service via the picker dialog, submits, asserts the show page renders with Consecutivo + "Descargar PDF" button + QR URL. Setup: `migrate:fresh --no-interaction` + seed a FuecNumberRange + a closed service with valid docs + valid driver license.
+- [x] **Task T6**: `tests/Browser/FuecGenerationTest.php` — Dusk. Admin navigates to `/fuecs`, clicks Crear, picks a valid service via the picker dialog, submits, asserts the show page renders with Consecutivo + "Descargar PDF" button + QR URL. Setup: `migrate:fresh --no-interaction` + seed a FuecNumberRange + a closed service with valid docs + valid driver license.
 
-- [ ] **Task T7**: `tests/Browser/FuecPublicVerifyTest.php` — Dusk. Unauthenticated browser visits `/fuec/verify/{uuid}` for an active FUEC → VIGENTE visible; then via `loginAs($admin)` visits `/fuecs/{id}`, clicks Cancelar, provides a reason, submits; logout; revisit `/fuec/verify/{uuid}` → ANULADO visible.
+- [x] **Task T7**: `tests/Browser/FuecPublicVerifyTest.php` — Dusk. Unauthenticated browser visits `/fuec/verify/{uuid}` for an active FUEC → VIGENTE visible; then via `loginAs($admin)` visits `/fuecs/{id}`, clicks Cancelar, provides a reason, submits; logout; revisit `/fuec/verify/{uuid}` → ANULADO visible.
 
 ### Docs
 
-- [ ] **Task X1**: Update `docs/phases/phase-5-optionals-deploy.md` §5.1 — flip the status from "scaffolded only" to "✅ done (behind feature flag `SGTE_FUEC_ENABLED`)"; update the top-of-file status line.
+- [x] **Task X1**: Update `docs/phases/phase-5-optionals-deploy.md` §5.1 — flip the status from "scaffolded only" to "✅ done (behind feature flag `SGTE_FUEC_ENABLED`)"; update the top-of-file status line.
 
-- [ ] **Task X2**: Update `docs/phases/README.md` Phase 5 row to reflect FUEC done / GPS pending.
+- [x] **Task X2**: Update `docs/phases/README.md` Phase 5 row to reflect FUEC done / GPS pending.
 
 ## Verification
 
@@ -383,14 +383,14 @@ Preferred flow:
 8. Logout, re-login as operator; `/fuec-number-ranges` → 403; `/fuecs` → 403 (since the gate doesn't see permission).
 9. Logout, re-login as admin, flip the flag back, `/fuec/verify/{uuid}` works again.
 
-- [ ] Scenario 1: Admin registers a FuecNumberRange and sees it in the list.
-- [ ] Scenario 2: Admin generates a FUEC for a valid closed service.
-- [ ] Scenario 3: Pre-gen validation fails with specific messages for a service whose vehicle has expired SOAT.
-- [ ] Scenario 4: Generated PDF renders in the show page's iframe.
-- [ ] Scenario 5: Public verify page shows VIGENTE.
-- [ ] Scenario 6: Admin cancels the FUEC; verify page flips to ANULADO.
-- [ ] Scenario 7: `SGTE_FUEC_ENABLED=false` hides the sidebar entry and 404s the routes.
-- [ ] Scenario 8: Operator 403s on both `/fuecs` and `/fuec-number-ranges`.
+- [x] Scenario 1: Admin registers a FuecNumberRange and sees it in the list.
+- [x] Scenario 2: Admin generates a FUEC for a valid closed service.
+- [x] Scenario 3: Pre-gen validation fails with specific messages for a service whose vehicle has expired SOAT.
+- [x] Scenario 4: Generated PDF renders in the show page's iframe.
+- [x] Scenario 5: Public verify page shows VIGENTE.
+- [x] Scenario 6: Admin cancels the FUEC; verify page flips to ANULADO.
+- [x] Scenario 7: `SGTE_FUEC_ENABLED=false` hides the sidebar entry and 404s the routes.
+- [x] Scenario 8: Operator 403s on both `/fuecs` and `/fuec-number-ranges`.
 
 ### 2. Backend regression — Pest feature tests (required)
 
