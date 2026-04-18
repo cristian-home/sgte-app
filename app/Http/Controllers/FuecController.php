@@ -11,6 +11,7 @@ use App\Http\Requests\FuecStoreRequest;
 use App\Models\Fuec;
 use App\Models\Service;
 use App\Services\FuecGenerator;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
@@ -61,7 +62,7 @@ class FuecController extends Controller
      * Return JSON list of closed services with no active FUEC, for
      * the Service picker dialog on /fuecs/create.
      */
-    public function candidateServices(Request $request): HttpResponse
+    public function candidateServices(Request $request): JsonResponse
     {
         Gate::authorize(Permission::GENERATE_FUEC->value);
 
@@ -89,9 +90,7 @@ class FuecController extends Controller
             ->limit(50)
             ->get(['id', 'service_date', 'vehicle_id', 'driver_id', 'contract_id', 'planned_start_time']);
 
-        return response()->view('layouts.json', [], 200)
-            ->setContent($candidates->toJson())
-            ->header('Content-Type', 'application/json');
+        return response()->json($candidates);
     }
 
     public function store(FuecStoreRequest $request, FuecGenerator $generator): RedirectResponse

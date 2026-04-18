@@ -1,135 +1,197 @@
 <?php
 
-namespace Tests\Feature\Http\Controllers;
-
+use App\Enums\FuecStatus;
+use App\Enums\LicenseCategory;
+use App\Enums\Role;
+use App\Enums\ServiceStatus;
+use App\Enums\VehicleType;
+use App\Models\Contract;
+use App\Models\Driver;
 use App\Models\Fuec;
+use App\Models\FuecNumberRange;
 use App\Models\Service;
 use App\Models\User;
+use App\Models\Vehicle;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
+use Spatie\Activitylog\Models\Activity;
 
-use function Pest\Laravel\assertModelMissing;
-use function Pest\Laravel\delete;
+use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
 use function Pest\Laravel\post;
-use function Pest\Laravel\put;
 
 beforeEach(function (): void {
-    $user = User::factory()->create();
-    $user->assignRole('super_admin');
-    $this->actingAs($user);
+    Storage::fake('s3');
+    config()->set('sgte.fuec_enabled', true);
 });
 
-test('index behaves as expected', function (): void {
-    $fuecs = Fuec::factory()->count(3)->create();
+function fuecReadyService(): Service
+{
+    $range = FuecNumberRange::query()->where('active', true)->first()
+        ?? FuecNumberRange::factory()->active()->create(['range_from' => 5000, 'range_to' => 5100]);
 
-    $response = get(route('fuecs.index'));
-
-    $response->assertOk();
-});
-
-test('create behaves as expected', function (): void {
-    $response = get(route('fuecs.create'));
-
-    $response->assertOk();
-});
-
-test('store uses form request validation')
-    ->assertActionUsesFormRequest(
-        \App\Http\Controllers\FuecController::class,
-        'store',
-        \App\Http\Requests\FuecStoreRequest::class
-    );
-
-test('store saves and redirects', function (): void {
-    $service = Service::factory()->create();
-    $consecutive_number = fake()->numberBetween(1, 99999);
-    $generated_at = Carbon::parse(fake()->dateTime());
-    $qr_code = fake()->word();
-    $status = fake()->randomElement(['active', 'cancelled']);
-    $pdf_url = fake()->word();
-
-    $response = post(route('fuecs.store'), [
-        'service_id' => $service->id,
-        'consecutive_number' => $consecutive_number,
-        'generated_at' => $generated_at,
-        'qr_code' => $qr_code,
-        'status' => $status,
-        'pdf_url' => $pdf_url,
+    $contract = Contract::factory()->create([
+        'active' => true,
+        'start_date' => Carbon::now()->subMonth(),
+        'end_date' => Carbon::now()->addMonth(),
+    ]);
+    $vehicle = Vehicle::factory()->create([
+        'is_third_party' => false,
+        'type' => VehicleType::Buseta,
+        'soat_due_date' => Carbon::now()->addYear(),
+        'rtm_due_date' => Carbon::now()->addYear(),
+        'operation_card_due_date' => Carbon::now()->addYear(),
+    ]);
+    $driver = Driver::factory()->create([
+        'license_due_date' => Carbon::now()->addYear(),
+        'license_category' => LicenseCategory::C2,
+        'has_social_security' => true,
     ]);
 
-    $fuecs = Fuec::query()
-        ->where('service_id', $service->id)
-        ->where('consecutive_number', $consecutive_number)
-        ->where('generated_at', $generated_at)
-        ->where('qr_code', $qr_code)
-        ->where('status', $status)
-        ->where('pdf_url', $pdf_url)
-        ->get();
-    expect($fuecs)->toHaveCount(1);
-    $fuec = $fuecs->first();
-
-    $response->assertRedirect(route('fuecs.index'));
-});
-
-test('show behaves as expected', function (): void {
-    $fuec = Fuec::factory()->create();
-
-    $response = get(route('fuecs.show', $fuec));
-
-    $response->assertOk();
-});
-
-test('edit behaves as expected', function (): void {
-    $fuec = Fuec::factory()->create();
-
-    $response = get(route('fuecs.edit', $fuec));
-
-    $response->assertOk();
-});
-
-test('update uses form request validation')
-    ->assertActionUsesFormRequest(
-        \App\Http\Controllers\FuecController::class,
-        'update',
-        \App\Http\Requests\FuecUpdateRequest::class
-    );
-
-test('update redirects', function (): void {
-    $fuec = Fuec::factory()->create();
-    $service = Service::factory()->create();
-    $consecutive_number = fake()->numberBetween(1, 99999);
-    $generated_at = Carbon::parse(fake()->dateTime());
-    $qr_code = fake()->word();
-    $status = fake()->randomElement(['active', 'cancelled']);
-    $pdf_url = fake()->word();
-
-    $response = put(route('fuecs.update', $fuec), [
-        'service_id' => $service->id,
-        'consecutive_number' => $consecutive_number,
-        'generated_at' => $generated_at,
-        'qr_code' => $qr_code,
-        'status' => $status,
-        'pdf_url' => $pdf_url,
+    return Service::factory()->create([
+        'contract_id' => $contract->id,
+        'vehicle_id' => $vehicle->id,
+        'driver_id' => $driver->id,
+        'service_status' => ServiceStatus::Closed,
     ]);
+}
+
+test('admin store creates a FUEC via the generator', function (): void {
+    $admin = User::factory()->create();
+    $admin->assignRole(Role::ADMIN->value);
+    actingAs($admin);
+
+    $service = fuecReadyService();
+
+    post(route('fuecs.store'), ['service_id' => $service->id])
+        ->assertRedirect();
+
+    expect(Fuec::where('service_id', $service->id)->exists())->toBeTrue();
+});
+
+test('store rejects a service whose contract is inactive', function (): void {
+    $admin = User::factory()->create();
+    $admin->assignRole(Role::ADMIN->value);
+    actingAs($admin);
+
+    $service = fuecReadyService();
+    $service->contract->update(['active' => false]);
+
+    post(route('fuecs.store'), ['service_id' => $service->id])
+        ->assertSessionHasErrorsIn('default', ['fuec_pre_generation.contract']);
+});
+
+test('non-admin receives 403 on fuec routes', function (): void {
+    $operator = User::factory()->create();
+    $operator->assignRole(Role::OPERATOR->value);
+    actingAs($operator);
+
+    get(route('fuecs.index'))->assertForbidden();
+    get(route('fuecs.create'))->assertForbidden();
+});
+
+test('feature flag disabled 404s the fuec index', function (): void {
+    config()->set('sgte.fuec_enabled', false);
+
+    $admin = User::factory()->create();
+    $admin->assignRole(Role::ADMIN->value);
+    actingAs($admin);
+
+    get(route('fuecs.index'))->assertNotFound();
+});
+
+test('pdf action streams the stored PDF with inline Content-Disposition', function (): void {
+    $admin = User::factory()->create();
+    $admin->assignRole(Role::ADMIN->value);
+    actingAs($admin);
+
+    $service = fuecReadyService();
+
+    Storage::disk('s3')->put('fuecs/7777.pdf', 'PDFBYTES');
+
+    $fuec = Fuec::factory()->create([
+        'service_id' => $service->id,
+        'fuec_number_range_id' => FuecNumberRange::query()->where('active', true)->first()->id,
+        'consecutive_number' => 7777,
+        'status' => FuecStatus::Active,
+        'pdf_path' => 'fuecs/7777.pdf',
+        'pdf_disk' => 's3',
+    ]);
+
+    $response = get(route('fuecs.pdf', $fuec));
+    $response->assertOk()
+        ->assertHeader('Content-Type', 'application/pdf');
+
+    expect($response->headers->get('Content-Disposition'))->toContain('inline');
+    expect($response->headers->get('Content-Disposition'))->toContain('fuec-7777.pdf');
+});
+
+test('cancel action flips status to cancelled and writes an activity log entry', function (): void {
+    $admin = User::factory()->create();
+    $admin->assignRole(Role::ADMIN->value);
+    actingAs($admin);
+
+    $service = fuecReadyService();
+    $fuec = Fuec::factory()->create([
+        'service_id' => $service->id,
+        'fuec_number_range_id' => FuecNumberRange::query()->where('active', true)->first()->id,
+        'status' => FuecStatus::Active,
+    ]);
+
+    post(route('fuecs.cancel', $fuec), ['reason' => 'Anulación de prueba por error de captura en origen.'])
+        ->assertRedirect();
 
     $fuec->refresh();
+    expect($fuec->status)->toBe(FuecStatus::Cancelled);
 
-    $response->assertRedirect(route('fuecs.index'));
-
-    expect($service->id)->toEqual($fuec->service_id);
-    expect($consecutive_number)->toEqual($fuec->consecutive_number);
-    expect($generated_at->timestamp)->toEqual($fuec->generated_at);
-    expect($qr_code)->toEqual($fuec->qr_code);
-    expect($status)->toEqual($fuec->status->value);
-    expect($pdf_url)->toEqual($fuec->pdf_url);
+    $activity = Activity::query()
+        ->where('subject_type', Fuec::class)
+        ->where('subject_id', $fuec->id)
+        ->where('description', 'FUEC anulado')
+        ->first();
+    expect($activity)->not->toBeNull()
+        ->and($activity->properties['reason'])->toBe('Anulación de prueba por error de captura en origen.');
 });
 
-test('destroy deletes and redirects', function (): void {
-    $fuec = Fuec::factory()->create();
+test('cancel rejects a short reason', function (): void {
+    $admin = User::factory()->create();
+    $admin->assignRole(Role::ADMIN->value);
+    actingAs($admin);
 
-    $response = delete(route('fuecs.destroy', $fuec));
+    $fuec = Fuec::factory()->create([
+        'fuec_number_range_id' => FuecNumberRange::factory()->create()->id,
+        'status' => FuecStatus::Active,
+    ]);
 
-    $response->assertRedirect(route('fuecs.index'));
+    post(route('fuecs.cancel', $fuec), ['reason' => 'corto'])
+        ->assertSessionHasErrors('reason');
+});
 
-    assertModelMissing($fuec);
+test('cancel on already cancelled FUEC is rejected', function (): void {
+    $admin = User::factory()->create();
+    $admin->assignRole(Role::ADMIN->value);
+    actingAs($admin);
+
+    $fuec = Fuec::factory()->cancelled()->create([
+        'fuec_number_range_id' => FuecNumberRange::factory()->create()->id,
+    ]);
+
+    post(route('fuecs.cancel', $fuec), ['reason' => 'No se puede anular dos veces.'])
+        ->assertSessionHasErrors('status');
+});
+
+test('candidateServices returns closed services without an active FUEC', function (): void {
+    $admin = User::factory()->create();
+    $admin->assignRole(Role::ADMIN->value);
+    actingAs($admin);
+
+    $service = fuecReadyService();
+
+    $response = get(route('fuecs.candidate-services'));
+    $response->assertOk()
+        ->assertHeader('Content-Type', 'application/json');
+
+    $payload = $response->json();
+    $ids = array_column($payload, 'id');
+    expect($ids)->toContain($service->id);
 });
