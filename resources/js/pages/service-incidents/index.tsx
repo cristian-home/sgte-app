@@ -1,125 +1,94 @@
-import { Head } from '@inertiajs/react';
-import { useState } from 'react';
-import ServiceIncidentController from '@/actions/App/Http/Controllers/ServiceIncidentController';
-import {
-    DataTable,
-    DataTableColumnHeader,
-    DataTableRowActions,
-} from '@/components/data-table';
-import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
-import { PageHeader } from '@/components/page-header';
-import { Badge } from '@/components/ui/badge';
+import { Head, router } from '@inertiajs/react';
+import { PlusIcon } from 'lucide-react';
+import { DataTable } from '@/components/data-table';
+import { Button } from '@/components/ui/button';
+import { useServerTable } from '@/hooks/use-server-table';
 import AppLayout from '@/layouts/app-layout';
-import type { ColumnDef } from '@tanstack/react-table';
-import type { BreadcrumbItem, ServiceIncident } from '@/types';
+import serviceIncidents from '@/routes/service-incidents';
 
-function formatTimestamp(reportedAt: string | null): string {
-    if (!reportedAt) return '\u2014';
-    const ms = Number(reportedAt) * 1000;
-    if (isNaN(ms)) return '\u2014';
-    return new Intl.DateTimeFormat('es-CO', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-    }).format(new Date(ms));
+import {
+    columns,
+    incidentSeverityRowTint,
+    type ServiceIncidentRow,
+} from './columns';
+
+import type { Row } from '@tanstack/react-table';
+import type { BreadcrumbItem, FilterDefinition, PaginatedData } from '@/types';
+
+interface IncidentTypeOption {
+    id: number;
+    code: string;
+    name: string;
+    severity: string;
+    affects_billing_default: boolean;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Novedades',
-        href: ServiceIncidentController.index.url(),
-    },
+    { title: 'Novedades', href: serviceIncidents.index().url },
 ];
 
-const columns: ColumnDef<ServiceIncident>[] = [
-    {
-        accessorKey: 'service',
-        header: ({ column }) => (
-            <DataTableColumnHeader column={column} title="Servicio" />
-        ),
-        cell: ({ row }) => {
-            const service = row.original.service;
-            return service?.vehicle?.plate ?? `#${row.original.service_id}`;
-        },
-    },
-    {
-        accessorKey: 'incident_type',
-        header: ({ column }) => (
-            <DataTableColumnHeader column={column} title="Tipo" />
-        ),
-        cell: ({ row }) => row.original.incident_type?.name ?? '\u2014',
-    },
-    {
-        accessorKey: 'description',
-        header: ({ column }) => (
-            <DataTableColumnHeader column={column} title="Descripción" />
-        ),
-        cell: ({ row }) => (
-            <span
-                className="block max-w-[200px] truncate"
-                title={row.original.description}
-            >
-                {row.original.description}
-            </span>
-        ),
-    },
-    {
-        accessorKey: 'reported_at',
-        header: ({ column }) => (
-            <DataTableColumnHeader column={column} title="Fecha Reporte" />
-        ),
-        cell: ({ row }) => (
-            <span className="whitespace-nowrap">
-                {formatTimestamp(row.original.reported_at)}
-            </span>
-        ),
-    },
-    {
-        accessorKey: 'registrar',
-        header: ({ column }) => (
-            <DataTableColumnHeader column={column} title="Registrador" />
-        ),
-        cell: ({ row }) => row.original.registrar?.name ?? '\u2014',
-    },
-    {
-        accessorKey: 'affects_billing',
-        header: ({ column }) => (
-            <DataTableColumnHeader column={column} title="Facturación" />
-        ),
-        cell: ({ row }) =>
-            row.original.affects_billing ? (
-                <Badge variant="destructive">Afecta</Badge>
-            ) : null,
-    },
-];
+function rowTintFor(row: Row<ServiceIncidentRow>): string | undefined {
+    return incidentSeverityRowTint(
+        row.original.incident_type?.severity ?? null,
+    );
+}
 
 export default function ServiceIncidentsIndex({
-    serviceIncidents,
+    serviceIncidents: paginatedIncidents,
+    incidentTypes,
 }: {
-    serviceIncidents: ServiceIncident[];
+    serviceIncidents: PaginatedData<ServiceIncidentRow>;
+    incidentTypes: IncidentTypeOption[];
 }) {
-    const [deleteUrl, setDeleteUrl] = useState<string | null>(null);
+    const {
+        table,
+        paginatedData,
+        search,
+        setSearch,
+        loading,
+        onNavigate,
+        onPerPageChange,
+        activeFilters,
+        setFilter,
+        clearFilters,
+    } = useServerTable<ServiceIncidentRow>({
+        data: paginatedIncidents,
+        columns,
+    });
 
-    const columnsWithActions: ColumnDef<ServiceIncident>[] = [
-        ...columns,
+    const incidentFilters: FilterDefinition[] = [
         {
-            id: 'actions',
-            cell: ({ row }) => (
-                <DataTableRowActions
-                    editUrl={ServiceIncidentController.edit.url(
-                        row.original.id,
-                    )}
-                    onDelete={() =>
-                        setDeleteUrl(
-                            ServiceIncidentController.destroy.url(
-                                row.original.id,
-                            ),
-                        )
-                    }
-                />
-            ),
+            name: 'incident_type_id',
+            label: 'Tipo',
+            options: incidentTypes.map((t) => ({
+                value: String(t.id),
+                label: t.name,
+            })),
+        },
+        {
+            name: 'severity',
+            label: 'Severidad',
+            options: [
+                { value: 'informational', label: 'Informativo' },
+                { value: 'minor', label: 'Menor' },
+                { value: 'major', label: 'Mayor' },
+            ],
+        },
+        {
+            name: 'is_driver_report',
+            label: 'Reporte del conductor',
+            options: [
+                { value: '1', label: 'Sí' },
+                { value: '0', label: 'No' },
+            ],
+        },
+        {
+            name: 'affects_billing',
+            label: 'Afecta facturación',
+            options: [
+                { value: '1', label: 'Sí' },
+                { value: '0', label: 'No' },
+            ],
         },
     ];
 
@@ -127,19 +96,33 @@ export default function ServiceIncidentsIndex({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Novedades" />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
-                <PageHeader title="Novedades" />
                 <DataTable
-                    columns={columnsWithActions}
-                    data={serviceIncidents}
-                    searchKey="description"
+                    table={table}
+                    paginatedData={paginatedData}
+                    search={search}
+                    onSearchChange={setSearch}
+                    loading={loading}
+                    onNavigate={onNavigate}
+                    onPerPageChange={onPerPageChange}
                     searchPlaceholder="Buscar por descripción..."
+                    filters={incidentFilters}
+                    activeFilters={activeFilters}
+                    onFilterChange={setFilter}
+                    onClearFilters={clearFilters}
+                    getRowClassName={rowTintFor}
+                    actions={
+                        <Button
+                            onClick={() =>
+                                router.visit(serviceIncidents.create().url)
+                            }
+                            size="sm"
+                        >
+                            <PlusIcon className="mr-2 size-4" />
+                            Crear Novedad
+                        </Button>
+                    }
                 />
             </div>
-            <DeleteConfirmationDialog
-                open={deleteUrl !== null}
-                onOpenChange={(open) => !open && setDeleteUrl(null)}
-                deleteUrl={deleteUrl ?? ''}
-            />
         </AppLayout>
     );
 }

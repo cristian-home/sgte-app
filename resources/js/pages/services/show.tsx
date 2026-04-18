@@ -18,6 +18,7 @@ import { useState } from 'react';
 import ServiceIncidentController from '@/actions/App/Http/Controllers/ServiceIncidentController';
 import { Can } from '@/components/can';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
+import { IncidentSeverityPill } from '@/components/incidents/incident-severity-pill';
 import { ServiceTimelineBar } from '@/components/services/service-timeline-bar';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -29,7 +30,7 @@ import { ServiceStatusLabel } from '@/enums/ServiceStatus';
 import AppLayout from '@/layouts/app-layout';
 import services from '@/routes/services';
 import { type BreadcrumbItem } from '@/types';
-import type { Service, ServiceIncident } from '@/types/models';
+import type { Service } from '@/types/models';
 
 interface DayStatusWithExecutor {
     id: number;
@@ -132,12 +133,26 @@ function formatIncidentTimestamp(reportedAt: string | null): string {
     return formatDateTime(new Date(ms).toISOString());
 }
 
+interface RecentIncidentRow {
+    id: number;
+    service_id: number;
+    incident_type_id: number;
+    registrar_id: number | null;
+    reported_at: string | null;
+    is_driver_report: boolean;
+    affects_billing: boolean;
+    incident_type?: { id: number; name: string; severity: string } | null;
+    registrar?: { id: number; name: string } | null;
+}
+
 export default function ServicesShow({
     service,
     dayStatus,
+    recentIncidents,
 }: {
     service: Service;
     dayStatus?: DayStatusWithExecutor | null;
+    recentIncidents?: RecentIncidentRow[];
 }) {
     const clientName = service.contract?.third_party
         ? service.contract.third_party.company_name ||
@@ -172,7 +187,13 @@ export default function ServicesShow({
               })()
             : '\u2014';
 
-    const incidents = service.service_incidents ?? [];
+    // Prefer the dedicated recentIncidents payload (last 5 by
+    // reported_at DESC, server-pinned) and fall back to the full
+    // relation for backward compatibility.
+    const incidents =
+        recentIncidents ??
+        (service.service_incidents as unknown as RecentIncidentRow[]) ??
+        [];
     const [deleteUrl, setDeleteUrl] = useState<string | null>(null);
 
     return (
@@ -413,12 +434,12 @@ export default function ServicesShow({
                     </Card>
                 </div>
 
-                {/* Row 3: Incidentes */}
+                {/* Row 3: Novedades */}
                 <Card>
                     <CardHeader>
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                                <CardTitle>Incidentes</CardTitle>
+                                <CardTitle>Novedades</CardTitle>
                                 {incidents.length > 0 && (
                                     <Badge variant="secondary">
                                         {incidents.length}
@@ -440,8 +461,7 @@ export default function ServicesShow({
                     <CardContent>
                         {incidents.length === 0 ? (
                             <p className="py-6 text-center text-sm text-muted-foreground">
-                                No se han registrado incidentes para este
-                                servicio.
+                                Sin novedades registradas.
                             </p>
                         ) : (
                             <div className="overflow-x-auto">
@@ -452,7 +472,7 @@ export default function ServicesShow({
                                                 Tipo
                                             </th>
                                             <th className="pb-2 font-medium">
-                                                Descripción
+                                                Severidad
                                             </th>
                                             <th className="pb-2 font-medium">
                                                 Fecha Reporte
@@ -470,19 +490,30 @@ export default function ServicesShow({
                                     </thead>
                                     <tbody className="divide-y">
                                         {incidents.map(
-                                            (incident: ServiceIncident) => (
+                                            (incident: RecentIncidentRow) => (
                                                 <tr key={incident.id}>
                                                     <td className="py-2 pr-3">
-                                                        {incident.incident_type
-                                                            ?.name ?? '\u2014'}
+                                                        <Link
+                                                            href={ServiceIncidentController.show.url(
+                                                                incident.id,
+                                                            )}
+                                                            className="text-primary hover:underline"
+                                                        >
+                                                            {incident
+                                                                .incident_type
+                                                                ?.name ??
+                                                                '\u2014'}
+                                                        </Link>
                                                     </td>
-                                                    <td
-                                                        className="max-w-[200px] truncate py-2 pr-3"
-                                                        title={
-                                                            incident.description
-                                                        }
-                                                    >
-                                                        {incident.description}
+                                                    <td className="py-2 pr-3">
+                                                        <IncidentSeverityPill
+                                                            severity={
+                                                                incident
+                                                                    .incident_type
+                                                                    ?.severity ??
+                                                                null
+                                                            }
+                                                        />
                                                     </td>
                                                     <td className="py-2 pr-3 whitespace-nowrap">
                                                         {formatIncidentTimestamp(
