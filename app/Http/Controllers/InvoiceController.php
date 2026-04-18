@@ -12,8 +12,10 @@ use App\Models\Invoice;
 use App\Models\Service;
 use App\Models\ThirdParty;
 use App\Services\InvoiceTotalCalculator;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -268,6 +270,96 @@ class InvoiceController extends Controller
      *
      * @return \Illuminate\Database\Eloquent\Collection<int, Service>
      */
+    /**
+     * Stream an informational PDF of the invoice inline.
+     *
+     * Explicitly NOT a fiscal document (DIAN compliance requires a
+     * certified e-invoice provider integration — separate project).
+     * The PDF carries a prominent INFORMATIVO badge and a footer
+     * disclaimer on every page.
+     *
+     * Side-effect: recomputes `invoice.total_value` via the calculator
+     * before rendering so the printed total matches the current
+     * attached services + billing-affecting incidents. Justified
+     * because a stale total leaking into a customer-facing PDF is a
+     * bigger problem than the minor activity-log noise when nothing
+     * changed.
+     */
+    public function pdf(Request $request, Invoice $invoice, InvoiceTotalCalculator $calculator): HttpResponse
+    {
+        Gate::authorize(Permission::VIEW_INVOICES->value);
+
+        $calculator->recomputeFor($invoice->fresh());
+
+        $invoice = $invoice->fresh()->load([
+            'thirdParty.documentType',
+            'thirdParty.municipality.department',
+            'services' => fn ($q) => $q->orderBy('service_date'),
+            'services.vehicle:id,plate',
+            'services.contract:id,contract_number',
+            'services.serviceIncidents' => fn ($q) => $q->where('affects_billing', true),
+            'services.serviceIncidents.incidentType:id,name',
+        ]);
+
+        $services = $invoice->services;
+        $billingIncidents = $services->flatMap(fn ($s) => $s->serviceIncidents)->values();
+
+        $subtotalServices = (float) $services->sum(fn ($s) => (float) $s->unit_value * (int) $s->quantity);
+        $subtotalIncidents = (float) $billingIncidents->sum(fn ($i) => (float) ($i->additional_value ?? 0));
+        $grandTotal = $subtotalServices + $subtotalIncidents;
+
+        $thirdParty = $invoice->thirdParty;
+        $customerName = $this->customerNameFor($thirdParty);
+        $customerDocument = trim(
+            ($thirdParty?->documentType?->code ?? '').' '.($thirdParty?->identification_number ?? ''),
+        );
+
+        $customerAddressLine = collect([
+            $thirdParty?->municipality?->name,
+            $thirdParty?->municipality?->department?->name,
+            $thirdParty?->address,
+        ])->filter()->implode(' — ');
+
+        $nowFormatted = Carbon::now()->locale('es_CO')->isoFormat('LLLL');
+
+        $pdf = Pdf::loadView('invoices.pdf', [
+            'invoice' => $invoice,
+            'services' => $services,
+            'billing_incidents' => $billingIncidents,
+            'subtotal_services' => $subtotalServices,
+            'subtotal_incidents' => $subtotalIncidents,
+            'grand_total' => $grandTotal,
+            'customer_name' => $customerName,
+            'customer_document' => $customerDocument,
+            'customer_address_line' => $customerAddressLine,
+            'now_formatted' => $nowFormatted,
+        ])->setPaper('letter');
+
+        return $pdf->stream(
+            "factura-{$invoice->invoice_number}.pdf",
+            ['Attachment' => false],
+        );
+    }
+
+    /**
+     * Resolve the customer display name — legal persons print their
+     * company name, natural persons get their first + last name.
+     */
+    private function customerNameFor(?ThirdParty $tp): string
+    {
+        if ($tp === null) {
+            return '—';
+        }
+
+        if ($tp->is_natural_person) {
+            $name = trim(($tp->first_name ?? '').' '.($tp->first_lastname ?? ''));
+
+            return $name !== '' ? $name : '—';
+        }
+
+        return $tp->company_name ?? '—';
+    }
+
     private function candidateServices(Invoice $invoice): \Illuminate\Database\Eloquent\Collection
     {
         $cutoff = Carbon::today()->subDays(90);

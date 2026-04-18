@@ -29,6 +29,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('vehicles', App\Http\Controllers\VehicleController::class);
     Route::resource('contracts', App\Http\Controllers\ContractController::class);
     Route::post('invoices/{invoice}/mark-paid', [App\Http\Controllers\InvoiceController::class, 'markPaid'])->name('invoices.mark-paid');
+    Route::get('invoices/{invoice}/pdf', [App\Http\Controllers\InvoiceController::class, 'pdf'])->middleware('can:'.App\Enums\Permission::VIEW_INVOICES->value)->name('invoices.pdf');
     Route::post('invoices/{invoice}/services', [App\Http\Controllers\InvoiceController::class, 'attachServices'])->middleware('can:'.App\Enums\Permission::ASSIGN_SERVICES_TO_INVOICES->value)->name('invoices.services.attach');
     Route::delete('invoices/{invoice}/services/{service}', [App\Http\Controllers\InvoiceController::class, 'detachService'])->middleware('can:'.App\Enums\Permission::ASSIGN_SERVICES_TO_INVOICES->value)->name('invoices.services.detach');
     Route::post('invoices/{invoice}/recompute-total', [App\Http\Controllers\InvoiceController::class, 'recomputeTotal'])->middleware('can:'.App\Enums\Permission::ASSIGN_SERVICES_TO_INVOICES->value)->name('invoices.recompute-total');

@@ -1,6 +1,6 @@
 # Phase 4: Billing and Audit
 
-> **Status: IN PROGRESS** — Invoice CRUD + service-invoice association workflow are complete (rebuilds `invoices-crud`, `service-incidents-crud`, and `invoice-service-assignment` merged to `develop`). Still pending: informational PDF generation (§4.2 final bullet), REQ-009 accounting-immutability justification UX (§4.3). Requires Phase 2 (completed); Phase 3 recommended.
+> **Status: IN PROGRESS** — Invoice CRUD + service-invoice association + informational PDF generation are complete (rebuilds `invoices-crud`, `service-incidents-crud`, `invoice-service-assignment`, `invoice-pdf-generation` merged to `develop`). Still pending: REQ-009 accounting-immutability justification UX (§4.3). Requires Phase 2 (completed); Phase 3 recommended.
 
 ## Objective
 
@@ -33,7 +33,7 @@ Implement the service billing module, enforce accounting immutability of execute
 - [x] A closed service can be associated with an invoice — `invoice-service-assignment` merged.
 - [x] View to select multiple services from the same tercero and link them to a single invoice — `<ServicePickerDialog />` (`invoice-service-assignment` merged).
 - [x] Only the Administrador and Contabilidad roles can bill — `ASSIGN_SERVICES_TO_INVOICES` now enforced at route + controller + UI (`invoice-service-assignment` merged).
-- [ ] Invoice PDF generation (informational, not fiscal) — deferred to a future requirement (needs `barryvdh/laravel-dompdf` or similar).
+- [x] Invoice PDF generation (informational, not fiscal) — `invoice-pdf-generation` merged. `barryvdh/laravel-dompdf` ^3.1 installed; `GET /invoices/{invoice}/pdf` streams inline; INFORMATIVO badge + footer disclaimer on every page.
 
 ### 4.3 Accounting immutability (REQ-009 complement)
 
