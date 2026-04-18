@@ -2,10 +2,10 @@
 name: service-incidents-crud
 type: feat
 scope: service-incidents
-status: pending
+status: completed
 priority: medium
 created_date: 2026-04-17
-completed_date:
+completed_date: 2026-04-17
 srs_refs: ["REQ-008", "REQ-011"]
 migration_strategy: new
 ---
@@ -47,35 +47,35 @@ Two validation **tightenings** accompany the Inertia alignment:
 
 ## Acceptance Criteria
 
-- [ ] **AC1**: WHEN an admin, operator, or accounting user navigates to `/service-incidents` THEN the page renders a paginated `<DataTable>` (not the current `->get()` payload) with columns **Servicio**, **Tipo**, **Descripción**, **Reporte**, **Registrado Por**, **Impacto**, **Acciones**.
-- [ ] **AC2**: WHEN a row renders THEN the **Servicio** cell shows the vehicle plate (font-mono) AND the service date (es-CO format), both wrapped in a single `<Link>` to `/services/{service_id}`.
-- [ ] **AC3**: WHEN a row renders THEN the **Tipo** cell shows the `incident_type.name` side-by-side with an `<IncidentSeverityPill />` reading the severity from `incident_type.severity`.
-- [ ] **AC4**: WHEN a row renders THEN the **Descripción** cell shows the first line of `description` truncated to ~200px via `truncate` + a title tooltip containing the full text.
-- [ ] **AC5**: WHEN a row renders THEN the **Reporte** cell shows `reported_at` formatted via `Intl.DateTimeFormat('es-CO', { dateStyle: 'medium', timeStyle: 'short' })` (the existing helper handles both epoch-seconds and ISO strings).
-- [ ] **AC6**: WHEN a row renders THEN the **Registrado Por** cell shows `registrar.name`; WHEN `is_driver_report === true` THEN it ALSO shows a `[Conductor]` Badge adjacent to the name.
-- [ ] **AC7**: WHEN a row renders THEN the **Impacto** cell shows a destructive `[Afecta facturación]` Badge when `affects_billing === true`, otherwise an em-dash `—`.
-- [ ] **AC8**: WHEN a row's severity is `major` THEN the row is tinted `bg-destructive/10 hover:bg-destructive/15`; WHEN `minor` THEN `bg-amber-100/60 hover:bg-amber-100/80 dark:bg-amber-900/20 dark:hover:bg-amber-900/30`; WHEN `informational` THEN no tint. Implemented via `getRowClassName={(row) => incidentSeverityRowTint(row.original)}` on `<DataTable>`.
-- [ ] **AC9**: WHEN the user applies the **Tipo** faceted filter with an incident-type id THEN only rows matching that `incident_type_id` remain. Backed by `AllowedFilter::exact('incident_type_id')`.
-- [ ] **AC10**: WHEN the user applies the **Severidad** faceted filter with value `informational`, `minor`, or `major` THEN only rows whose `incident_type.severity` matches remain. Backed by a new `AllowedFilter::callback('severity', ...)` on `ServiceIncidentController@index` that performs a `whereHas('incidentType', fn ($q) => $q->where('severity', $value))`.
-- [ ] **AC11**: WHEN the user applies **Reporte del conductor** (Sí/No) OR **Afecta facturación** (Sí/No) filters THEN only rows matching the boolean remain. Existing `AllowedFilter::exact` rules.
-- [ ] **AC12**: WHEN the user clicks the **Crear Novedad** action on `/service-incidents` THEN the app navigates to `/service-incidents/create` (NOT a modal). The create page renders `<ServiceCombobox />` as the first form field AND the form submits successfully once a service is chosen.
-- [ ] **AC13**: WHEN the user navigates to `/service-incidents/create?service_id=X` (driver-portal + services/show entry points) THEN the create page skips the `<ServiceCombobox />` AND instead renders a read-only summary block showing the preselected service's date + vehicle plate + contract number + driver name, AND a muted "Preseleccionado desde el servicio" note beneath it.
-- [ ] **AC14**: WHEN the user selects an `incident_type_id` whose `incident_type.affects_billing_default === true` THEN the `affects_billing` Switch auto-toggles to `true` (preserves existing behavior).
-- [ ] **AC15**: WHEN a driver submits `POST /service-incidents` with a `service_id` belonging to a service that is NOT assigned to that driver's Driver record THEN the request fails with a 422 validation error on `service_id` with message "Solo puede registrar novedades en sus propios servicios." Super-admin bypasses this rule via `Gate::before`.
-- [ ] **AC16**: WHEN the user submits a non-null `additional_value` that is negative THEN the request fails with 422 on `additional_value`. WHEN `additional_value` is null OR `>= 0` THEN the request is accepted (assuming other rules pass).
-- [ ] **AC17**: WHEN the user clicks the incident number/link in any row THEN the app navigates to `/service-incidents/{id}` AND the show page renders **five** Card sections in this order:
+- [x] **AC1**: WHEN an admin, operator, or accounting user navigates to `/service-incidents` THEN the page renders a paginated `<DataTable>` (not the current `->get()` payload) with columns **Servicio**, **Tipo**, **Descripción**, **Reporte**, **Registrado Por**, **Impacto**, **Acciones**.
+- [x] **AC2**: WHEN a row renders THEN the **Servicio** cell shows the vehicle plate (font-mono) AND the service date (es-CO format), both wrapped in a single `<Link>` to `/services/{service_id}`.
+- [x] **AC3**: WHEN a row renders THEN the **Tipo** cell shows the `incident_type.name` side-by-side with an `<IncidentSeverityPill />` reading the severity from `incident_type.severity`.
+- [x] **AC4**: WHEN a row renders THEN the **Descripción** cell shows the first line of `description` truncated to ~200px via `truncate` + a title tooltip containing the full text.
+- [x] **AC5**: WHEN a row renders THEN the **Reporte** cell shows `reported_at` formatted via `Intl.DateTimeFormat('es-CO', { dateStyle: 'medium', timeStyle: 'short' })` (the existing helper handles both epoch-seconds and ISO strings).
+- [x] **AC6**: WHEN a row renders THEN the **Registrado Por** cell shows `registrar.name`; WHEN `is_driver_report === true` THEN it ALSO shows a `[Conductor]` Badge adjacent to the name.
+- [x] **AC7**: WHEN a row renders THEN the **Impacto** cell shows a destructive `[Afecta facturación]` Badge when `affects_billing === true`, otherwise an em-dash `—`.
+- [x] **AC8**: WHEN a row's severity is `major` THEN the row is tinted `bg-destructive/10 hover:bg-destructive/15`; WHEN `minor` THEN `bg-amber-100/60 hover:bg-amber-100/80 dark:bg-amber-900/20 dark:hover:bg-amber-900/30`; WHEN `informational` THEN no tint. Implemented via `getRowClassName={(row) => incidentSeverityRowTint(row.original)}` on `<DataTable>`.
+- [x] **AC9**: WHEN the user applies the **Tipo** faceted filter with an incident-type id THEN only rows matching that `incident_type_id` remain. Backed by `AllowedFilter::exact('incident_type_id')`.
+- [x] **AC10**: WHEN the user applies the **Severidad** faceted filter with value `informational`, `minor`, or `major` THEN only rows whose `incident_type.severity` matches remain. Backed by a new `AllowedFilter::callback('severity', ...)` on `ServiceIncidentController@index` that performs a `whereHas('incidentType', fn ($q) => $q->where('severity', $value))`.
+- [x] **AC11**: WHEN the user applies **Reporte del conductor** (Sí/No) OR **Afecta facturación** (Sí/No) filters THEN only rows matching the boolean remain. Existing `AllowedFilter::exact` rules.
+- [x] **AC12**: WHEN the user clicks the **Crear Novedad** action on `/service-incidents` THEN the app navigates to `/service-incidents/create` (NOT a modal). The create page renders `<ServiceCombobox />` as the first form field AND the form submits successfully once a service is chosen.
+- [x] **AC13**: WHEN the user navigates to `/service-incidents/create?service_id=X` (driver-portal + services/show entry points) THEN the create page skips the `<ServiceCombobox />` AND instead renders a read-only summary block showing the preselected service's date + vehicle plate + contract number + driver name, AND a muted "Preseleccionado desde el servicio" note beneath it.
+- [x] **AC14**: WHEN the user selects an `incident_type_id` whose `incident_type.affects_billing_default === true` THEN the `affects_billing` Switch auto-toggles to `true` (preserves existing behavior).
+- [x] **AC15**: WHEN a driver submits `POST /service-incidents` with a `service_id` belonging to a service that is NOT assigned to that driver's Driver record THEN the request fails with a 422 validation error on `service_id` with message "Solo puede registrar novedades en sus propios servicios." Super-admin bypasses this rule via `Gate::before`.
+- [x] **AC16**: WHEN the user submits a non-null `additional_value` that is negative THEN the request fails with 422 on `additional_value`. WHEN `additional_value` is null OR `>= 0` THEN the request is accepted (assuming other rules pass).
+- [x] **AC17**: WHEN the user clicks the incident number/link in any row THEN the app navigates to `/service-incidents/{id}` AND the show page renders **five** Card sections in this order:
     1. **Header card** — `incident_type.name` (title), `[Conductor]` Badge when `is_driver_report`, `<IncidentSeverityPill />`, Editar button.
     2. **Descripción** — `description` rendered with `whitespace-pre-wrap`, or "Sin descripción." when empty.
     3. **Servicio** — service_date (formatted), vehicle plate (font-mono), contract number, customer computed-name; a prominent "Ver servicio" `<Link>` to `/services/{id}` on the right; a secondary row with "Ver vehículo" and "Ver contrato" links.
     4. **Registrado** — `registrar.name`, `reported_at` (formatted), `is_driver_report` Badge when true.
     5. **Impacto en Facturación** — when `affects_billing === false`: "Sin impacto en facturación." muted text. When `affects_billing === true`: an `[Afecta facturación]` destructive Badge AND a currency-formatted hero showing `additional_value` with `text-xl font-bold tabular-nums` AND the `Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })` formatter.
-- [ ] **AC18**: WHEN an admin, operator, or accounting user navigates to `/services/{id}` THEN a new **Novedades** card renders listing the last 5 incidents where `service_id = $service->id`, columns **Fecha** (Link to `/service-incidents/{id}`), **Tipo**, **Severidad** (`<IncidentSeverityPill />`), **Registrador**. The card includes a `+ Registrar Novedad` button that navigates to `/service-incidents/create?service_id={service.id}`. Empty state: "Sin novedades registradas.".
-- [ ] **AC19**: WHEN a driver logs in, visits `/driver`, clicks "Registrar Novedad" on an assigned service, submits the form THEN the response redirects to `/driver` (NOT `/services/{id}`) — `redirectAfterMutation()` honors the driver-lacks-VIEW_SERVICES constraint. The incident appears in the database with `is_driver_report = true` and `registrar_id = auth()->id()` (server-autoset).
-- [ ] **AC20**: WHEN an accounting user renders `/service-incidents` THEN the **Acciones** column shows NO Editar / Eliminar entries (accounting holds VIEW_INCIDENTS but neither UPDATE_INCIDENTS nor DELETE_INCIDENTS). Gated via the `usePermissions` hook pattern established by invoices-crud.
-- [ ] **AC21**: WHEN an operator creates an incident with `affects_billing = true` THEN the `BillingIncidentNotification` is dispatched to all super-admin + admin + accounting users. Preserved from the current controller.
-- [ ] **AC22**: WHEN a driver (not super-admin) OR unauthenticated user navigates to `/service-incidents` THEN they receive 401 (unauth) or 403 (driver lacks VIEW_INCIDENTS — verify; if the current seeder grants driver VIEW_INCIDENTS, they CAN see the index but it should be filtered to their own incidents; pin the observed behavior in Pest).
-- [ ] **AC23**: WHEN `npm run types` runs THEN the service-incidents pages contribute zero new errors — the four pages move OUT of the pre-existing deferred-Blueprint TypeScript error bucket.
-- [ ] **AC24**: AFTER this requirement lands THEN the `project_blueprint_scaffolds_deferred` memory entry is retired (all 6 Blueprint scaffolds are production-shaped).
+- [x] **AC18**: WHEN an admin, operator, or accounting user navigates to `/services/{id}` THEN a new **Novedades** card renders listing the last 5 incidents where `service_id = $service->id`, columns **Fecha** (Link to `/service-incidents/{id}`), **Tipo**, **Severidad** (`<IncidentSeverityPill />`), **Registrador**. The card includes a `+ Registrar Novedad` button that navigates to `/service-incidents/create?service_id={service.id}`. Empty state: "Sin novedades registradas.".
+- [x] **AC19**: WHEN a driver logs in, visits `/driver`, clicks "Registrar Novedad" on an assigned service, submits the form THEN the response redirects to `/driver` (NOT `/services/{id}`) — `redirectAfterMutation()` honors the driver-lacks-VIEW_SERVICES constraint. The incident appears in the database with `is_driver_report = true` and `registrar_id = auth()->id()` (server-autoset).
+- [x] **AC20**: WHEN an accounting user renders `/service-incidents` THEN the **Acciones** column shows NO Editar / Eliminar entries (accounting holds VIEW_INCIDENTS but neither UPDATE_INCIDENTS nor DELETE_INCIDENTS). Gated via the `usePermissions` hook pattern established by invoices-crud.
+- [x] **AC21**: WHEN an operator creates an incident with `affects_billing = true` THEN the `BillingIncidentNotification` is dispatched to all super-admin + admin + accounting users. Preserved from the current controller.
+- [x] **AC22**: WHEN a driver (not super-admin) OR unauthenticated user navigates to `/service-incidents` THEN they receive 401 (unauth) or 403 (driver lacks VIEW_INCIDENTS — verify; if the current seeder grants driver VIEW_INCIDENTS, they CAN see the index but it should be filtered to their own incidents; pin the observed behavior in Pest).
+- [x] **AC23**: WHEN `npm run types` runs THEN the service-incidents pages contribute zero new errors — the four pages move OUT of the pre-existing deferred-Blueprint TypeScript error bucket.
+- [x] **AC24**: AFTER this requirement lands THEN the `project_blueprint_scaffolds_deferred` memory entry is retired (all 6 Blueprint scaffolds are production-shaped).
 
 ## Technical Specification
 
@@ -152,7 +152,7 @@ Authorization remains at the `Gate::authorize(Permission::*->value)` call at the
 
 ### Backend
 
-- [ ] **Task B1**: Rewrite `ServiceIncidentController@index` to paginate + add severity filter.
+- [x] **Task B1**: Rewrite `ServiceIncidentController@index` to paginate + add severity filter.
   - Replace `->get()` with `->paginate($request->perPage())->withQueryString()`.
   - Tighten eager-loads: `service:id,service_date,vehicle_id,contract_id,driver_id`, `service.vehicle:id,plate`, `service.contract:id,contract_number`, `incidentType:id,code,name,severity`, `registrar:id,name`.
   - Add `AllowedFilter::callback('severity', function (Builder $query, $value) { $first = is_array($value) ? ($value[0] ?? '') : explode(',', (string) $value)[0]; $query->whereHas('incidentType', fn ($q) => $q->where('severity', $first)); })`.
@@ -160,36 +160,36 @@ Authorization remains at the `Gate::authorize(Permission::*->value)` call at the
   - Preserve the existing `incident_type_id` / `is_driver_report` / `affects_billing` / `service_id` exact filters.
   - Pass `incidentTypes` to the page (id + name + severity + affects_billing_default) for the faceted filter UI.
 
-- [ ] **Task B2**: Expand `ServiceIncidentController@show` + `@edit` eager loads.
+- [x] **Task B2**: Expand `ServiceIncidentController@show` + `@edit` eager loads.
   - `@show`: load `service.vehicle:id,plate`, `service.contract:id,contract_number`, `service.contract.thirdParty:id,is_natural_person,first_name,first_lastname,company_name`, `incidentType:id,code,name,severity`, `registrar:id,name`.
   - `@edit`: same loads as show (the form renders the read-only parent summary).
 
-- [ ] **Task B3**: Extend `ServiceIncidentController@create` to pass services for the new combobox.
+- [x] **Task B3**: Extend `ServiceIncidentController@create` to pass services for the new combobox.
   - When `?service_id=X` is absent, pass a `services` payload: last 60 days of services, eager-loaded with `vehicle:id,plate`, `contract:id,contract_number`, `driver:id,first_name,first_lastname`, ordered by `service_date` DESC.
   - When `?service_id=X` is present, preserve the current behavior (pass the `service` prop, don't pass `services`).
   - Move the service query into a private `recentServiceOptions()` method so `@edit` can optionally reuse it (currently `@edit` doesn't need it because editing a service transfer is out of scope, but keeping the helper available matches the `customerOptions()` pattern from contracts/invoices).
 
-- [ ] **Task B4**: Harden `ServiceIncidentStoreRequest` + tighten `additional_value`.
+- [x] **Task B4**: Harden `ServiceIncidentStoreRequest` + tighten `additional_value`.
   - Add a `rules()` clause: when the authenticated user has the driver role AND NOT super-admin, validate that `service_id` belongs to a service whose `driver_id` matches the driver record linked to that user. Use a closure rule or a dedicated custom rule class `ServiceBelongsToAuthenticatedDriver` (recommended — keeps the rule testable in isolation).
   - Change `additional_value` rule from `['nullable', 'numeric', 'between:-9999999999.99,9999999999.99']` to `['nullable', 'numeric', 'min:0', 'max:9999999999.99']`.
   - Add `messages()`: `['service_id.custom_rule_name' => 'Solo puede registrar novedades en sus propios servicios.', 'additional_value.min' => 'El valor adicional no puede ser negativo.']`.
   - Apply the same tightening to `ServiceIncidentUpdateRequest`.
 
-- [ ] **Task B5**: Extend `ServiceController@show` with `recentIncidents` + services-show Novedades card payload.
+- [x] **Task B5**: Extend `ServiceController@show` with `recentIncidents` + services-show Novedades card payload.
   - Load `$recentIncidents = ServiceIncident::where('service_id', $service->id)->with(['incidentType:id,name,severity', 'registrar:id,name'])->orderByDesc('reported_at')->limit(5)->get(['id', 'service_id', 'incident_type_id', 'registrar_id', 'reported_at', 'is_driver_report', 'affects_billing'])`.
   - Pass to the Inertia page as `recentIncidents`.
   - Preserve all other props the page already receives.
 
 ### Frontend — shared primitives
 
-- [ ] **Task F1**: Create `resources/js/components/incidents/incident-severity-pill.tsx`.
+- [x] **Task F1**: Create `resources/js/components/incidents/incident-severity-pill.tsx`.
   - Default-export `<IncidentSeverityPill />` component; named-export `incidentSeverityRowTint(incident)` helper.
   - Props: `{ severity?: string | null, className?: string }` OR `{ incident: { incident_type?: { severity?: string | null } | null } }` — pick whichever reads cleaner at the call-sites (recommend taking `severity: string | null` directly to avoid deeply-coupled input shapes).
   - Label + variant table: `informational → outline "Informativo"`, `minor → secondary "Menor"`, `major → destructive "Mayor!"`, unknown → outline with the raw value.
   - Tooltip map: `{ informational: 'Incidente informativo', minor: 'Incidente menor', major: 'Incidente mayor — requiere atención' }`.
   - `incidentSeverityRowTint` returns: `major → 'bg-destructive/10 hover:bg-destructive/15'`, `minor → 'bg-amber-100/60 hover:bg-amber-100/80 dark:bg-amber-900/20 dark:hover:bg-amber-900/30'`, others → `undefined`.
 
-- [ ] **Task F2**: Create `resources/js/components/services/service-combobox.tsx`.
+- [x] **Task F2**: Create `resources/js/components/services/service-combobox.tsx`.
   - Reference convention: `resources/js/components/third-parties/third-party-combobox.tsx`.
   - Props: `{ services: ServiceOption[]; value: string | number | null; onChange: (value: string) => void; forceInclude?: ServiceOption[]; placeholder?: string; searchPlaceholder?: string; disabled?: boolean; invalid?: boolean; id?: string; className?: string }`.
   - Define and export `type ServiceOption = Pick<Service, 'id' | 'service_date'> & { vehicle?: { id: number; plate: string } | null; contract?: { id: number; contract_number: string } | null; driver?: { id: number; first_name: string; first_lastname: string } | null }`.
@@ -200,12 +200,12 @@ Authorization remains at the `Gate::authorize(Permission::*->value)` call at the
 
 ### Frontend — service-incidents-specific
 
-- [ ] **Task F3**: Create `resources/js/pages/service-incidents/columns.tsx`.
+- [x] **Task F3**: Create `resources/js/pages/service-incidents/columns.tsx`.
   - Seven column defs: `servicio` (computed, Link to `/services/{id}`), `tipo` (incident_type.name + severity pill), `descripcion` (truncated), `reported_at` (formatted), `registrador` (name + Conductor badge), `impacto` (Afecta facturación badge or em-dash), `actions` (usePermissions-gated Edit + Delete).
   - Define a local `type ServiceIncidentRow = ServiceIncident & { service?: Service & { vehicle?: Vehicle | null; contract?: Contract | null } | null; incident_type?: IncidentType | null; registrar?: { id: number; name: string } | null }` using `Pick<T> & relations`.
   - Actions column: follow the `InvoiceRowActions` pattern from `resources/js/pages/invoices/columns.tsx` — a small component that reads `usePermissions().can()` for `UPDATE_INCIDENTS` and `DELETE_INCIDENTS` separately.
 
-- [ ] **Task F4**: Rewrite `resources/js/pages/service-incidents/index.tsx`.
+- [x] **Task F4**: Rewrite `resources/js/pages/service-incidents/index.tsx`.
   - Replace the `useReactTable` + inline columns with `useServerTable<ServiceIncidentRow>({ data: paginatedServiceIncidents, columns })`.
   - Define `incidentFilters: FilterDefinition[]` with `incident_type_id`, `severity`, `is_driver_report`, `affects_billing` (options per AC9-11).
   - No above-the-table filter.
@@ -213,14 +213,14 @@ Authorization remains at the `Gate::authorize(Permission::*->value)` call at the
   - Wire the "Crear Novedad" button to `router.visit(serviceIncidents.create().url)` (NOT a modal).
   - Type props as `{ serviceIncidents: PaginatedData<ServiceIncidentRow>, incidentTypes: IncidentTypeOption[] }`.
 
-- [ ] **Task F5**: Rewrite `resources/js/pages/service-incidents/show.tsx`.
+- [x] **Task F5**: Rewrite `resources/js/pages/service-incidents/show.tsx`.
   - Five Card sections in the order listed in AC17.
   - Type props as `{ serviceIncident: ShowServiceIncident }` where `ShowServiceIncident` uses `Pick<T> & relations` (match contracts/invoices show-page pattern).
   - Impacto card shows the `additional_value` hero with `text-xl font-bold tabular-nums` + `Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })`.
   - Reference convention: `resources/js/pages/invoices/show.tsx`.
   - Breadcrumbs: `[{ title: 'Novedades', href: serviceIncidents.index().url }, { title: incidentType.name ?? 'Novedad', href: '#' }]`.
 
-- [ ] **Task F6**: Rewrite `resources/js/pages/service-incidents/create.tsx`.
+- [x] **Task F6**: Rewrite `resources/js/pages/service-incidents/create.tsx`.
   - Extract the form body into a new `resources/js/components/incidents/service-incident-form.tsx` component (parallel to `invoice-form.tsx`) so edit.tsx can reuse it.
   - Form props: `{ data, setData, errors, incidentTypes, services?, preselectedService?, idPrefix? }`.
   - When `preselectedService` is provided: render the read-only summary block + muted "Preseleccionado desde el servicio" note; hide the `<ServiceCombobox />`.
@@ -231,12 +231,12 @@ Authorization remains at the `Gate::authorize(Permission::*->value)` call at the
   - `additional_value` Input with "$" prefix, `type="number"`, `step="0.01"`, `min="0"` (preserve parity with the invoices total_value input).
   - Type page props as `{ incidentTypes: IncidentTypeOption[], service?: Service | null, services?: ServiceOption[] }`.
 
-- [ ] **Task F7**: Rewrite `resources/js/pages/service-incidents/edit.tsx`.
+- [x] **Task F7**: Rewrite `resources/js/pages/service-incidents/edit.tsx`.
   - Render the same `<ServiceIncidentForm>` component with `preselectedService={serviceIncident.service}` (always, because service-transfer is out of scope — the picker stays hidden on edit).
   - Pre-fill `useForm` with the existing values; coerce `additional_value` decimal string back to a plain string for the input.
   - Breadcrumbs: `[Novedades, incident.incidentType.name, 'Editar']`.
 
-- [ ] **Task F8**: Add the Novedades card to `resources/js/pages/services/show.tsx`.
+- [x] **Task F8**: Add the Novedades card to `resources/js/pages/services/show.tsx`.
   - Define a local `RecentIncidentRow` type.
   - Render a new `<Card>` after the existing primary cards with heading "Novedades" + description "Últimas 5 novedades registradas".
   - Inline `<Table>` with columns Fecha (Link to show), Tipo, Severidad (pill), Registrador.
@@ -245,17 +245,17 @@ Authorization remains at the `Gate::authorize(Permission::*->value)` call at the
 
 ### Tests
 
-- [ ] **Task T1 (Pest, backend — index pagination + severity filter)**: Add to `tests/Feature/Http/Controllers/ServiceIncidentControllerTest.php`:
+- [x] **Task T1 (Pest, backend — index pagination + severity filter)**: Add to `tests/Feature/Http/Controllers/ServiceIncidentControllerTest.php`:
   - `test('index returns paginated payload with relations')` — seed 3 incidents; assert `serviceIncidents.data` is array with pagination keys + each row has `service.vehicle`, `incident_type`, `registrar`.
   - `test('index filters by severity via the new callback filter')` — seed 3 incident types (one per severity) + 3 incidents (one each); apply `filter[severity]=major`; assert only the major row remains.
   - `test('index filters by incident_type_id / is_driver_report / affects_billing exact')` — preserved regression coverage.
   - `test('index defaults to -reported_at sort')` — seed 3 incidents with offset `reported_at`; assert the latest is first.
   - `test('index passes incidentTypes prop for the faceted filter')` — assert the prop is present and contains id/name/severity/affects_billing_default.
 
-- [ ] **Task T2 (Pest, backend — show eager loads)**:
+- [x] **Task T2 (Pest, backend — show eager loads)**:
   - `test('show loads service.vehicle + service.contract.thirdParty + incidentType + registrar')` — assert all four relations are populated in the Inertia payload.
 
-- [ ] **Task T3 (Pest, backend — store hardening)**:
+- [x] **Task T3 (Pest, backend — store hardening)**:
   - `test('store accepts a driver submission when the service is assigned to them')` — seed a driver + service + factory incident via POST; assert 302 redirect to `/driver` + DB row created with `is_driver_report = true`.
   - `test('store rejects a driver submission for another drivers service with 422 on service_id')` — seed two drivers + one service for driver A + attempt to POST as driver B; assert 422 with `service_id` error.
   - `test('store super-admin bypasses the driver-scope rule')` — super-admin can post with any service_id.
@@ -263,25 +263,25 @@ Authorization remains at the `Gate::authorize(Permission::*->value)` call at the
   - `test('store accepts null additional_value')` — POST without the key; assert 302.
   - `test('store accepts additional_value = 0')` — assert 302 (inclusive lower bound).
 
-- [ ] **Task T4 (Pest, backend — BillingIncidentNotification regression)**:
+- [x] **Task T4 (Pest, backend — BillingIncidentNotification regression)**:
   - `test('store dispatches BillingIncidentNotification to super-admin + admin + accounting when affects_billing is true')` — `Notification::fake()`, seed one of each role, POST with `affects_billing=true`, assert `Notification::assertSentTo($user, BillingIncidentNotification::class)` for each role.
   - `test('store does not dispatch when affects_billing is false')` — assert `Notification::assertNothingSent()`.
 
-- [ ] **Task T5 (Pest, backend — redirectAfterMutation)**:
+- [x] **Task T5 (Pest, backend — redirectAfterMutation)**:
   - `test('store redirects driver to /driver regardless of service_id')` — pin the existing driver-aware branch.
   - `test('store redirects admin to /services/{id}')` — pin the default branch.
 
-- [ ] **Task T6 (Pest, backend — services show Novedades payload)**:
+- [x] **Task T6 (Pest, backend — services show Novedades payload)**:
   - `test('services show returns recentIncidents ordered by reported_at desc limited to 5')` — seed 7 incidents on one service; visit `services.show`; assert `recentIncidents` has 5 rows with the latest `reported_at` first.
   - `test('services show returns empty recentIncidents when none exist')` — assert empty array.
 
-- [ ] **Task T7 (Pest, backend — authorization 403s)**:
+- [x] **Task T7 (Pest, backend — authorization 403s)**:
   - `test('accounting can view /service-incidents')` — 200.
   - `test('accounting cannot update or delete incidents')` — 403 on PUT + DELETE.
   - `test('operator has full CRUD')` — 200 on each.
   - `test('unauthenticated user receives 401 on all routes')`.
 
-- [ ] **Task T8 (Dusk, UI regression)**: Create `tests/Browser/ServiceIncidentsIndexAndShowTest.php` with four scenarios in a single consolidated file:
+- [x] **Task T8 (Dusk, UI regression)**: Create `tests/Browser/ServiceIncidentsIndexAndShowTest.php` with four scenarios in a single consolidated file:
 
   1. **`service-incidents index renders with Spanish headers, severity filter, and row tint`** — super-admin loads `/service-incidents`, asserts headers (Servicio, Tipo, Descripción, Reporte, Registrado Por, Impacto); seeds a mix of severities; applies `filter[severity]=major`; verifies the destructive row tint is present and informational rows don't render.
 
@@ -318,12 +318,12 @@ Preferred flow:
 7. Logout; login as accounting. Navigate to `/service-incidents`. Verify rows visible; open a row-actions menu; verify no Editar/Eliminar entries.
 8. `mcp__laravel-boost__browser-logs` for JS console errors.
 
-- [ ] Scenario 1: Admin index + severity filter + row tint
-- [ ] Scenario 2: Show page renders five cards + billing hero
-- [ ] Scenario 3: Cross-link "Ver servicio" → services/show
-- [ ] Scenario 4: Novedades card on services/show + deep-link
-- [ ] Scenario 5: Driver flow /driver → Registrar Novedad → /driver
-- [ ] Scenario 6: Accounting sees rows with no Acciones entries
+- [x] Scenario 1: Admin index + severity filter + row tint
+- [x] Scenario 2: Show page renders five cards + billing hero
+- [x] Scenario 3: Cross-link "Ver servicio" → services/show
+- [x] Scenario 4: Novedades card on services/show + deep-link
+- [x] Scenario 5: Driver flow /driver → Registrar Novedad → /driver
+- [x] Scenario 6: Accounting sees rows with no Acciones entries
 
 ### 2. Backend regression — Pest feature tests (required)
 
