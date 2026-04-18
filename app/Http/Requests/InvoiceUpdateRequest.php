@@ -4,6 +4,8 @@ namespace App\Http\Requests;
 
 use App\Enums\PaymentStatus;
 use App\Enums\Permission;
+use App\Models\Invoice;
+use App\Rules\TotalValueLockedWhenServicesAttached;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -23,10 +25,19 @@ class InvoiceUpdateRequest extends FormRequest
      */
     public function rules(): array
     {
+        $invoice = $this->route('invoice');
+        $invoiceModel = $invoice instanceof Invoice ? $invoice : null;
+
         return [
             'third_party_id' => ['required', 'integer', 'exists:third_parties,id'],
-            'invoice_number' => ['required', 'string', 'max:50', Rule::unique('invoices', 'invoice_number')->ignore($this->route('invoice'))],
-            'total_value' => ['required', 'numeric', 'min:0.01', 'max:9999999999.99'],
+            'invoice_number' => ['required', 'string', 'max:50', Rule::unique('invoices', 'invoice_number')->ignore($invoice)],
+            'total_value' => [
+                'required',
+                'numeric',
+                'min:0.01',
+                'max:9999999999.99',
+                new TotalValueLockedWhenServicesAttached($invoiceModel),
+            ],
             'issue_date' => ['required', 'date'],
             'payment_status' => ['required', Rule::enum(PaymentStatus::class)],
             'notes' => ['nullable', 'string'],
