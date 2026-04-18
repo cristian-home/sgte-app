@@ -23,6 +23,14 @@ export interface UseServerTableOptions<TData> {
 
     /** Default hidden columns. */
     initialColumnVisibility?: VisibilityState;
+
+    /**
+     * Forwarded to TanStack's `useReactTable({ meta })` so columns can
+     * read shared context (e.g. backend-supplied options or row-action
+     * callbacks) via `table.options.meta` without the index page
+     * having to pass them as props to every cell.
+     */
+    meta?: unknown;
 }
 
 export interface UseServerTableReturn<TData> {
@@ -62,6 +70,7 @@ export function useServerTable<TData>({
     columns,
     debounceMs = 300,
     initialColumnVisibility = {},
+    meta,
 }: UseServerTableOptions<TData>): UseServerTableReturn<TData> {
     const [paginatedData, setPaginatedData] =
         useState<PaginatedData<TData>>(initialData);
@@ -237,6 +246,7 @@ export function useServerTable<TData>({
         manualPagination: true,
         getCoreRowModel: getCoreRowModel(),
         pageCount: paginatedData.last_page,
+        meta: meta as Record<string, unknown> | undefined,
     });
 
     return {
