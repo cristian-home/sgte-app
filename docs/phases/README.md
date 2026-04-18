@@ -9,7 +9,7 @@ Technical documentation of the development phases of SGTE (Special Transport Man
 | 1 | [Foundations and Master Data](phase-1-foundations.md) | ✅ Completed | REQ-004, REQ-005, REQ-006, REQ-014 |
 | 2 | [Operational Core](phase-2-operations.md) | ✅ Completed | REQ-001, REQ-002, REQ-003, REQ-008, REQ-009 |
 | 3 | [Driver and Incidents](phase-3-driver-incidents.md) | ✅ Completed | REQ-012, REQ-013 |
-| 4 | [Billing and Audit](phase-4-billing-reports.md) | 🔶 In progress — Invoice CRUD scaffolded, billing workflow pending | REQ-011, REQ-009 |
+| 4 | [Billing and Audit](phase-4-billing-reports.md) | 🔶 In progress — Invoice CRUD + service-invoice assignment + informational PDF merged; REQ-009 justification UX pending | REQ-011, REQ-009 |
 | 5 | [Optional Modules and Deploy](phase-5-optionals-deploy.md) | 🔶 In progress — deploy ready; FUEC & GPS are scaffolded stubs only | REQ-007, REQ-010 |
 
 ## Dependencies between phases
@@ -22,7 +22,7 @@ Phase 1 ✅ ──► Phase 2 ✅ ──► Phase 3 ✅
 
 - **Phase 2** requires the migrations and CRUDs from Phase 1
 - **Phase 3** requires the service form from Phase 2
-- **Phase 4** requires the day states from Phase 2; Phase 3 recommended. Invoice CRUD is scaffolded; the billing workflow (aggregation, PDF, REQ-009 justification UX) is pending.
+- **Phase 4** requires the day states from Phase 2; Phase 3 recommended. Invoice CRUD, the service-invoice billing workflow, and the informational PDF have all merged to `develop`. Only REQ-009 (accounting-immutability justification UX on executed-record edits + filters on `/audit-log`) remains.
 - **Phase 5** has no hard blockers; deploy already completed. FUEC and GPS are scaffolded CRUD stubs only — no PDF/QR/feature-flag (FUEC) and no map/driver capture (GPS).
 
 ## Technology stack
