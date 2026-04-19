@@ -89,6 +89,73 @@ class FuecGenerator
         });
     }
 
+    /**
+     * REQ-007 non-committing preview. Runs the same pre-generation
+     * gauntlet as `generateFor`, peeks at what the next consecutive
+     * WOULD be, and renders the Blade PDF with a throwaway UUID.
+     * Zero DB writes, zero consecutive consumed, nothing stored on
+     * MinIO. Returns PDF bytes ready to stream to the browser.
+     *
+     * The verify URL baked into the QR points at a /fuec/preview
+     * sentinel so scanners don't confuse the throwaway preview with
+     * a real, public-verifiable FUEC.
+     */
+    public function previewFor(Service $service): string
+    {
+        $service->loadMissing(['contract', 'vehicle', 'driver']);
+
+        $this->reRunPreGenerationChecks($service);
+
+        $range = FuecNumberRange::query()
+            ->where('active', true)
+            ->first();
+
+        if (! $range) {
+            $validator = $this->validatorFactory->make([], []);
+            $validator->errors()->add(
+                'fuec_pre_generation.range',
+                'No hay un rango MinTransporte activo.',
+            );
+
+            throw new ValidationException($validator);
+        }
+
+        $consecutive = $this->computeNextConsecutive($range);
+
+        if ($consecutive > $range->range_to) {
+            throw FuecRangeExhaustedException::for($range);
+        }
+
+        return $this->renderPreviewPdf($service, $range, $consecutive);
+    }
+
+    protected function renderPreviewPdf(Service $service, FuecNumberRange $range, int $consecutive): string
+    {
+        $service->loadMissing([
+            'contract.thirdParty.documentType',
+            'vehicle.municipality.department',
+            'driver.documentType',
+            'originMunicipality.department',
+            'destinationMunicipality.department',
+        ]);
+
+        $verifyUrl = url('/fuec/preview');
+        $qrDataUri = QrCode::dataUri($verifyUrl, 200);
+
+        return Pdf::loadView('fuecs.pdf', [
+            'service' => $service,
+            'range' => $range,
+            'consecutive' => $consecutive,
+            'uuid' => 'preview',
+            'verifyUrl' => $verifyUrl,
+            'qrDataUri' => $qrDataUri,
+            'generatedAt' => now(),
+            'isPreview' => true,
+        ])
+            ->setPaper('letter')
+            ->output();
+    }
+
     protected function reRunPreGenerationChecks(Service $service): void
     {
         $validator = $this->validatorFactory->make([], []);

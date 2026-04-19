@@ -58,6 +58,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('fuecs/candidate-services', [App\Http\Controllers\FuecController::class, 'candidateServices'])
             ->middleware('can:'.App\Enums\Permission::GENERATE_FUEC->value)
             ->name('fuecs.candidate-services');
+        Route::post('fuecs/preview', [App\Http\Controllers\FuecController::class, 'preview'])
+            ->middleware('can:'.App\Enums\Permission::GENERATE_FUEC->value)
+            ->name('fuecs.preview');
         Route::get('fuecs/{fuec}/pdf', [App\Http\Controllers\FuecController::class, 'pdf'])
             ->middleware('can:'.App\Enums\Permission::VIEW_FUEC->value)
             ->name('fuecs.pdf');

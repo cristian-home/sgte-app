@@ -38,6 +38,7 @@ class Fuec extends Model
         'status',
         'pdf_path',
         'pdf_disk',
+        'cancellation_reason',
     ];
 
     protected function casts(): array
@@ -85,6 +86,7 @@ class Fuec extends Model
                 'status',
                 'pdf_path',
                 'pdf_disk',
+                'cancellation_reason',
             ]);
     }
 
