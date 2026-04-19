@@ -60,6 +60,7 @@ export interface ContractOption {
     start_date: string;
     end_date: string;
     is_generic: boolean;
+    billing_unit_type: string | null;
     third_party?: ThirdPartyOption | null;
 }
 
@@ -183,6 +184,34 @@ export default function ServiceForm({
     );
 
     const isClosed = data.service_status === 'closed';
+
+    // REQ-011 billing-unit semantics. Look up the selected contract's
+    // billing_unit_type and derive the Cantidad label + hint so the
+    // operator knows whether they're entering trips, passengers, days,
+    // or hours. Legacy contracts with a null billing_unit_type fall back
+    // to the generic "Cantidad (unidades del contrato)" label.
+    const selectedContract = contracts.find(
+        (c) => String(c.id) === String(data.contract_id),
+    );
+    const billingUnitLabel = (() => {
+        switch (selectedContract?.billing_unit_type) {
+            case 'viaje':
+                return 'Cantidad (viajes)';
+            case 'pasajero':
+                return 'Cantidad (pasajeros)';
+            case 'dia':
+                return 'Cantidad (días)';
+            case 'hora':
+                return 'Cantidad (horas)';
+            default:
+                return 'Cantidad (unidades del contrato)';
+        }
+    })();
+    const billingUnitHint = selectedContract
+        ? selectedContract.billing_unit_type
+            ? `Contrato ${selectedContract.contract_number} factura por ${selectedContract.billing_unit_type}.`
+            : `Contrato ${selectedContract.contract_number} no tiene unidad de facturación definida.`
+        : 'Seleccione un contrato para conocer la unidad de cobro.';
 
     // REQ-009 retroactive-entry gate. Backend rejects service_date >=
     // today + closed; allows service_date < today + closed but only
@@ -668,7 +697,7 @@ export default function ServiceForm({
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
                     data-error={invalid('quantity')}
                 >
-                    <Label htmlFor="quantity">Cantidad *</Label>
+                    <Label htmlFor="quantity">{billingUnitLabel} *</Label>
                     <Input
                         id="quantity"
                         type="number"
@@ -677,6 +706,9 @@ export default function ServiceForm({
                         disabled={isFieldDisabled('quantity')}
                         onChange={(e) => setData('quantity', e.target.value)}
                     />
+                    <p className="text-xs text-muted-foreground">
+                        {billingUnitHint}
+                    </p>
                     <InputError message={errors.quantity} />
                 </div>
                 <div

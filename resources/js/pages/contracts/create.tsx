@@ -25,6 +25,7 @@ const initialData: ContractFormData = {
     route_description: '',
     is_generic: false,
     active: true,
+    billing_unit_type: '',
 };
 
 export default function ContractsCreate({

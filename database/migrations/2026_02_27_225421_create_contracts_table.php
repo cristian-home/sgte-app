@@ -23,6 +23,12 @@ return new class extends Migration
             $table->text('route_description');
             $table->boolean('is_generic')->default(false);
             $table->boolean('active')->default(true);
+            // REQ-011 billing unit semantics. Drives the dynamic
+            // "Cantidad (…)" label on the service form so operators and
+            // accounting know whether quantity means trips, passengers,
+            // days, or hours. Nullable because legacy seeded contracts
+            // and historical data predate this column.
+            $table->enum('billing_unit_type', ['viaje', 'pasajero', 'dia', 'hora'])->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

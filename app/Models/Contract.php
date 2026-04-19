@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\BillingUnitType;
 use App\Enums\ContractObject;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -31,6 +32,7 @@ class Contract extends Model
         'route_description',
         'is_generic',
         'active',
+        'billing_unit_type',
     ];
 
     /**
@@ -48,6 +50,7 @@ class Contract extends Model
             'end_date' => 'date',
             'is_generic' => 'boolean',
             'active' => 'boolean',
+            'billing_unit_type' => BillingUnitType::class,
         ];
     }
 
@@ -64,7 +67,7 @@ class Contract extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['id', 'contract_number', 'third_party_id', 'contract_object', 'start_date', 'end_date', 'route_description', 'is_generic', 'active']);
+            ->logOnly(['id', 'contract_number', 'third_party_id', 'contract_object', 'start_date', 'end_date', 'route_description', 'is_generic', 'active', 'billing_unit_type']);
     }
 
     /**

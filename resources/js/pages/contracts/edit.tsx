@@ -24,6 +24,7 @@ type EditContract = Pick<
     | 'route_description'
     | 'is_generic'
     | 'active'
+    | 'billing_unit_type'
 > & {
     third_party?:
         | (Pick<
@@ -79,6 +80,7 @@ export default function ContractsEdit({
             route_description: contract.route_description ?? '',
             is_generic: contract.is_generic,
             active: contract.active,
+            billing_unit_type: contract.billing_unit_type ?? '',
         });
 
     function submit(e: React.FormEvent) {

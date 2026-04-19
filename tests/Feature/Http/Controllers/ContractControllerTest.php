@@ -60,6 +60,61 @@ test('store saves and redirects', function (): void {
     expect(Contract::query()->where('contract_number', 'CT-TEST-001')->count())->toBe(1);
 });
 
+test('store persists billing_unit_type when provided (REQ-011)', function (): void {
+    $thirdParty = ThirdParty::factory()->create();
+
+    post(route('contracts.store'), [
+        'contract_number' => 'CT-BILLING-001',
+        'third_party_id' => $thirdParty->id,
+        'contract_object' => 'business',
+        'start_date' => Carbon::now()->toDateString(),
+        'end_date' => Carbon::now()->addYear()->toDateString(),
+        'route_description' => 'Ruta de prueba',
+        'is_generic' => false,
+        'active' => true,
+        'billing_unit_type' => 'pasajero',
+    ])->assertRedirect(route('contracts.index'));
+
+    $contract = Contract::query()->where('contract_number', 'CT-BILLING-001')->firstOrFail();
+    expect($contract->billing_unit_type?->value)->toBe('pasajero');
+});
+
+test('store rejects an invalid billing_unit_type value', function (): void {
+    $thirdParty = ThirdParty::factory()->create();
+
+    $response = post(route('contracts.store'), [
+        'contract_number' => 'CT-BILLING-BAD',
+        'third_party_id' => $thirdParty->id,
+        'contract_object' => 'business',
+        'start_date' => Carbon::now()->toDateString(),
+        'end_date' => Carbon::now()->addYear()->toDateString(),
+        'route_description' => 'Ruta de prueba',
+        'is_generic' => false,
+        'active' => true,
+        'billing_unit_type' => 'monthly',
+    ]);
+
+    $response->assertSessionHasErrors(['billing_unit_type']);
+});
+
+test('store accepts a null billing_unit_type', function (): void {
+    $thirdParty = ThirdParty::factory()->create();
+
+    post(route('contracts.store'), [
+        'contract_number' => 'CT-BILLING-NULL',
+        'third_party_id' => $thirdParty->id,
+        'contract_object' => 'business',
+        'start_date' => Carbon::now()->toDateString(),
+        'end_date' => Carbon::now()->addYear()->toDateString(),
+        'route_description' => 'Ruta de prueba',
+        'is_generic' => false,
+        'active' => true,
+    ])->assertRedirect(route('contracts.index'));
+
+    $contract = Contract::query()->where('contract_number', 'CT-BILLING-NULL')->firstOrFail();
+    expect($contract->billing_unit_type)->toBeNull();
+});
+
 test('show behaves as expected', function (): void {
     $contract = Contract::factory()->create();
 
