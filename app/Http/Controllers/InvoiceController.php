@@ -129,11 +129,19 @@ class InvoiceController extends Controller
                 'planned_start_time',
             ]);
 
+        $candidates = $this->candidateServices($invoice);
+        [$cleanCandidates, $blockedCandidates] = $candidates->partition(
+            fn (Service $service) => ! $service->serviceIncidents
+                ->where('affects_billing', true)
+                ->isNotEmpty(),
+        );
+
         return Inertia::render('invoices/show', [
             'invoice' => $invoice,
             'recentServices' => $recentServices,
             'computedTotal' => $calculator->computeFor($invoice),
-            'candidateServices' => $this->candidateServices($invoice),
+            'candidateServices' => $cleanCandidates->values(),
+            'blockedCandidateServices' => $blockedCandidates->values(),
         ]);
     }
 
@@ -202,12 +210,43 @@ class InvoiceController extends Controller
         Gate::authorize(Permission::ASSIGN_SERVICES_TO_INVOICES->value);
 
         $ids = $request->validated('service_ids');
+        $justification = trim((string) $request->input('override_justification'));
+
+        // Identify the subset of services that carry a billing-
+        // affecting incident — these are the ones the justification is
+        // actually overriding. We log them explicitly so the audit
+        // trail answers "which services were force-attached" without
+        // requiring reviewers to replay the incident state at attach
+        // time.
+        $overriddenServiceIds = [];
+        if ($justification !== '') {
+            $overriddenServiceIds = Service::query()
+                ->whereIn('id', $ids)
+                ->whereHas(
+                    'serviceIncidents',
+                    fn ($q) => $q->where('affects_billing', true),
+                )
+                ->pluck('id')
+                ->all();
+        }
 
         DB::transaction(function () use ($ids, $invoice) {
             Service::query()
                 ->whereIn('id', $ids)
                 ->update(['invoice_id' => $invoice->id]);
         });
+
+        if ($justification !== '' && $overriddenServiceIds !== []) {
+            activity()
+                ->performedOn($invoice)
+                ->causedBy($request->user())
+                ->withProperties([
+                    'override_justification' => $justification,
+                    'overridden_service_ids' => $overriddenServiceIds,
+                    'attached_service_ids' => $ids,
+                ])
+                ->log('Servicios con novedades facturables asociados con justificación');
+        }
 
         $calculator->recomputeFor($invoice->fresh());
 

@@ -13,6 +13,12 @@ use Illuminate\Support\Facades\Gate;
 class InvoiceServiceAttachRequest extends FormRequest
 {
     /**
+     * Minimum length for an override justification. Keeps the trail
+     * auditable; "ok" and "si" don't count.
+     */
+    private const JUSTIFICATION_MIN = 10;
+
+    /**
      * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
@@ -30,6 +36,7 @@ class InvoiceServiceAttachRequest extends FormRequest
         return [
             'service_ids' => ['required', 'array', 'min:1'],
             'service_ids.*' => ['integer', 'exists:services,id'],
+            'override_justification' => ['nullable', 'string', 'min:'.self::JUSTIFICATION_MIN, 'max:1000'],
         ];
     }
 
@@ -54,7 +61,12 @@ class InvoiceServiceAttachRequest extends FormRequest
                 $ids = $this->validated('service_ids');
 
                 $services = Service::query()
-                    ->with('contract:id,third_party_id')
+                    ->with([
+                        'contract:id,third_party_id',
+                        'serviceIncidents' => fn ($q) => $q
+                            ->where('affects_billing', true)
+                            ->with('incidentType:id,name'),
+                    ])
                     ->whereIn('id', $ids)
                     ->get();
 
@@ -89,6 +101,32 @@ class InvoiceServiceAttachRequest extends FormRequest
                             'Solo servicios cerrados pueden facturarse.',
                         );
                         break;
+                    }
+                }
+
+                // REQ-011 billing-gate: services carrying a billing-
+                // affecting incident must be explicitly acknowledged by
+                // the operator with a justification — otherwise accounting
+                // silently invoices a run that had a known issue.
+                $blocked = $services->filter(
+                    fn (Service $service) => $service->serviceIncidents->isNotEmpty(),
+                );
+
+                if ($blocked->isNotEmpty()) {
+                    $justification = trim((string) $this->input('override_justification'));
+                    if ($justification === '') {
+                        $names = $blocked
+                            ->map(function (Service $service): string {
+                                $firstIncidentType = $service->serviceIncidents->first()?->incidentType?->name ?? 'novedad';
+
+                                return "#{$service->id} ({$firstIncidentType})";
+                            })
+                            ->implode(', ');
+
+                        $validator->errors()->add(
+                            'service_ids',
+                            "Los siguientes servicios tienen novedades que afectan la facturación y requieren justificación: {$names}.",
+                        );
                     }
                 }
             },

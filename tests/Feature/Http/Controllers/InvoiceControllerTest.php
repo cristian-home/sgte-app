@@ -5,11 +5,14 @@ namespace Tests\Feature\Http\Controllers;
 use App\Enums\PaymentStatus;
 use App\Enums\ServiceStatus;
 use App\Models\Contract;
+use App\Models\IncidentType;
 use App\Models\Invoice;
 use App\Models\Service;
+use App\Models\ServiceIncident;
 use App\Models\ThirdParty;
 use App\Models\User;
 use Illuminate\Support\Carbon;
+use Spatie\Activitylog\Models\Activity;
 
 use function Pest\Laravel\assertSoftDeleted;
 use function Pest\Laravel\delete;
@@ -1032,4 +1035,177 @@ test('pdf: zero-services invoice renders the manual-total fallback note', functi
     ])->render();
 
     expect($html)->toContain('Sin servicios asociados — valor total manual.');
+});
+
+// ================================================================
+// REQ-011 billing-gate: affects_billing=true incidents block attach
+// (invoice-billing-blocked-incidents requirement)
+// ================================================================
+
+function billingBlockedScenario(): array
+{
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    $contract = Contract::factory()->create(['third_party_id' => $customer->id]);
+    $invoice = Invoice::factory()->create([
+        'third_party_id' => $customer->id,
+        'total_value' => 0,
+    ]);
+    $service = Service::factory()->create([
+        'contract_id' => $contract->id,
+        'service_status' => ServiceStatus::Closed,
+        'unit_value' => 1000,
+        'quantity' => 2,
+        'invoice_id' => null,
+    ]);
+    $incidentType = IncidentType::factory()->create([
+        'name' => 'Ruta truncada',
+        'affects_billing_default' => true,
+    ]);
+    ServiceIncident::factory()->create([
+        'service_id' => $service->id,
+        'incident_type_id' => $incidentType->id,
+        'affects_billing' => true,
+        'additional_value' => -200,
+    ]);
+
+    return [$invoice, $service];
+}
+
+test('attach: rejects services with billing-affecting incidents when no override_justification', function (): void {
+    [$invoice, $service] = billingBlockedScenario();
+
+    $response = post(route('invoices.services.attach', $invoice), [
+        'service_ids' => [$service->id],
+    ]);
+
+    $response->assertSessionHasErrors('service_ids');
+    $errors = session('errors')->get('service_ids');
+    expect($errors)->not->toBeEmpty();
+    expect(implode(' ', $errors))
+        ->toContain('novedades que afectan la facturación')
+        ->toContain('Ruta truncada');
+    expect($service->fresh()->invoice_id)->toBeNull();
+});
+
+test('attach: accepts services with billing-affecting incidents when override_justification is present', function (): void {
+    [$invoice, $service] = billingBlockedScenario();
+
+    $response = post(route('invoices.services.attach', $invoice), [
+        'service_ids' => [$service->id],
+        'override_justification' => 'Cliente aceptó cobrar el servicio a pesar de la ruta truncada.',
+    ]);
+
+    $response->assertRedirect(route('invoices.show', $invoice));
+    expect($service->fresh()->invoice_id)->toBe($invoice->id);
+});
+
+test('attach: override_justification must meet minimum length', function (): void {
+    [$invoice, $service] = billingBlockedScenario();
+
+    $response = post(route('invoices.services.attach', $invoice), [
+        'service_ids' => [$service->id],
+        'override_justification' => 'corta',
+    ]);
+
+    $response->assertSessionHasErrors('override_justification');
+    expect($service->fresh()->invoice_id)->toBeNull();
+});
+
+test('attach: override logs activity_log entry with justification + overridden_service_ids', function (): void {
+    [$invoice, $service] = billingBlockedScenario();
+
+    $justification = 'El cliente autorizó la facturación del servicio tras revisar la novedad.';
+
+    post(route('invoices.services.attach', $invoice), [
+        'service_ids' => [$service->id],
+        'override_justification' => $justification,
+    ])->assertRedirect();
+
+    $activity = Activity::query()
+        ->where('subject_type', Invoice::class)
+        ->where('subject_id', $invoice->id)
+        ->where('description', 'Servicios con novedades facturables asociados con justificación')
+        ->latest()
+        ->first();
+
+    expect($activity)->not->toBeNull();
+    expect($activity->properties->get('override_justification'))->toBe($justification);
+    expect($activity->properties->get('overridden_service_ids'))->toContain($service->id);
+    expect($activity->properties->get('attached_service_ids'))->toContain($service->id);
+});
+
+test('attach: clean service (no billing-affecting incident) still attaches without a justification', function (): void {
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    $contract = Contract::factory()->create(['third_party_id' => $customer->id]);
+    $invoice = Invoice::factory()->create(['third_party_id' => $customer->id, 'total_value' => 0]);
+    $service = Service::factory()->create([
+        'contract_id' => $contract->id,
+        'service_status' => ServiceStatus::Closed,
+        'invoice_id' => null,
+    ]);
+    // Non-billing-affecting incident — shouldn't block.
+    $incidentType = IncidentType::factory()->create(['affects_billing_default' => false]);
+    ServiceIncident::factory()->create([
+        'service_id' => $service->id,
+        'incident_type_id' => $incidentType->id,
+        'affects_billing' => false,
+        'additional_value' => null,
+    ]);
+
+    $response = post(route('invoices.services.attach', $invoice), [
+        'service_ids' => [$service->id],
+    ]);
+
+    $response->assertRedirect(route('invoices.show', $invoice));
+    expect($service->fresh()->invoice_id)->toBe($invoice->id);
+});
+
+test('attach: mixed batch (one clean + one blocked) rejects without justification', function (): void {
+    [$invoice] = billingBlockedScenario();
+    $contract = Contract::factory()->create(['third_party_id' => $invoice->third_party_id]);
+    $cleanService = Service::factory()->create([
+        'contract_id' => $contract->id,
+        'service_status' => ServiceStatus::Closed,
+        'invoice_id' => null,
+    ]);
+    $blockedService = Service::query()->where('invoice_id', null)
+        ->where('id', '!=', $cleanService->id)
+        ->first();
+
+    $response = post(route('invoices.services.attach', $invoice), [
+        'service_ids' => [$cleanService->id, $blockedService->id],
+    ]);
+
+    $response->assertSessionHasErrors('service_ids');
+    expect($cleanService->fresh()->invoice_id)->toBeNull();
+    expect($blockedService->fresh()->invoice_id)->toBeNull();
+});
+
+test('show: candidateServices excludes billing-blocked; blockedCandidateServices lists them separately', function (): void {
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    $contract = Contract::factory()->create(['third_party_id' => $customer->id]);
+    $invoice = Invoice::factory()->create(['third_party_id' => $customer->id, 'total_value' => 0]);
+    $cleanService = Service::factory()->create([
+        'contract_id' => $contract->id,
+        'service_status' => ServiceStatus::Closed,
+        'invoice_id' => null,
+    ]);
+    $blockedService = Service::factory()->create([
+        'contract_id' => $contract->id,
+        'service_status' => ServiceStatus::Closed,
+        'invoice_id' => null,
+    ]);
+    $incidentType = IncidentType::factory()->create(['affects_billing_default' => true]);
+    ServiceIncident::factory()->create([
+        'service_id' => $blockedService->id,
+        'incident_type_id' => $incidentType->id,
+        'affects_billing' => true,
+    ]);
+
+    $response = get(route('invoices.show', $invoice));
+
+    $response->assertInertia(function ($page) use ($cleanService, $blockedService) {
+        $page->has('candidateServices', 1, fn ($row) => $row->where('id', $cleanService->id)->etc());
+        $page->has('blockedCandidateServices', 1, fn ($row) => $row->where('id', $blockedService->id)->etc());
+    });
 });
