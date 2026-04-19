@@ -189,9 +189,17 @@ class VehicleController extends Controller
             ->limit(5)
             ->get();
 
+        $recentLocations = config('sgte.gps_enabled')
+            ? $vehicle->locations()
+                ->orderByDesc('recorded_at')
+                ->limit(10)
+                ->get(['id', 'vehicle_id', 'recorded_at', 'latitude', 'longitude', 'is_manual'])
+            : collect();
+
         return Inertia::render('vehicles/show', [
             'vehicle' => $vehicle,
             'recentServices' => $recentServices,
+            'recentLocations' => $recentLocations,
         ]);
     }
 

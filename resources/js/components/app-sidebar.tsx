@@ -178,12 +178,18 @@ const navGroups: NavGroup[] = [
     {
         label: 'GPS',
         icon: MapPin,
-        permission: Permission.VIEW_VEHICLES,
+        permission: Permission.VIEW_VEHICLE_LOCATIONS,
+        featureFlag: 'gps',
         items: [
+            {
+                title: 'Mapa',
+                href: '/gps/map',
+                permission: Permission.VIEW_VEHICLE_LOCATIONS,
+            },
             {
                 title: 'Ubicaciones',
                 href: vehicleLocationsIndex(),
-                permission: Permission.VIEW_VEHICLES,
+                permission: Permission.VIEW_VEHICLE_LOCATIONS,
             },
         ],
     },
