@@ -42,7 +42,7 @@ class VehicleLocation extends Model
             'id' => 'integer',
             'vehicle_id' => 'integer',
             'service_id' => 'integer',
-            'recorded_at' => 'timestamp',
+            'recorded_at' => 'datetime',
             'latitude' => 'decimal:8',
             'longitude' => 'decimal:8',
             'accuracy' => 'decimal:2',

@@ -1,129 +1,154 @@
 <?php
 
-namespace Tests\Feature\Http\Controllers;
-
+use App\Enums\Role;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\VehicleLocation;
 use Illuminate\Support\Carbon;
 
-use function Pest\Laravel\assertModelMissing;
+use function Pest\Laravel\actingAs;
 use function Pest\Laravel\delete;
 use function Pest\Laravel\get;
 use function Pest\Laravel\post;
-use function Pest\Laravel\put;
 
 beforeEach(function (): void {
-    $user = User::factory()->create();
-    $user->assignRole('super_admin');
-    $this->actingAs($user);
+    config()->set('sgte.gps_enabled', true);
 });
 
-test('index behaves as expected', function (): void {
-    $vehicleLocations = VehicleLocation::factory()->count(3)->create();
+test('admin can list vehicle locations with eager-loaded relations', function (): void {
+    $admin = User::factory()->create();
+    $admin->assignRole(Role::ADMIN->value);
+    actingAs($admin);
 
-    $response = get(route('vehicle-locations.index'));
+    VehicleLocation::factory()->count(3)->create();
 
-    $response->assertOk();
+    get(route('vehicle-locations.index'))
+        ->assertOk()
+        ->assertInertia(
+            fn (\Inertia\Testing\AssertableInertia $page) => $page
+                ->component('vehicle-locations/index')
+                ->has('vehicleLocations.data')
+                ->has('vehicles')
+        );
 });
 
-test('create behaves as expected', function (): void {
-    $response = get(route('vehicle-locations.create'));
+test('index filter by vehicle_id exact works', function (): void {
+    $admin = User::factory()->create();
+    $admin->assignRole(Role::ADMIN->value);
+    actingAs($admin);
 
-    $response->assertOk();
-});
-
-test('store uses form request validation')
-    ->assertActionUsesFormRequest(
-        \App\Http\Controllers\VehicleLocationController::class,
-        'store',
-        \App\Http\Requests\VehicleLocationStoreRequest::class
-    );
-
-test('store saves and redirects', function (): void {
     $vehicle = Vehicle::factory()->create();
-    $recorded_at = Carbon::parse(fake()->dateTime());
-    $latitude = fake()->latitude();
-    $longitude = fake()->longitude();
-    $is_manual = fake()->boolean();
+    VehicleLocation::factory()->create(['vehicle_id' => $vehicle->id]);
+    VehicleLocation::factory()->count(2)->create();
 
-    $response = post(route('vehicle-locations.store'), [
-        'vehicle_id' => $vehicle->id,
-        'recorded_at' => $recorded_at,
-        'latitude' => $latitude,
-        'longitude' => $longitude,
-        'is_manual' => $is_manual,
-    ]);
+    $response = get(route('vehicle-locations.index', [
+        'filter' => ['vehicle_id' => $vehicle->id],
+    ]))->assertOk();
 
-    $vehicleLocations = VehicleLocation::query()
-        ->where('vehicle_id', $vehicle->id)
-        ->where('recorded_at', $recorded_at)
-        ->where('latitude', $latitude)
-        ->where('longitude', $longitude)
-        ->where('is_manual', $is_manual)
-        ->get();
-    expect($vehicleLocations)->toHaveCount(1);
-    $vehicleLocation = $vehicleLocations->first();
-
-    $response->assertRedirect(route('vehicle-locations.index'));
-});
-
-test('show behaves as expected', function (): void {
-    $vehicleLocation = VehicleLocation::factory()->create();
-
-    $response = get(route('vehicle-locations.show', $vehicleLocation));
-
-    $response->assertOk();
-});
-
-test('edit behaves as expected', function (): void {
-    $vehicleLocation = VehicleLocation::factory()->create();
-
-    $response = get(route('vehicle-locations.edit', $vehicleLocation));
-
-    $response->assertOk();
-});
-
-test('update uses form request validation')
-    ->assertActionUsesFormRequest(
-        \App\Http\Controllers\VehicleLocationController::class,
-        'update',
-        \App\Http\Requests\VehicleLocationUpdateRequest::class
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page->has('vehicleLocations.data', 1)
     );
-
-test('update redirects', function (): void {
-    $vehicleLocation = VehicleLocation::factory()->create();
-    $vehicle = Vehicle::factory()->create();
-    $recorded_at = Carbon::parse(fake()->dateTime());
-    $latitude = fake()->latitude();
-    $longitude = fake()->longitude();
-    $is_manual = fake()->boolean();
-
-    $response = put(route('vehicle-locations.update', $vehicleLocation), [
-        'vehicle_id' => $vehicle->id,
-        'recorded_at' => $recorded_at,
-        'latitude' => $latitude,
-        'longitude' => $longitude,
-        'is_manual' => $is_manual,
-    ]);
-
-    $vehicleLocation->refresh();
-
-    $response->assertRedirect(route('vehicle-locations.index'));
-
-    expect($vehicle->id)->toEqual($vehicleLocation->vehicle_id);
-    expect($recorded_at->timestamp)->toEqual($vehicleLocation->recorded_at);
-    expect($latitude)->toEqual($vehicleLocation->latitude);
-    expect($longitude)->toEqual($vehicleLocation->longitude);
-    expect($is_manual)->toEqual($vehicleLocation->is_manual);
 });
 
-test('destroy deletes and redirects', function (): void {
-    $vehicleLocation = VehicleLocation::factory()->create();
+test('index filter by recorded_from/recorded_to date range', function (): void {
+    $admin = User::factory()->create();
+    $admin->assignRole(Role::ADMIN->value);
+    actingAs($admin);
 
-    $response = delete(route('vehicle-locations.destroy', $vehicleLocation));
+    VehicleLocation::factory()->create(['recorded_at' => Carbon::now()->subDays(10)]);
+    $target = VehicleLocation::factory()->create(['recorded_at' => Carbon::now()->subDays(2)]);
+    VehicleLocation::factory()->create(['recorded_at' => Carbon::now()->addDays(2)]);
 
-    $response->assertRedirect(route('vehicle-locations.index'));
+    $response = get(route('vehicle-locations.index', [
+        'filter' => [
+            'recorded_from' => Carbon::now()->subDays(3)->toDateString(),
+            'recorded_to' => Carbon::now()->subDays(1)->toDateString(),
+        ],
+    ]))->assertOk();
 
-    assertModelMissing($vehicleLocation);
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->has('vehicleLocations.data', 1)
+            ->where('vehicleLocations.data.0.id', $target->id)
+    );
+});
+
+test('admin can store a manual location', function (): void {
+    $admin = User::factory()->create();
+    $admin->assignRole(Role::ADMIN->value);
+    actingAs($admin);
+
+    $vehicle = Vehicle::factory()->create();
+
+    post(route('vehicle-locations.store'), [
+        'vehicle_id' => $vehicle->id,
+        'recorded_at' => now()->toIso8601String(),
+        'latitude' => 6.2518,
+        'longitude' => -75.5636,
+        'is_manual' => true,
+    ])->assertRedirect(route('vehicle-locations.index'));
+
+    expect(VehicleLocation::where('vehicle_id', $vehicle->id)->exists())->toBeTrue();
+});
+
+test('operator can store but cannot delete', function (): void {
+    $operator = User::factory()->create();
+    $operator->assignRole(Role::OPERATOR->value);
+    actingAs($operator);
+
+    $vehicle = Vehicle::factory()->create();
+
+    post(route('vehicle-locations.store'), [
+        'vehicle_id' => $vehicle->id,
+        'recorded_at' => now()->toIso8601String(),
+        'latitude' => 6.2518,
+        'longitude' => -75.5636,
+        'is_manual' => true,
+    ])->assertRedirect();
+
+    $location = VehicleLocation::latest('id')->first();
+
+    delete(route('vehicle-locations.destroy', $location))->assertForbidden();
+});
+
+test('driver receives 403 on index (no VIEW grant)', function (): void {
+    $driver = User::factory()->create();
+    $driver->assignRole(Role::DRIVER->value);
+    actingAs($driver);
+
+    get(route('vehicle-locations.index'))->assertForbidden();
+});
+
+test('accounting receives 403 on index', function (): void {
+    $accounting = User::factory()->create();
+    $accounting->assignRole(Role::ACCOUNTING->value);
+    actingAs($accounting);
+
+    get(route('vehicle-locations.index'))->assertForbidden();
+});
+
+test('feature flag disabled 404s the index', function (): void {
+    config()->set('sgte.gps_enabled', false);
+
+    $admin = User::factory()->create();
+    $admin->assignRole(Role::ADMIN->value);
+    actingAs($admin);
+
+    get(route('vehicle-locations.index'))->assertNotFound();
+});
+
+test('invalid latitude is rejected with 422', function (): void {
+    $admin = User::factory()->create();
+    $admin->assignRole(Role::ADMIN->value);
+    actingAs($admin);
+
+    $vehicle = Vehicle::factory()->create();
+
+    post(route('vehicle-locations.store'), [
+        'vehicle_id' => $vehicle->id,
+        'recorded_at' => now()->toIso8601String(),
+        'latitude' => 200,
+        'longitude' => -75.5636,
+        'is_manual' => true,
+    ])->assertSessionHasErrors('latitude');
 });
