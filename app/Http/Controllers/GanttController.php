@@ -8,7 +8,9 @@ use App\Models\DayStatus;
 use App\Models\Municipality;
 use App\Models\Service;
 use App\Models\Vehicle;
+use App\Support\ServiceDocumentChecks;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -71,15 +73,45 @@ class GanttController extends Controller
                 ];
             });
 
+        $serviceDateCarbon = Carbon::parse($date);
+
         $services = Service::query()
             ->whereDate('service_date', $date)
             ->whereIn('vehicle_id', $vehicles->pluck('id'))
             ->with([
-                'driver:id,first_name,first_lastname',
+                'vehicle:id,plate,type,is_third_party,soat_due_date,rtm_due_date,operation_card_due_date',
+                'driver:id,first_name,first_lastname,license_category,license_due_date,has_social_security',
                 'contract:id,contract_number,third_party_id',
                 'contract.thirdParty:id,company_name,first_name,first_lastname,is_natural_person',
             ])
-            ->get();
+            ->get()
+            ->map(function (Service $service) use ($serviceDateCarbon): array {
+                // REQ-004 / REQ-005 render-time re-check: flag services
+                // whose assigned vehicle or driver has paperwork expired
+                // as-of service_date. Gantt greys the bar and shows the
+                // reasons in the tooltip.
+                $reasons = [];
+
+                if ($service->vehicle) {
+                    $reasons = array_merge(
+                        $reasons,
+                        ServiceDocumentChecks::vehicleDocumentsValid($service->vehicle, $serviceDateCarbon),
+                    );
+                }
+
+                if ($service->driver && $service->vehicle) {
+                    $reasons = array_merge(
+                        $reasons,
+                        ServiceDocumentChecks::driverLicenseValid($service->driver, $service->vehicle, $serviceDateCarbon),
+                    );
+                }
+
+                return [
+                    ...$service->toArray(),
+                    'blocked' => $reasons !== [],
+                    'blocked_reasons' => $reasons,
+                ];
+            });
 
         $dayStatus = DayStatus::whereDate('date', $date)
             ->with('executor:id,name')

@@ -11,8 +11,10 @@ use App\Models\ServiceIncident;
 use App\Models\User;
 use App\Models\VehicleLocation;
 use App\Notifications\DriverDeclinedServiceNotification;
+use App\Support\ServiceDocumentChecks;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
@@ -58,6 +60,8 @@ class DriverDashboardController extends Controller
         $driver = $request->user()->driver;
         abort_unless($driver && $service->driver_id === $driver->id, 403);
 
+        $this->assertDocumentsStillValid($service);
+
         $service->update([
             'actual_start_time' => now()->format('H:i:s'),
         ]);
@@ -65,6 +69,37 @@ class DriverDashboardController extends Controller
         $this->persistLocationIfProvided($service, $request);
 
         return redirect()->route('driver.dashboard');
+    }
+
+    /**
+     * REQ-004 / REQ-005 execution-time re-check. Documents are validated
+     * against service.service_date (NOT today) — a service scheduled days
+     * ago might have been created while papers were valid, but the driver
+     * must still have valid paperwork as-of the service date at the
+     * moment they start. 422s with the first reason so the driver sees
+     * a clear, actionable message.
+     */
+    protected function assertDocumentsStillValid(Service $service): void
+    {
+        $serviceDate = $service->service_date instanceof Carbon
+            ? $service->service_date
+            : Carbon::parse((string) $service->service_date);
+
+        $vehicle = $service->vehicle;
+        $driver = $service->driver;
+
+        if ($vehicle === null || $driver === null) {
+            return;
+        }
+
+        $reasons = array_merge(
+            ServiceDocumentChecks::vehicleDocumentsValid($vehicle, $serviceDate),
+            ServiceDocumentChecks::driverLicenseValid($driver, $vehicle, $serviceDate),
+        );
+
+        if ($reasons !== []) {
+            abort(422, $reasons[0].' Contacta a Operaciones.');
+        }
     }
 
     public function confirmEnd(Request $request, Service $service): RedirectResponse

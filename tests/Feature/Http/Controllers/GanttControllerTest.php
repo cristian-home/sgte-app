@@ -208,6 +208,88 @@ test('user without view services permission gets 403', function (): void {
     $response->assertForbidden();
 });
 
+test('services.blocked is true when vehicle document expired before service_date (REQ-004 regression)', function (): void {
+    $vehicle = Vehicle::factory()->create([
+        'status' => VehicleStatus::Active,
+        'soat_due_date' => '2026-03-05',
+        'rtm_due_date' => '2026-12-31',
+        'operation_card_due_date' => '2026-12-31',
+    ]);
+    $contract = Contract::factory()->create();
+    $driver = Driver::factory()->create([
+        'license_due_date' => '2026-12-31',
+        'has_social_security' => true,
+    ]);
+    Service::factory()->create([
+        'vehicle_id' => $vehicle->id,
+        'contract_id' => $contract->id,
+        'driver_id' => $driver->id,
+        'service_date' => '2026-03-10',
+    ]);
+
+    $response = get(route('gantt.index', ['date' => '2026-03-10']));
+
+    $response->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('services.0.blocked', true)
+        ->has('services.0.blocked_reasons')
+        ->where('services.0.blocked_reasons.0', fn ($m) => str_contains($m, 'SOAT'))
+    );
+});
+
+test('services.blocked is false when all documents are valid as-of service_date', function (): void {
+    $vehicle = Vehicle::factory()->create([
+        'status' => VehicleStatus::Active,
+        'soat_due_date' => '2026-12-31',
+        'rtm_due_date' => '2026-12-31',
+        'operation_card_due_date' => '2026-12-31',
+    ]);
+    $contract = Contract::factory()->create();
+    $driver = Driver::factory()->create([
+        'license_due_date' => '2026-12-31',
+        'has_social_security' => true,
+    ]);
+    Service::factory()->create([
+        'vehicle_id' => $vehicle->id,
+        'contract_id' => $contract->id,
+        'driver_id' => $driver->id,
+        'service_date' => '2026-03-10',
+    ]);
+
+    $response = get(route('gantt.index', ['date' => '2026-03-10']));
+
+    $response->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('services.0.blocked', false)
+        ->where('services.0.blocked_reasons', [])
+    );
+});
+
+test('services.blocked fires on expired driver license (REQ-005 regression)', function (): void {
+    $vehicle = Vehicle::factory()->create([
+        'status' => VehicleStatus::Active,
+        'soat_due_date' => '2026-12-31',
+        'rtm_due_date' => '2026-12-31',
+        'operation_card_due_date' => '2026-12-31',
+    ]);
+    $contract = Contract::factory()->create();
+    $driver = Driver::factory()->create([
+        'license_due_date' => '2026-03-05',
+        'has_social_security' => true,
+    ]);
+    Service::factory()->create([
+        'vehicle_id' => $vehicle->id,
+        'contract_id' => $contract->id,
+        'driver_id' => $driver->id,
+        'service_date' => '2026-03-10',
+    ]);
+
+    $response = get(route('gantt.index', ['date' => '2026-03-10']));
+
+    $response->assertInertia(fn (AssertableInertia $page) => $page
+        ->where('services.0.blocked', true)
+        ->where('services.0.blocked_reasons.0', fn ($m) => str_contains($m, 'licencia'))
+    );
+});
+
 test('index filters vehicles by municipality', function (): void {
     $municipality = Municipality::factory()->create();
     $otherMunicipality = Municipality::factory()->create();

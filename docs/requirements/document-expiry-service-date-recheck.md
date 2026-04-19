@@ -2,10 +2,10 @@
 name: document-expiry-service-date-recheck
 type: fix
 scope: services
-status: pending
+status: completed
 priority: medium
 created_date: 2026-04-19
-completed_date:
+completed_date: 2026-04-19
 srs_refs: [REQ-004, REQ-005]
 migration_strategy: new
 ---
@@ -27,5 +27,5 @@ Optional (phase 2): a nightly Horizon job that sends ops a 30/7/1-day heads-up e
 
 ## Acceptance Criteria
 
-- [ ] Gantt rows render with a disabled/grey state + tooltip when the assigned vehicle or driver has a document expired as-of the service's date; Pest coverage for the controller payload, Dusk assertion for the visual state.
-- [ ] `DriverDashboardController::confirmStart` re-checks documents against `service.service_date` (NOT today) and 422s with a Spanish message naming the expired document; Pest covers each expiry branch (SOAT / RTM / T.O. / licencia / categoría incompatible / seguridad social) individually.
+- [x] Gantt rows render with a disabled/grey state + tooltip when the assigned vehicle or driver has a document expired as-of the service's date; Pest coverage for the controller payload, Dusk assertion for the visual state.
+- [x] `DriverDashboardController::confirmStart` re-checks documents against `service.service_date` (NOT today) and 422s with a Spanish message naming the expired document; Pest covers each expiry branch (SOAT / RTM / T.O. / licencia / categoría incompatible / seguridad social) individually.

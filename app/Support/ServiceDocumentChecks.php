@@ -97,7 +97,8 @@ class ServiceDocumentChecks
     /**
      * REQ-003 AC 5 / REQ-005 AC 2. Returns a list of Spanish error
      * messages covering license expiry, missing license category,
-     * and incompatible category for the vehicle type.
+     * incompatible category for the vehicle type, and inactive
+     * social security.
      *
      * @return list<string>
      */
@@ -116,6 +117,10 @@ class ServiceDocumentChecks
             if ($licenseDueString < $dateString) {
                 $errors[] = "La licencia del conductor está vencida (venció {$licenseDueString}).";
             }
+        }
+
+        if ($driver->has_social_security === false) {
+            $errors[] = 'El conductor no tiene seguridad social activa.';
         }
 
         if ($vehicle->type !== null && $driver->license_category !== null) {
