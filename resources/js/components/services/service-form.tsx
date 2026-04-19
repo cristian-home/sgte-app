@@ -337,7 +337,7 @@ export default function ServiceForm({
                             id="vehicle_id"
                             aria-invalid={invalid('vehicle_id')}
                         >
-                            <SelectValue placeholder="Seleccionar vehiculo..." />
+                            <SelectValue placeholder="Seleccionar vehículo..." />
                         </SelectTrigger>
                         <SelectContent>
                             {vehicles.map((v) => (

@@ -345,7 +345,7 @@ export default function VehicleForm({
                     data-error={invalid('operation_card_due_date')}
                 >
                     <Label htmlFor={id('operation_card_due_date')}>
-                        Vencimiento Tarjeta de Operacion
+                        Vencimiento Tarjeta de Operación
                     </Label>
                     <Input
                         id={id('operation_card_due_date')}
