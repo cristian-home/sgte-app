@@ -12,6 +12,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { BillingUnitType } from '@/enums/BillingUnitType';
 
 export interface ContractFormData {
     contract_number: string;
@@ -22,6 +23,7 @@ export interface ContractFormData {
     route_description: string;
     is_generic: boolean;
     active: boolean;
+    billing_unit_type: string;
 }
 
 interface ContractFormProps {
@@ -54,6 +56,16 @@ export const CONTRACT_OBJECT_OPTIONS: Array<{
     { value: 'tourism', label: 'Turismo' },
     { value: 'health', label: 'Salud' },
     { value: 'occasional', label: 'Ocasional' },
+];
+
+export const BILLING_UNIT_TYPE_OPTIONS: Array<{
+    value: string;
+    label: string;
+}> = [
+    { value: BillingUnitType.Viaje, label: 'Viaje' },
+    { value: BillingUnitType.Pasajero, label: 'Pasajero' },
+    { value: BillingUnitType.Dia, label: 'Día' },
+    { value: BillingUnitType.Hora, label: 'Hora' },
 ];
 
 export default function ContractForm({
@@ -189,6 +201,38 @@ export default function ContractForm({
                     className="flex min-h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive"
                 />
                 <InputError message={errors.route_description} />
+            </div>
+
+            <div className="grid gap-2 md:max-w-xs">
+                <Label htmlFor={id('billing_unit_type')}>
+                    Unidad de Facturación
+                </Label>
+                <Select
+                    value={data.billing_unit_type}
+                    onValueChange={(value) =>
+                        setData('billing_unit_type', value)
+                    }
+                >
+                    <SelectTrigger
+                        id={id('billing_unit_type')}
+                        aria-invalid={invalid('billing_unit_type')}
+                    >
+                        <SelectValue placeholder="Selecciona una unidad (opcional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {BILLING_UNIT_TYPE_OPTIONS.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                                {opt.label}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                    Define cómo se factura este contrato (viaje, pasajero, día u
+                    hora). Aparece como "Cantidad (…)" en el formulario de
+                    servicios.
+                </p>
+                <InputError message={errors.billing_unit_type} />
             </div>
 
             <div className="flex flex-wrap items-center gap-6">

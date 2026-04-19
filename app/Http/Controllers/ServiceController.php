@@ -237,7 +237,7 @@ class ServiceController extends Controller
             'contracts' => Contract::query()
                 ->where('active', true)
                 ->with('thirdParty:id,identification_number,first_name,first_lastname,company_name,is_natural_person')
-                ->get(['id', 'contract_number', 'third_party_id', 'contract_object', 'start_date', 'end_date', 'is_generic']),
+                ->get(['id', 'contract_number', 'third_party_id', 'contract_object', 'start_date', 'end_date', 'is_generic', 'billing_unit_type']),
             'municipalities' => Municipality::query()
                 ->with('department:id,name')
                 ->orderBy('name')
