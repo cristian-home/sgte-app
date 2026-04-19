@@ -2,10 +2,10 @@
 name: service-reopen-actual-time-invariant
 type: fix
 scope: services
-status: pending
+status: completed
 priority: low
 created_date: 2026-04-19
-completed_date:
+completed_date: 2026-04-19
 srs_refs: [REQ-009]
 migration_strategy: new
 ---
@@ -31,5 +31,5 @@ Enforce in `ServiceUpdateRequest::prepareForValidation()` (clear on reopen) + `a
 
 ## Acceptance Criteria
 
-- [ ] `ServiceUpdateRequest` clears `actual_end_time` on Closed→Open transitions and requires both `actual_*_time` fields on Open→Closed; Pest covers all four transition cells (O→O, O→C, C→O, C→C) with explicit assertions on field state after.
-- [ ] Activity log entry for the transition records `status_from`, `status_to`, and which time fields were cleared or set.
+- [x] `ServiceUpdateRequest` clears `actual_end_time` on Closed→Open transitions and requires both `actual_*_time` fields on Open→Closed; Pest covers all four transition cells (O→O, O→C, C→O, C→C) with explicit assertions on field state after.
+- [x] Activity log entry for the transition records `status_from`, `status_to`, and which time fields were cleared or set.

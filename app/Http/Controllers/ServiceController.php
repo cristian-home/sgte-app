@@ -186,7 +186,50 @@ class ServiceController extends Controller
         $justification = $validated['justification'] ?? null;
         unset($validated['justification']);
 
+        // REQ-009 reopen invariant: capture before-state so the
+        // activity-log entry can name which actual_*_time fields were
+        // cleared or set during the status transition.
+        $statusBefore = $service->service_status instanceof \App\Enums\ServiceStatus
+            ? $service->service_status->value
+            : (string) $service->service_status;
+        $actualStartBefore = $service->actual_start_time;
+        $actualEndBefore = $service->actual_end_time;
+
         $service->update($validated);
+        $service->refresh();
+
+        $statusAfter = $service->service_status instanceof \App\Enums\ServiceStatus
+            ? $service->service_status->value
+            : (string) $service->service_status;
+
+        if ($statusBefore !== $statusAfter) {
+            $clearedFields = [];
+            $setFields = [];
+
+            if ($actualStartBefore !== null && $service->actual_start_time === null) {
+                $clearedFields[] = 'actual_start_time';
+            }
+            if ($actualEndBefore !== null && $service->actual_end_time === null) {
+                $clearedFields[] = 'actual_end_time';
+            }
+            if ($actualStartBefore === null && $service->actual_start_time !== null) {
+                $setFields[] = 'actual_start_time';
+            }
+            if ($actualEndBefore === null && $service->actual_end_time !== null) {
+                $setFields[] = 'actual_end_time';
+            }
+
+            activity()
+                ->performedOn($service)
+                ->causedBy(auth()->user())
+                ->withProperties([
+                    'status_from' => $statusBefore,
+                    'status_to' => $statusAfter,
+                    'cleared_fields' => $clearedFields,
+                    'set_fields' => $setFields,
+                ])
+                ->log('Servicio cambió de estado');
+        }
 
         $dayStatus = DayStatus::whereDate('date', $service->service_date)->first();
 
