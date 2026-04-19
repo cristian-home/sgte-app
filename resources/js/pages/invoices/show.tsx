@@ -149,11 +149,13 @@ export default function InvoicesShow({
     recentServices,
     computedTotal,
     candidateServices,
+    blockedCandidateServices,
 }: {
     invoice: ShowInvoice;
     recentServices: RecentServiceRow[];
     computedTotal: string;
     candidateServices: ServicePickerRow[];
+    blockedCandidateServices?: ServicePickerRow[];
 }) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Facturas', href: invoices.index().url },
@@ -498,6 +500,7 @@ export default function InvoicesShow({
                 onOpenChange={setPickerOpen}
                 invoiceId={invoice.id}
                 candidates={candidateServices}
+                blockedCandidates={blockedCandidateServices ?? []}
             />
 
             <AlertDialog

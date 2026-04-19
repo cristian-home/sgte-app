@@ -3,8 +3,10 @@
 use App\Enums\PaymentStatus;
 use App\Enums\ServiceStatus;
 use App\Models\Contract;
+use App\Models\IncidentType;
 use App\Models\Invoice;
 use App\Models\Service;
+use App\Models\ServiceIncident;
 use App\Models\ThirdParty;
 use App\Models\User;
 use Laravel\Dusk\Browser;
@@ -186,6 +188,68 @@ test('accounting user can walk the attach + detach flow', function (): void {
             ->waitForText('FAC-ACC-001')
             ->assertSee('Asignar Servicios')
             ->screenshot('invoice-accounting-sees-attach-button');
+    });
+});
+
+test('picker hides services with billing-affecting incidents by default (F-invoice-billing-blocked regression)', function (): void {
+    $user = billingAuthenticateAsSuperAdmin();
+
+    $customer = ThirdParty::factory()->create([
+        'is_natural_person' => false,
+        'company_name' => 'Cliente GatedDusk S.A.',
+        'is_customer' => true,
+    ]);
+    $contract = Contract::factory()->create(['third_party_id' => $customer->id]);
+    $invoice = Invoice::factory()->create([
+        'third_party_id' => $customer->id,
+        'invoice_number' => 'FAC-GATE-001',
+        'total_value' => 0,
+    ]);
+
+    // Clean candidate — should show in the picker.
+    Service::factory()->create([
+        'contract_id' => $contract->id,
+        'service_status' => ServiceStatus::Closed,
+        'invoice_id' => null,
+        'unit_value' => 100000,
+        'quantity' => 1,
+        'service_date' => now()->subDays(3),
+        'billing_group' => 'GRUPO-CLEAN',
+    ]);
+
+    // Blocked candidate — affects_billing=true, must be hidden until toggle.
+    $blocked = Service::factory()->create([
+        'contract_id' => $contract->id,
+        'service_status' => ServiceStatus::Closed,
+        'invoice_id' => null,
+        'unit_value' => 75000,
+        'quantity' => 1,
+        'service_date' => now()->subDays(4),
+        'billing_group' => 'GRUPO-BLOCKED',
+    ]);
+    $incidentType = IncidentType::factory()->create([
+        'name' => 'Ruta truncada',
+        'affects_billing_default' => true,
+    ]);
+    ServiceIncident::factory()->create([
+        'service_id' => $blocked->id,
+        'incident_type_id' => $incidentType->id,
+        'affects_billing' => true,
+        'additional_value' => -15000,
+    ]);
+
+    $this->browse(function (Browser $browser) use ($user, $invoice): void {
+        $browser->loginAs($user)
+            ->visit("/invoices/{$invoice->id}")
+            ->waitForText('FAC-GATE-001')
+            ->press('Asignar Servicios')
+            ->waitForText('Selecciona los servicios cerrados')
+            // The toggle exists and advertises the count of gated rows.
+            ->assertSee('Mostrar servicios con novedades facturables')
+            ->assertSee('(1)')
+            // The gated row is NOT visible by default — we never rendered it.
+            ->assertSourceMissing('data-audit-row="blocked"')
+            ->screenshot('invoice-picker-default-hides-blocked');
     });
 });
 
