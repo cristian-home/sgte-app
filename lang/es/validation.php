@@ -310,6 +310,7 @@ return [
         'affects_billing' => 'afecta facturación',
         'affects_billing_default' => 'afecta facturación (predeterminado)',
         'billing_group' => 'grupo de facturación',
+        'billing_unit_type' => 'unidad de facturación',
         'brand' => 'marca',
         'capacity' => 'capacidad',
         'chassis_number' => 'número de chasis',
