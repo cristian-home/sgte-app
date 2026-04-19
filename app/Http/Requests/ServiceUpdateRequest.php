@@ -6,6 +6,7 @@ use App\Enums\DayStatusEnum;
 use App\Enums\PaymentMethod;
 use App\Enums\Permission;
 use App\Enums\Role;
+use App\Enums\ServiceStatus;
 use App\Models\DayStatus;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -15,6 +16,44 @@ class ServiceUpdateRequest extends ServiceStoreRequest
     protected function excludeServiceId(): ?int
     {
         return $this->route('service')->id;
+    }
+
+    /**
+     * REQ-009 service_status transition invariant
+     * (service-reopen-actual-time-invariant):
+     *
+     * - Closed → Open: clear `actual_end_time`, preserve
+     *   `actual_start_time`. The service is "resumable" — it started
+     *   but hasn't finished yet.
+     * - Open → Closed: requires both `actual_*_time` fields (handled
+     *   by the existing `required_if:service_status,closed` rule on
+     *   both columns inherited from ServiceStoreRequest).
+     * - Open → Open or Closed → Closed: no-op on the time fields.
+     *
+     * We merge the null BEFORE validation so the `required_if` rule
+     * against the incoming `service_status = open` is satisfied, and
+     * the Service model persists the cleared value.
+     */
+    protected function prepareForValidation(): void
+    {
+        parent::prepareForValidation();
+
+        $service = $this->route('service');
+
+        if (! $service) {
+            return;
+        }
+
+        $currentStatus = $service->service_status instanceof ServiceStatus
+            ? $service->service_status->value
+            : (string) $service->service_status;
+        $incomingStatus = $this->input('service_status');
+
+        if ($currentStatus === ServiceStatus::Closed->value
+            && $incomingStatus === ServiceStatus::Open->value
+        ) {
+            $this->merge(['actual_end_time' => null]);
+        }
     }
 
     public function authorize(): bool
