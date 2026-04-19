@@ -2,10 +2,10 @@
 name: fuec-preview-before-consecutive-consume
 type: feat
 scope: fuec
-status: pending
+status: completed
 priority: medium
 created_date: 2026-04-19
-completed_date:
+completed_date: 2026-04-19
 srs_refs: [REQ-007]
 migration_strategy: new
 ---
@@ -26,5 +26,5 @@ Bonus: add a `cancellation_reason` text column to `fuecs` so every cancel logs *
 
 ## Acceptance Criteria
 
-- [ ] `/fuecs/create` surfaces a "Vista previa" button that renders the would-be PDF inline without creating a `Fuec` row or incrementing the range; Pest covers the preview endpoint (authz, validation gauntlet runs, no DB write).
-- [ ] `fuecs.cancellation_reason` column added (modify primary migration); `POST /fuecs/{fuec}/cancel` requires it; audit log entry for the cancellation includes the reason.
+- [x] `/fuecs/create` surfaces a "Vista previa" button that renders the would-be PDF inline without creating a `Fuec` row or incrementing the range; Pest covers the preview endpoint (authz, validation gauntlet runs, no DB write).
+- [x] `fuecs.cancellation_reason` column added (modify primary migration); `POST /fuecs/{fuec}/cancel` requires it; audit log entry for the cancellation includes the reason.
