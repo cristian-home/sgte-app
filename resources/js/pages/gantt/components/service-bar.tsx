@@ -40,6 +40,7 @@ export default function ServiceBar({
     onClick,
 }: ServiceBarProps) {
     const isOpen = service.service_status === 'open';
+    const isDeclined = !!service.driver_declined_at;
 
     return (
         <TooltipProvider>
@@ -49,9 +50,11 @@ export default function ServiceBar({
                         type="button"
                         className={cn(
                             'absolute top-0.5 bottom-0.5 cursor-pointer overflow-hidden rounded px-1.5 py-0.5 text-left text-white shadow-sm transition-colors',
-                            isOpen
-                                ? 'bg-orange-400 hover:bg-orange-500 dark:bg-orange-500 dark:hover:bg-orange-600'
-                                : 'bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700',
+                            isDeclined
+                                ? 'bg-red-500 ring-2 ring-red-300 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700'
+                                : isOpen
+                                  ? 'bg-orange-400 hover:bg-orange-500 dark:bg-orange-500 dark:hover:bg-orange-600'
+                                  : 'bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700',
                         )}
                         style={{
                             left: `${position.left}%`,
@@ -63,6 +66,11 @@ export default function ServiceBar({
                             onClick(service.id);
                         }}
                     >
+                        {isDeclined && (
+                            <span className="absolute top-0 right-0 rounded-bl bg-white/30 px-1 text-[9px] leading-none font-semibold uppercase">
+                                Declinado
+                            </span>
+                        )}
                         <div className="truncate text-[10px] leading-tight font-medium">
                             {getClientName(service)}
                         </div>
@@ -89,6 +97,12 @@ export default function ServiceBar({
                             </p>
                         )}
                         <p>Estado: {isOpen ? 'Abierto' : 'Cerrado'}</p>
+                        {isDeclined && (
+                            <p className="text-red-300">
+                                Declinado por el conductor — pendiente de
+                                reasignación
+                            </p>
+                        )}
                     </div>
                 </TooltipContent>
             </Tooltip>

@@ -182,6 +182,9 @@ export type Service = {
     billing_group: string | null;
     payment_method: string;
     service_status: string;
+    manual_entry_justification: string | null;
+    driver_declined_at: string | null;
+    driver_decline_reason: string | null;
     contract?: Contract;
     vehicle?: Vehicle;
     driver?: Driver;

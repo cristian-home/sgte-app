@@ -45,6 +45,9 @@ class DaySummaryController extends Controller
             'open' => $services->where('service_status', ServiceStatus::Open)->count(),
             'with_incidents' => $services->where('service_incidents_count', '>', 0)->count(),
             'third_party' => $services->filter(fn ($s) => $s->vehicle?->is_third_party)->count(),
+            'pending_reassignment' => $services->filter(
+                fn ($s) => $s->driver_declined_at !== null && $s->service_status === ServiceStatus::Open,
+            )->count(),
         ];
 
         return Inertia::render('day-summary/index', [
