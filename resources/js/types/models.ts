@@ -142,6 +142,7 @@ export type Contract = {
     route_description: string | null;
     is_generic: boolean;
     active: boolean;
+    billing_unit_type: string | null;
     third_party?: ThirdParty;
     services?: Service[];
 } & Timestamps &

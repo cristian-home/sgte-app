@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\BillingUnitType;
 use App\Enums\ContractObject;
 use App\Enums\Permission;
 use Illuminate\Foundation\Http\FormRequest;
@@ -32,6 +33,7 @@ class ContractStoreRequest extends FormRequest
             'route_description' => ['required', 'string'],
             'is_generic' => ['required', 'boolean'],
             'active' => ['required', 'boolean'],
+            'billing_unit_type' => ['nullable', Rule::enum(BillingUnitType::class)],
         ];
     }
 }

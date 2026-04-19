@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\BillingUnitType;
 use App\Enums\ContractObject;
 use App\Models\ThirdParty;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -24,6 +25,7 @@ class ContractFactory extends Factory
             'route_description' => fake()->sentence(6),
             'is_generic' => fake()->boolean(20),
             'active' => true,
+            'billing_unit_type' => fake()->randomElement(BillingUnitType::cases()),
         ];
     }
 }
