@@ -142,7 +142,8 @@ test('cancel action flips status to cancelled and writes an activity log entry',
         ->assertRedirect();
 
     $fuec->refresh();
-    expect($fuec->status)->toBe(FuecStatus::Cancelled);
+    expect($fuec->status)->toBe(FuecStatus::Cancelled)
+        ->and($fuec->cancellation_reason)->toBe('Anulación de prueba por error de captura en origen.');
 
     $activity = Activity::query()
         ->where('subject_type', Fuec::class)
@@ -150,7 +151,68 @@ test('cancel action flips status to cancelled and writes an activity log entry',
         ->where('description', 'FUEC anulado')
         ->first();
     expect($activity)->not->toBeNull()
-        ->and($activity->properties['reason'])->toBe('Anulación de prueba por error de captura en origen.');
+        ->and($activity->properties['cancellation_reason'])->toBe('Anulación de prueba por error de captura en origen.');
+});
+
+test('cancel requires a reason (regression: no bypass via empty payload)', function (): void {
+    $admin = User::factory()->create();
+    $admin->assignRole(Role::ADMIN->value);
+    actingAs($admin);
+
+    $fuec = Fuec::factory()->create([
+        'fuec_number_range_id' => FuecNumberRange::factory()->create()->id,
+        'status' => FuecStatus::Active,
+    ]);
+
+    post(route('fuecs.cancel', $fuec), [])
+        ->assertSessionHasErrors('reason');
+
+    $fuec->refresh();
+    expect($fuec->status)->toBe(FuecStatus::Active)
+        ->and($fuec->cancellation_reason)->toBeNull();
+});
+
+test('preview returns PDF without creating a Fuec row or consuming a consecutive (REQ-007)', function (): void {
+    $admin = User::factory()->create();
+    $admin->assignRole(Role::ADMIN->value);
+    actingAs($admin);
+
+    $service = fuecReadyService();
+    $fuecCountBefore = Fuec::count();
+
+    $response = post(route('fuecs.preview'), ['service_id' => $service->id]);
+
+    $response->assertOk();
+    expect($response->headers->get('Content-Type'))->toBe('application/pdf');
+    expect($response->headers->get('Content-Disposition'))->toContain('inline');
+    expect($response->headers->get('Content-Disposition'))->toContain('fuec-preview.pdf');
+    expect(Fuec::count())->toBe($fuecCountBefore);
+    // Response body should start with the PDF magic number.
+    expect(substr($response->getContent(), 0, 4))->toBe('%PDF');
+});
+
+test('preview runs the pre-generation validation gauntlet', function (): void {
+    $admin = User::factory()->create();
+    $admin->assignRole(Role::ADMIN->value);
+    actingAs($admin);
+
+    $service = fuecReadyService();
+    // Break the gauntlet: mark the contract inactive.
+    $service->contract->update(['active' => false]);
+
+    post(route('fuecs.preview'), ['service_id' => $service->id])
+        ->assertSessionHasErrors();
+});
+
+test('preview requires GENERATE_FUEC permission', function (): void {
+    $user = User::factory()->create();
+    $user->assignRole(Role::OPERATOR->value);
+    actingAs($user);
+
+    $service = fuecReadyService();
+
+    post(route('fuecs.preview'), ['service_id' => $service->id])
+        ->assertForbidden();
 });
 
 test('cancel rejects a short reason', function (): void {
