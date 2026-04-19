@@ -69,7 +69,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->middleware('can:'.App\Enums\Permission::MANAGE_FUEC_NUMBER_RANGES->value);
     });
 
-    Route::resource('vehicle-locations', App\Http\Controllers\VehicleLocationController::class);
+    // GPS / Vehicle Locations (REQ-010) — gated behind the sgte.gps_enabled
+    // feature flag so the group 404s when the module is disabled.
+    Route::middleware('gps.enabled')->group(function (): void {
+        Route::get('gps/map', [App\Http\Controllers\VehicleLocationMapController::class, 'index'])
+            ->middleware('can:'.App\Enums\Permission::VIEW_VEHICLE_LOCATIONS->value)
+            ->name('gps.map');
+        Route::resource('vehicle-locations', App\Http\Controllers\VehicleLocationController::class);
+        Route::post('driver/services/{service}/location', [App\Http\Controllers\DriverLocationController::class, 'store'])
+            ->middleware('can:'.App\Enums\Permission::REGISTER_VEHICLE_LOCATION->value)
+            ->name('driver.location.store');
+    });
 
     // Administración (admin only)
     Route::resource('users', App\Http\Controllers\UserController::class);

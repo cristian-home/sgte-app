@@ -105,6 +105,78 @@ test('confirm end sets actual_end_time', function (): void {
     expect($service->actual_end_time)->not->toBeNull();
 });
 
+test('confirm start persists a VehicleLocation when coordinates are provided', function (): void {
+    config()->set('sgte.gps_enabled', true);
+    $driver = Driver::factory()->create(['user_id' => $this->user->id]);
+    $service = Service::factory()->create([
+        'driver_id' => $driver->id,
+        'service_date' => today(),
+        'actual_start_time' => null,
+    ]);
+
+    $response = post(route('driver.confirm-start', $service), [
+        'latitude' => 6.2518,
+        'longitude' => -75.5636,
+        'is_manual' => false,
+        'accuracy' => 12.5,
+    ]);
+
+    $response->assertRedirect(route('driver.dashboard'));
+    expect(\App\Models\VehicleLocation::where('service_id', $service->id)->count())->toBe(1);
+});
+
+test('confirm start without coordinates does not persist a VehicleLocation', function (): void {
+    config()->set('sgte.gps_enabled', true);
+    $driver = Driver::factory()->create(['user_id' => $this->user->id]);
+    $service = Service::factory()->create([
+        'driver_id' => $driver->id,
+        'service_date' => today(),
+    ]);
+
+    post(route('driver.confirm-start', $service))
+        ->assertRedirect(route('driver.dashboard'));
+
+    expect(\App\Models\VehicleLocation::where('service_id', $service->id)->count())->toBe(0);
+});
+
+test('confirm start still succeeds when GPS module is disabled — location write skipped', function (): void {
+    config()->set('sgte.gps_enabled', false);
+    $driver = Driver::factory()->create(['user_id' => $this->user->id]);
+    $service = Service::factory()->create([
+        'driver_id' => $driver->id,
+        'service_date' => today(),
+    ]);
+
+    // Even with coordinates on the payload, the module-disabled path skips the write.
+    post(route('driver.confirm-start', $service), [
+        'latitude' => 6.2518,
+        'longitude' => -75.5636,
+        'is_manual' => false,
+    ])->assertRedirect(route('driver.dashboard'));
+
+    expect(\App\Models\VehicleLocation::where('service_id', $service->id)->count())->toBe(0);
+});
+
+test('confirm end persists a VehicleLocation when coordinates are provided', function (): void {
+    config()->set('sgte.gps_enabled', true);
+    $driver = Driver::factory()->create(['user_id' => $this->user->id]);
+    $service = Service::factory()->create([
+        'driver_id' => $driver->id,
+        'service_date' => today(),
+        'actual_start_time' => '08:00:00',
+    ]);
+
+    post(route('driver.confirm-end', $service), [
+        'latitude' => 6.2518,
+        'longitude' => -75.5636,
+        'is_manual' => true,
+    ])->assertRedirect(route('driver.dashboard'));
+
+    $location = \App\Models\VehicleLocation::where('service_id', $service->id)->first();
+    expect($location)->not->toBeNull()
+        ->and($location->is_manual)->toBeTrue();
+});
+
 test('driver cannot confirm start for another driver service', function (): void {
     $driver = Driver::factory()->create(['user_id' => $this->user->id]);
     $otherDriver = Driver::factory()->create();

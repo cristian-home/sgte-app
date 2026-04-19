@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { Building2, Pencil, Truck, User } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -179,13 +179,28 @@ const serviceStatusLabels: Record<string, string> = {
     closed: 'Cerrado',
 };
 
+interface RecentLocationRow {
+    id: number;
+    vehicle_id: number;
+    recorded_at: string | null;
+    latitude: string;
+    longitude: string;
+    is_manual: boolean;
+}
+
 export default function VehiclesShow({
     vehicle,
     recentServices,
+    recentLocations,
 }: {
     vehicle: ShowVehicle;
     recentServices: RecentServiceRow[];
+    recentLocations: RecentLocationRow[];
 }) {
+    const page = usePage<{
+        auth?: { featureFlags?: { fuec?: boolean; gps?: boolean } };
+    }>();
+    const gpsEnabled = page.props.auth?.featureFlags?.gps === true;
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Vehículos', href: vehicles.index().url },
         { title: vehicle.plate, href: '#' },
@@ -325,6 +340,62 @@ export default function VehiclesShow({
                         )}
                     </CardContent>
                 </Card>
+
+                {/* Ubicaciones Recientes (GPS) — only when the module is enabled */}
+                {gpsEnabled && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>
+                                Ubicaciones Recientes (últimas 10)
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {recentLocations.length === 0 ? (
+                                <p className="text-sm text-muted-foreground">
+                                    Sin registros de ubicación.
+                                </p>
+                            ) : (
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Fecha/Hora</TableHead>
+                                            <TableHead>Coordenadas</TableHead>
+                                            <TableHead>Origen</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {recentLocations.map((loc) => (
+                                            <TableRow key={loc.id}>
+                                                <TableCell className="font-mono text-xs whitespace-nowrap">
+                                                    {loc.recorded_at
+                                                        ? new Date(
+                                                              loc.recorded_at,
+                                                          ).toLocaleString(
+                                                              'es-CO',
+                                                          )
+                                                        : '—'}
+                                                </TableCell>
+                                                <TableCell className="font-mono text-xs">
+                                                    {loc.latitude},{' '}
+                                                    {loc.longitude}
+                                                </TableCell>
+                                                <TableCell>
+                                                    {loc.is_manual ? (
+                                                        <Badge variant="outline">
+                                                            Manual
+                                                        </Badge>
+                                                    ) : (
+                                                        <Badge>GPS</Badge>
+                                                    )}
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            )}
+                        </CardContent>
+                    </Card>
+                )}
 
                 {/* Servicios Recientes */}
                 <Card>

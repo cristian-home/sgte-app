@@ -114,6 +114,20 @@ class Service extends Model
         return $this->hasMany(Fuec::class);
     }
 
+    public function locations(): HasMany
+    {
+        return $this->hasMany(VehicleLocation::class);
+    }
+
+    /**
+     * Alias for eager-loading recent locations via driver dashboard
+     * + show pages. Never constrained here — the caller orders + limits.
+     */
+    public function recentLocations(): HasMany
+    {
+        return $this->hasMany(VehicleLocation::class);
+    }
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()

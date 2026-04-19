@@ -17,10 +17,10 @@ import { dateFormatter, parseDueDate } from '@/lib/document-status';
 
 import type { IncidentType } from '@/types/models';
 
-export interface IncidentTypeOption extends Pick<
+export type IncidentTypeOption = Pick<
     IncidentType,
     'id' | 'code' | 'name' | 'severity' | 'affects_billing_default'
-> {}
+>;
 
 export interface ServiceIncidentFormData {
     service_id: string;
