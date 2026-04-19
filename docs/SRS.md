@@ -921,14 +921,14 @@ The following tables are created and managed automatically by the framework and 
 
 The system defines **five** roles: **Super Admin**, **Administrador**, **Operación**, **Conductor** and **Contabilidad**. Super Admin is not granted through the permissions matrix — it bypasses every gate via `Gate::before` in `AppServiceProvider` and is intended for emergency access only. The matrix below covers the other four roles.
 
-The **Administración** sidebar group (Usuarios, Auditoría) is admin-only. The **Gestión** sidebar group (Vehículos, Conductores, Terceros, Contratos) is accessible to both Administrador and Operación — operators now have full CRUD on those master-data modules.
+The **Administración** sidebar group (Usuarios, Auditoría) is admin-only. The **Gestión** sidebar group (Vehículos, Conductores, Terceros, Contratos) is accessible to Administrador, Operación, and — read-only — Contabilidad. Administrador and Operación have full CRUD on those master-data modules; Contabilidad has `VIEW_VEHICLES` / `VIEW_DRIVERS` / `VIEW_THIRD_PARTIES` / `VIEW_CONTRACTS` only, consistent with the billing-investigation workflow where accounting needs to drill into vehicle + driver records already surfaced in-context on `/gantt` and `/services`.
 
 | Function                             | Administrador | Operación | Conductor | Contabilidad |
 | ------------------------------------ | :-----------: | :-------: | :-------: | :----------: |
-| Manage vehicles                      |       ✓       |     ✓     |     -     |      -       |
-| Manage drivers                       |       ✓       |     ✓     |     -     |      -       |
-| Manage third parties                 |       ✓       |     ✓     |     -     |      -       |
-| Manage contracts                     |       ✓       |     ✓     |     -     |      -       |
+| Manage vehicles                      |       ✓       |     ✓     |     -     |   👁 read    |
+| Manage drivers                       |       ✓       |     ✓     |     -     |   👁 read    |
+| Manage third parties                 |       ✓       |     ✓     |     -     |   👁 read    |
+| Manage contracts                     |       ✓       |     ✓     |     -     |   👁 read    |
 | Create services                      |       ✓       |     ✓     |     -     |      -       |
 | Edit services (projected)            |       ✓       |     ✓     |     -     |      -       |
 | Edit services (executed)             |       ✓       |     -     |     -     |      ✓       |

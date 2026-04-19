@@ -188,6 +188,18 @@ return new class extends Migration
         $accountingRole->syncPermissions(array_map(fn ($p) => $p->value, [
             Permission::VIEW_DASHBOARD,
             Permission::VIEW_SETTINGS,
+            // Accounting master-data read access. Resolution of
+            // accounting-master-data-asymmetry: the Gantt and Services
+            // tables already surface vehicle + driver names to
+            // accounting via VIEW_SERVICES, so information hiding was
+            // already incomplete. Granting explicit read-only access to
+            // the first-class vehicle / driver lists formalizes what
+            // was effectively visible and lets accounting drill in on
+            // provider-owned vehicles during invoice investigation.
+            // No create/update/delete — accounting remains read-only on
+            // master data.
+            Permission::VIEW_VEHICLES,
+            Permission::VIEW_DRIVERS,
             Permission::VIEW_THIRD_PARTIES,
             Permission::VIEW_CONTRACTS,
             Permission::VIEW_SERVICES,
