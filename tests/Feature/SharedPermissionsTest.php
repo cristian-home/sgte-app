@@ -26,6 +26,7 @@ test('user permissions match assigned role permissions', function () {
         Permission::VIEW_SETTINGS->value,
         Permission::REGISTER_SERVICE_TIMES->value,
         Permission::CREATE_INCIDENTS->value,
+        Permission::REGISTER_VEHICLE_LOCATION->value,
         Permission::RECEIVE_NOTIFICATIONS->value,
     ];
 
