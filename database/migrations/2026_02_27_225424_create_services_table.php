@@ -40,6 +40,14 @@ return new class extends Migration
             // Required by ServiceStoreRequest when service_date < today and
             // service_status = closed; null for every other create path.
             $table->string('manual_entry_justification', 500)->nullable();
+            // REQ-012 pre-flight decline (driver-preflight-decline-action).
+            // Set by DriverDashboardController::decline() when a driver
+            // rejects the service before confirmStart. Stays null for every
+            // other flow. Ops filters Day Summary on
+            // (driver_declined_at IS NOT NULL AND service_status = 'open')
+            // to surface services pending reassignment.
+            $table->timestamp('driver_declined_at')->nullable();
+            $table->string('driver_decline_reason', 1000)->nullable();
             $table->timestamps();
             $table->softDeletes();
         });
