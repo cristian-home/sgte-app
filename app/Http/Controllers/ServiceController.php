@@ -41,6 +41,11 @@ class ServiceController extends Controller
                 AllowedFilter::exact('destination_municipality_id'),
                 AllowedFilter::exact('service_status'),
                 AllowedFilter::exact('payment_method'),
+                AllowedFilter::exact('contract_id'),
+                AllowedFilter::exact('driver_id'),
+                AllowedFilter::exact('vehicle_id'),
+                AllowedFilter::callback('date_from', fn (Builder $query, $value) => $query->whereDate('service_date', '>=', $value)),
+                AllowedFilter::callback('date_to', fn (Builder $query, $value) => $query->whereDate('service_date', '<=', $value)),
             ])
             ->allowedSorts(['service_date', 'unit_value', 'service_status'])
             ->paginate($request->perPage())
@@ -52,7 +57,39 @@ class ServiceController extends Controller
 
         return Inertia::render('services/index', [
             'services' => $services,
+            ...$this->indexFilterOptions(),
         ]);
+    }
+
+    /**
+     * Option data used by the /services filter bar — contract, driver,
+     * vehicle, and municipality comboboxes. Scoped to "active" or
+     * in-use rows so the picker stays useful as the catalog grows.
+     *
+     * @return array<string, mixed>
+     */
+    private function indexFilterOptions(): array
+    {
+        return [
+            'filterContracts' => Contract::query()
+                ->where('active', true)
+                ->with('thirdParty:id,identification_number,first_name,first_lastname,company_name,is_natural_person')
+                ->orderBy('contract_number')
+                ->get(['id', 'contract_number', 'third_party_id']),
+            'filterDrivers' => Driver::query()
+                ->where('active', true)
+                ->orderBy('first_lastname')
+                ->orderBy('first_name')
+                ->get(['id', 'first_name', 'first_lastname', 'identification_number']),
+            'filterVehicles' => Vehicle::query()
+                ->where('status', VehicleStatus::Active)
+                ->orderBy('plate')
+                ->get(['id', 'plate', 'is_third_party']),
+            'filterMunicipalities' => Municipality::query()
+                ->with('department:id,name')
+                ->orderBy('name')
+                ->get(['id', 'name', 'code', 'department_id']),
+        ];
     }
 
     public function create(Request $request): Response

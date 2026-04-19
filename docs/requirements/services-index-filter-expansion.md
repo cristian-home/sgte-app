@@ -2,10 +2,10 @@
 name: services-index-filter-expansion
 type: feat
 scope: services
-status: pending
+status: completed
 priority: low
 created_date: 2026-04-19
-completed_date:
+completed_date: 2026-04-19
 srs_refs: []
 migration_strategy: new
 ---
@@ -31,5 +31,5 @@ Wire through `spatie/laravel-query-builder` — all of these correspond to index
 
 ## Acceptance Criteria
 
-- [ ] `/services` index filter bar includes contract + driver + vehicle + origin/destination municipality + date range filters, all functional via `AllowedFilter::exact()` / `AllowedFilter::callback()` in `ServiceController::index`.
-- [ ] Preset buttons "Hoy" / "Esta semana" pre-populate the date range; Dusk test covers at least contract filter + date range filter narrowing the result set.
+- [x] `/services` index filter bar includes contract + driver + vehicle + origin/destination municipality + date range filters, all functional via `AllowedFilter::exact()` / `AllowedFilter::callback()` in `ServiceController::index`.
+- [x] Preset buttons "Hoy" / "Esta semana" pre-populate the date range; Dusk test covers at least contract filter + date range filter narrowing the result set.
