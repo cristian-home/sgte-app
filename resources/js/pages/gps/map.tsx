@@ -78,7 +78,15 @@ export default function GpsMap({
     activeServices: ActiveService[];
 }) {
     useEffect(() => {
+        // Skip the auto-refresh when the tab is hidden — Inertia v2
+        // triggers View Transitions on successful responses, and the
+        // browser throws InvalidStateError when the document isn't
+        // visible. The next refresh after the tab is refocused picks
+        // up whatever changed while we were away.
         const interval = setInterval(() => {
+            if (typeof document !== 'undefined' && document.hidden) {
+                return;
+            }
             router.reload({ only: ['activeServices'] });
         }, REFRESH_INTERVAL_MS);
         return () => clearInterval(interval);

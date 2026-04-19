@@ -9,5 +9,19 @@
     "The :attribute must be at least :length characters and contain at least one uppercase character and one number.": "El :attribute debe tener al menos :length caracteres y contener al menos una letra mayúscula y un número.",
     "The :attribute must be at least :length characters and contain at least one uppercase character and one special character.": "El :attribute debe tener al menos :length caracteres y contener al menos una letra mayúscula y un carácter especial.",
     "The :attribute must be at least :length characters and contain at least one uppercase character, one number, and one special character.": "El :attribute debe tener al menos :length caracteres y contener al menos una letra mayúscula, un número y un carácter especial.",
-    "The :attribute must be at least :length characters and contain at least one special character and one number.": "El :attribute debe tener al menos :length caracteres y contener al menos un carácter especial y un número."
+    "The :attribute must be at least :length characters and contain at least one special character and one number.": "El :attribute debe tener al menos :length caracteres y contener al menos un carácter especial y un número.",
+    "Forbidden": "Acceso denegado",
+    "Unauthorized": "No autenticado",
+    "This action is unauthorized.": "No tiene permisos para realizar esta acción.",
+    "Not Found": "No encontrado",
+    "Page Expired": "La sesión ha expirado",
+    "Too Many Requests": "Demasiadas solicitudes",
+    "Server Error": "Error del servidor",
+    "Service Unavailable": "Servicio no disponible",
+    "Whoops, something went wrong on our servers.": "Ha ocurrido un error inesperado en el servidor.",
+    "Sorry, the page you are looking for could not be found.": "La página que buscas no existe.",
+    "Sorry, your session has expired. Please refresh and try again.": "Tu sesión ha expirado. Por favor recarga la página e intenta de nuevo.",
+    "Sorry, you are forbidden from accessing this page.": "No tienes permisos para acceder a esta página.",
+    "Sorry, you are making too many requests to our servers.": "Estás haciendo demasiadas solicitudes al servidor. Intenta más tarde.",
+    "Sorry, we are doing some maintenance. Please check back soon.": "Estamos realizando tareas de mantenimiento. Vuelve pronto."
 }

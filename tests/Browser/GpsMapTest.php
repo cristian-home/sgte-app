@@ -123,6 +123,42 @@ test('accounting receives 403 on /gps/map', function (): void {
 // Toggling config at the Dusk HTTP boundary isn't supported without
 // restarting the stack, so this assertion stays in Pest where it works.
 
+test('gps map auto-refresh does not throw ViewTransition errors when tab is hidden (F-010 regression)', function (): void {
+    $user = gpsAuthenticateAsSuperAdmin();
+    gpsSeedActiveServiceWithLocation();
+
+    $this->browse(function (Browser $browser) use ($user): void {
+        $browser->loginAs($user)
+            ->visit('/gps/map')
+            ->waitForText('Mapa')
+            // Flip the document into "hidden" state so the refresh
+            // interval hits the branch that previously threw.
+            ->script(<<<'JS'
+                Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' });
+                Object.defineProperty(document, 'hidden', { configurable: true, get: () => true });
+                document.dispatchEvent(new Event('visibilitychange'));
+                window.__auditRefreshErrors = [];
+                window.addEventListener('unhandledrejection', (e) => {
+                    window.__auditRefreshErrors.push(String(e.reason));
+                });
+            JS
+            );
+
+        // Fast-path: poke the refresh tick without waiting 30s.
+        $browser->script('window.dispatchEvent(new Event("focus"));');
+        $browser->pause(1500);
+
+        $errors = $browser->script('return window.__auditRefreshErrors ?? [];')[0];
+
+        expect($errors)->toBeArray();
+        foreach ($errors as $message) {
+            expect($message)->not->toContain('Skipped ViewTransition due to document being hidden');
+        }
+
+        $browser->screenshot('audit-F-010-gps-map-no-refresh-when-hidden');
+    });
+});
+
 test('admin sees the /vehicle-locations index with Spanish headers + Manual/GPS badges', function (): void {
     $user = gpsAuthenticateAsSuperAdmin();
     gpsSeedActiveServiceWithLocation();

@@ -54,7 +54,7 @@ export function DataTableRowActions({
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="size-8 p-0">
-                        <span className="sr-only">Abrir menu</span>
+                        <span className="sr-only">Abrir menú</span>
                         <MoreHorizontal className="size-4" />
                     </Button>
                 </DropdownMenuTrigger>
