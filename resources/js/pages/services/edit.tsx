@@ -85,6 +85,7 @@ export default function ServicesEdit({
         payment_method: service.payment_method,
         service_status: service.service_status,
         justification: '',
+        manual_entry_justification: '',
     });
 
     function submit(e: React.FormEvent) {

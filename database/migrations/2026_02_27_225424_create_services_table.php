@@ -35,6 +35,11 @@ return new class extends Migration
             $table->string('billing_group', 50)->nullable();
             $table->enum('payment_method', ['cash', 'credit', 'transfer'])->default('credit');
             $table->enum('service_status', ['open', 'closed'])->default('open');
+            // REQ-009 provenance: captures why a service was created in a
+            // Cerrado state for a past date without the driver workflow.
+            // Required by ServiceStoreRequest when service_date < today and
+            // service_status = closed; null for every other create path.
+            $table->string('manual_entry_justification', 500)->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

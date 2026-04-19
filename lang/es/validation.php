@@ -350,6 +350,7 @@ return [
         'issue_date' => 'fecha de emisión',
         'license_category' => 'categoría de licencia',
         'license_due_date' => 'vencimiento de licencia',
+        'manual_entry_justification' => 'justificación de registro retroactivo',
         'mobile_number' => 'celular',
         'model_year' => 'año del modelo',
         'municipality_id' => 'municipio',

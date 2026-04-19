@@ -53,6 +53,7 @@ export default function ServicesCreate({
         payment_method: 'credit',
         service_status: 'open',
         justification: '',
+        manual_entry_justification: '',
     });
 
     function submit(e: React.FormEvent) {

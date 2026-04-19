@@ -82,6 +82,7 @@ export interface ServiceFormData {
     payment_method: string;
     service_status: string;
     justification: string;
+    manual_entry_justification: string;
 }
 
 function thirdPartyLabel(tp: ThirdPartyOption): string {
@@ -183,6 +184,24 @@ export default function ServiceForm({
 
     const isClosed = data.service_status === 'closed';
 
+    // REQ-009 retroactive-entry gate. Backend rejects service_date >=
+    // today + closed; allows service_date < today + closed but only
+    // with a justification. Surface the textarea when the operator
+    // picks that specific combo so a clean save is possible.
+    const todayIso = new Date().toISOString().slice(0, 10);
+    const isPastDate =
+        mode === 'create' &&
+        data.service_date !== '' &&
+        data.service_date < todayIso;
+    const isFutureOrToday =
+        mode === 'create' &&
+        data.service_date !== '' &&
+        data.service_date >= todayIso;
+    const requiresRetroactiveJustification =
+        mode === 'create' && isPastDate && isClosed;
+    const illegalCreateAsClosed =
+        mode === 'create' && isFutureOrToday && isClosed;
+
     return (
         <>
             {isFullyLocked && (
@@ -214,6 +233,32 @@ export default function ServiceForm({
                     <AlertDescription>
                         Está editando un servicio en un día ejecutado. Se
                         requiere justificación.
+                    </AlertDescription>
+                </Alert>
+            )}
+
+            {illegalCreateAsClosed && (
+                <Alert variant="destructive">
+                    <AlertTriangle className="size-4" />
+                    <AlertTitle>
+                        No se permite crear un servicio Cerrado para hoy o una
+                        fecha futura
+                    </AlertTitle>
+                    <AlertDescription>
+                        Cambie el estado a Abierto. Una vez ejecutado, el
+                        conductor cerrará el servicio desde su portal.
+                    </AlertDescription>
+                </Alert>
+            )}
+
+            {requiresRetroactiveJustification && (
+                <Alert>
+                    <Info className="size-4" />
+                    <AlertTitle>Registro retroactivo</AlertTitle>
+                    <AlertDescription>
+                        Está registrando un servicio cerrado de una fecha
+                        anterior. Indique por qué se registra manualmente fuera
+                        del flujo del conductor — quedará en la auditoría.
                     </AlertDescription>
                 </Alert>
             )}
@@ -665,6 +710,33 @@ export default function ServiceForm({
                     <InputError message={errors.payment_method} />
                 </div>
             </div>
+
+            {requiresRetroactiveJustification && (
+                <div
+                    className="group/field grid gap-2"
+                    data-error={invalid('manual_entry_justification')}
+                >
+                    <Label htmlFor="manual_entry_justification">
+                        Justificación de registro retroactivo *
+                    </Label>
+                    <textarea
+                        id="manual_entry_justification"
+                        className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                        value={data.manual_entry_justification}
+                        placeholder="Ej: El servicio se ejecutó sin acceso al sistema; registro histórico."
+                        minLength={10}
+                        maxLength={500}
+                        aria-invalid={invalid('manual_entry_justification')}
+                        onChange={(e) =>
+                            setData(
+                                'manual_entry_justification',
+                                e.target.value,
+                            )
+                        }
+                    />
+                    <InputError message={errors.manual_entry_justification} />
+                </div>
+            )}
 
             {isAdminEdit && (
                 <>

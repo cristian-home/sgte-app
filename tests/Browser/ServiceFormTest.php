@@ -185,6 +185,73 @@ test('submitting empty service form surfaces Spanish attribute names (F-004 regr
     });
 });
 
+test('service form surfaces retroactive justification block on past-date + closed (REQ-009 regression)', function (): void {
+    $user = authenticateAsSuperAdmin();
+
+    $this->browse(function (Browser $browser) use ($user): void {
+        $yesterday = \Illuminate\Support\Carbon::yesterday()->toDateString();
+
+        $browser->loginAs($user)
+            ->visit('/services/create')
+            ->waitForText('Crear Servicio')
+            ->assertDontSee('Registro retroactivo')
+            ->assertDontSee('Justificación de registro retroactivo');
+
+        // React doesn't react to `input.value=...`; use the native
+        // HTMLInputElement setter so the synthetic event system picks
+        // up the change and updates form state.
+        $browser->script(<<<JS
+            (() => {
+                const input = document.querySelector('#service_date');
+                const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                setter.call(input, '$yesterday');
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+            })();
+        JS);
+
+        $browser->click('#service_status')
+            ->waitFor('[role="listbox"]')
+            ->clickAtXPath("//*[@role='option'][normalize-space(.)='Cerrado']")
+            ->waitForText('Registro retroactivo')
+            ->assertSee('Registro retroactivo')
+            ->assertSee('Justificación de registro retroactivo')
+            ->assertPresent('#manual_entry_justification')
+            ->screenshot('audit-retroactive-justification-shown');
+    });
+});
+
+test('service form blocks same-day + closed with a destructive alert (REQ-009 regression)', function (): void {
+    $user = authenticateAsSuperAdmin();
+
+    $this->browse(function (Browser $browser) use ($user): void {
+        $today = \Illuminate\Support\Carbon::today()->toDateString();
+
+        $browser->loginAs($user)
+            ->visit('/services/create')
+            ->waitForText('Crear Servicio')
+            ->assertDontSee('No se permite crear un servicio Cerrado');
+
+        $browser->script(<<<JS
+            (() => {
+                const input = document.querySelector('#service_date');
+                const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                setter.call(input, '$today');
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+            })();
+        JS);
+
+        $browser->click('#service_status')
+            ->waitFor('[role="listbox"]')
+            ->clickAtXPath("//*[@role='option'][normalize-space(.)='Cerrado']")
+            ->waitForText('No se permite crear un servicio Cerrado')
+            ->assertSee('No se permite crear un servicio Cerrado')
+            ->assertDontSee('Registro retroactivo')
+            ->screenshot('audit-illegal-create-as-closed-shown');
+    });
+});
+
 test('third-party vehicle hides driver field and shows provider info', function (): void {
     $user = authenticateAsSuperAdmin();
     $vehicle = \App\Models\Vehicle::query()->where('is_third_party', true)->where('status', 'active')->first();
