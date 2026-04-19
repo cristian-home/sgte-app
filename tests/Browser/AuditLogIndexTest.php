@@ -104,7 +104,7 @@ test('admin filters audit log by subject_type = Servicio', function (): void {
     });
 });
 
-test('admin opens detail sheet and reads the justification', function (): void {
+test('admin opens detail sheet and reads the justification + day-ejecutado badge', function (): void {
     $admin = auditLogAuthenticateAsSuperAdmin();
     auditLogSeedBaseline($admin);
 
@@ -117,7 +117,34 @@ test('admin opens detail sheet and reads the justification', function (): void {
             ->click('button[aria-label="Ver detalles"]')
             ->waitForText('Prueba Dusk')
             ->assertSee('Prueba Dusk — justificación REQ-009 AC#10.')
+            // Accented + offscreen strings are anchored on the HTML source, not the viewport.
+            ->assertSourceHas('Justificaci')
+            // The amber "Día ejecutado" badge in the Sheet header.
+            ->assertSourceHas('a ejecutado')
             ->screenshot('audit-log-detail-sheet-justification');
+    });
+});
+
+// The "Cambios" (Antes / Después diff) card's rendering depends on
+// activity.attributes + activity.old_attributes arriving as non-empty
+// objects to the sheet component. The Pest test
+// `AuditLogControllerTest > index projects attributes and old_attributes`
+// pins that server-side projection; covering the sheet's conditional
+// render via Dusk would add brittle timing-dependent selectors for what
+// is already tested deterministically.
+
+test('admin-facing row with edited_on_executed_day = true renders the amber tint class', function (): void {
+    $admin = auditLogAuthenticateAsSuperAdmin();
+    auditLogSeedBaseline($admin);
+
+    $this->browse(function (Browser $browser) use ($admin): void {
+        $browser->loginAs($admin)
+            ->visit('/audit-log')
+            ->waitForText('Servicio editado en día ejecutado')
+            // Pinned via the Tailwind class the row-tint helper emits for
+            // executed-day edits — `bg-amber-500/10 hover:bg-amber-500/15`.
+            ->assertSourceHas('bg-amber-500')
+            ->screenshot('audit-log-row-amber-tint');
     });
 });
 
