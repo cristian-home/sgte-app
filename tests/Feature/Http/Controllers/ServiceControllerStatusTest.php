@@ -59,11 +59,17 @@ test('store fails when service_status is closed and actual_end_time is missing',
 });
 
 test('store succeeds when service_status is closed and both actual times are provided', function (): void {
+    // REQ-009: a Cerrado create only clears the retroactive-entry gate
+    // when the service_date is in the past and a manual_entry_justification
+    // is supplied. The rule was introduced in the
+    // service-retroactive-entry-gating requirement; this test was
+    // updated from a same-day closed create (now rejected) to a past-
+    // date back-fill with justification.
     $response = post(route('services.store'), [
         'contract_id' => $this->contract->id,
         'vehicle_id' => $this->vehicle->id,
         'driver_id' => $this->driver->id,
-        'service_date' => Carbon::now()->toDateString(),
+        'service_date' => Carbon::yesterday()->toDateString(),
         'planned_start_time' => '08:00',
         'planned_duration' => 60,
         'unit_value' => 100000,
@@ -72,6 +78,7 @@ test('store succeeds when service_status is closed and both actual times are pro
         'service_status' => 'closed',
         'actual_start_time' => '08:00',
         'actual_end_time' => '09:30',
+        'manual_entry_justification' => 'Registro histórico — el servicio se ejecutó sin acceso al sistema.',
     ]);
 
     $response->assertRedirect(route('services.index'));

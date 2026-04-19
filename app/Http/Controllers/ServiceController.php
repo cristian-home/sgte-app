@@ -72,6 +72,26 @@ class ServiceController extends Controller
         Gate::authorize(Permission::CREATE_SERVICES->value);
         $service = Service::create($request->validated());
 
+        // REQ-009: tag retroactive closed entries so /audit-log can
+        // filter them apart from services closed via the driver
+        // workflow. Only fires when the gate in ServiceStoreRequest
+        // passed — i.e. service_date < today && status = closed &&
+        // a justification was supplied.
+        $justification = trim((string) $request->input('manual_entry_justification'));
+        if ($justification !== '') {
+            activity()
+                ->performedOn($service)
+                ->causedBy($request->user())
+                ->withProperties([
+                    'source' => 'retroactive_entry',
+                    'manual_entry_justification' => $justification,
+                    'service_date' => $service->service_date instanceof \Carbon\CarbonInterface
+                        ? $service->service_date->toDateString()
+                        : (string) $service->service_date,
+                ])
+                ->log('Registro retroactivo de servicio cerrado');
+        }
+
         if ($service->driver_id) {
             $driverUser = Driver::find($service->driver_id)?->user;
             if ($driverUser) {

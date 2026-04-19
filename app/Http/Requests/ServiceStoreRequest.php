@@ -67,6 +67,7 @@ class ServiceStoreRequest extends FormRequest
             'billing_group' => ['nullable', 'string', 'max:50'],
             'payment_method' => ['required', Rule::enum(PaymentMethod::class)],
             'service_status' => ['required', Rule::enum(ServiceStatus::class)],
+            'manual_entry_justification' => ['nullable', 'string', 'min:10', 'max:500'],
         ];
 
         if ($this->filled('vehicle_id') && $this->filled('service_date') && $this->filled('planned_start_time') && $this->filled('planned_duration')) {
@@ -106,8 +107,69 @@ class ServiceStoreRequest extends FormRequest
                 $this->validateDriverRequired($validator);
                 $this->validateVehicleDocumentsNotExpired($validator);
                 $this->validateDriverLicense($validator);
+                $this->validateRetroactiveEntry($validator);
             },
         ];
+    }
+
+    /**
+     * REQ-009 provenance gate on create:
+     *
+     * - If service_date >= today AND service_status = closed, reject.
+     *   A service that hasn't happened yet cannot be Cerrado; the
+     *   driver workflow (confirmStart → confirmEnd) is the only legit
+     *   path to close.
+     * - If service_date < today AND service_status = closed, accept
+     *   the create but require manual_entry_justification (the Store
+     *   request already enforces min:10). This distinguishes a back-
+     *   filled historical record from a shortcut around the driver
+     *   workflow; the controller tags the activity_log entry with
+     *   source=retroactive_entry so /audit-log can filter it.
+     *
+     * Only runs on create — ServiceUpdateRequest inherits rules() but
+     * overrides after() and never calls this method.
+     */
+    protected function validateRetroactiveEntry($validator): void
+    {
+        // Update flows never go through this gate. Edits to an existing
+        // service — including flipping status to Closed on an open past-
+        // date row — are governed by ServiceUpdateRequest and the
+        // executed-day justification already in place there.
+        if ($this->route('service') !== null) {
+            return;
+        }
+
+        if (! $this->filled('service_date') || ! $this->filled('service_status')) {
+            return;
+        }
+
+        $status = $this->input('service_status');
+        if ($status !== ServiceStatus::Closed->value) {
+            return;
+        }
+
+        $today = \Illuminate\Support\Carbon::today()->toDateString();
+        $serviceDate = $this->input('service_date');
+        $serviceDateString = $serviceDate instanceof \Illuminate\Support\Carbon
+            ? $serviceDate->toDateString()
+            : (string) $serviceDate;
+
+        if ($serviceDateString >= $today) {
+            $validator->errors()->add(
+                'service_status',
+                'Un servicio con fecha hoy o futura no puede crearse en estado Cerrado. Use el flujo del conductor para cerrar servicios ejecutados.',
+            );
+
+            return;
+        }
+
+        $justification = trim((string) $this->input('manual_entry_justification'));
+        if ($justification === '') {
+            $validator->errors()->add(
+                'manual_entry_justification',
+                'La justificación es obligatoria al registrar retroactivamente un servicio cerrado.',
+            );
+        }
     }
 
     protected function validateExecutedDayRestriction($validator): void
