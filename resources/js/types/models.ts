@@ -185,6 +185,8 @@ export type Service = {
     manual_entry_justification: string | null;
     driver_declined_at: string | null;
     driver_decline_reason: string | null;
+    blocked?: boolean;
+    blocked_reasons?: string[];
     contract?: Contract;
     vehicle?: Vehicle;
     driver?: Driver;
