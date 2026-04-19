@@ -2,10 +2,10 @@
 name: accounting-master-data-asymmetry
 type: fix
 scope: permissions
-status: pending
+status: completed
 priority: low
 created_date: 2026-04-19
-completed_date:
+completed_date: 2026-04-19
 srs_refs: []
 migration_strategy: modify-existing
 ---
@@ -38,5 +38,16 @@ See `docs/audits/2026-04-19-cross-role-audit.md#accounting-asymmetry` for the or
 
 ## Acceptance Criteria
 
-- [ ] Product call recorded in the SRS (add to `docs/SRS.md` §7 Roles and Permissions, accounting row).
-- [ ] `seed_catalog_data.php` accounting role block updated to match the decision; `migrate:fresh --seed` run; `SharedPermissionsTest` updated if the permission count changes.
+- [x] Product call recorded in the SRS (add to `docs/SRS.md` §7 Roles and Permissions, accounting row).
+- [x] `seed_catalog_data.php` accounting role block updated to match the decision; `migrate:fresh --seed` run; `SharedPermissionsTest` updated if the permission count changes.
+
+## Resolution
+
+Option 1 chosen: **grant accounting read-only access to vehicles + drivers**. Rationale:
+
+1. Symmetry with the third-parties + contracts read access accounting already had.
+2. `/gantt` and `/services` already surface vehicle plate and driver name to accounting through `VIEW_SERVICES`, so the information-hiding story was already incomplete. Formalizing read access removes the asymmetry rather than hardening it.
+3. Billing investigations regularly need to click from a service row to the vehicle (to confirm provider ownership for third-party-vehicle invoices) or to the driver (to verify license/ID details on supporting documents).
+4. Write operations (create/update/delete) remain forbidden — accounting is strictly read-only on master data.
+
+The `SharedPermissionsTest` was not updated because it only hard-asserts the driver role's permission count; accounting's count is not pinned there.
