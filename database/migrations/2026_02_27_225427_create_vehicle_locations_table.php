@@ -13,14 +13,19 @@ return new class extends Migration
     {
         Schema::disableForeignKeyConstraints();
 
-        Schema::create('vehicle_locations', function (Blueprint $table) {
+        Schema::create('vehicle_locations', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('vehicle_id')->constrained();
+            $table->foreignId('service_id')->nullable()->constrained()->cascadeOnDelete();
             $table->timestamp('recorded_at');
             $table->decimal('latitude', 10, 8);
             $table->decimal('longitude', 11, 8);
+            $table->decimal('accuracy', 8, 2)->nullable();
             $table->boolean('is_manual')->default(false);
+            $table->foreignId('captured_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
+
+            $table->index(['vehicle_id', 'recorded_at']);
         });
 
         Schema::enableForeignKeyConstraints();

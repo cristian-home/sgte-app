@@ -83,6 +83,15 @@ class Vehicle extends Model
         return $this->hasMany(VehicleLocation::class);
     }
 
+    /**
+     * Alias matching the convention used by other rebuilt models
+     * (e.g. Service::fuecs()). Prefer this over vehicleLocations().
+     */
+    public function locations(): HasMany
+    {
+        return $this->hasMany(VehicleLocation::class);
+    }
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
