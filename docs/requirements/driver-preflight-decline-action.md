@@ -2,10 +2,10 @@
 name: driver-preflight-decline-action
 type: feat
 scope: driver
-status: pending
+status: completed
 priority: medium
 created_date: 2026-04-19
-completed_date:
+completed_date: 2026-04-19
 srs_refs: [REQ-009, REQ-012]
 migration_strategy: modify-existing
 ---
@@ -30,5 +30,5 @@ Ops-side UI: surface declined services as a highlighted group on the Day Summary
 
 ## Acceptance Criteria
 
-- [ ] `/driver/services/{service}/decline` endpoint with Pest coverage for authorization, validation, and the side effects (incident created + `driver_declined_at` set + notification dispatched).
-- [ ] Driver service-detail page exposes a "Declinar servicio" action (disabled once `confirmStart` has fired); Day Summary renders a "Pendientes de reasignación" section filtered on `driver_declined_at IS NOT NULL AND service_status = open`; Dusk covers both UI assertions.
+- [x] `/driver/services/{service}/decline` endpoint with Pest coverage for authorization, validation, and the side effects (incident created + `driver_declined_at` set + notification dispatched).
+- [x] Driver service-detail page exposes a "Declinar servicio" action (disabled once `confirmStart` has fired); Day Summary renders a "Pendientes de reasignación" section filtered on `driver_declined_at IS NOT NULL AND service_status = open`; Dusk covers both UI assertions.
