@@ -1,10 +1,10 @@
 import { Head, useForm } from '@inertiajs/react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     VehicleLocationForm,
     type VehicleLocationFormData,
 } from '@/components/vehicle-locations/vehicle-location-form';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { type VehicleOption } from '@/components/vehicles/vehicle-combobox';
 import AppLayout from '@/layouts/app-layout';
 
