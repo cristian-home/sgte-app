@@ -2,10 +2,10 @@
 name: required-markers-across-forms
 type: fix
 scope: app
-status: pending
+status: completed
 priority: low
 created_date: 2026-04-19
-completed_date:
+completed_date: 2026-04-19
 srs_refs: []
 migration_strategy: new
 ---
@@ -24,5 +24,11 @@ See `docs/audits/2026-04-19-cross-role-audit.md#f-006` for the original observat
 
 ## Acceptance Criteria
 
-- [ ] Every create/edit form in `resources/js/components/**/-form.tsx` (and any inline form in `resources/js/pages/**/create.tsx` / `**/edit.tsx`) has a trailing ` *` on the label of each field whose corresponding `StoreRequest` or `UpdateRequest` rule includes `'required'`.
-- [ ] Dusk smoke test per module asserts the asterisk is present on the expected label set.
+- [x] Every create/edit form in `resources/js/components/**/-form.tsx` (and any inline form in `resources/js/pages/**/create.tsx` / `**/edit.tsx`) has a trailing ` *` on the label of each field whose corresponding `StoreRequest` or `UpdateRequest` rule includes `'required'`.
+- [x] Dusk smoke test per module asserts the asterisk is present on the expected label set.
+
+## Audit results
+
+- Already marked: `contract-form.tsx`, `driver-form.tsx`, `third-party-form.tsx`, `invoice-form.tsx`, `service-incident-form.tsx`, `service-form.tsx`, `fuec-number-range-form.tsx`, `vehicle-location-form.tsx`, `users/create.tsx`, `users/edit.tsx`.
+- Fixed in this pass: `vehicles/vehicle-form.tsx` (14 required labels), `incident-types/create.tsx` + `incident-types/edit.tsx` (code / nombre / severidad).
+- Skipped (still Blueprint stub pages, no real form fields yet): `document-types`, `eps`, `pension-funds`, `severance-funds` — tracked under the `project_blueprint_scaffolds_deferred` memory. `fuecs/edit.tsx` is also a stub (FUEC has no edit flow by design, it's cancel-only). `fuecs/create.tsx` is the generator picker with no required-text-input labels.

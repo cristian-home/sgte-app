@@ -1,6 +1,4 @@
-import {
-    default as MunicipalityCombobox,
-} from '@/components/municipality-combobox';
+import { default as MunicipalityCombobox } from '@/components/municipality-combobox';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,13 +9,9 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import {
-    default as VehicleCombobox,
-} from '@/components/vehicles/vehicle-combobox';
-import type {
-    MunicipalityOption} from '@/components/municipality-combobox';
-import type {
-    VehicleOption} from '@/components/vehicles/vehicle-combobox';
+import { default as VehicleCombobox } from '@/components/vehicles/vehicle-combobox';
+import type { MunicipalityOption } from '@/components/municipality-combobox';
+import type { VehicleOption } from '@/components/vehicles/vehicle-combobox';
 
 export interface ContractFilterOption {
     id: number;

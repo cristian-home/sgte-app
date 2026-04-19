@@ -49,6 +49,10 @@ function thirdPartyLabel(tp: ThirdPartyOption): string {
     return `${tp.company_name} (${tp.identification_number})`;
 }
 
+function RequiredMarker() {
+    return <span className="text-destructive"> *</span>;
+}
+
 interface VehicleFormProps {
     data: VehicleFormData;
     setData: <K extends keyof VehicleFormData>(
@@ -80,7 +84,10 @@ export default function VehicleForm({
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
                     data-error={invalid('internal_code')}
                 >
-                    <Label htmlFor={id('internal_code')}>Código Interno</Label>
+                    <Label htmlFor={id('internal_code')}>
+                        Código Interno
+                        <RequiredMarker />
+                    </Label>
                     <Input
                         id={id('internal_code')}
                         value={data.internal_code}
@@ -95,7 +102,10 @@ export default function VehicleForm({
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
                     data-error={invalid('plate')}
                 >
-                    <Label htmlFor={id('plate')}>Placa</Label>
+                    <Label htmlFor={id('plate')}>
+                        Placa
+                        <RequiredMarker />
+                    </Label>
                     <Input
                         id={id('plate')}
                         value={data.plate}
@@ -111,7 +121,10 @@ export default function VehicleForm({
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
                     data-error={invalid('mobile_number')}
                 >
-                    <Label htmlFor={id('mobile_number')}>Número Móvil</Label>
+                    <Label htmlFor={id('mobile_number')}>
+                        Número Móvil
+                        <RequiredMarker />
+                    </Label>
                     <Input
                         id={id('mobile_number')}
                         value={data.mobile_number}
@@ -129,7 +142,10 @@ export default function VehicleForm({
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
                     data-error={invalid('brand')}
                 >
-                    <Label htmlFor={id('brand')}>Marca</Label>
+                    <Label htmlFor={id('brand')}>
+                        Marca
+                        <RequiredMarker />
+                    </Label>
                     <Input
                         id={id('brand')}
                         value={data.brand}
@@ -142,7 +158,10 @@ export default function VehicleForm({
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
                     data-error={invalid('line')}
                 >
-                    <Label htmlFor={id('line')}>Línea</Label>
+                    <Label htmlFor={id('line')}>
+                        Línea
+                        <RequiredMarker />
+                    </Label>
                     <Input
                         id={id('line')}
                         value={data.line}
@@ -155,7 +174,10 @@ export default function VehicleForm({
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
                     data-error={invalid('model_year')}
                 >
-                    <Label htmlFor={id('model_year')}>Año Modelo</Label>
+                    <Label htmlFor={id('model_year')}>
+                        Año Modelo
+                        <RequiredMarker />
+                    </Label>
                     <Input
                         id={id('model_year')}
                         type="number"
@@ -172,7 +194,10 @@ export default function VehicleForm({
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
                     data-error={invalid('type')}
                 >
-                    <Label htmlFor={id('type')}>Tipo</Label>
+                    <Label htmlFor={id('type')}>
+                        Tipo
+                        <RequiredMarker />
+                    </Label>
                     <Select
                         value={data.type}
                         onValueChange={(value) => setData('type', value)}
@@ -198,7 +223,10 @@ export default function VehicleForm({
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
                     data-error={invalid('capacity')}
                 >
-                    <Label htmlFor={id('capacity')}>Capacidad</Label>
+                    <Label htmlFor={id('capacity')}>
+                        Capacidad
+                        <RequiredMarker />
+                    </Label>
                     <Input
                         id={id('capacity')}
                         type="number"
@@ -229,7 +257,10 @@ export default function VehicleForm({
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
                     data-error={invalid('engine_number')}
                 >
-                    <Label htmlFor={id('engine_number')}>Número de Motor</Label>
+                    <Label htmlFor={id('engine_number')}>
+                        Número de Motor
+                        <RequiredMarker />
+                    </Label>
                     <Input
                         id={id('engine_number')}
                         value={data.engine_number}
@@ -246,6 +277,7 @@ export default function VehicleForm({
                 >
                     <Label htmlFor={id('chassis_number')}>
                         Número de Chasis
+                        <RequiredMarker />
                     </Label>
                     <Input
                         id={id('chassis_number')}
@@ -280,6 +312,7 @@ export default function VehicleForm({
                 >
                     <Label htmlFor={id('third_party_id')}>
                         Tercero Propietario
+                        <RequiredMarker />
                     </Label>
                     <Select
                         value={data.third_party_id}
@@ -312,6 +345,7 @@ export default function VehicleForm({
                 >
                     <Label htmlFor={id('soat_due_date')}>
                         Vencimiento SOAT
+                        <RequiredMarker />
                     </Label>
                     <Input
                         id={id('soat_due_date')}
@@ -328,7 +362,10 @@ export default function VehicleForm({
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
                     data-error={invalid('rtm_due_date')}
                 >
-                    <Label htmlFor={id('rtm_due_date')}>Vencimiento RTM</Label>
+                    <Label htmlFor={id('rtm_due_date')}>
+                        Vencimiento RTM
+                        <RequiredMarker />
+                    </Label>
                     <Input
                         id={id('rtm_due_date')}
                         type="date"
@@ -346,6 +383,7 @@ export default function VehicleForm({
                 >
                     <Label htmlFor={id('operation_card_due_date')}>
                         Vencimiento Tarjeta de Operación
+                        <RequiredMarker />
                     </Label>
                     <Input
                         id={id('operation_card_due_date')}
@@ -364,7 +402,10 @@ export default function VehicleForm({
                 className="group/field grid gap-2 md:w-1/3"
                 data-error={invalid('status')}
             >
-                <Label htmlFor={id('status')}>Estado</Label>
+                <Label htmlFor={id('status')}>
+                    Estado
+                    <RequiredMarker />
+                </Label>
                 <Select
                     value={data.status}
                     onValueChange={(value) => setData('status', value)}

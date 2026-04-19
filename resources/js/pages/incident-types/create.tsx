@@ -52,7 +52,12 @@ export default function IncidentTypesCreate() {
                         <form onSubmit={submit} className="space-y-6">
                             <div className="grid gap-4 md:grid-cols-2">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="code">Código</Label>
+                                    <Label htmlFor="code">
+                                        Código
+                                        <span className="text-destructive">
+                                            {' *'}
+                                        </span>
+                                    </Label>
                                     <Input
                                         id="code"
                                         value={data.code}
@@ -65,7 +70,12 @@ export default function IncidentTypesCreate() {
                                 </div>
 
                                 <div className="grid gap-2">
-                                    <Label htmlFor="name">Nombre</Label>
+                                    <Label htmlFor="name">
+                                        Nombre
+                                        <span className="text-destructive">
+                                            {' *'}
+                                        </span>
+                                    </Label>
                                     <Input
                                         id="name"
                                         value={data.name}
@@ -78,7 +88,12 @@ export default function IncidentTypesCreate() {
                                 </div>
 
                                 <div className="grid gap-2">
-                                    <Label htmlFor="severity">Severidad</Label>
+                                    <Label htmlFor="severity">
+                                        Severidad
+                                        <span className="text-destructive">
+                                            {' *'}
+                                        </span>
+                                    </Label>
                                     <Select
                                         value={data.severity}
                                         onValueChange={(value) =>
