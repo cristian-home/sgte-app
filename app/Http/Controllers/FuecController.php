@@ -169,17 +169,52 @@ class FuecController extends Controller
         $reason = $request->validated('reason');
         $now = now();
 
-        $fuec->update(['status' => FuecStatus::Cancelled]);
+        $fuec->update([
+            'status' => FuecStatus::Cancelled,
+            'cancellation_reason' => $reason,
+        ]);
 
         activity()
             ->performedOn($fuec)
             ->causedBy($request->user())
             ->withProperties([
-                'reason' => $reason,
+                'cancellation_reason' => $reason,
                 'cancelled_at' => $now->toIso8601String(),
             ])
             ->log('FUEC anulado');
 
         return redirect()->route('fuecs.show', $fuec);
+    }
+
+    /**
+     * REQ-007 non-committing preview. Returns the PDF bytes that would
+     * be produced for the given service — same validation gauntlet,
+     * same Blade template — without consuming a MinTransporte
+     * consecutive number or writing a `fuecs` row. Lets operators
+     * spot stale contract/customer/driver data before burning a
+     * consecutive.
+     */
+    public function preview(FuecStoreRequest $request, FuecGenerator $generator): HttpResponse
+    {
+        Gate::authorize(Permission::GENERATE_FUEC->value);
+
+        $service = Service::query()
+            ->with(['contract', 'vehicle', 'driver'])
+            ->findOrFail($request->input('service_id'));
+
+        try {
+            $pdfBytes = $generator->previewFor($service);
+        } catch (FuecRangeExhaustedException $e) {
+            throw ValidationException::withMessages([
+                'fuec_pre_generation.range' => $e->getMessage(),
+            ]);
+        }
+
+        return response($pdfBytes, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename=fuec-preview.pdf',
+            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma' => 'no-cache',
+        ]);
     }
 }

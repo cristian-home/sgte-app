@@ -26,6 +26,10 @@ return new class extends Migration
             $table->enum('status', ['active', 'cancelled'])->default('active');
             $table->string('pdf_path', 500)->nullable();
             $table->string('pdf_disk', 50)->default('s3');
+            // REQ-007 audit trail: operators must justify why a
+            // consecutive number was burned (typo vs. legitimate
+            // service cancellation). Populated on POST /fuecs/{fuec}/cancel.
+            $table->string('cancellation_reason', 1000)->nullable();
             $table->timestamps();
             $table->softDeletes();
 

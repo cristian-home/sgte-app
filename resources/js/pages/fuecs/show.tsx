@@ -27,6 +27,7 @@ interface FuecDetail {
     generated_at: string | null;
     status: string;
     pdf_path: string | null;
+    cancellation_reason: string | null;
     service?: {
         id: number;
         service_date: string | null;
@@ -272,6 +273,21 @@ export default function FuecShow({
                         </div>
                     </CardContent>
                 </Card>
+
+                {fuec.status === 'cancelled' && fuec.cancellation_reason && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-sm">
+                                Motivo de anulación
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-sm">
+                                {fuec.cancellation_reason}
+                            </p>
+                        </CardContent>
+                    </Card>
+                )}
 
                 {fuec.pdf_path && (
                     <Card>
