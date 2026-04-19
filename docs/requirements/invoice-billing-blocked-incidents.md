@@ -2,10 +2,10 @@
 name: invoice-billing-blocked-incidents
 type: fix
 scope: invoices
-status: pending
+status: completed
 priority: high
 created_date: 2026-04-19
-completed_date:
+completed_date: 2026-04-19
 srs_refs: [REQ-011, REQ-013]
 migration_strategy: new
 ---
@@ -26,5 +26,5 @@ Pest regression: attach an ok service → 200; attach a service with a billing-a
 
 ## Acceptance Criteria
 
-- [ ] `InvoiceController::attachServices` rejects (422) services with any `affects_billing=true` incident unless the request explicitly carries an `override_justification`; Pest covers the three branches (clean / blocked / overridden).
-- [ ] Invoice create + edit page candidate-services chooser filters out billing-blocked services by default, with a toggle to show them that requires per-service justification before attach; Dusk asserts the default-excluded state.
+- [x] `InvoiceController::attachServices` rejects (422) services with any `affects_billing=true` incident unless the request explicitly carries an `override_justification`; Pest covers the three branches (clean / blocked / overridden).
+- [x] Invoice create + edit page candidate-services chooser filters out billing-blocked services by default, with a toggle to show them that requires per-service justification before attach; Dusk asserts the default-excluded state.
