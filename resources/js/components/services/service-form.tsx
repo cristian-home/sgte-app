@@ -240,7 +240,7 @@ export default function ServiceForm({
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
                     data-error={invalid('service_date')}
                 >
-                    <Label htmlFor="service_date">Fecha del Servicio</Label>
+                    <Label htmlFor="service_date">Fecha del Servicio *</Label>
                     <Input
                         id="service_date"
                         type="date"
@@ -257,7 +257,7 @@ export default function ServiceForm({
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
                     data-error={invalid('contract_id')}
                 >
-                    <Label htmlFor="contract_id">Contrato</Label>
+                    <Label htmlFor="contract_id">Contrato *</Label>
                     <Select
                         value={data.contract_id}
                         onValueChange={(value) => setData('contract_id', value)}
@@ -286,7 +286,7 @@ export default function ServiceForm({
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
                     data-error={invalid('service_status')}
                 >
-                    <Label htmlFor="service_status">Estado</Label>
+                    <Label htmlFor="service_status">Estado *</Label>
                     <Select
                         value={data.service_status}
                         onValueChange={(value) =>
@@ -319,7 +319,7 @@ export default function ServiceForm({
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
                     data-error={invalid('vehicle_id')}
                 >
-                    <Label htmlFor="vehicle_id">Vehículo</Label>
+                    <Label htmlFor="vehicle_id">Vehículo *</Label>
                     <Select
                         value={data.vehicle_id}
                         onValueChange={(value) => {
@@ -500,7 +500,7 @@ export default function ServiceForm({
                     data-error={invalid('planned_start_time')}
                 >
                     <Label htmlFor="planned_start_time">
-                        Hora Inicio Planificada
+                        Hora Inicio Planificada *
                     </Label>
                     <Input
                         id="planned_start_time"
@@ -519,7 +519,7 @@ export default function ServiceForm({
                     data-error={invalid('planned_duration')}
                 >
                     <Label htmlFor="planned_duration">
-                        Duración Planificada (min)
+                        Duración Planificada (min) *
                     </Label>
                     <Input
                         id="planned_duration"
@@ -607,7 +607,7 @@ export default function ServiceForm({
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
                     data-error={invalid('unit_value')}
                 >
-                    <Label htmlFor="unit_value">Valor Unitario (COP)</Label>
+                    <Label htmlFor="unit_value">Valor Unitario (COP) *</Label>
                     <Input
                         id="unit_value"
                         type="number"
@@ -623,7 +623,7 @@ export default function ServiceForm({
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
                     data-error={invalid('quantity')}
                 >
-                    <Label htmlFor="quantity">Cantidad</Label>
+                    <Label htmlFor="quantity">Cantidad *</Label>
                     <Input
                         id="quantity"
                         type="number"
@@ -638,7 +638,7 @@ export default function ServiceForm({
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
                     data-error={invalid('payment_method')}
                 >
-                    <Label htmlFor="payment_method">Método de Pago</Label>
+                    <Label htmlFor="payment_method">Método de Pago *</Label>
                     <Select
                         value={data.payment_method}
                         onValueChange={(value) =>
