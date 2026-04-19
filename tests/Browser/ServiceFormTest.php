@@ -160,6 +160,31 @@ test('show page volver button navigates to services index', function (): void {
     });
 });
 
+test('submitting empty service form surfaces Spanish attribute names (F-004 regression)', function (): void {
+    $user = authenticateAsSuperAdmin();
+
+    $this->browse(function (Browser $browser) use ($user): void {
+        $browser->loginAs($user)
+            ->visit('/services/create')
+            ->waitForText('Crear Servicio')
+            ->press('Guardar')
+            ->waitForText('es obligatorio')
+            ->assertSee('fecha del servicio')
+            ->assertSee('contrato')
+            ->assertSee('vehículo')
+            ->assertSee('hora de inicio planificada')
+            ->assertSee('duración planificada')
+            ->assertSee('valor unitario')
+            ->assertDontSee('service date es obligatorio')
+            ->assertDontSee('contract id es obligatorio')
+            ->assertDontSee('vehicle id es obligatorio')
+            ->assertDontSee('planned start time es obligatorio')
+            ->assertDontSee('planned duration es obligatorio')
+            ->assertDontSee('unit value es obligatorio')
+            ->screenshot('audit-F-004-service-form-spanish-attrs');
+    });
+});
+
 test('third-party vehicle hides driver field and shows provider info', function (): void {
     $user = authenticateAsSuperAdmin();
     $vehicle = \App\Models\Vehicle::query()->where('is_third_party', true)->where('status', 'active')->first();
