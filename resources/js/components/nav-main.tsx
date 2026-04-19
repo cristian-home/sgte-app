@@ -7,7 +7,6 @@ import {
 } from '@/components/ui/collapsible';
 import {
     SidebarGroup,
-    SidebarGroupLabel,
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
@@ -45,7 +44,12 @@ export function NavMain({
 
     return (
         <SidebarGroup className="px-2 py-0">
-            <SidebarGroupLabel>Plataforma</SidebarGroupLabel>
+            {/*
+                The starter-kit "Plataforma" group label was dropped per
+                sidebar-plataforma-relabel — the per-group sublabels
+                (Producción, Gestión, Catálogos, …) already carry the
+                navigation semantics, and the SGTE header brands the app.
+            */}
             <SidebarMenu>
                 {visibleItems.map((item) => (
                     <SidebarMenuItem key={item.title}>
