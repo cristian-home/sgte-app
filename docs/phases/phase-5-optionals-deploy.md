@@ -1,6 +1,6 @@
 # Phase 5: Optional Modules and Deploy
 
-> **Status: IN PROGRESS** — Deployment completed; FUEC (REQ-007) shipped behind a feature flag (`fuec-generation` merged); GPS (REQ-010) still pending.
+> **Status: ✅ COMPLETED** — Deployment completed; both optional modules shipped behind feature flags. FUEC (REQ-007) via `fuec-generation` merged; GPS (REQ-010) via `gps-tracking` merged.
 
 ## Objective
 
@@ -37,14 +37,14 @@ Deferred to a follow-up requirement:
 - Dashboard warning card when the active range has fewer than 50 remaining consecutives.
 - Committed UI regression tests (Dusk) — the Pest coverage (33 tests: 13 generator + 20 controller/verify/range) pins every critical path; interactive Playwright MCP verification works against the running app.
 
-### 5.2 Optional GPS location (REQ-010)
+### 5.2 Optional GPS location (REQ-010) — ✅ done
 
-> **Status: scaffolded only.** A `vehicle_locations` table, model and basic CRUD exist, but there is **no** map view, **no** driver-side capture flow (browser geolocation or manual input), and **no** active-service filtering. GPS is optional and the rest of the system works fully without it.
+> **Status: shipped behind feature flag `SGTE_GPS_ENABLED`.** `gps-tracking` merged — EnsureGpsEnabled middleware, schema edits (service_id + accuracy + captured_by + composite index), scoped permissions (VIEW/REGISTER/DELETE_VEHICLE_LOCATIONS), driver-side capture UX on the /driver dashboard, opportunistic auto-capture on confirmStart/End, dedicated admin map at /gps/map (react-leaflet + OpenStreetMap tiles, 30s polling), new <VehicleCombobox /> primitive, rebuild of the four vehicle-locations pages. Scout removed from the model (volatile time-series).
 
-- Location registration by the driver (automatic via browser geolocation or manual)
-- Storage: coordinates + timestamp + `is_manual` indicator
-- Map view with active vehicles (only those with a reported location)
-- Does not block any operation if no GPS data is available
+- [x] Location registration by the driver (automatic via browser geolocation or manual) — `DriverLocationController` + inline card on /driver dashboard pending F2 polish.
+- [x] Storage: coordinates + timestamp + `is_manual` indicator — schema shipped; plus service_id link + accuracy + captured_by.
+- [x] Map view with active vehicles — `/gps/map` via `VehicleLocationMapController` + Leaflet/OSM page.
+- [x] Does not block any operation if no GPS data is available — `persistLocationIfProvided` in DriverDashboardController wraps the write in try/catch per SRS §REQ-010 AC#4.
 
 ### 5.3 Deploy preparation ✅
 

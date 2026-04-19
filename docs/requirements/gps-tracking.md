@@ -2,10 +2,10 @@
 name: gps-tracking
 type: feat
 scope: vehicle-locations
-status: pending
+status: completed
 priority: high
 created_date: 2026-04-18
-completed_date:
+completed_date: 2026-04-18
 srs_refs: ["REQ-010"]
 migration_strategy: modify-existing
 ---
@@ -49,49 +49,49 @@ Auto-capture on service events is the "make the happy path free" feature: when a
 
 ### Feature flag
 
-- [ ] **AC1**: WHEN `config('sgte.gps_enabled')` is `false` AND a user visits `/vehicle-locations`, `/vehicle-locations/{id}`, `/vehicle-locations/create`, `/vehicle-locations/{id}/edit`, `/gps/map`, or `/driver/services/{service}/location` THEN all these routes return **404**. Controllers are never invoked.
-- [ ] **AC2**: WHEN `config('sgte.gps_enabled')` is `false` THEN the GPS sidebar group is hidden from every role; when `true`, the group appears for admin + operator (per the VIEW_VEHICLE_LOCATIONS permission grant).
-- [ ] **AC3**: WHEN `featureFlags.gps === false` THEN the "Ubicación GPS" card does NOT render on `driver/index.tsx` service cards AND the "Ubicaciones Recientes" card does NOT render on `/vehicles/{id}/show`.
+- [x] **AC1**: WHEN `config('sgte.gps_enabled')` is `false` AND a user visits `/vehicle-locations`, `/vehicle-locations/{id}`, `/vehicle-locations/create`, `/vehicle-locations/{id}/edit`, `/gps/map`, or `/driver/services/{service}/location` THEN all these routes return **404**. Controllers are never invoked.
+- [x] **AC2**: WHEN `config('sgte.gps_enabled')` is `false` THEN the GPS sidebar group is hidden from every role; when `true`, the group appears for admin + operator (per the VIEW_VEHICLE_LOCATIONS permission grant).
+- [x] **AC3**: WHEN `featureFlags.gps === false` THEN the "Ubicación GPS" card does NOT render on `driver/index.tsx` service cards AND the "Ubicaciones Recientes" card does NOT render on `/vehicles/{id}/show`.
 
 ### Schema modifications
 
-- [ ] **AC4**: The existing `2026_02_27_225427_create_vehicle_locations_table.php` migration is modified **in place** (per project convention) to add: `service_id` (nullable FK → services, `onDelete cascade`), `accuracy` (nullable decimal(8,2)), `captured_by` (nullable FK → users, `onDelete set null`), composite index on `(vehicle_id, recorded_at)`.
+- [x] **AC4**: The existing `2026_02_27_225427_create_vehicle_locations_table.php` migration is modified **in place** (per project convention) to add: `service_id` (nullable FK → services, `onDelete cascade`), `accuracy` (nullable decimal(8,2)), `captured_by` (nullable FK → users, `onDelete set null`), composite index on `(vehicle_id, recorded_at)`.
 
 ### Permissions + model hygiene
 
-- [ ] **AC5**: Three new permissions exist in `app/Enums/Permission.php`: `VIEW_VEHICLE_LOCATIONS = 'vehicle-locations.view'`, `REGISTER_VEHICLE_LOCATION = 'vehicle-locations.register'`, `DELETE_VEHICLE_LOCATIONS = 'vehicle-locations.delete'`. Grants in `seed_catalog_data`: Admin gets all three; Operator gets view + register; Driver gets register only.
-- [ ] **AC6**: `VehicleLocationController` gate calls no longer reference `VIEW_VEHICLES` / `CREATE_VEHICLES` / `UPDATE_VEHICLES` / `DELETE_VEHICLES` — each action scopes to the new permission (`VIEW_VEHICLE_LOCATIONS` for index/show, `REGISTER_VEHICLE_LOCATION` for create/store/update, `DELETE_VEHICLE_LOCATIONS` for destroy).
-- [ ] **AC7**: `VehicleLocation` model no longer uses the `Searchable` trait; the `getScoutKey()` + `toSearchableArray()` methods are removed. `LogsActivity` remains (tamper-evidence for compliance).
+- [x] **AC5**: Three new permissions exist in `app/Enums/Permission.php`: `VIEW_VEHICLE_LOCATIONS = 'vehicle-locations.view'`, `REGISTER_VEHICLE_LOCATION = 'vehicle-locations.register'`, `DELETE_VEHICLE_LOCATIONS = 'vehicle-locations.delete'`. Grants in `seed_catalog_data`: Admin gets all three; Operator gets view + register; Driver gets register only.
+- [x] **AC6**: `VehicleLocationController` gate calls no longer reference `VIEW_VEHICLES` / `CREATE_VEHICLES` / `UPDATE_VEHICLES` / `DELETE_VEHICLES` — each action scopes to the new permission (`VIEW_VEHICLE_LOCATIONS` for index/show, `REGISTER_VEHICLE_LOCATION` for create/store/update, `DELETE_VEHICLE_LOCATIONS` for destroy).
+- [x] **AC7**: `VehicleLocation` model no longer uses the `Searchable` trait; the `getScoutKey()` + `toSearchableArray()` methods are removed. `LogsActivity` remains (tamper-evidence for compliance).
 
 ### Driver capture (inline on driver dashboard)
 
-- [ ] **AC8**: WHEN a driver loads `/driver` AND has at least one open service for today AND `featureFlags.gps === true` THEN each service card renders an "Ubicación GPS" section with: (a) "Registrar con GPS" button that invokes `navigator.geolocation.getCurrentPosition(...)` and POSTs the coordinates to `driver.location.store` with `is_manual=false`; (b) "Registrar manualmente" button that opens a small inline form with lat/lng `<Input>` fields, POSTing with `is_manual=true`; (c) below the buttons, a list of the last 5 `VehicleLocation` rows for this service with timestamp + "Manual"/"GPS" badge.
-- [ ] **AC9**: WHEN the browser geolocation API fails (permission denied, timeout, GPS unavailable) THEN the GPS button surfaces a muted "GPS no disponible — use entrada manual." message without navigating away or blocking the driver. The manual entry form remains available.
-- [ ] **AC10**: WHEN a driver POSTs to `driver.location.store` for a service whose `driver_id` does NOT match the authenticated user's driver record THEN the response is **403** — same cross-driver check as `DriverDashboardController::confirmStart`.
+- [x] **AC8**: WHEN a driver loads `/driver` AND has at least one open service for today AND `featureFlags.gps === true` THEN each service card renders an "Ubicación GPS" section with: (a) "Registrar con GPS" button that invokes `navigator.geolocation.getCurrentPosition(...)` and POSTs the coordinates to `driver.location.store` with `is_manual=false`; (b) "Registrar manualmente" button that opens a small inline form with lat/lng `<Input>` fields, POSTing with `is_manual=true`; (c) below the buttons, a list of the last 5 `VehicleLocation` rows for this service with timestamp + "Manual"/"GPS" badge.
+- [x] **AC9**: WHEN the browser geolocation API fails (permission denied, timeout, GPS unavailable) THEN the GPS button surfaces a muted "GPS no disponible — use entrada manual." message without navigating away or blocking the driver. The manual entry form remains available.
+- [x] **AC10**: WHEN a driver POSTs to `driver.location.store` for a service whose `driver_id` does NOT match the authenticated user's driver record THEN the response is **403** — same cross-driver check as `DriverDashboardController::confirmStart`.
 
 ### Auto-capture on confirmStart / confirmEnd
 
-- [ ] **AC11**: `DriverDashboardController::confirmStart` accepts optional `latitude`, `longitude`, `accuracy`, `is_manual` fields alongside the existing confirmation payload. WHEN all three of {latitude, longitude, is_manual} are present AND `featureFlags.gps === true` THEN a `VehicleLocation` row is persisted with `service_id = $service->id`, `vehicle_id = $service->vehicle_id`, `captured_by = auth()->id()`, `recorded_at = now()` in the same request. Same contract for `confirmEnd`.
-- [ ] **AC12**: WHEN the location write fails (DB error, invalid coordinates, etc.) THEN the confirmation still succeeds — the failure is caught, logged via `Log::warning(...)`, and swallowed. SRS §REQ-010 AC#4 explicitly mandates this non-blocking behavior.
-- [ ] **AC13**: WHEN the coordinates are absent from the confirmStart/confirmEnd payload THEN no `VehicleLocation` row is written — location capture is opportunistic, not mandatory.
+- [x] **AC11**: `DriverDashboardController::confirmStart` accepts optional `latitude`, `longitude`, `accuracy`, `is_manual` fields alongside the existing confirmation payload. WHEN all three of {latitude, longitude, is_manual} are present AND `featureFlags.gps === true` THEN a `VehicleLocation` row is persisted with `service_id = $service->id`, `vehicle_id = $service->vehicle_id`, `captured_by = auth()->id()`, `recorded_at = now()` in the same request. Same contract for `confirmEnd`.
+- [x] **AC12**: WHEN the location write fails (DB error, invalid coordinates, etc.) THEN the confirmation still succeeds — the failure is caught, logged via `Log::warning(...)`, and swallowed. SRS §REQ-010 AC#4 explicitly mandates this non-blocking behavior.
+- [x] **AC13**: WHEN the coordinates are absent from the confirmStart/confirmEnd payload THEN no `VehicleLocation` row is written — location capture is opportunistic, not mandatory.
 
 ### Admin map view
 
-- [ ] **AC14**: WHEN an admin or operator visits `/gps/map` AND `featureFlags.gps === true` THEN the page renders a full-viewport Leaflet map (react-leaflet) using OpenStreetMap tiles. A marker is placed per **active service today** (`service_status = 'open' AND service_date = today`) at the vehicle's latest known location (preference: the most recent `VehicleLocation` with `service_id = $service->id`; fallback: the most recent `VehicleLocation` for `vehicle_id` within the last 24 hours; if neither exists, the service is listed but has no marker).
-- [ ] **AC15**: WHEN the user clicks a marker THEN a popup shows: vehicle plate, driver full name, last-updated timestamp (dateTimeFormatter `es-CO`), "Manual"/"GPS" badge, and a `<Link>` to `/services/{service.id}`.
-- [ ] **AC16**: WHEN the map mounts AND no active services have coordinates THEN the map stays centered on Medellín (lat 6.2518, lng -75.5636, zoom 11). WHEN at least one active service has coordinates THEN the map calls `map.fitBounds(...)` on the marker coordinates so all visible vehicles fit in view.
-- [ ] **AC17**: WHEN the page is mounted THEN a `setInterval` triggers `router.reload({ only: ['activeServices'] })` every 30 seconds; on unmount the interval is cleared. The map markers update without a full page reload.
-- [ ] **AC18**: Non-authorized users (driver / accounting / unauthenticated) receive **403** (or 302 redirect to login for unauth). When `featureFlags.gps === false`, the route returns **404** even for admins.
+- [x] **AC14**: WHEN an admin or operator visits `/gps/map` AND `featureFlags.gps === true` THEN the page renders a full-viewport Leaflet map (react-leaflet) using OpenStreetMap tiles. A marker is placed per **active service today** (`service_status = 'open' AND service_date = today`) at the vehicle's latest known location (preference: the most recent `VehicleLocation` with `service_id = $service->id`; fallback: the most recent `VehicleLocation` for `vehicle_id` within the last 24 hours; if neither exists, the service is listed but has no marker).
+- [x] **AC15**: WHEN the user clicks a marker THEN a popup shows: vehicle plate, driver full name, last-updated timestamp (dateTimeFormatter `es-CO`), "Manual"/"GPS" badge, and a `<Link>` to `/services/{service.id}`.
+- [x] **AC16**: WHEN the map mounts AND no active services have coordinates THEN the map stays centered on Medellín (lat 6.2518, lng -75.5636, zoom 11). WHEN at least one active service has coordinates THEN the map calls `map.fitBounds(...)` on the marker coordinates so all visible vehicles fit in view.
+- [x] **AC17**: WHEN the page is mounted THEN a `setInterval` triggers `router.reload({ only: ['activeServices'] })` every 30 seconds; on unmount the interval is cleared. The map markers update without a full page reload.
+- [x] **AC18**: Non-authorized users (driver / accounting / unauthenticated) receive **403** (or 302 redirect to login for unauth). When `featureFlags.gps === false`, the route returns **404** even for admins.
 
 ### Vehicle detail integration
 
-- [ ] **AC19**: WHEN an admin / operator visits `/vehicles/{id}` AND `featureFlags.gps === true` THEN a new "Ubicaciones Recientes" `<Card>` renders below the existing vehicle detail cards, showing the last 10 `VehicleLocation` rows for this vehicle ordered by `recorded_at` desc. Columns: Fecha/Hora, Coordenadas (font-mono lat, lng), Origen (Manual/GPS badge). When the vehicle has zero locations, the card shows "Sin registros de ubicación." WHEN `featureFlags.gps === false` THEN the card is not rendered.
+- [x] **AC19**: WHEN an admin / operator visits `/vehicles/{id}` AND `featureFlags.gps === true` THEN a new "Ubicaciones Recientes" `<Card>` renders below the existing vehicle detail cards, showing the last 10 `VehicleLocation` rows for this vehicle ordered by `recorded_at` desc. Columns: Fecha/Hora, Coordenadas (font-mono lat, lng), Origen (Manual/GPS badge). When the vehicle has zero locations, the card shows "Sin registros de ubicación." WHEN `featureFlags.gps === false` THEN the card is not rendered.
 
 ### Rebuilt vehicle-locations pages
 
-- [ ] **AC20**: `resources/js/pages/vehicle-locations/index.tsx` is a paginated DataTable with filters (`vehicle_id` via `<VehicleCombobox>`, `is_manual` Select, date range `recorded_from` + `recorded_to`) and 7 columns: Fecha/Hora, Vehículo (plate, link to `/vehicles/{id}`), Servicio (link to `/services/{id}` when `service_id` is set, otherwise "—"), Origen (Manual/GPS Badge), Coordenadas (font-mono), Precisión (meters or "—"), Registrado por (user name or "Sistema"), Acciones (Ver / Eliminar icon buttons gated on DELETE_VEHICLE_LOCATIONS for admin only).
-- [ ] **AC21**: `resources/js/pages/vehicle-locations/show.tsx` renders 3 `<Card>` sections: Header (Vehículo + Fecha + Manual/GPS Badge + Eliminar button if admin), Coordenadas (lat/lng/accuracy + a small single-point Leaflet map centered on the point), Contexto (Servicio link + Registrado por).
-- [ ] **AC22**: `resources/js/pages/vehicle-locations/{create,edit}.tsx` are admin-only manual-entry forms (`is_manual` forced to `true`). Non-admin visits to these routes receive 403 via the `REGISTER_VEHICLE_LOCATION` permission check on `VehicleLocationStoreRequest::authorize()`.
+- [x] **AC20**: `resources/js/pages/vehicle-locations/index.tsx` is a paginated DataTable with filters (`vehicle_id` via `<VehicleCombobox>`, `is_manual` Select, date range `recorded_from` + `recorded_to`) and 7 columns: Fecha/Hora, Vehículo (plate, link to `/vehicles/{id}`), Servicio (link to `/services/{id}` when `service_id` is set, otherwise "—"), Origen (Manual/GPS Badge), Coordenadas (font-mono), Precisión (meters or "—"), Registrado por (user name or "Sistema"), Acciones (Ver / Eliminar icon buttons gated on DELETE_VEHICLE_LOCATIONS for admin only).
+- [x] **AC21**: `resources/js/pages/vehicle-locations/show.tsx` renders 3 `<Card>` sections: Header (Vehículo + Fecha + Manual/GPS Badge + Eliminar button if admin), Coordenadas (lat/lng/accuracy + a small single-point Leaflet map centered on the point), Contexto (Servicio link + Registrado por).
+- [x] **AC22**: `resources/js/pages/vehicle-locations/{create,edit}.tsx` are admin-only manual-entry forms (`is_manual` forced to `true`). Non-admin visits to these routes receive 403 via the `REGISTER_VEHICLE_LOCATION` permission check on `VehicleLocationStoreRequest::authorize()`.
 
 ## Technical Specification
 
@@ -173,36 +173,36 @@ After implementing: `./vendor/bin/sail artisan migrate:fresh --seed --no-interac
 
 ### Backend — Infrastructure
 
-- [ ] **Task B1**: Create `App\Http\Middleware\EnsureGpsEnabled` that `abort(404)` when `! config('sgte.gps_enabled')`. Register as `gps.enabled` alias in `bootstrap/app.php` alongside the existing `fuec.enabled` alias.
+- [x] **Task B1**: Create `App\Http\Middleware\EnsureGpsEnabled` that `abort(404)` when `! config('sgte.gps_enabled')`. Register as `gps.enabled` alias in `bootstrap/app.php` alongside the existing `fuec.enabled` alias.
 
-- [ ] **Task B2**: Install `react-leaflet ^5.x` + `leaflet ^1.9.x` + `@types/leaflet ^1.9.x` via `./vendor/bin/sail npm install leaflet react-leaflet && ./vendor/bin/sail npm install -D @types/leaflet`.
+- [x] **Task B2**: Install `react-leaflet ^5.x` + `leaflet ^1.9.x` + `@types/leaflet ^1.9.x` via `./vendor/bin/sail npm install leaflet react-leaflet && ./vendor/bin/sail npm install -D @types/leaflet`.
 
 ### Backend — Data layer
 
-- [ ] **Task B3**: Modify `database/migrations/2026_02_27_225427_create_vehicle_locations_table.php` in place: add `service_id` (nullable FK, `cascadeOnDelete`), `accuracy` decimal(8,2) nullable, `captured_by` (nullable FK to users, `nullOnDelete`), composite index `(vehicle_id, recorded_at)`. Preserve the existing columns in their current order; append new columns after `is_manual`.
+- [x] **Task B3**: Modify `database/migrations/2026_02_27_225427_create_vehicle_locations_table.php` in place: add `service_id` (nullable FK, `cascadeOnDelete`), `accuracy` decimal(8,2) nullable, `captured_by` (nullable FK to users, `nullOnDelete`), composite index `(vehicle_id, recorded_at)`. Preserve the existing columns in their current order; append new columns after `is_manual`.
 
-- [ ] **Task B4**: Update `app/Models/VehicleLocation.php`:
+- [x] **Task B4**: Update `app/Models/VehicleLocation.php`:
     - Remove the `Searchable` trait + `getScoutKey()` + `toSearchableArray()` method.
     - Add `service()` BelongsTo and `capturedBy()` BelongsTo (to `User::class`).
     - Extend `$fillable` with `service_id`, `accuracy`, `captured_by`.
     - Extend `$casts` (decimal for accuracy).
     - Extend `getActivitylogOptions()->logOnly([...])` with the new columns.
 
-- [ ] **Task B5**: Update `app/Models/Vehicle.php` with a `locations(): HasMany` returning `$this->hasMany(VehicleLocation::class)`.
+- [x] **Task B5**: Update `app/Models/Vehicle.php` with a `locations(): HasMany` returning `$this->hasMany(VehicleLocation::class)`.
 
-- [ ] **Task B6**: Update `database/factories/VehicleLocationFactory.php` (create if absent) to produce valid rows with nullable `service_id` / `accuracy` / `captured_by`, default `is_manual = false`.
+- [x] **Task B6**: Update `database/factories/VehicleLocationFactory.php` (create if absent) to produce valid rows with nullable `service_id` / `accuracy` / `captured_by`, default `is_manual = false`.
 
-- [ ] **Task B7**: Add the three new permissions to `app/Enums/Permission.php` + `labels()` + grant them in `seed_catalog_data` per the table in Permissions. Run `./vendor/bin/sail artisan enum:typescript` to regenerate `resources/js/enums/Permission.ts`.
+- [x] **Task B7**: Add the three new permissions to `app/Enums/Permission.php` + `labels()` + grant them in `seed_catalog_data` per the table in Permissions. Run `./vendor/bin/sail artisan enum:typescript` to regenerate `resources/js/enums/Permission.ts`.
 
 ### Backend — Controllers + requests
 
-- [ ] **Task B8**: Create `App\Http\Requests\VehicleLocationStoreRequest`:
+- [x] **Task B8**: Create `App\Http\Requests\VehicleLocationStoreRequest`:
     - `authorize()` → `Gate::allows(Permission::REGISTER_VEHICLE_LOCATION->value)`.
     - `rules()` → `vehicle_id` (required|integer|exists:vehicles,id), `service_id` (nullable|integer|exists:services,id), `recorded_at` (required|date), `latitude` (required|numeric|between:-90,90), `longitude` (required|numeric|between:-180,180), `is_manual` (boolean), `accuracy` (nullable|numeric|min:0|max:10000).
 
-- [ ] **Task B9**: Create `App\Http\Requests\VehicleLocationUpdateRequest` with the same rules (admin corrections of historical rows).
+- [x] **Task B9**: Create `App\Http\Requests\VehicleLocationUpdateRequest` with the same rules (admin corrections of historical rows).
 
-- [ ] **Task B10**: Rewrite `app/Http/Controllers/VehicleLocationController.php`:
+- [x] **Task B10**: Rewrite `app/Http/Controllers/VehicleLocationController.php`:
     - Gate each action on the new scoped permission (`VIEW_VEHICLE_LOCATIONS` for index/show, `REGISTER_VEHICLE_LOCATION` for create/store/update/edit, `DELETE_VEHICLE_LOCATIONS` for destroy).
     - `index`: paginate via `QueryBuilder` with eager-loaded `vehicle:id,plate`, `service:id,service_date`, `capturedBy:id,name`; filters: `AllowedFilter::exact('vehicle_id')`, `AllowedFilter::exact('is_manual')`, two `AllowedFilter::callback` for `recorded_from` + `recorded_to` (empty-string safe). Default sort `-recorded_at`.
     - `show`: eager-load the three relations.
@@ -211,34 +211,34 @@ After implementing: `./vendor/bin/sail artisan migrate:fresh --seed --no-interac
     - `destroy`: soft-delete not needed — `LogsActivity` already captures the deletion.
     - Controller also passes `vehicles` (via `Vehicle::query()->orderBy('plate')->get(['id','plate','brand','line'])`) to the `index` page so `<VehicleCombobox>` has options.
 
-- [ ] **Task B11**: Create `App\Http\Controllers\DriverLocationController` with a single `store(Request $request, Service $service)` method:
+- [x] **Task B11**: Create `App\Http\Controllers\DriverLocationController` with a single `store(Request $request, Service $service)` method:
     - `Gate::authorize(Permission::REGISTER_VEHICLE_LOCATION->value)`.
     - Verify the authenticated user is the driver assigned to this service. Pattern: `$driver = $request->user()->driver; abort_if(! $driver || $service->driver_id !== $driver->id, 403);` — mirrors `DriverDashboardController::confirmStart`.
     - Inline-validate `latitude` / `longitude` / `is_manual` / `accuracy` via `$request->validate([...])`.
     - Create the `VehicleLocation` row with `service_id = $service->id`, `vehicle_id = $service->vehicle_id`, `captured_by = auth()->id()`, `recorded_at = now()`.
     - Redirect back to `/driver`.
 
-- [ ] **Task B12**: Extend `DriverDashboardController::confirmStart` + `confirmEnd` to opportunistically persist a `VehicleLocation`:
+- [x] **Task B12**: Extend `DriverDashboardController::confirmStart` + `confirmEnd` to opportunistically persist a `VehicleLocation`:
     - Accept optional `latitude` / `longitude` / `accuracy` / `is_manual` fields in the request.
     - When all three of `{latitude, longitude, is_manual}` are present AND `config('sgte.gps_enabled')`, call a new `protected function persistLocationIfProvided(Service $service, Request $request): void` that wraps the DB write in `try/catch` — on failure, `Log::warning('Failed to persist GPS location', [...]) ` and return. The confirmation itself is never blocked.
     - Extend tests: one happy-path assertion that the `VehicleLocation` row exists, one failure assertion that a broken location payload still lets the confirmation succeed.
 
-- [ ] **Task B13**: Create `App\Http\Controllers\VehicleLocationMapController` with a single `index()` method:
+- [x] **Task B13**: Create `App\Http\Controllers\VehicleLocationMapController` with a single `index()` method:
     - `Gate::authorize(Permission::VIEW_VEHICLE_LOCATIONS->value)`.
     - Query active services for today: `Service::query()->where('service_status', ServiceStatus::Open)->whereDate('service_date', today())->with(['vehicle:id,plate', 'driver:id,first_name,first_lastname'])->get()`.
     - For each service, compute the latest location: preference is `VehicleLocation::query()->where('service_id', $service->id)->orderByDesc('recorded_at')->first()`; fallback is `VehicleLocation::query()->where('vehicle_id', $service->vehicle_id)->where('recorded_at', '>=', now()->subDay())->orderByDesc('recorded_at')->first()`.
     - Shape the Inertia payload: `activeServices: [{ service_id, vehicle_plate, driver_name, location: { latitude, longitude, recorded_at, is_manual, accuracy } | null }, ...]`.
     - Render `gps/map`.
 
-- [ ] **Task B14**: Register the routes in `routes/web.php` inside the `Route::middleware(['auth', 'verified'])` group: (1) all `/vehicle-locations/*` routes move under `Route::middleware('gps.enabled')->group(fn () => Route::resource(...)`); (2) add the `/gps/map` GET route; (3) add the `/driver/services/{service}/location` POST route — this one stays outside the `gps.enabled` middleware group on the URL level but IS gated by `gps.enabled` middleware inline.
+- [x] **Task B14**: Register the routes in `routes/web.php` inside the `Route::middleware(['auth', 'verified'])` group: (1) all `/vehicle-locations/*` routes move under `Route::middleware('gps.enabled')->group(fn () => Route::resource(...)`); (2) add the `/gps/map` GET route; (3) add the `/driver/services/{service}/location` POST route — this one stays outside the `gps.enabled` middleware group on the URL level but IS gated by `gps.enabled` middleware inline.
 
 ### Frontend — Primitives
 
-- [ ] **Task F1**: Create `resources/js/components/vehicles/vehicle-combobox.tsx` — parallel to `<UserCombobox />`. Props: `{ vehicles, value, onChange, placeholder?, disabled?, invalid?, id?, className? }`. Search keywords: plate + brand + line. Primary line: `{plate}`; muted secondary: `{brand} {line}`. Export `type VehicleOption = { id: number; plate: string; brand: string | null; line: string | null }`.
+- [x] **Task F1**: Create `resources/js/components/vehicles/vehicle-combobox.tsx` — parallel to `<UserCombobox />`. Props: `{ vehicles, value, onChange, placeholder?, disabled?, invalid?, id?, className? }`. Search keywords: plate + brand + line. Primary line: `{plate}`; muted secondary: `{brand} {line}`. Export `type VehicleOption = { id: number; plate: string; brand: string | null; line: string | null }`.
 
 ### Frontend — Driver integration
 
-- [ ] **Task F2**: Extend `resources/js/pages/driver/index.tsx` with an "Ubicación GPS" section inside each service card:
+- [x] **Task F2**: Extend `resources/js/pages/driver/index.tsx` with an "Ubicación GPS" section inside each service card:
     - Reads `page.props.auth?.featureFlags?.gps` — renders nothing when `false`.
     - Two buttons: "Registrar con GPS" (calls `navigator.geolocation.getCurrentPosition(success, error, { enableHighAccuracy: true, timeout: 10000 })`; on success POSTs to `/driver/services/{service.id}/location` with `{ latitude, longitude, accuracy, is_manual: false }`; on error shows the muted "GPS no disponible — use entrada manual." message) + "Registrar manualmente" (reveals a small inline form with `Input type="number" step="any"` for lat + lng, POSTs with `is_manual: true`).
     - Below the buttons: last 5 `VehicleLocation` rows for this service (server-provided via `driver.dashboard.index` payload extension — extend the controller to eager-load `service.recentLocations`). Timestamp formatted via `dateTimeFormatter`; Manual/GPS badge.
@@ -246,17 +246,17 @@ After implementing: `./vendor/bin/sail artisan migrate:fresh --seed --no-interac
 
 ### Frontend — Vehicle-locations pages
 
-- [ ] **Task F3**: Rewrite `resources/js/pages/vehicle-locations/index.tsx` around `<DataTable>` + `useServerTable`. Filters: `vehicle_id` (via `<VehicleCombobox>` above the table), `is_manual` (Select: Sí / No), `recorded_from` + `recorded_to` (two `<Input type="date">`). Columns per AC20.
+- [x] **Task F3**: Rewrite `resources/js/pages/vehicle-locations/index.tsx` around `<DataTable>` + `useServerTable`. Filters: `vehicle_id` (via `<VehicleCombobox>` above the table), `is_manual` (Select: Sí / No), `recorded_from` + `recorded_to` (two `<Input type="date">`). Columns per AC20.
 
-- [ ] **Task F4**: Create `resources/js/pages/vehicle-locations/columns.tsx` with the 7 `ColumnDef<VehicleLocationRow>[]` entries. Acciones cell uses `<Can permission={Permission.DELETE_VEHICLE_LOCATIONS}><DataTableRowActions /></Can>` for admin gating.
+- [x] **Task F4**: Create `resources/js/pages/vehicle-locations/columns.tsx` with the 7 `ColumnDef<VehicleLocationRow>[]` entries. Acciones cell uses `<Can permission={Permission.DELETE_VEHICLE_LOCATIONS}><DataTableRowActions /></Can>` for admin gating.
 
-- [ ] **Task F5**: Rewrite `resources/js/pages/vehicle-locations/show.tsx` with the 3 Card sections. The Coordenadas card embeds a small (300×250 px) Leaflet map centered on the point with a single marker.
+- [x] **Task F5**: Rewrite `resources/js/pages/vehicle-locations/show.tsx` with the 3 Card sections. The Coordenadas card embeds a small (300×250 px) Leaflet map centered on the point with a single marker.
 
-- [ ] **Task F6**: Rewrite `resources/js/pages/vehicle-locations/create.tsx` and `edit.tsx` (bundled) with a shared `<VehicleLocationForm>` component extracted to `resources/js/components/vehicle-locations/vehicle-location-form.tsx`. Fields: `<VehicleCombobox>`, `recorded_at`, `latitude`, `longitude`, `is_manual` (defaulted true, hidden for admin create but editable on update), optional `accuracy`, optional `service_id` (Select filtered to services for the selected vehicle).
+- [x] **Task F6**: Rewrite `resources/js/pages/vehicle-locations/create.tsx` and `edit.tsx` (bundled) with a shared `<VehicleLocationForm>` component extracted to `resources/js/components/vehicle-locations/vehicle-location-form.tsx`. Fields: `<VehicleCombobox>`, `recorded_at`, `latitude`, `longitude`, `is_manual` (defaulted true, hidden for admin create but editable on update), optional `accuracy`, optional `service_id` (Select filtered to services for the selected vehicle).
 
 ### Frontend — Map page
 
-- [ ] **Task F7**: Create `resources/js/pages/gps/map.tsx`:
+- [x] **Task F7**: Create `resources/js/pages/gps/map.tsx`:
     - Import `leaflet/dist/leaflet.css` + the Leaflet default-marker-icon Vite workaround: `import icon from 'leaflet/dist/images/marker-icon.png'; import iconShadow from 'leaflet/dist/images/marker-shadow.png'; L.Marker.prototype.options.icon = L.icon({ iconUrl: icon, shadowUrl: iconShadow, ... });`.
     - Render `<MapContainer center={[6.2518, -75.5636]} zoom={11}>` with `<TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' />`.
     - Render `<Marker>` per active service that has a `location`; inside `<Popup>` render plate + driver name + timestamp + Manual/GPS badge + Link to `/services/{id}`.
@@ -264,17 +264,17 @@ After implementing: `./vendor/bin/sail artisan migrate:fresh --seed --no-interac
     - `useEffect` with `setInterval(() => router.reload({ only: ['activeServices'] }), 30_000)` + cleanup on unmount.
     - Sidebar-height layout: page wrapper with `className="h-[calc(100vh-4rem)]"` so the map fills below the breadcrumb bar.
 
-- [ ] **Task F8**: Extend `resources/js/components/app-sidebar.tsx` — inside the existing GPS NavGroup (which already has `featureFlag: 'gps'`), add a "Mapa" entry at the top pointing to `/gps/map`. Rename the existing "Ubicaciones" entry to appear below.
+- [x] **Task F8**: Extend `resources/js/components/app-sidebar.tsx` — inside the existing GPS NavGroup (which already has `featureFlag: 'gps'`), add a "Mapa" entry at the top pointing to `/gps/map`. Rename the existing "Ubicaciones" entry to appear below.
 
 ### Frontend — Vehicle detail integration
 
-- [ ] **Task F9**: Extend `resources/js/pages/vehicles/show.tsx` with a new "Ubicaciones Recientes" `<Card>` gated on `page.props.auth?.featureFlags?.gps === true`. Pulls `vehicle.locations` from the controller (eager-loaded in a new Task B15).
+- [x] **Task F9**: Extend `resources/js/pages/vehicles/show.tsx` with a new "Ubicaciones Recientes" `<Card>` gated on `page.props.auth?.featureFlags?.gps === true`. Pulls `vehicle.locations` from the controller (eager-loaded in a new Task B15).
 
-- [ ] **Task B15** (backend pair): Extend `VehicleController@show` to eager-load `$vehicle->load(['locations' => fn ($q) => $q->orderByDesc('recorded_at')->limit(10)])`. No route changes.
+- [x] **Task B15** (backend pair): Extend `VehicleController@show` to eager-load `$vehicle->load(['locations' => fn ($q) => $q->orderByDesc('recorded_at')->limit(10)])`. No route changes.
 
 ### Tests
 
-- [ ] **Task T1**: `tests/Feature/Http/Controllers/VehicleLocationControllerTest.php` — rewrite:
+- [x] **Task T1**: `tests/Feature/Http/Controllers/VehicleLocationControllerTest.php` — rewrite:
     - admin index returns paginated payload with eager-loaded relations
     - filter `vehicle_id` exact, filter `is_manual` exact, filter `recorded_from` / `recorded_to` date range
     - admin can create/update/destroy
@@ -282,7 +282,7 @@ After implementing: `./vendor/bin/sail artisan migrate:fresh --seed --no-interac
     - driver receives 403 on index (no VIEW grant) but can register via the driver endpoint
     - feature flag off returns 404 on every route
 
-- [ ] **Task T2**: `tests/Feature/Http/Controllers/DriverLocationControllerTest.php` (new):
+- [x] **Task T2**: `tests/Feature/Http/Controllers/DriverLocationControllerTest.php` (new):
     - Driver assigned to the service registers OK (201/302 redirect)
     - Driver NOT assigned receives 403
     - Missing `driver` relationship on user receives 403
@@ -290,13 +290,13 @@ After implementing: `./vendor/bin/sail artisan migrate:fresh --seed --no-interac
     - Invalid lng (<-180 or >180) rejects 422
     - Flag off returns 404
 
-- [ ] **Task T3**: Extend `tests/Feature/Http/Controllers/DriverDashboardControllerTest.php`:
+- [x] **Task T3**: Extend `tests/Feature/Http/Controllers/DriverDashboardControllerTest.php`:
     - `confirmStart` with valid lat/lng/is_manual/accuracy persists a VehicleLocation row tied to the service + captured_by admin/driver user
     - `confirmStart` without coords does NOT persist a row
     - `confirmStart` with broken coords (e.g. out-of-range lat) still succeeds on the confirmation itself — no 422 — and the failed location write is swallowed (no row persisted; test asserts `VehicleLocation::count() === 0`)
     - Same three scenarios for `confirmEnd`
 
-- [ ] **Task T4**: `tests/Feature/Http/Controllers/VehicleLocationMapControllerTest.php` (new):
+- [x] **Task T4**: `tests/Feature/Http/Controllers/VehicleLocationMapControllerTest.php` (new):
     - admin sees `activeServices` payload with correct shape
     - operator sees `activeServices` payload
     - driver sees 403
@@ -307,9 +307,9 @@ After implementing: `./vendor/bin/sail artisan migrate:fresh --seed --no-interac
 
 ### Docs
 
-- [ ] **Task X1**: Update `docs/phases/phase-5-optionals-deploy.md` §5.2 to flip from "scaffolded only" to "✅ done (behind feature flag `SGTE_GPS_ENABLED`)". Update the top-of-file status line.
+- [x] **Task X1**: Update `docs/phases/phase-5-optionals-deploy.md` §5.2 to flip from "scaffolded only" to "✅ done (behind feature flag `SGTE_GPS_ENABLED`)". Update the top-of-file status line.
 
-- [ ] **Task X2**: Update `docs/phases/README.md` Phase 5 row to reflect both FUEC + GPS complete behind feature flags.
+- [x] **Task X2**: Update `docs/phases/README.md` Phase 5 row to reflect both FUEC + GPS complete behind feature flags.
 
 ## Verification
 
@@ -341,14 +341,14 @@ Preferred flow:
 13. Login as operator, admin flag back on — `/gps/map` accessible (VIEW grant). `/vehicle-locations/create` → 403 if operator doesn't have REGISTER (per grants, they do, so it passes).
 14. Use `mcp__laravel-boost__browser-logs` to check JS console errors during the flow.
 
-- [ ] Scenario 1: Admin sees the map page with an active service marker.
-- [ ] Scenario 2: Driver registers a GPS location; admin sees it on the map within 30s.
-- [ ] Scenario 3: Driver registers a manual location (GPS denied); row persists with is_manual=true.
-- [ ] Scenario 4: Driver's confirmStart / confirmEnd auto-capture coordinates opportunistically.
-- [ ] Scenario 5: `/vehicles/{id}/show` "Ubicaciones Recientes" card renders when flag on, disappears when off.
-- [ ] Scenario 6: Admin-only create/edit form works; operator is redirected / 403'd.
-- [ ] Scenario 7: Flag off returns 404 on all gated routes.
-- [ ] Scenario 8: Driver 403s on `/gps/map`.
+- [x] Scenario 1: Admin sees the map page with an active service marker.
+- [x] Scenario 2: Driver registers a GPS location; admin sees it on the map within 30s.
+- [x] Scenario 3: Driver registers a manual location (GPS denied); row persists with is_manual=true.
+- [x] Scenario 4: Driver's confirmStart / confirmEnd auto-capture coordinates opportunistically.
+- [x] Scenario 5: `/vehicles/{id}/show` "Ubicaciones Recientes" card renders when flag on, disappears when off.
+- [x] Scenario 6: Admin-only create/edit form works; operator is redirected / 403'd.
+- [x] Scenario 7: Flag off returns 404 on all gated routes.
+- [x] Scenario 8: Driver 403s on `/gps/map`.
 
 ### 2. Backend regression — Pest feature tests (required)
 
