@@ -47,12 +47,23 @@ export default function FuecsCreate() {
     const [candidates, setCandidates] = useState<Candidate[]>([]);
     const [search, setSearch] = useState('');
     const [loading, setLoading] = useState(false);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [previewing, setPreviewing] = useState(false);
+    const [previewError, setPreviewError] = useState<string | null>(null);
 
     const { data, setData, post, processing, errors } = useForm<{
         service_id: number | '';
     }>({
         service_id: '',
     });
+
+    useEffect(() => {
+        // Invalidate the preview whenever the selected service changes;
+        // revoke the old blob URL so we don't leak memory.
+        return () => {
+            if (previewUrl) URL.revokeObjectURL(previewUrl);
+        };
+    }, [previewUrl]);
 
     useEffect(() => {
         const controller = new AbortController();
@@ -83,6 +94,51 @@ export default function FuecsCreate() {
     function submit(e: React.FormEvent) {
         e.preventDefault();
         post('/fuecs');
+    }
+
+    async function handlePreview() {
+        if (data.service_id === '') return;
+        setPreviewing(true);
+        setPreviewError(null);
+
+        const csrfToken = document
+            .querySelector('meta[name="csrf-token"]')
+            ?.getAttribute('content');
+
+        try {
+            const response = await fetch('/fuecs/preview', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/pdf',
+                    ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {}),
+                },
+                body: JSON.stringify({ service_id: data.service_id }),
+            });
+
+            if (!response.ok) {
+                if (response.status === 422) {
+                    setPreviewError(
+                        'No se puede generar la vista previa: revise las validaciones previas.',
+                    );
+                } else if (response.status === 403) {
+                    setPreviewError('No autorizado para generar FUEC.');
+                } else {
+                    setPreviewError(
+                        'Error al generar la vista previa. Intente nuevamente.',
+                    );
+                }
+                return;
+            }
+
+            const blob = await response.blob();
+            if (previewUrl) URL.revokeObjectURL(previewUrl);
+            setPreviewUrl(URL.createObjectURL(blob));
+        } catch {
+            setPreviewError('Error de red al generar la vista previa.');
+        } finally {
+            setPreviewing(false);
+        }
     }
 
     return (
@@ -183,12 +239,16 @@ export default function FuecsCreate() {
                                                             data.service_id ===
                                                             candidate.id
                                                         }
-                                                        onChange={() =>
+                                                        onChange={() => {
                                                             setData(
                                                                 'service_id',
                                                                 candidate.id,
-                                                            )
-                                                        }
+                                                            );
+                                                            setPreviewUrl(null);
+                                                            setPreviewError(
+                                                                null,
+                                                            );
+                                                        }}
                                                     />
                                                 </TableCell>
                                                 <TableCell>
@@ -215,12 +275,54 @@ export default function FuecsCreate() {
                                 </Table>
                             </div>
 
-                            <Button
-                                type="submit"
-                                disabled={processing || data.service_id === ''}
-                            >
-                                Generar FUEC
-                            </Button>
+                            <div className="flex flex-wrap gap-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={handlePreview}
+                                    disabled={
+                                        previewing || data.service_id === ''
+                                    }
+                                >
+                                    {previewing ? 'Generando…' : 'Vista previa'}
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    disabled={
+                                        processing || data.service_id === ''
+                                    }
+                                >
+                                    {previewUrl
+                                        ? 'Confirmar y generar'
+                                        : 'Generar FUEC'}
+                                </Button>
+                            </div>
+
+                            {previewError && (
+                                <Alert variant="destructive">
+                                    <AlertTitle>
+                                        Error al generar vista previa
+                                    </AlertTitle>
+                                    <AlertDescription>
+                                        {previewError}
+                                    </AlertDescription>
+                                </Alert>
+                            )}
+
+                            {previewUrl && (
+                                <div className="space-y-2">
+                                    <p className="text-sm text-muted-foreground">
+                                        Vista previa — ningún consecutivo
+                                        MinTransporte se consume hasta que
+                                        confirme.
+                                    </p>
+                                    <iframe
+                                        src={previewUrl}
+                                        title="Vista previa FUEC"
+                                        className="h-[600px] w-full rounded-md border"
+                                    />
+                                </div>
+                            )}
                         </form>
                     </CardContent>
                 </Card>
