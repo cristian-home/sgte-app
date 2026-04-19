@@ -357,6 +357,7 @@ return [
         'origin_address' => 'dirección origen',
         'origin_coordinates' => 'coordenadas origen',
         'origin_municipality_id' => 'municipio origen',
+        'override_justification' => 'justificación',
         'payment_method' => 'método de pago',
         'payment_status' => 'estado de pago',
         'pdf_url' => 'URL del PDF',

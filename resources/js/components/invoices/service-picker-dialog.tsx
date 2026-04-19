@@ -1,6 +1,8 @@
 import { router } from '@inertiajs/react';
+import { AlertTriangle } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import InvoiceController from '@/actions/App/Http/Controllers/InvoiceController';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -14,6 +16,8 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import {
     Table,
     TableBody,
@@ -49,6 +53,7 @@ interface ServicePickerDialogProps {
     onOpenChange: (open: boolean) => void;
     invoiceId: number;
     candidates: ServicePickerRow[];
+    blockedCandidates?: ServicePickerRow[];
 }
 
 const currencyFormatter = new Intl.NumberFormat('es-CO', {
@@ -56,6 +61,8 @@ const currencyFormatter = new Intl.NumberFormat('es-CO', {
     currency: 'COP',
     maximumFractionDigits: 0,
 });
+
+const JUSTIFICATION_MIN = 10;
 
 function formatDate(date: string | null): string {
     const parsed = parseDueDate(date);
@@ -96,15 +103,31 @@ export default function ServicePickerDialog({
     onOpenChange,
     invoiceId,
     candidates,
+    blockedCandidates = [],
 }: ServicePickerDialogProps) {
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
     const [search, setSearch] = useState('');
     const [processing, setProcessing] = useState(false);
+    const [showBlocked, setShowBlocked] = useState(false);
+    const [justification, setJustification] = useState('');
+    const [errors, setErrors] = useState<
+        Partial<Record<'service_ids' | 'override_justification', string>>
+    >({});
 
-    const filtered = useMemo(() => {
+    const blockedIds = useMemo(
+        () => new Set(blockedCandidates.map((r) => r.id)),
+        [blockedCandidates],
+    );
+
+    const hasSelectedBlocked = useMemo(
+        () => selectedIds.some((id) => blockedIds.has(id)),
+        [selectedIds, blockedIds],
+    );
+
+    const filter = (rows: ServicePickerRow[]) => {
         const term = search.trim().toLowerCase();
-        if (!term) return candidates;
-        return candidates.filter((row) => {
+        if (!term) return rows;
+        return rows.filter((row) => {
             const plate = (row.vehicle?.plate ?? '').toLowerCase();
             const contract = (
                 row.contract?.contract_number ?? ''
@@ -118,11 +141,22 @@ export default function ServicePickerDialog({
                 last.includes(term)
             );
         });
-    }, [candidates, search]);
+    };
 
-    const allSelected =
-        filtered.length > 0 &&
-        filtered.every((r) => selectedIds.includes(r.id));
+    const filteredClean = useMemo(
+        () => filter(candidates),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [candidates, search],
+    );
+    const filteredBlocked = useMemo(
+        () => filter(blockedCandidates),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [blockedCandidates, search],
+    );
+
+    const allCleanSelected =
+        filteredClean.length > 0 &&
+        filteredClean.every((r) => selectedIds.includes(r.id));
 
     function toggleOne(id: number) {
         setSelectedIds((prev) =>
@@ -130,42 +164,75 @@ export default function ServicePickerDialog({
         );
     }
 
-    function toggleAll() {
-        if (allSelected) {
+    function toggleAllClean() {
+        if (allCleanSelected) {
             setSelectedIds((prev) =>
-                prev.filter((id) => !filtered.some((r) => r.id === id)),
+                prev.filter((id) => !filteredClean.some((r) => r.id === id)),
             );
         } else {
             setSelectedIds((prev) =>
-                Array.from(new Set([...prev, ...filtered.map((r) => r.id)])),
+                Array.from(
+                    new Set([...prev, ...filteredClean.map((r) => r.id)]),
+                ),
             );
         }
     }
 
     function handleSubmit() {
         if (selectedIds.length === 0) return;
+
+        // Pre-flight: any blocked service needs a non-trivial
+        // justification before we even hit the server. The server
+        // re-checks, but surfacing this inline saves a round-trip.
+        if (
+            hasSelectedBlocked &&
+            justification.trim().length < JUSTIFICATION_MIN
+        ) {
+            setErrors({
+                override_justification: `La justificación debe tener al menos ${JUSTIFICATION_MIN} caracteres.`,
+            });
+            return;
+        }
+
+        setErrors({});
         setProcessing(true);
-        router.post(
-            InvoiceController.attachServices(invoiceId).url,
-            { service_ids: selectedIds },
-            {
-                preserveScroll: true,
-                onFinish: () => {
-                    setProcessing(false);
-                },
-                onSuccess: () => {
-                    setSelectedIds([]);
-                    setSearch('');
-                    onOpenChange(false);
-                },
+        const payload = hasSelectedBlocked
+            ? {
+                  service_ids: selectedIds,
+                  override_justification: justification.trim(),
+              }
+            : { service_ids: selectedIds };
+
+        router.post(InvoiceController.attachServices(invoiceId).url, payload, {
+            preserveScroll: true,
+            onError: (errs) => {
+                setErrors(
+                    errs as Partial<
+                        Record<'service_ids' | 'override_justification', string>
+                    >,
+                );
             },
-        );
+            onFinish: () => {
+                setProcessing(false);
+            },
+            onSuccess: () => {
+                setSelectedIds([]);
+                setSearch('');
+                setShowBlocked(false);
+                setJustification('');
+                setErrors({});
+                onOpenChange(false);
+            },
+        });
     }
 
     function handleOpenChange(value: boolean) {
         if (!value) {
             setSelectedIds([]);
             setSearch('');
+            setShowBlocked(false);
+            setJustification('');
+            setErrors({});
         }
         onOpenChange(value);
     }
@@ -181,16 +248,44 @@ export default function ServicePickerDialog({
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="px-6">
+                <div className="flex flex-wrap items-center gap-4 px-6">
                     <Input
                         placeholder="Buscar por placa, contrato o conductor..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
+                        className="max-w-md"
                     />
+                    {blockedCandidates.length > 0 && (
+                        <Label className="ml-auto flex items-center gap-2 text-sm font-normal text-muted-foreground">
+                            <Switch
+                                checked={showBlocked}
+                                onCheckedChange={(value) => {
+                                    setShowBlocked(value);
+                                    if (!value) {
+                                        // Hiding them also deselects any
+                                        // blocked rows the operator had
+                                        // picked — avoids a confused
+                                        // "where did my selection go" on
+                                        // toggle off.
+                                        setSelectedIds((prev) =>
+                                            prev.filter(
+                                                (id) => !blockedIds.has(id),
+                                            ),
+                                        );
+                                    }
+                                }}
+                                aria-label="Mostrar servicios con novedades facturables"
+                            />
+                            <span>
+                                Mostrar servicios con novedades facturables (
+                                {blockedCandidates.length})
+                            </span>
+                        </Label>
+                    )}
                 </div>
 
                 <div className="flex-1 overflow-y-auto px-6 py-2">
-                    {filtered.length === 0 ? (
+                    {filteredClean.length === 0 && !showBlocked ? (
                         <p className="py-8 text-center text-sm text-muted-foreground">
                             Sin servicios candidatos.
                         </p>
@@ -200,8 +295,8 @@ export default function ServicePickerDialog({
                                 <TableRow>
                                     <TableHead className="w-10">
                                         <Checkbox
-                                            checked={allSelected}
-                                            onCheckedChange={toggleAll}
+                                            checked={allCleanSelected}
+                                            onCheckedChange={toggleAllClean}
                                             aria-label="Seleccionar todos"
                                         />
                                     </TableHead>
@@ -218,7 +313,7 @@ export default function ServicePickerDialog({
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {filtered.map((row) => {
+                                {filteredClean.map((row) => {
                                     const incidents = billingIncidentCount(row);
                                     return (
                                         <TableRow key={row.id}>
@@ -263,10 +358,118 @@ export default function ServicePickerDialog({
                                         </TableRow>
                                     );
                                 })}
+                                {showBlocked && filteredBlocked.length > 0 && (
+                                    <>
+                                        <TableRow className="bg-muted/60 hover:bg-muted/60">
+                                            <TableCell
+                                                colSpan={7}
+                                                className="text-xs font-semibold tracking-wider text-muted-foreground uppercase"
+                                            >
+                                                Con novedades facturables —
+                                                requieren justificación
+                                            </TableCell>
+                                        </TableRow>
+                                        {filteredBlocked.map((row) => {
+                                            const incidents =
+                                                billingIncidentCount(row);
+                                            return (
+                                                <TableRow
+                                                    key={`blocked-${row.id}`}
+                                                    className="bg-amber-500/5"
+                                                    data-audit-row="blocked"
+                                                >
+                                                    <TableCell>
+                                                        <Checkbox
+                                                            checked={selectedIds.includes(
+                                                                row.id,
+                                                            )}
+                                                            onCheckedChange={() =>
+                                                                toggleOne(
+                                                                    row.id,
+                                                                )
+                                                            }
+                                                            aria-label={`Seleccionar servicio bloqueado ${row.id}`}
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {formatDate(
+                                                            row.service_date,
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell className="font-mono">
+                                                        {row.vehicle?.plate ??
+                                                            '—'}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {driverName(row.driver)}
+                                                    </TableCell>
+                                                    <TableCell className="font-mono text-sm">
+                                                        {row.contract
+                                                            ?.contract_number ??
+                                                            '—'}
+                                                    </TableCell>
+                                                    <TableCell className="text-right tabular-nums">
+                                                        {estimatedValue(row)}
+                                                    </TableCell>
+                                                    <TableCell className="text-center">
+                                                        <Badge variant="destructive">
+                                                            {incidents} nov.
+                                                        </Badge>
+                                                    </TableCell>
+                                                </TableRow>
+                                            );
+                                        })}
+                                    </>
+                                )}
                             </TableBody>
                         </Table>
                     )}
                 </div>
+
+                {hasSelectedBlocked && (
+                    <div className="space-y-2 px-6">
+                        <Alert variant="destructive">
+                            <AlertTriangle className="size-4" />
+                            <AlertTitle>Justificación obligatoria</AlertTitle>
+                            <AlertDescription>
+                                Está asignando uno o más servicios con novedades
+                                que afectan la facturación. Indique por qué se
+                                factura de todos modos.
+                            </AlertDescription>
+                        </Alert>
+                        <Label htmlFor="override_justification">
+                            Justificación *
+                        </Label>
+                        <textarea
+                            id="override_justification"
+                            className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                            value={justification}
+                            onChange={(e) => setJustification(e.target.value)}
+                            placeholder="Ej: El cliente autorizó la facturación tras revisar la novedad."
+                            minLength={JUSTIFICATION_MIN}
+                            maxLength={1000}
+                            aria-invalid={
+                                errors.override_justification ? true : undefined
+                            }
+                        />
+                        {errors.override_justification && (
+                            <p className="text-sm text-destructive">
+                                {errors.override_justification}
+                            </p>
+                        )}
+                    </div>
+                )}
+
+                {errors.service_ids && (
+                    <div className="px-6">
+                        <Alert variant="destructive">
+                            <AlertTriangle className="size-4" />
+                            <AlertDescription>
+                                {errors.service_ids}
+                            </AlertDescription>
+                        </Alert>
+                    </div>
+                )}
 
                 <DialogFooter className="mt-2 gap-2 px-6">
                     <DialogClose asChild>
