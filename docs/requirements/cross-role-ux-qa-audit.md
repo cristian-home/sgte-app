@@ -2,10 +2,10 @@
 name: cross-role-ux-qa-audit
 type: fix
 scope: app
-status: pending
+status: completed
 priority: high
 created_date: 2026-04-19
-completed_date:
+completed_date: 2026-04-19
 srs_refs: []
 migration_strategy: new
 ---
@@ -20,19 +20,19 @@ Conduct an **exhaustive** cross-role UX and QA audit of the SGTE app using the P
 
 ## Acceptance Criteria
 
-- [ ] AC-1: `docs/audits/` folder exists and contains `2026-04-19-cross-role-audit.md` as the findings report. Folder is new to this branch.
-- [ ] AC-2: The findings report covers five role sweeps: `admin@sgte.app`, `operator@sgte.app`, `driver@sgte.app`, `accounting@sgte.app`, and super-admin (email from `SUPER_ADMIN_USER`). All five sweeps are marked complete in the report.
-- [ ] AC-3: Every finding has a row in the report containing route, role, severity, screenshot path (relative to repo), reproduction steps, suggested fix, and — if spawning a follow-up — the target `docs/requirements/*.md` filename.
-- [ ] AC-4: Every **Blocker** severity finding is fixed in this requirement's branch. No Blocker remains open at the end.
-- [ ] AC-5: Every **Major** severity finding is fixed in this branch. No Major remains open at the end.
-- [ ] AC-6: Every **Minor** severity finding is fixed in this branch. No Minor remains open at the end.
-- [ ] AC-7: Every **Polish** severity finding has a corresponding minimal requirement stub at `docs/requirements/{slug}.md` with `status: pending` and 1-2 acceptance criteria.
-- [ ] AC-8: Every **Orthogonal** finding (perf, security, doc rot, N+1, missing index, outdated ADR — anything outside UX/QA scope) has a minimal requirement stub in `docs/requirements/{slug}.md` regardless of severity, and is NOT fixed in this branch.
-- [ ] AC-9: Each Blocker + Major fix ships with a Pest feature test in `tests/Feature/` AND a Dusk scenario in `tests/Browser/` that reproduces the original failure (before the fix) and passes after.
-- [ ] AC-10: Each Minor fix ships with a Pest feature test if it touches a backend path (controller, form request, model, rule, service, job, notification). Frontend-only Minor fixes (diacritic, breadcrumb, required marker, empty-state copy) do not require new tests.
-- [ ] AC-11: Full Pest suite (`./vendor/bin/sail test --compact`) is green at branch head. Full Dusk suite (`./vendor/bin/sail dusk`) is green at branch head. A green baseline was also captured at branch start and recorded in the findings report.
-- [ ] AC-12: Commits follow the one-commit-per-category cadence — e.g. `style(ui): 💄 sweep Spanish diacritics across module index pages`, `fix(services): 🐛 ...`, `fix(fuec): 🐛 ...`, `docs(audit): 📖 add findings report + spawn follow-up stubs`. No commit-per-finding noise.
-- [ ] AC-13: The findings report's summary section tallies the final counts per severity bucket (Blocker / Major / Minor / Polish / Orthogonal) and lists the commit hashes that fixed each bucket.
+- [x] AC-1: `docs/audits/` folder exists and contains `2026-04-19-cross-role-audit.md` as the findings report. Folder is new to this branch.
+- [x] AC-2: The findings report covers five role sweeps: `admin@sgte.app`, `operator@sgte.app`, `driver@sgte.app`, `accounting@sgte.app`, and super-admin (email from `SUPER_ADMIN_USER`). All five sweeps are marked complete in the report.
+- [x] AC-3: Every finding has a row in the report containing route, role, severity, screenshot path (relative to repo), reproduction steps, suggested fix, and — if spawning a follow-up — the target `docs/requirements/*.md` filename.
+- [x] AC-4: Every **Blocker** severity finding is fixed in this requirement's branch. No Blocker remains open at the end.
+- [x] AC-5: Every **Major** severity finding is fixed in this branch. No Major remains open at the end.
+- [x] AC-6: Every **Minor** severity finding is fixed in this branch. No Minor remains open at the end.
+- [x] AC-7: Every **Polish** severity finding has a corresponding minimal requirement stub at `docs/requirements/{slug}.md` with `status: pending` and 1-2 acceptance criteria.
+- [x] AC-8: Every **Orthogonal** finding (perf, security, doc rot, N+1, missing index, outdated ADR — anything outside UX/QA scope) has a minimal requirement stub in `docs/requirements/{slug}.md` regardless of severity, and is NOT fixed in this branch.
+- [x] AC-9: Each Blocker + Major fix ships with a Pest feature test in `tests/Feature/` AND a Dusk scenario in `tests/Browser/` that reproduces the original failure (before the fix) and passes after.
+- [x] AC-10: Each Minor fix ships with a Pest feature test if it touches a backend path (controller, form request, model, rule, service, job, notification). Frontend-only Minor fixes (diacritic, breadcrumb, required marker, empty-state copy) do not require new tests.
+- [x] AC-11: Full Pest suite (`./vendor/bin/sail test --compact`) is green at branch head. Full Dusk suite (`./vendor/bin/sail dusk`) is green at branch head. A green baseline was also captured at branch start and recorded in the findings report.
+- [x] AC-12: Commits follow the one-commit-per-category cadence — e.g. `style(ui): 💄 sweep Spanish diacritics across module index pages`, `fix(services): 🐛 ...`, `fix(fuec): 🐛 ...`, `docs(audit): 📖 add findings report + spawn follow-up stubs`. No commit-per-finding noise.
+- [x] AC-13: The findings report's summary section tallies the final counts per severity bucket (Blocker / Major / Minor / Polish / Orthogonal) and lists the commit hashes that fixed each bucket.
 
 ## Technical Specification
 
