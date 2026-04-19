@@ -1,5 +1,14 @@
-import { Head, Link, router } from '@inertiajs/react';
-import { AlertCircle, Clock, Flag, MapPin, Play, Truck } from 'lucide-react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
+import {
+    AlertCircle,
+    Ban,
+    Clock,
+    Flag,
+    MapPin,
+    Play,
+    Truck,
+} from 'lucide-react';
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -9,6 +18,15 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { ServiceStatusLabel } from '@/enums/ServiceStatus';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem, Service } from '@/types';
@@ -37,12 +55,30 @@ export default function DriverDashboard({
     services: Service[];
     driver?: Driver | null;
 }) {
+    const [declineServiceId, setDeclineServiceId] = useState<number | null>(
+        null,
+    );
+    const declineForm = useForm({
+        reason_text: '',
+    });
+
     function confirmStart(serviceId: number) {
         router.post(`/driver/services/${serviceId}/confirm-start`);
     }
 
     function confirmEnd(serviceId: number) {
         router.post(`/driver/services/${serviceId}/confirm-end`);
+    }
+
+    function submitDecline(e: React.FormEvent) {
+        e.preventDefault();
+        if (declineServiceId === null) return;
+        declineForm.post(`/driver/services/${declineServiceId}/decline`, {
+            onSuccess: () => {
+                setDeclineServiceId(null);
+                declineForm.reset();
+            },
+        });
     }
 
     const today = new Intl.DateTimeFormat('es-CO', {
@@ -90,6 +126,7 @@ export default function DriverDashboard({
                     {services.map((service) => {
                         const hasStarted = !!service.actual_start_time;
                         const hasEnded = !!service.actual_end_time;
+                        const isDeclined = !!service.driver_declined_at;
                         const incidentCount =
                             service.service_incidents_count ?? 0;
 
@@ -185,9 +222,25 @@ export default function DriverDashboard({
                                         </div>
                                     )}
 
+                                    {isDeclined && (
+                                        <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                                            <p className="font-medium">
+                                                Servicio declinado — pendiente
+                                                de reasignación
+                                            </p>
+                                            {service.driver_decline_reason && (
+                                                <p className="mt-1 text-xs opacity-80">
+                                                    {
+                                                        service.driver_decline_reason
+                                                    }
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
+
                                     {/* Action buttons */}
                                     <div className="flex flex-wrap gap-2 pt-2">
-                                        {!hasStarted && (
+                                        {!hasStarted && !isDeclined && (
                                             <Button
                                                 className="flex-1"
                                                 onClick={() =>
@@ -215,6 +268,20 @@ export default function DriverDashboard({
                                                 Servicio completado
                                             </p>
                                         )}
+                                        {!hasStarted && !isDeclined && (
+                                            <Button
+                                                variant="destructive"
+                                                className="flex-1"
+                                                onClick={() =>
+                                                    setDeclineServiceId(
+                                                        service.id,
+                                                    )
+                                                }
+                                            >
+                                                <Ban className="mr-1 size-4" />
+                                                Declinar servicio
+                                            </Button>
+                                        )}
                                         <Button
                                             variant="outline"
                                             asChild
@@ -234,6 +301,75 @@ export default function DriverDashboard({
                     })}
                 </div>
             </div>
+
+            <Dialog
+                open={declineServiceId !== null}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setDeclineServiceId(null);
+                        declineForm.reset();
+                        declineForm.clearErrors();
+                    }
+                }}
+            >
+                <DialogContent>
+                    <form onSubmit={submitDecline} className="space-y-4">
+                        <DialogHeader>
+                            <DialogTitle>Declinar servicio</DialogTitle>
+                            <DialogDescription>
+                                Explique por qué no puede ejecutar el servicio.
+                                Esta acción notifica a operaciones y marca el
+                                servicio como pendiente de reasignación.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-2">
+                            <Label htmlFor="reason_text">
+                                Motivo del rechazo
+                                <span className="text-destructive"> *</span>
+                            </Label>
+                            <textarea
+                                id="reason_text"
+                                className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                                value={declineForm.data.reason_text}
+                                placeholder="Ej: Incapacidad médica, vehículo con falla mecánica, etc."
+                                minLength={10}
+                                maxLength={1000}
+                                onChange={(e) =>
+                                    declineForm.setData(
+                                        'reason_text',
+                                        e.target.value,
+                                    )
+                                }
+                                required
+                            />
+                            {declineForm.errors.reason_text && (
+                                <p className="text-sm text-destructive">
+                                    {declineForm.errors.reason_text}
+                                </p>
+                            )}
+                        </div>
+                        <DialogFooter>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => {
+                                    setDeclineServiceId(null);
+                                    declineForm.reset();
+                                }}
+                            >
+                                Cancelar
+                            </Button>
+                            <Button
+                                type="submit"
+                                variant="destructive"
+                                disabled={declineForm.processing}
+                            >
+                                Confirmar rechazo
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </AppLayout>
     );
 }

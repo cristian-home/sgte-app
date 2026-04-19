@@ -46,6 +46,8 @@ class Service extends Model
         'payment_method',
         'service_status',
         'manual_entry_justification',
+        'driver_declined_at',
+        'driver_decline_reason',
     ];
 
     /**
@@ -67,6 +69,7 @@ class Service extends Model
             'unit_value' => 'decimal:2',
             'payment_method' => PaymentMethod::class,
             'service_status' => ServiceStatus::class,
+            'driver_declined_at' => 'datetime',
         ];
     }
 
@@ -132,7 +135,7 @@ class Service extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['id', 'contract_id', 'vehicle_id', 'driver_id', 'invoice_id', 'service_date', 'origin_municipality_id', 'origin_address', 'origin_coordinates', 'destination_municipality_id', 'destination_address', 'destination_coordinates', 'planned_start_time', 'planned_duration', 'actual_start_time', 'actual_end_time', 'unit_value', 'quantity', 'billing_group', 'payment_method', 'service_status', 'manual_entry_justification']);
+            ->logOnly(['id', 'contract_id', 'vehicle_id', 'driver_id', 'invoice_id', 'service_date', 'origin_municipality_id', 'origin_address', 'origin_coordinates', 'destination_municipality_id', 'destination_address', 'destination_coordinates', 'planned_start_time', 'planned_duration', 'actual_start_time', 'actual_end_time', 'unit_value', 'quantity', 'billing_group', 'payment_method', 'service_status', 'manual_entry_justification', 'driver_declined_at', 'driver_decline_reason']);
     }
 
     /**

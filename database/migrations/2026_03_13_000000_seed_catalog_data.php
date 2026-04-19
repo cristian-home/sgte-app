@@ -358,6 +358,12 @@ return new class extends Migration
             ['code' => 'WEATHER', 'name' => 'Clima', 'severity' => 'minor', 'affects_billing_default' => false],
             ['code' => 'NO_SHOW', 'name' => 'Cliente No Presentado', 'severity' => 'minor', 'affects_billing_default' => true],
             ['code' => 'OTHER', 'name' => 'Otro', 'severity' => 'informational', 'affects_billing_default' => false],
+            // REQ-012 pre-flight decline. Pinned code used by
+            // DriverDashboardController::decline() to find-or-create the
+            // incident type. Severity maps to 'major' because the domain
+            // enum has no 'high' tier; affects_billing is always false
+            // since nothing was executed.
+            ['code' => 'PREDECL', 'name' => 'Rechazo previo al servicio', 'severity' => 'major', 'affects_billing_default' => false],
         ];
 
         foreach ($types as $type) {

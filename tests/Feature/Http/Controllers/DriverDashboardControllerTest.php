@@ -221,6 +221,122 @@ test('driver can open the incident create form with service_id pre-filled', func
         );
 });
 
+test('driver can decline a service before confirmStart and the side effects fire', function (): void {
+    \Illuminate\Support\Facades\Notification::fake();
+    $driverUser = User::factory()->create();
+    $driverUser->assignRole(Role::DRIVER->value);
+    $driver = Driver::factory()->create(['user_id' => $driverUser->id]);
+    $service = Service::factory()->create([
+        'driver_id' => $driver->id,
+        'service_date' => today(),
+        'service_status' => 'open',
+        'actual_start_time' => null,
+    ]);
+    $incidentType = IncidentType::firstOrCreate(
+        ['code' => 'PREDECL'],
+        ['name' => 'Rechazo previo al servicio', 'severity' => 'major', 'affects_billing_default' => false],
+    );
+    $opsUser = User::factory()->create();
+    $opsUser->assignRole(Role::ADMIN->value);
+
+    actingAs($driverUser);
+
+    post(route('driver.decline', $service), [
+        'reason_text' => 'Llanta pinchada antes de salir del terminal.',
+    ])->assertRedirect(route('driver.dashboard'));
+
+    $service->refresh();
+    expect($service->driver_declined_at)->not->toBeNull()
+        ->and($service->driver_decline_reason)->toBe('Llanta pinchada antes de salir del terminal.')
+        ->and($service->service_status->value)->toBe('open');
+
+    $incident = $service->serviceIncidents()->first();
+    expect($incident)->not->toBeNull()
+        ->and($incident->incident_type_id)->toBe($incidentType->id)
+        ->and($incident->is_driver_report)->toBeTrue()
+        ->and((bool) $incident->affects_billing)->toBeFalse();
+
+    \Illuminate\Support\Facades\Notification::assertSentTo(
+        $opsUser,
+        \App\Notifications\DriverDeclinedServiceNotification::class,
+    );
+});
+
+test('driver cannot decline another driver service', function (): void {
+    $driverUser = User::factory()->create();
+    $driverUser->assignRole(Role::DRIVER->value);
+    $driver = Driver::factory()->create(['user_id' => $driverUser->id]);
+
+    $otherDriver = Driver::factory()->create();
+    $otherService = Service::factory()->create([
+        'driver_id' => $otherDriver->id,
+        'service_date' => today(),
+    ]);
+
+    actingAs($driverUser);
+
+    $this->post(route('driver.decline', $otherService), [
+        'reason_text' => 'Intento de declinar un servicio que no es mío.',
+    ])->assertStatus(403);
+});
+
+test('decline is rejected when actual_start_time is already set', function (): void {
+    $driverUser = User::factory()->create();
+    $driverUser->assignRole(Role::DRIVER->value);
+    $driver = Driver::factory()->create(['user_id' => $driverUser->id]);
+    $service = Service::factory()->create([
+        'driver_id' => $driver->id,
+        'service_date' => today(),
+        'actual_start_time' => '08:00:00',
+    ]);
+
+    actingAs($driverUser);
+
+    $this->post(route('driver.decline', $service), [
+        'reason_text' => 'Intento de declinar un servicio ya iniciado.',
+    ])->assertStatus(422);
+
+    $service->refresh();
+    expect($service->driver_declined_at)->toBeNull();
+});
+
+test('decline validates reason_text is required and min length', function (): void {
+    $driverUser = User::factory()->create();
+    $driverUser->assignRole(Role::DRIVER->value);
+    $driver = Driver::factory()->create(['user_id' => $driverUser->id]);
+    $service = Service::factory()->create([
+        'driver_id' => $driver->id,
+        'service_date' => today(),
+        'actual_start_time' => null,
+    ]);
+    actingAs($driverUser);
+
+    post(route('driver.decline', $service), [
+        'reason_text' => '',
+    ])->assertSessionHasErrors(['reason_text']);
+
+    post(route('driver.decline', $service), [
+        'reason_text' => 'corto',
+    ])->assertSessionHasErrors(['reason_text']);
+});
+
+test('decline cannot be called twice on the same service', function (): void {
+    $driverUser = User::factory()->create();
+    $driverUser->assignRole(Role::DRIVER->value);
+    $driver = Driver::factory()->create(['user_id' => $driverUser->id]);
+    $service = Service::factory()->create([
+        'driver_id' => $driver->id,
+        'service_date' => today(),
+        'actual_start_time' => null,
+        'driver_declined_at' => now(),
+    ]);
+    actingAs($driverUser);
+
+    $this->post(route('driver.decline', $service), [
+        'reason_text' => 'Intento de declinar dos veces el mismo servicio.',
+    ])->assertStatus(422);
+});
+
 test('driver creating an incident is flagged as driver report and redirected to driver dashboard', function (): void {
     $driverUser = User::factory()->create();
     $driverUser->assignRole(Role::DRIVER->value);

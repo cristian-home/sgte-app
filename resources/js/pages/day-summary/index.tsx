@@ -59,6 +59,7 @@ interface Props {
         open: number;
         with_incidents: number;
         third_party: number;
+        pending_reassignment: number;
     };
     date: string;
     canExecuteDay: boolean;
@@ -221,7 +222,7 @@ export default function DaySummaryIndex({
                 {/* Executive Summary */}
                 <Card>
                     <CardContent className="pt-6">
-                        <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
+                        <div className="grid grid-cols-2 gap-4 md:grid-cols-6">
                             <div className="text-center">
                                 <p className="text-2xl font-bold">
                                     {summary.total}
@@ -262,9 +263,78 @@ export default function DaySummaryIndex({
                                     Vehículos 3ros
                                 </p>
                             </div>
+                            <div className="text-center">
+                                <p className="text-2xl font-bold text-destructive">
+                                    {summary.pending_reassignment}
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                    Pend. reasignación
+                                </p>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
+
+                {/* Pendientes de reasignación (REQ-012) */}
+                {summary.pending_reassignment > 0 && (
+                    <Card className="border-destructive/40">
+                        <CardContent className="space-y-3 pt-6">
+                            <div className="flex items-center gap-2">
+                                <h2 className="text-base font-semibold text-destructive">
+                                    Pendientes de reasignación
+                                </h2>
+                                <Badge variant="destructive">
+                                    {summary.pending_reassignment}
+                                </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                                Servicios declinados por el conductor antes del
+                                inicio. Asigne otro conductor o cierre el
+                                servicio para continuar con el día.
+                            </p>
+                            <ul className="divide-y rounded-md border">
+                                {services
+                                    .filter(
+                                        (s) =>
+                                            s.driver_declined_at !== null &&
+                                            s.service_status === 'open',
+                                    )
+                                    .map((s) => (
+                                        <li
+                                            key={s.id}
+                                            className="flex cursor-pointer items-center justify-between px-3 py-2 text-sm hover:bg-muted/50"
+                                            onClick={() =>
+                                                router.get(
+                                                    serviceShow(s.id).url,
+                                                )
+                                            }
+                                        >
+                                            <div>
+                                                <p className="font-medium">
+                                                    {s.vehicle?.plate ?? '—'} ·{' '}
+                                                    {s.driver?.first_name}{' '}
+                                                    {s.driver?.first_lastname}
+                                                </p>
+                                                {s.driver_decline_reason && (
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {
+                                                            s.driver_decline_reason
+                                                        }
+                                                    </p>
+                                                )}
+                                            </div>
+                                            <span className="text-xs text-muted-foreground">
+                                                {s.planned_start_time?.substring(
+                                                    0,
+                                                    5,
+                                                )}
+                                            </span>
+                                        </li>
+                                    ))}
+                            </ul>
+                        </CardContent>
+                    </Card>
+                )}
 
                 {/* Services Table */}
                 <div className="rounded-md border">

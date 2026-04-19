@@ -368,6 +368,7 @@ return [
         'qr_code' => 'código QR',
         'range_from' => 'rango desde',
         'range_to' => 'rango hasta',
+        'reason_text' => 'motivo del rechazo',
         'recorded_at' => 'fecha de registro',
         'resolution_number' => 'número de resolución',
         'resolution_year' => 'año de resolución',

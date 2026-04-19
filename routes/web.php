@@ -22,6 +22,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('driver', [App\Http\Controllers\DriverDashboardController::class, 'index'])->name('driver.dashboard');
     Route::post('driver/services/{service}/confirm-start', [App\Http\Controllers\DriverDashboardController::class, 'confirmStart'])->name('driver.confirm-start');
     Route::post('driver/services/{service}/confirm-end', [App\Http\Controllers\DriverDashboardController::class, 'confirmEnd'])->name('driver.confirm-end');
+    Route::post('driver/services/{service}/decline', [App\Http\Controllers\DriverDashboardController::class, 'decline'])->name('driver.decline');
 
     Route::get('gantt', [App\Http\Controllers\GanttController::class, 'index'])->name('gantt.index');
     Route::get('day-summary/export', [App\Http\Controllers\DaySummaryController::class, 'export'])->name('day-summary.export');
