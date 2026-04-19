@@ -2,10 +2,10 @@
 name: third-party-vehicle-doc-reminders
 type: feat
 scope: vehicles
-status: pending
+status: completed
 priority: low
 created_date: 2026-04-19
-completed_date:
+completed_date: 2026-04-19
 srs_refs: [REQ-004]
 migration_strategy: new
 ---
@@ -29,5 +29,5 @@ Longer-term (separate requirement): a provider portal with signed-URL uploads. O
 
 ## Acceptance Criteria
 
-- [ ] `ScanThirdPartyVehicleDocuments` job dispatched daily via scheduler; Pest coverage asserts it groups by ThirdParty, filters on the three date windows, and queues one mail per provider with the correct vehicle list.
-- [ ] Email template renders provider's company name + per-vehicle doc expiry table in Spanish; Mailpit inspection verifies subject + body format.
+- [x] `ScanThirdPartyVehicleDocuments` job dispatched daily via scheduler; Pest coverage asserts it groups by ThirdParty, filters on the three date windows, and queues one mail per provider with the correct vehicle list.
+- [x] Email template renders provider's company name + per-vehicle doc expiry table in Spanish; Mailpit inspection verifies subject + body format.

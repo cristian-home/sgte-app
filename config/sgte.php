@@ -29,4 +29,17 @@ return [
 
     'gps_enabled' => env('SGTE_GPS_ENABLED', false),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Ops alert mailbox
+    |--------------------------------------------------------------------------
+    |
+    | CC'd on compliance-adjacent outbound mail (third-party vehicle
+    | document reminders, etc.) so ops has visibility on anything the
+    | system emails providers. Null = no CC.
+    |
+    */
+
+    'ops_alert_email' => env('SGTE_OPS_ALERT_EMAIL'),
+
 ];
