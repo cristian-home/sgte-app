@@ -229,6 +229,7 @@ test('driver can decline a service before confirmStart and the side effects fire
     $service = Service::factory()->create([
         'driver_id' => $driver->id,
         'service_date' => today(),
+        'service_status' => 'open',
         'actual_start_time' => null,
     ]);
     $incidentType = IncidentType::firstOrCreate(
