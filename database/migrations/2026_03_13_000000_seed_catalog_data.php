@@ -106,6 +106,9 @@ return new class extends Migration
             Permission::VIEW_FUEC,
             Permission::GENERATE_FUEC,
             Permission::MANAGE_FUEC_NUMBER_RANGES,
+            Permission::VIEW_VEHICLE_LOCATIONS,
+            Permission::REGISTER_VEHICLE_LOCATION,
+            Permission::DELETE_VEHICLE_LOCATIONS,
             Permission::VIEW_USERS,
             Permission::CREATE_USERS,
             Permission::UPDATE_USERS,
@@ -158,6 +161,8 @@ return new class extends Migration
             Permission::VIEW_INCIDENTS,
             Permission::CREATE_INCIDENTS,
             Permission::VIEW_REPORTS,
+            Permission::VIEW_VEHICLE_LOCATIONS,
+            Permission::REGISTER_VEHICLE_LOCATION,
             Permission::RECEIVE_NOTIFICATIONS,
         ]));
 
@@ -172,6 +177,7 @@ return new class extends Migration
             Permission::VIEW_SETTINGS,
             Permission::REGISTER_SERVICE_TIMES,
             Permission::CREATE_INCIDENTS,
+            Permission::REGISTER_VEHICLE_LOCATION,
             Permission::RECEIVE_NOTIFICATIONS,
         ]));
 

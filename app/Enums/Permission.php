@@ -65,6 +65,11 @@ enum Permission: string
     case GENERATE_FUEC = 'fuec.generate';
     case MANAGE_FUEC_NUMBER_RANGES = 'fuec-number-ranges.manage';
 
+    // GPS / Vehicle Locations (optional)
+    case VIEW_VEHICLE_LOCATIONS = 'vehicle-locations.view';
+    case REGISTER_VEHICLE_LOCATION = 'vehicle-locations.register';
+    case DELETE_VEHICLE_LOCATIONS = 'vehicle-locations.delete';
+
     // Users
     case VIEW_USERS = 'users.view';
     case CREATE_USERS = 'users.create';
@@ -128,6 +133,9 @@ enum Permission: string
             self::VIEW_FUEC => 'Ver FUEC',
             self::GENERATE_FUEC => 'Generar FUEC',
             self::MANAGE_FUEC_NUMBER_RANGES => 'Gestionar rangos MinTransporte',
+            self::VIEW_VEHICLE_LOCATIONS => 'Ver ubicaciones de vehículos',
+            self::REGISTER_VEHICLE_LOCATION => 'Registrar ubicación de vehículo',
+            self::DELETE_VEHICLE_LOCATIONS => 'Eliminar ubicaciones de vehículos',
             self::VIEW_USERS => 'Ver usuarios',
             self::CREATE_USERS => 'Crear usuarios',
             self::UPDATE_USERS => 'Editar usuarios',
