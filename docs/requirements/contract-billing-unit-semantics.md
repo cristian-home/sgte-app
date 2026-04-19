@@ -2,10 +2,10 @@
 name: contract-billing-unit-semantics
 type: refactor
 scope: contracts
-status: pending
+status: completed
 priority: medium
 created_date: 2026-04-19
-completed_date:
+completed_date: 2026-04-19
 srs_refs: [REQ-011]
 migration_strategy: modify-existing
 ---
@@ -31,5 +31,5 @@ Short-term alternative (minimum viable): just relabel the current field to `Cant
 
 ## Acceptance Criteria
 
-- [ ] `contracts.billing_unit_type` column added (modify the primary `create_contracts_table` migration) as a nullable enum with the four values; BillingUnitType PHP enum + TypeScript mirror generated via `artisan enum:typescript`.
-- [ ] Service form reads the selected contract's `billing_unit_type` and derives the `Cantidad` label + tooltip dynamically; fallback label for legacy null contracts is "Cantidad (unidades del contrato)." Dusk covers the relabel per contract type.
+- [x] `contracts.billing_unit_type` column added (modify the primary `create_contracts_table` migration) as a nullable enum with the four values; BillingUnitType PHP enum + TypeScript mirror generated via `artisan enum:typescript`.
+- [x] Service form reads the selected contract's `billing_unit_type` and derives the `Cantidad` label + tooltip dynamically; fallback label for legacy null contracts is "Cantidad (unidades del contrato)." Dusk covers the relabel per contract type.
