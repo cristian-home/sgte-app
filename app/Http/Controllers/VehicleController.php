@@ -10,6 +10,7 @@ use App\Models\Service;
 use App\Models\ThirdParty;
 use App\Models\Vehicle;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -28,7 +29,7 @@ class VehicleController extends Controller
      */
     private const DOCS_EXPIRY_WINDOW_DAYS = 30;
 
-    public function index(Request $request): Response
+    public function index(Request $request): Response|JsonResponse
     {
         Gate::authorize(Permission::VIEW_VEHICLES->value);
 
@@ -61,6 +62,10 @@ class VehicleController extends Controller
             ->defaultSort('plate')
             ->paginate($request->perPage())
             ->withQueryString();
+
+        if ($request->wantsJson()) {
+            return response()->json($vehicles);
+        }
 
         return Inertia::render('vehicles/index', [
             'vehicles' => $vehicles,

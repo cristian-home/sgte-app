@@ -25,7 +25,7 @@ use Spatie\QueryBuilder\QueryBuilder;
 
 class FuecController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request): Response|JsonResponse
     {
         Gate::authorize(Permission::VIEW_FUEC->value);
 
@@ -45,6 +45,10 @@ class FuecController extends Controller
             ->defaultSort('-generated_at', '-id')
             ->paginate($request->perPage())
             ->withQueryString();
+
+        if ($request->wantsJson()) {
+            return response()->json($fuecs);
+        }
 
         return Inertia::render('fuecs/index', [
             'fuecs' => $fuecs,

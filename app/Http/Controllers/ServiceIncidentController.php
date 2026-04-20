@@ -12,6 +12,7 @@ use App\Models\ServiceIncident;
 use App\Models\User;
 use App\Notifications\BillingIncidentNotification;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -32,7 +33,7 @@ class ServiceIncidentController extends Controller
      */
     private const RECENT_SERVICES_WINDOW_DAYS = 60;
 
-    public function index(Request $request): Response
+    public function index(Request $request): Response|JsonResponse
     {
         Gate::authorize(Permission::VIEW_INCIDENTS->value);
 
@@ -61,6 +62,10 @@ class ServiceIncidentController extends Controller
             ->defaultSort('-reported_at')
             ->paginate($request->perPage())
             ->withQueryString();
+
+        if ($request->wantsJson()) {
+            return response()->json($serviceIncidents);
+        }
 
         return Inertia::render('service-incidents/index', [
             'serviceIncidents' => $serviceIncidents,

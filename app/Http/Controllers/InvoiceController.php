@@ -13,6 +13,7 @@ use App\Models\Service;
 use App\Models\ThirdParty;
 use App\Services\InvoiceTotalCalculator;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
@@ -27,7 +28,7 @@ use Spatie\QueryBuilder\QueryBuilder;
 
 class InvoiceController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request): Response|JsonResponse
     {
         Gate::authorize(Permission::VIEW_INVOICES->value);
 
@@ -45,6 +46,10 @@ class InvoiceController extends Controller
             ->defaultSort('-issue_date')
             ->paginate($request->perPage())
             ->withQueryString();
+
+        if ($request->wantsJson()) {
+            return response()->json($invoices);
+        }
 
         return Inertia::render('invoices/index', [
             'invoices' => $invoices,

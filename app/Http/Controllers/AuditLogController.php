@@ -20,6 +20,7 @@ use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\VehicleLocation;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -65,7 +66,7 @@ class AuditLogController extends Controller
      */
     private const SUBJECT_TYPES_SCAN_WINDOW = 1000;
 
-    public function index(Request $request): Response
+    public function index(Request $request): Response|JsonResponse
     {
         Gate::authorize(Permission::VIEW_AUDIT_LOG->value);
 
@@ -96,6 +97,10 @@ class AuditLogController extends Controller
             ->paginate($request->perPage())
             ->withQueryString()
             ->through(fn (Activity $activity): array => $this->projectActivity($activity));
+
+        if ($request->wantsJson()) {
+            return response()->json($activities);
+        }
 
         return Inertia::render('audit-log/index', [
             'activities' => $activities,
