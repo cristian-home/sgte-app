@@ -2,10 +2,10 @@
 name: route-level-can-middleware-sweep
 type: refactor
 scope: authorization
-status: pending
+status: completed
 priority: low
 created_date: 2026-04-19
-completed_date:
+completed_date: 2026-04-19
 srs_refs: []
 migration_strategy: new
 ---
@@ -26,6 +26,14 @@ See `docs/audits/2026-04-19-cross-role-audit.md#orthogonal-auth-consistency` for
 
 ## Acceptance Criteria
 
-- [ ] Authorization strategy reaffirmed in ADR-005 (decide per-action or per-resource).
-- [ ] `routes/web.php` consistently applies (or consistently omits) `can:` middleware on all resource routes per the chosen strategy.
-- [ ] Existing Pest authorization tests still pass unchanged.
+- [x] Authorization strategy reaffirmed in ADR-005 (decide per-action or per-resource).
+- [x] `routes/web.php` consistently applies (or consistently omits) `can:` middleware on all resource routes per the chosen strategy.
+- [x] Existing Pest authorization tests still pass unchanged.
+
+## Resolution
+
+**Per-resource** `can:{baseline}.view` middleware applied on every Route::resource in `routes/web.php` plus the non-resource view endpoints (Gantt, Day Summary, Day Statuses calendar, Audit log, mark-paid). The four static catalogs use `can:catalogs.manage` (matching the controller Gate). `/invoices` sub-routes that already had specific gates keep them unchanged.
+
+**One exception**: `/service-incidents` cannot carry a resource-wide `can:incidents.view` because drivers hold `CREATE_INCIDENTS` without `VIEW_INCIDENTS` (they file incidents from the driver portal without a global incidents view). That resource keeps controller-body `Gate::authorize()` per action; documented as the single opt-out in ADR-005 §Layer 2.
+
+All 697 Pest tests still pass unchanged. Dusk (101) still green.
