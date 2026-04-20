@@ -3,7 +3,6 @@
 use App\Models\Contract;
 use App\Models\Service;
 use App\Models\User;
-use Illuminate\Support\Carbon;
 use Laravel\Dusk\Browser;
 use Spatie\Permission\Models\Role as SpatieRole;
 
@@ -57,32 +56,37 @@ test('contract filter narrows the services table to the chosen contract (regress
         $browser->loginAs($user)
             ->visit('/services')
             ->waitForText('Servicios')
-            ->waitForText('Presets:')
+            // Baseline: all three services are visible, and the old
+            // stacked-select bar is gone (no "Presets:" / "Municipio
+            // Origen" / "Desde" labels rendered outside the toolbar).
+            ->assertSee('Origen-AAA-01')
+            ->assertSee('Origen-AAA-02')
+            ->assertSee('Origen-BBB-01')
+            // Toolbar-style buttons are present for every required filter
+            // + the three preset buttons.
             ->assertSee('Contrato')
             ->assertSee('Conductor')
             ->assertSee('Vehículo')
             ->assertSee('Municipio Origen')
             ->assertSee('Municipio Destino')
+            ->assertSee('Rango de fechas')
             ->assertSee('Hoy')
             ->assertSee('Esta semana')
-            // Baseline: all three services are visible.
-            ->assertSee('Origen-AAA-01')
-            ->assertSee('Origen-AAA-02')
-            ->assertSee('Origen-BBB-01')
-            ->screenshot('services-index-filters-baseline')
-            // Apply the contract filter.
-            ->click('#filter-contract')
+            ->assertSee('Pendientes de cerrar')
+            ->screenshot('services-index-toolbar-baseline')
+            // Apply the Contrato faceted filter via the toolbar button.
+            ->clickAtXPath("//button[normalize-space(.)='Contrato']")
             ->waitFor('[role="listbox"]')
             ->clickAtXPath("//*[@role='option'][contains(., 'CT-FILTER-AAA')]")
             ->waitUntilMissingText('Origen-BBB-01')
             ->assertSee('Origen-AAA-01')
             ->assertSee('Origen-AAA-02')
             ->assertDontSee('Origen-BBB-01')
-            ->screenshot('services-index-filter-by-contract');
+            ->screenshot('services-index-toolbar-contract-picked');
     });
 });
 
-test('date range filter narrows services by service_date (regression)', function (): void {
+test('date range filter in the toolbar narrows services by service_date (regression)', function (): void {
     $user = servicesIndexFiltersAuthenticateAsSuperAdmin();
 
     Service::factory()->create([
@@ -106,6 +110,10 @@ test('date range filter narrows services by service_date (regression)', function
             ->assertSee('Origen-Feb15')
             ->assertSee('Origen-Mar20');
 
+        // Open the Rango de fechas popover.
+        $browser->clickAtXPath("//button[normalize-space(.)='Rango de fechas']")
+            ->waitFor('#services-filter-date-from');
+
         // React's date input needs the native setter to trigger onChange.
         // Firing both date changes back-to-back races the useServerTable
         // hook (its currentParams is stale until the first fetch returns),
@@ -114,7 +122,7 @@ test('date range filter narrows services by service_date (regression)', function
         $browser->script(<<<'JS'
             (() => {
                 const setNative = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-                const from = document.querySelector('#filter-date-from');
+                const from = document.querySelector('#services-filter-date-from');
                 setNative.call(from, '2026-02-01');
                 from.dispatchEvent(new Event('input', { bubbles: true }));
                 from.dispatchEvent(new Event('change', { bubbles: true }));
@@ -125,6 +133,29 @@ test('date range filter narrows services by service_date (regression)', function
             ->assertSee('Origen-Feb15')
             ->assertSee('Origen-Mar20')
             ->assertDontSee('Origen-Ene05')
-            ->screenshot('services-index-filter-by-date-range');
+            ->screenshot('services-index-toolbar-date-range-filled');
+    });
+});
+
+test('Hoy preset sets the date range to today via the toolbar button', function (): void {
+    $user = servicesIndexFiltersAuthenticateAsSuperAdmin();
+
+    $this->browse(function (Browser $browser) use ($user): void {
+        $today = now()->toDateString();
+
+        $browser->loginAs($user)
+            ->visit('/services')
+            ->waitForText('Servicios')
+            ->clickAtXPath("//button[normalize-space(.)='Hoy']")
+            // useServerTable history.replaceState's after the fetch
+            // lands; pause briefly for the URL to update.
+            ->pause(1500);
+
+        // Confirm the URL now carries the date_from + date_to params.
+        $url = $browser->driver->getCurrentURL();
+        expect($url)->toContain('filter%5Bdate_from%5D='.$today)
+            ->and($url)->toContain('filter%5Bdate_to%5D='.$today);
+
+        $browser->screenshot('services-index-toolbar-preset-hoy');
     });
 });

@@ -61,6 +61,17 @@ export interface UseServerTableReturn<TData> {
     /** Set values for a specific filter (empty array removes it). */
     setFilter: (name: string, values: string[]) => void;
 
+    /**
+     * Set multiple filters in a single navigate call. Use this when a
+     * UI control needs to update more than one filter at the same
+     * time (e.g. a preset that sets both date_from and date_to).
+     * Back-to-back `setFilter` calls race `currentParams` because
+     * `currentParams` only refreshes after the previous fetch lands,
+     * so this batched variant is the only safe path for multi-field
+     * writes.
+     */
+    setFilters: (updates: Record<string, string[]>) => void;
+
     /** Clear all faceted filters (preserves search). */
     clearFilters: () => void;
 }
@@ -215,6 +226,22 @@ export function useServerTable<TData>({
         [currentParams, fetchData],
     );
 
+    const setFilters = useCallback(
+        (updates: Record<string, string[]>) => {
+            const overrides: Record<string, string | undefined> = {
+                page: undefined,
+            };
+            for (const [name, values] of Object.entries(updates)) {
+                overrides[`filter[${name}]`] = values.length
+                    ? values.join(',')
+                    : undefined;
+            }
+            navigate(overrides);
+        },
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [currentParams, fetchData],
+    );
+
     const clearFilters = useCallback(() => {
         const overrides: Record<string, string | undefined> = {
             page: undefined,
@@ -259,6 +286,7 @@ export function useServerTable<TData>({
         onPerPageChange,
         activeFilters,
         setFilter,
+        setFilters,
         clearFilters,
     };
 }

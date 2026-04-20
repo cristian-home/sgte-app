@@ -19,6 +19,20 @@ interface DataTableToolbarProps<TData> {
     onFilterChange?: (name: string, values: string[]) => void;
     onClearFilters?: () => void;
     actions?: React.ReactNode;
+    /**
+     * Arbitrary filter-style controls rendered inline after the
+     * faceted-filter map. Intended for components that match the
+     * toolbar visual language but don't fit the FilterDefinition shape
+     * (e.g. DataTableDateRangeFilter).
+     */
+    extraFilters?: React.ReactNode;
+    /**
+     * Preset-style action buttons rendered inline after `extraFilters`
+     * and before the "Limpiar" button. Used to expose shortcuts that
+     * SET filters rather than being filters themselves (e.g.
+     * "Hoy" / "Esta semana" on the services index).
+     */
+    leadingActions?: React.ReactNode;
 }
 
 export function DataTableToolbar<TData>({
@@ -31,13 +45,15 @@ export function DataTableToolbar<TData>({
     onFilterChange,
     onClearFilters,
     actions,
+    extraFilters,
+    leadingActions,
 }: DataTableToolbarProps<TData>) {
     const hasActiveFilters =
         activeFilters && Object.values(activeFilters).some((v) => v.length > 0);
 
     return (
         <div className="flex items-center justify-between gap-4">
-            <div className="flex flex-1 items-center gap-2">
+            <div className="flex flex-1 flex-wrap items-center gap-2">
                 <Input
                     placeholder={searchPlaceholder}
                     value={search}
@@ -56,6 +72,8 @@ export function DataTableToolbar<TData>({
                         }
                     />
                 ))}
+                {extraFilters}
+                {leadingActions}
                 {hasActiveFilters && (
                     <Button
                         variant="ghost"

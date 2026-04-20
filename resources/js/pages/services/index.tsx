@@ -1,12 +1,10 @@
 import { Head, Link } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
+import { useMemo } from 'react';
 import { Can } from '@/components/can';
 import { DataTable } from '@/components/data-table';
+import { DataTableDateRangeFilter } from '@/components/data-table/data-table-date-range-filter';
 import { type MunicipalityOption } from '@/components/municipality-combobox';
-import ServicesIndexFilters, {
-    type ContractFilterOption,
-    type DriverFilterOption,
-} from '@/components/services/services-index-filters';
 import { Button } from '@/components/ui/button';
 import { type VehicleOption } from '@/components/vehicles/vehicle-combobox';
 import { Permission } from '@/enums/Permission';
@@ -22,6 +20,26 @@ import type {
     Service,
 } from '@/types';
 
+export interface ContractFilterOption {
+    id: number;
+    contract_number: string;
+    third_party_id: number;
+    third_party?: {
+        id: number;
+        company_name: string | null;
+        first_name: string | null;
+        first_lastname: string | null;
+        is_natural_person: boolean;
+    } | null;
+}
+
+export interface DriverFilterOption {
+    id: number;
+    first_name: string;
+    first_lastname: string;
+    identification_number: string;
+}
+
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Servicios',
@@ -29,7 +47,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-const serviceFilters: FilterDefinition[] = [
+const baseServiceFilters: FilterDefinition[] = [
     {
         name: 'service_status',
         label: 'Estado',
@@ -48,6 +66,39 @@ const serviceFilters: FilterDefinition[] = [
         ],
     },
 ];
+
+function contractFilterLabel(contract: ContractFilterOption): string {
+    const tp = contract.third_party;
+    const customer = tp
+        ? tp.is_natural_person
+            ? [tp.first_name, tp.first_lastname].filter(Boolean).join(' ')
+            : (tp.company_name ?? '')
+        : '';
+    return customer
+        ? `${contract.contract_number} · ${customer}`
+        : contract.contract_number;
+}
+
+function driverFilterLabel(driver: DriverFilterOption): string {
+    const name = [driver.first_name, driver.first_lastname]
+        .filter(Boolean)
+        .join(' ');
+    return `${name} (${driver.identification_number})`;
+}
+
+function vehicleFilterLabel(vehicle: VehicleOption): string {
+    const parts = [vehicle.plate];
+    const model = [vehicle.brand, vehicle.line].filter(Boolean).join(' ');
+    if (model) {
+        parts.push(model);
+    }
+    return parts.join(' · ');
+}
+
+function municipalityFilterLabel(municipality: MunicipalityOption): string {
+    const dept = municipality.department?.name;
+    return dept ? `${municipality.name} (${dept})` : municipality.name;
+}
 
 function startOfWeekIso(): string {
     const d = new Date();
@@ -88,65 +139,97 @@ export default function ServicesIndex({
         onPerPageChange,
         activeFilters,
         setFilter,
+        setFilters,
         clearFilters,
     } = useServerTable({ data: paginatedServices, columns });
 
-    const singleFilter = (name: string): string =>
-        (activeFilters[name]?.[0] ?? '') as string;
+    // Fold the dynamic server-shipped option lists into the existing
+    // toolbar FilterDefinition[] shape so Contrato / Conductor /
+    // Vehículo / Municipio Origen / Municipio Destino render as the
+    // same multi-select DataTableFacetedFilter buttons that already
+    // power Estado + Método de pago.
+    const serviceFilters = useMemo<FilterDefinition[]>(
+        () => [
+            ...baseServiceFilters,
+            {
+                name: 'contract_id',
+                label: 'Contrato',
+                options: filterContracts.map((c) => ({
+                    value: String(c.id),
+                    label: contractFilterLabel(c),
+                })),
+            },
+            {
+                name: 'driver_id',
+                label: 'Conductor',
+                options: filterDrivers.map((d) => ({
+                    value: String(d.id),
+                    label: driverFilterLabel(d),
+                })),
+            },
+            {
+                name: 'vehicle_id',
+                label: 'Vehículo',
+                options: filterVehicles.map((v) => ({
+                    value: String(v.id),
+                    label: vehicleFilterLabel(v),
+                })),
+            },
+            {
+                name: 'origin_municipality_id',
+                label: 'Municipio Origen',
+                options: filterMunicipalities.map((m) => ({
+                    value: String(m.id),
+                    label: municipalityFilterLabel(m),
+                })),
+            },
+            {
+                name: 'destination_municipality_id',
+                label: 'Municipio Destino',
+                options: filterMunicipalities.map((m) => ({
+                    value: String(m.id),
+                    label: municipalityFilterLabel(m),
+                })),
+            },
+        ],
+        [filterContracts, filterDrivers, filterVehicles, filterMunicipalities],
+    );
 
-    const setSingleFilter = (name: string, value: string) => {
-        setFilter(name, value ? [value] : []);
-    };
+    const dateFrom = activeFilters['date_from']?.[0] ?? '';
+    const dateTo = activeFilters['date_to']?.[0] ?? '';
+
+    function handleDateRangeChange({ from, to }: { from: string; to: string }) {
+        // Only push the field that actually changed; setFilter fires a
+        // server round-trip and back-to-back calls race the
+        // useServerTable hook's currentParams cache (documented in
+        // services-index-filter-expansion). The popover edits one
+        // field at a time so this is fine.
+        if (from !== dateFrom) {
+            setFilter('date_from', from ? [from] : []);
+        }
+        if (to !== dateTo) {
+            setFilter('date_to', to ? [to] : []);
+        }
+    }
 
     function applyPreset(preset: 'today' | 'this_week' | 'open_only') {
         if (preset === 'today') {
             const today = new Date().toISOString().slice(0, 10);
-            setFilter('date_from', [today]);
-            setFilter('date_to', [today]);
+            setFilters({ date_from: [today], date_to: [today] });
         } else if (preset === 'this_week') {
-            setFilter('date_from', [startOfWeekIso()]);
-            setFilter('date_to', [endOfWeekIso()]);
+            setFilters({
+                date_from: [startOfWeekIso()],
+                date_to: [endOfWeekIso()],
+            });
         } else if (preset === 'open_only') {
             setFilter('service_status', ['open']);
         }
-    }
-
-    function clearAdvancedFilters() {
-        [
-            'contract_id',
-            'driver_id',
-            'vehicle_id',
-            'origin_municipality_id',
-            'destination_municipality_id',
-            'date_from',
-            'date_to',
-        ].forEach((name) => setFilter(name, []));
     }
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Servicios" />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
-                <ServicesIndexFilters
-                    contracts={filterContracts}
-                    drivers={filterDrivers}
-                    vehicles={filterVehicles}
-                    municipalities={filterMunicipalities}
-                    contractId={singleFilter('contract_id')}
-                    driverId={singleFilter('driver_id')}
-                    vehicleId={singleFilter('vehicle_id')}
-                    originMunicipalityId={singleFilter(
-                        'origin_municipality_id',
-                    )}
-                    destinationMunicipalityId={singleFilter(
-                        'destination_municipality_id',
-                    )}
-                    dateFrom={singleFilter('date_from')}
-                    dateTo={singleFilter('date_to')}
-                    onFilterChange={setSingleFilter}
-                    onApplyPreset={applyPreset}
-                    onClearAll={clearAdvancedFilters}
-                />
                 <DataTable
                     table={table}
                     paginatedData={paginatedData}
@@ -160,6 +243,44 @@ export default function ServicesIndex({
                     activeFilters={activeFilters}
                     onFilterChange={setFilter}
                     onClearFilters={clearFilters}
+                    extraFilters={
+                        <DataTableDateRangeFilter
+                            label="Rango de fechas"
+                            from={dateFrom}
+                            to={dateTo}
+                            onChange={handleDateRangeChange}
+                            fromInputId="services-filter-date-from"
+                            toInputId="services-filter-date-to"
+                        />
+                    }
+                    leadingActions={
+                        <>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8"
+                                onClick={() => applyPreset('today')}
+                            >
+                                Hoy
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8"
+                                onClick={() => applyPreset('this_week')}
+                            >
+                                Esta semana
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8"
+                                onClick={() => applyPreset('open_only')}
+                            >
+                                Pendientes de cerrar
+                            </Button>
+                        </>
+                    }
                     actions={
                         <Can permission={Permission.CREATE_SERVICES}>
                             <Button asChild size="sm">

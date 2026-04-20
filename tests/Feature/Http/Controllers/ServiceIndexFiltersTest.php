@@ -40,6 +40,34 @@ test('index filters by contract_id', function (): void {
     expect(count($response->json('data')))->toBe(2);
 });
 
+test('index accepts comma-separated contract_id for multi-select filtering', function (): void {
+    // Regression for services-index-filter-toolbar-migration: the toolbar
+    // DataTableFacetedFilter is multi-select and joins selected values
+    // with commas. AllowedFilter::exact must resolve "1,2" as
+    // WHERE contract_id IN (1, 2).
+    $contractA = Contract::factory()->create();
+    $contractB = Contract::factory()->create();
+    $contractC = Contract::factory()->create();
+
+    Service::factory()->count(2)->create(['contract_id' => $contractA->id]);
+    Service::factory()->count(3)->create(['contract_id' => $contractB->id]);
+    Service::factory()->count(4)->create(['contract_id' => $contractC->id]);
+
+    $response = getJson(route('services.index', [
+        'filter[contract_id]' => $contractA->id.','.$contractB->id,
+    ]));
+
+    $response->assertOk();
+    // A + B = 5 services; C's 4 are filtered out.
+    expect(count($response->json('data')))->toBe(5);
+
+    $returnedContractIds = array_unique(array_column($response->json('data'), 'contract_id'));
+    sort($returnedContractIds);
+    $expected = [$contractA->id, $contractB->id];
+    sort($expected);
+    expect($returnedContractIds)->toBe($expected);
+});
+
 test('index filters by driver_id', function (): void {
     $driverA = Driver::factory()->create();
     $driverB = Driver::factory()->create();
