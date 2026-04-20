@@ -42,6 +42,19 @@ interface ServerSideProps<TData> {
     onClearFilters?: () => void;
     actions?: React.ReactNode;
     /**
+     * Toolbar-style controls rendered inline after the faceted filters.
+     * Use this to inject components that match the toolbar visual
+     * language but don't fit the FilterDefinition shape (e.g. the
+     * DataTableDateRangeFilter on the services index).
+     */
+    extraFilters?: React.ReactNode;
+    /**
+     * Preset-style action buttons rendered inline after `extraFilters`
+     * and before the "Limpiar" button. Intended for shortcuts that
+     * SET filters rather than being filters themselves.
+     */
+    leadingActions?: React.ReactNode;
+    /**
      * Optional row-level classname hook. Returns a className string (or
      * undefined) to apply to the <TableRow>. Useful for tinting rows by
      * domain state — e.g., the vehicles index tints rows whose documents
@@ -90,6 +103,8 @@ function ServerSideDataTable<TData>({
     onFilterChange,
     onClearFilters,
     actions,
+    extraFilters,
+    leadingActions,
     getRowClassName,
 }: ServerSideProps<TData>) {
     'use no memo';
@@ -106,6 +121,8 @@ function ServerSideDataTable<TData>({
                 onFilterChange={onFilterChange}
                 onClearFilters={onClearFilters}
                 actions={actions}
+                extraFilters={extraFilters}
+                leadingActions={leadingActions}
             />
 
             <div
