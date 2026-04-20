@@ -38,7 +38,9 @@ Route::resource('users', UserController::class)->middleware('can:users.view');
 
 This layer returns `403 Forbidden` **before** any controller code runs. It's the coarsest gate: it protects the route, not a specific payload.
 
-Some resource routes use `Gate::authorize()` at the top of each controller method instead of route middleware — the two styles coexist because Laravel resource routes make it slightly awkward to attach different permissions per action via middleware. Use whichever is cleaner for the route; both produce a 403.
+**Applied strategy (reaffirmed 2026-04-19, route-level-can-middleware-sweep):** every resource/index/show-style route in `routes/web.php` declares a `can:{baseline}.view` middleware (or the domain-specific equivalent — `can:catalogs.manage` for the static-catalog resources, `can:day-summary.view` for the calendar endpoints, `can:services.view` for the Gantt, etc.). The mutation actions inherit the same resource-wide middleware because in this role matrix every role that holds a CREATE/UPDATE/DELETE permission also holds the corresponding VIEW permission — resource-wide `can:view` therefore does not accidentally block legitimate mutation traffic, and the FormRequest `authorize()` layer below re-checks the action-specific permission on top.
+
+**One exception (`/service-incidents`):** drivers hold `CREATE_INCIDENTS` but deliberately do **not** hold `VIEW_INCIDENTS` — they file incidents against their own assigned services from the driver portal without being granted a general-purpose view of every incident across the fleet. A resource-wide `can:incidents.view` middleware would 403 the legitimate driver create flow, and Laravel's declarative resource syntax does not support per-action middleware cleanly. `/service-incidents` therefore stays on controller-body `Gate::authorize()` per action + `FormRequest::authorize()` on store/update. This is the one route family in the codebase where layer 2 is absent by design.
 
 ### Layer 3 — Fine-grained `FormRequest::authorize()` (payload-aware gate)
 
