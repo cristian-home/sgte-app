@@ -13,6 +13,7 @@ use App\Models\PensionFund;
 use App\Models\Service;
 use App\Models\SeveranceFund;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -31,7 +32,7 @@ class DriverController extends Controller
      */
     private const LICENSE_EXPIRY_WINDOW_DAYS = 30;
 
-    public function index(Request $request): Response
+    public function index(Request $request): Response|JsonResponse
     {
         Gate::authorize(Permission::VIEW_DRIVERS->value);
 
@@ -62,6 +63,10 @@ class DriverController extends Controller
             ->defaultSort('first_lastname')
             ->paginate($request->perPage())
             ->withQueryString();
+
+        if ($request->wantsJson()) {
+            return response()->json($drivers);
+        }
 
         return Inertia::render('drivers/index', [
             'drivers' => $drivers,

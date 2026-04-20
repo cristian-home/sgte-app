@@ -10,6 +10,7 @@ use App\Models\DocumentType;
 use App\Models\Municipality;
 use App\Models\ThirdParty;
 use App\Models\Vehicle;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -20,7 +21,7 @@ use Spatie\QueryBuilder\QueryBuilder;
 
 class ThirdPartyController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request): Response|JsonResponse
     {
         Gate::authorize(Permission::VIEW_THIRD_PARTIES->value);
 
@@ -45,6 +46,10 @@ class ThirdPartyController extends Controller
             ->defaultSort('id')
             ->paginate($request->perPage())
             ->withQueryString();
+
+        if ($request->wantsJson()) {
+            return response()->json($thirdParties);
+        }
 
         return Inertia::render('third-parties/index', [
             'thirdParties' => $thirdParties,

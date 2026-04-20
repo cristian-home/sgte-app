@@ -8,6 +8,7 @@ use App\Http\Requests\VehicleLocationUpdateRequest;
 use App\Models\Vehicle;
 use App\Models\VehicleLocation;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -18,7 +19,7 @@ use Spatie\QueryBuilder\QueryBuilder;
 
 class VehicleLocationController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request): Response|JsonResponse
     {
         Gate::authorize(Permission::VIEW_VEHICLE_LOCATIONS->value);
 
@@ -50,6 +51,16 @@ class VehicleLocationController extends Controller
             ->defaultSort('-recorded_at', '-id')
             ->paginate($request->perPage())
             ->withQueryString();
+
+        // useServerTable in-app fetches (filter / sort / pagination) set
+        // `Accept: application/json` without the `X-Inertia` header, so
+        // Laravel's Inertia middleware would otherwise return the full
+        // HTML page and `response.json()` in the hook would die with
+        // `SyntaxError: JSON.parse: unexpected character at line 1
+        // column 1 of the JSON data` (audit F-stale-json-parse).
+        if ($request->wantsJson()) {
+            return response()->json($locations);
+        }
 
         return Inertia::render('vehicle-locations/index', [
             'vehicleLocations' => $locations,
