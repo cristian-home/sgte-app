@@ -157,6 +157,94 @@ class Service extends Model
         return $tz === '' ? (string) config('app.operation_tz') : $tz;
     }
 
+    /**
+     * Wall-clock setter: writing `service_date` aliases to
+     * `service_date_local` AND shifts `planned_start_at` (and any
+     * `actual_*_at` instants) onto the new date, preserving the
+     * wall-clock time-of-day in the model's timezone. This mirrors the
+     * "user picked a different day" affordance in the form / tests.
+     */
+    public function setServiceDateAttribute(mixed $value): void
+    {
+        $date = $value instanceof \DateTimeInterface ? $value->format('Y-m-d') : (string) $value;
+        $this->attributes['service_date_local'] = $date;
+
+        $tz = $this->resolveTimezone();
+        foreach (['planned_start_at', 'actual_start_at', 'actual_end_at'] as $col) {
+            if (! isset($this->attributes[$col]) || $this->attributes[$col] === null) {
+                continue;
+            }
+
+            try {
+                $existing = \Carbon\CarbonImmutable::parse($this->attributes[$col])->setTimezone($tz);
+                $shifted = $existing->setDate(
+                    (int) substr($date, 0, 4),
+                    (int) substr($date, 5, 2),
+                    (int) substr($date, 8, 2),
+                );
+                $this->attributes[$col] = $shifted->utc()->toDateTimeString();
+            } catch (\Exception) {
+                // Leave the original value alone if parsing fails.
+            }
+        }
+
+        // Initialize planned_start_at when no instant exists yet.
+        if (! isset($this->attributes['planned_start_at']) || $this->attributes['planned_start_at'] === null) {
+            $this->setPlannedStartTimeAttribute('00:00', $date);
+        }
+    }
+
+    /**
+     * Wall-clock setter: writing `planned_start_time` (HH:mm[:ss]) is
+     * projected onto a UTC instant using the model's timezone +
+     * service_date_local.
+     */
+    public function setPlannedStartTimeAttribute(mixed $value, ?string $dateOverride = null): void
+    {
+        $instant = $this->wallClockToInstant($value, $dateOverride);
+        if ($instant !== null) {
+            $this->attributes['planned_start_at'] = $instant->utc()->toDateTimeString();
+        }
+    }
+
+    public function setActualStartTimeAttribute(mixed $value): void
+    {
+        $instant = $this->wallClockToInstant($value);
+        $this->attributes['actual_start_at'] = $instant?->utc()->toDateTimeString();
+    }
+
+    public function setActualEndTimeAttribute(mixed $value): void
+    {
+        $instant = $this->wallClockToInstant($value);
+        $this->attributes['actual_end_at'] = $instant?->utc()->toDateTimeString();
+    }
+
+    /**
+     * Project a wall-clock HH:mm[:ss] string into a UTC instant using the
+     * model's timezone and (date_override or service_date_local). Returns
+     * null when value is empty.
+     */
+    protected function wallClockToInstant(mixed $value, ?string $dateOverride = null): ?\Carbon\CarbonImmutable
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $time = $value instanceof \DateTimeInterface
+            ? $value->format('H:i')
+            : substr((string) $value, 0, 5);
+
+        $date = $dateOverride
+            ?? (isset($this->attributes['service_date_local']) ? substr((string) $this->attributes['service_date_local'], 0, 10) : null)
+            ?? Carbon::now($this->resolveTimezone())->toDateString();
+
+        try {
+            return \Carbon\CarbonImmutable::createFromFormat('Y-m-d H:i', "{$date} {$time}", $this->resolveTimezone());
+        } catch (\Exception) {
+            return null;
+        }
+    }
+
     public function contract(): BelongsTo
     {
         return $this->belongsTo(Contract::class);
