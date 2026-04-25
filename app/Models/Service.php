@@ -80,15 +80,22 @@ class Service extends Model
             'origin_municipality_id' => 'integer',
             'destination_municipality_id' => 'integer',
             'invoice_id' => 'integer',
+            // Persist instants with the explicit offset so the SQLite
+            // test driver preserves TZ on round-trip. PostgreSQL's
+            // TIMESTAMPTZ handles offsets natively; SQLite stores
+            // strings, and a TZ-naive 'Y-m-d H:i:s' gets re-parsed in
+            // PHP's default TZ on read — which the cross-TZ tests
+            // deliberately move around. The 'P' suffix keeps the
+            // instant stable in either driver.
             'service_date_local' => 'immutable_date',
-            'planned_start_at' => 'immutable_datetime',
-            'actual_start_at' => 'immutable_datetime',
-            'actual_end_at' => 'immutable_datetime',
+            'planned_start_at' => 'immutable_datetime:Y-m-d H:i:sP',
+            'actual_start_at' => 'immutable_datetime:Y-m-d H:i:sP',
+            'actual_end_at' => 'immutable_datetime:Y-m-d H:i:sP',
             'timezone' => 'string',
             'unit_value' => 'decimal:2',
             'payment_method' => PaymentMethod::class,
             'service_status' => ServiceStatus::class,
-            'driver_declined_at' => 'immutable_datetime',
+            'driver_declined_at' => 'immutable_datetime:Y-m-d H:i:sP',
         ];
     }
 
@@ -182,7 +189,7 @@ class Service extends Model
                     (int) substr($date, 5, 2),
                     (int) substr($date, 8, 2),
                 );
-                $this->attributes[$col] = $shifted->utc()->toDateTimeString();
+                $this->setAttribute($col, $shifted->utc());
             } catch (\Exception) {
                 // Leave the original value alone if parsing fails.
             }
@@ -203,20 +210,20 @@ class Service extends Model
     {
         $instant = $this->wallClockToInstant($value, $dateOverride);
         if ($instant !== null) {
-            $this->attributes['planned_start_at'] = $instant->utc()->toDateTimeString();
+            $this->setAttribute('planned_start_at', $instant->utc());
         }
     }
 
     public function setActualStartTimeAttribute(mixed $value): void
     {
         $instant = $this->wallClockToInstant($value);
-        $this->attributes['actual_start_at'] = $instant?->utc()->toDateTimeString();
+        $this->setAttribute('actual_start_at', $instant?->utc());
     }
 
     public function setActualEndTimeAttribute(mixed $value): void
     {
         $instant = $this->wallClockToInstant($value);
-        $this->attributes['actual_end_at'] = $instant?->utc()->toDateTimeString();
+        $this->setAttribute('actual_end_at', $instant?->utc());
     }
 
     /**
