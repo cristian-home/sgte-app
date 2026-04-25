@@ -17,8 +17,8 @@ return new class extends Migration
             $table->string('name', 100);
             $table->boolean('is_natural_person')->default(true);
             $table->boolean('is_legal_person')->default(true);
-            $table->timestamps();
-            $table->softDeletes();
+            $table->timestampsTz();
+            $table->softDeletesTz();
         });
     }
 

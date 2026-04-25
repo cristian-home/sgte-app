@@ -26,7 +26,12 @@ class GanttController extends Controller
             'municipality_id' => ['sometimes', 'integer', 'exists:municipalities,id'],
         ]);
 
-        $date = $request->input('date', now()->toDateString());
+        // Default to "today" in the operation timezone, not UTC. Between
+        // 19:00 and 24:00 Bogotá the UTC day is already tomorrow, so a
+        // UTC-anchored default would surface the wrong calendar day on
+        // Gantt at the end of the operator's shift.
+        $operationTz = (string) config('app.operation_tz', 'America/Bogota');
+        $date = $request->input('date', Carbon::now($operationTz)->toDateString());
         $municipalityId = $request->input('municipality_id');
 
         $vehicles = Vehicle::query()
@@ -73,10 +78,14 @@ class GanttController extends Controller
                 ];
             });
 
-        $serviceDateCarbon = Carbon::parse($date);
+        // Anchor "service date" in the operation TZ. service_date_local
+        // already projects the wall-clock day in the service's own TZ, so
+        // the comparison is straight-forward; the Carbon instance is only
+        // used by the document-check helpers below.
+        $serviceDateCarbon = Carbon::parse($date, $operationTz);
 
         $services = Service::query()
-            ->whereDate('service_date', $date)
+            ->whereDate('service_date_local', $date)
             ->whereIn('vehicle_id', $vehicles->pluck('id'))
             ->with([
                 'vehicle:id,plate,type,is_third_party,soat_due_date,rtm_due_date,operation_card_due_date',

@@ -7,6 +7,7 @@ use App\Enums\ServiceStatus;
 use App\Models\Service;
 use App\Models\VehicleLocation;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -24,15 +25,18 @@ class VehicleLocationMapController extends Controller
     {
         Gate::authorize(Permission::VIEW_VEHICLE_LOCATIONS->value);
 
+        $operationTz = (string) config('app.operation_tz', 'America/Bogota');
+        $today = Carbon::now($operationTz)->toDateString();
+
         $services = Service::query()
             ->where('service_status', ServiceStatus::Open)
-            ->whereDate('service_date', today())
+            ->whereDate('service_date_local', $today)
             ->with([
                 'vehicle:id,plate',
                 'driver:id,first_name,first_lastname',
             ])
-            ->orderByDesc('service_date')
-            ->get(['id', 'service_date', 'vehicle_id', 'driver_id']);
+            ->orderByDesc('service_date_local')
+            ->get(['id', 'service_date_local', 'planned_start_at', 'timezone', 'vehicle_id', 'driver_id']);
 
         $activeServices = $services->map(function (Service $service): array {
             $location = $this->resolveLatestLocation($service);

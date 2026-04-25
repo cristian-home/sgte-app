@@ -12,11 +12,29 @@ export function timeToHours(time: string): number {
     return h + m / 60;
 }
 
+/**
+ * Convert a UTC instant to fractional hours-of-day in `eventTz` for the
+ * given grid date. Used by `serviceBarPosition` so a Gantt anchored on
+ * 2026-04-24 in Bogotá positions a 14:30 Bogotá service correctly even
+ * if the underlying instant is `2026-04-24T19:30:00Z`.
+ */
+function instantToHoursInTz(at: string, eventTz: string): number {
+    const fmt = new Intl.DateTimeFormat('en-GB', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+        timeZone: eventTz,
+    });
+    const [hStr, mStr] = fmt.format(new Date(at)).split(':');
+    return Number(hStr) + Number(mStr) / 60;
+}
+
 export function serviceBarPosition(
-    plannedStartTime: string,
+    plannedStartAt: string,
     plannedDuration: number,
+    eventTz: string,
 ): { left: number; width: number } | null {
-    const startHours = timeToHours(plannedStartTime);
+    const startHours = instantToHoursInTz(plannedStartAt, eventTz);
     const durationHours = plannedDuration / 60;
 
     const visibleStart = Math.max(startHours, GANTT_START_HOUR);

@@ -19,14 +19,15 @@ interface Service {
     vehicle_id: number;
     driver_id: number | null;
     service_date: string;
+    timezone: string;
     origin_municipality_id: number | null;
     origin_address: string | null;
     destination_municipality_id: number | null;
     destination_address: string | null;
-    planned_start_time: string;
+    planned_start_local: string;
     planned_duration: number;
-    actual_start_time: string | null;
-    actual_end_time: string | null;
+    actual_start_local: string | null;
+    actual_end_local: string | null;
     unit_value: string;
     quantity: number;
     billing_group: string | null;
@@ -75,10 +76,11 @@ export default function ServicesEdit({
             ? String(service.destination_municipality_id)
             : '',
         destination_address: service.destination_address ?? '',
-        planned_start_time: service.planned_start_time,
+        planned_start_time: service.planned_start_local,
         planned_duration: String(service.planned_duration),
-        actual_start_time: service.actual_start_time ?? '',
-        actual_end_time: service.actual_end_time ?? '',
+        actual_start_time: service.actual_start_local ?? '',
+        actual_end_time: service.actual_end_local ?? '',
+        timezone: service.timezone,
         unit_value: service.unit_value,
         quantity: String(service.quantity),
         billing_group: service.billing_group ?? '',

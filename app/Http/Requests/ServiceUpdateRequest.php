@@ -22,10 +22,10 @@ class ServiceUpdateRequest extends ServiceStoreRequest
      * REQ-009 service_status transition invariant
      * (service-reopen-actual-time-invariant):
      *
-     * - Closed → Open: clear `actual_end_time`, preserve
-     *   `actual_start_time`. The service is "resumable" — it started
-     *   but hasn't finished yet.
-     * - Open → Closed: requires both `actual_*_time` fields (handled
+     * - Closed → Open: clear actual_end_time / actual_end_at,
+     *   preserve actual_start_time / actual_start_at.
+     *   The service is "resumable" — it started but hasn't finished yet.
+     * - Open → Closed: requires both actual_*_time fields (handled
      *   by the existing `required_if:service_status,closed` rule on
      *   both columns inherited from ServiceStoreRequest).
      * - Open → Open or Closed → Closed: no-op on the time fields.
@@ -52,14 +52,17 @@ class ServiceUpdateRequest extends ServiceStoreRequest
         if ($currentStatus === ServiceStatus::Closed->value
             && $incomingStatus === ServiceStatus::Open->value
         ) {
-            $this->merge(['actual_end_time' => null]);
+            $this->merge([
+                'actual_end_time' => null,
+                'actual_end_at' => null,
+            ]);
         }
     }
 
     public function authorize(): bool
     {
         $service = $this->route('service');
-        $dayStatus = DayStatus::whereDate('date', $service->service_date)->first();
+        $dayStatus = DayStatus::whereDate('date', $service->service_date_local)->first();
 
         if ($dayStatus?->status === DayStatusEnum::Executed) {
             $user = $this->user();
@@ -81,7 +84,7 @@ class ServiceUpdateRequest extends ServiceStoreRequest
     public function rules(): array
     {
         $service = $this->route('service');
-        $dayStatus = DayStatus::whereDate('date', $service->service_date)->first();
+        $dayStatus = DayStatus::whereDate('date', $service->service_date_local)->first();
 
         if ($dayStatus?->status !== DayStatusEnum::Executed) {
             return parent::rules();
@@ -109,7 +112,7 @@ class ServiceUpdateRequest extends ServiceStoreRequest
     public function after(): array
     {
         $service = $this->route('service');
-        $dayStatus = DayStatus::whereDate('date', $service->service_date)->first();
+        $dayStatus = DayStatus::whereDate('date', $service->service_date_local)->first();
 
         if ($dayStatus?->status === DayStatusEnum::Executed) {
             $user = $this->user();

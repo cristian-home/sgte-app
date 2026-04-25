@@ -86,7 +86,7 @@ test('confirm start sets actual_start_time', function (): void {
 
     $response->assertRedirect(route('driver.dashboard'));
     $service->refresh();
-    expect($service->actual_start_time)->not->toBeNull();
+    expect($service->actual_start_at)->not->toBeNull();
 });
 
 test('confirm end sets actual_end_time', function (): void {
@@ -102,7 +102,7 @@ test('confirm end sets actual_end_time', function (): void {
 
     $response->assertRedirect(route('driver.dashboard'));
     $service->refresh();
-    expect($service->actual_end_time)->not->toBeNull();
+    expect($service->actual_end_at)->not->toBeNull();
 });
 
 test('confirm start persists a VehicleLocation when coordinates are provided', function (): void {

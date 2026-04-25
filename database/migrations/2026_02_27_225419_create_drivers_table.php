@@ -32,8 +32,8 @@ return new class extends Migration
             $table->foreignId('severance_fund_id')->constrained('severance_funds');
             $table->boolean('has_social_security')->default(true);
             $table->boolean('active')->default(true);
-            $table->timestamps();
-            $table->softDeletes();
+            $table->timestampsTz();
+            $table->softDeletesTz();
         });
 
         Schema::enableForeignKeyConstraints();

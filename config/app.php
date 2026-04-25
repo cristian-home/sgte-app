@@ -69,6 +69,25 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Operation Timezone
+    |--------------------------------------------------------------------------
+    |
+    | Default IANA timezone used to anchor operational decisions whose meaning
+    | depends on the calendar day in the operator's locale: REQ-009 retroactive
+    | service gate, REQ-004/005 document expiry checks, Gantt date filter,
+    | Day Summary buckets, Driver portal active-services list, Dashboard KPIs.
+    |
+    | The application timezone above stays UTC so timestamps are stored as
+    | instants; this value is the projection used to compute "today" / "now"
+    | for operational comparisons. Per-service rows may override this via
+    | services.timezone.
+    |
+    */
+
+    'operation_tz' => env('OPERATION_TZ', 'America/Bogota'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Locale Configuration
     |--------------------------------------------------------------------------
     |

@@ -10,6 +10,7 @@ import {
     SheetHeader,
     SheetTitle,
 } from '@/components/ui/sheet';
+import { formatTimestampInViewerTz } from '@/lib/datetime';
 import {
     subjectTypeLabel,
     type ActivityRow,
@@ -23,18 +24,8 @@ interface AuditLogDetailSheetProps {
     subjectTypes: SubjectTypeOption[];
 }
 
-const dateTimeFormatter = new Intl.DateTimeFormat('es-CO', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-});
-
 function formatTimestamp(iso: string | null): string {
-    if (!iso) return '—';
-    return dateTimeFormatter.format(new Date(iso));
+    return formatTimestampInViewerTz(iso) || '—';
 }
 
 function formatValue(value: unknown): string {

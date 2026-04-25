@@ -39,7 +39,7 @@ class ServiceIncidentController extends Controller
 
         $serviceIncidents = QueryBuilder::for(ServiceIncident::class)
             ->with([
-                'service:id,service_date,vehicle_id,contract_id,driver_id',
+                'service:id,service_date_local,planned_start_at,timezone,vehicle_id,contract_id,driver_id',
                 'service.vehicle:id,plate',
                 'service.contract:id,contract_number',
                 'incidentType:id,code,name,severity',
@@ -85,18 +85,18 @@ class ServiceIncidentController extends Controller
      */
     private function recentServiceOptions(): \Illuminate\Database\Eloquent\Collection
     {
-        $cutoff = Carbon::today()->subDays(self::RECENT_SERVICES_WINDOW_DAYS);
+        $cutoff = Carbon::now((string) config('app.operation_tz'))->subDays(self::RECENT_SERVICES_WINDOW_DAYS)->toDateString();
 
         return Service::query()
-            ->whereDate('service_date', '>=', $cutoff)
+            ->whereDate('service_date_local', '>=', $cutoff)
             ->with([
                 'vehicle:id,plate',
                 'contract:id,contract_number',
                 'driver:id,first_name,first_lastname',
             ])
-            ->orderByDesc('service_date')
-            ->orderByDesc('planned_start_time')
-            ->get(['id', 'service_date', 'vehicle_id', 'contract_id', 'driver_id']);
+            ->orderByDesc('service_date_local')
+            ->orderByDesc('planned_start_at')
+            ->get(['id', 'service_date_local', 'planned_start_at', 'timezone', 'vehicle_id', 'contract_id', 'driver_id']);
     }
 
     public function create(Request $request): Response
@@ -146,7 +146,7 @@ class ServiceIncidentController extends Controller
         Gate::authorize(Permission::VIEW_INCIDENTS->value);
 
         $serviceIncident->load([
-            'service:id,service_date,vehicle_id,contract_id,driver_id',
+            'service:id,service_date_local,planned_start_at,timezone,vehicle_id,contract_id,driver_id',
             'service.vehicle:id,plate',
             'service.contract:id,contract_number,third_party_id',
             'service.contract.thirdParty:id,is_natural_person,first_name,first_lastname,company_name',
@@ -164,7 +164,7 @@ class ServiceIncidentController extends Controller
         Gate::authorize(Permission::UPDATE_INCIDENTS->value);
 
         $serviceIncident->load([
-            'service:id,service_date,vehicle_id,contract_id,driver_id',
+            'service:id,service_date_local,planned_start_at,timezone,vehicle_id,contract_id,driver_id',
             'service.vehicle:id,plate',
             'service.contract:id,contract_number,third_party_id',
             'service.contract.thirdParty:id,is_natural_person,first_name,first_lastname,company_name',

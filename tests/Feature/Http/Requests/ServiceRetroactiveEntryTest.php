@@ -101,7 +101,7 @@ test('accepts past + closed + valid justification; persists column + logs activi
     expect($activity->properties->get('source'))->toBe('retroactive_entry');
     expect($activity->properties->get('manual_entry_justification'))
         ->toContain('Servicio ejecutado sin acceso al sistema');
-    expect($activity->properties->get('service_date'))
+    expect($activity->properties->get('service_date_local'))
         ->toBe(Carbon::yesterday()->toDateString());
 });
 

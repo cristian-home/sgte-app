@@ -46,9 +46,11 @@ class DashboardController extends Controller
             return redirect()->route('driver.dashboard');
         }
 
-        $today = Carbon::today();
+        $operationTz = (string) config('app.operation_tz', 'America/Bogota');
+        $today = Carbon::now($operationTz)->startOfDay();
         $expiryThreshold = $today->copy()->addDays(self::EXPIRY_ALERT_DAYS);
         $contractExpiryThreshold = $today->copy()->addDays(self::CONTRACT_EXPIRY_ALERT_DAYS);
+        $todayString = $today->toDateString();
 
         return Inertia::render('dashboard', [
             'kpis' => [
@@ -63,11 +65,11 @@ class DashboardController extends Controller
                     'inactive' => Driver::where('active', false)->count(),
                 ],
                 'services_today' => [
-                    'total' => Service::whereDate('service_date', $today)->count(),
-                    'open' => Service::whereDate('service_date', $today)
+                    'total' => Service::whereDate('service_date_local', $todayString)->count(),
+                    'open' => Service::whereDate('service_date_local', $todayString)
                         ->where('service_status', ServiceStatus::Open->value)
                         ->count(),
-                    'closed' => Service::whereDate('service_date', $today)
+                    'closed' => Service::whereDate('service_date_local', $todayString)
                         ->where('service_status', ServiceStatus::Closed->value)
                         ->count(),
                 ],

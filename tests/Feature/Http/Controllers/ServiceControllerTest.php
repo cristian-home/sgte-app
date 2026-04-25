@@ -143,7 +143,7 @@ test('index json respects filters and sorting', function (): void {
 
     $response = getJson(route('services.index', [
         'filter[search]' => 'Bogota',
-        'sort' => '-service_date',
+        'sort' => '-service_date_local',
     ]));
 
     $response->assertOk()
@@ -281,7 +281,7 @@ test('update redirects', function (): void {
     expect($vehicle->id)->toEqual($service->vehicle_id);
     expect($origin_municipality->id)->toEqual($service->origin_municipality_id);
     expect($origin_address)->toEqual($service->origin_address);
-    expect('10:00')->toEqual($service->planned_start_time);
+    expect('10:00')->toEqual($service->planned_start_local);
     expect(90)->toEqual($service->planned_duration);
     expect(2)->toEqual($service->quantity);
     expect('credit')->toEqual($service->payment_method->value);

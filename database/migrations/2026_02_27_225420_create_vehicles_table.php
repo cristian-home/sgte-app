@@ -32,8 +32,8 @@ return new class extends Migration
             $table->date('rtm_due_date');
             $table->date('operation_card_due_date');
             $table->enum('status', ['active', 'maintenance', 'retired'])->default('active');
-            $table->timestamps();
-            $table->softDeletes();
+            $table->timestampsTz();
+            $table->softDeletesTz();
         });
 
         Schema::enableForeignKeyConstraints();

@@ -13,7 +13,9 @@ use App\Models\DayStatus;
 use App\Models\Driver;
 use App\Models\Vehicle;
 use App\Rules\NoScheduleConflict;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
@@ -51,17 +53,26 @@ class ServiceStoreRequest extends FormRequest
             'vehicle_id' => ['required', 'integer', 'exists:vehicles,id'],
             'driver_id' => ['nullable', 'integer', 'exists:drivers,id'],
             'invoice_id' => ['nullable', 'integer', 'exists:invoices,id'],
-            'service_date' => ['required', 'date'],
+            // Wall-clock helpers retained for the form payload; the
+            // persisted source of truth is `planned_start_at` (UTC instant)
+            // and `service_date_local` (operation-TZ day), merged in
+            // prepareForValidation().
+            'service_date' => ['required', 'date_format:Y-m-d'],
+            'service_date_local' => ['required', 'date_format:Y-m-d'],
+            'planned_start_time' => ['required', 'date_format:H:i'],
+            'timezone' => ['required', 'string', Rule::in(timezone_identifiers_list())],
+            'planned_start_at' => ['required', 'date'],
             'origin_municipality_id' => ['nullable', 'integer', 'exists:municipalities,id'],
             'origin_address' => ['nullable', 'string', 'max:255'],
             'origin_coordinates' => ['nullable', 'string', 'max:50'],
             'destination_municipality_id' => ['nullable', 'integer', 'exists:municipalities,id'],
             'destination_address' => ['nullable', 'string', 'max:255'],
             'destination_coordinates' => ['nullable', 'string', 'max:50'],
-            'planned_start_time' => ['required'],
             'planned_duration' => ['required', 'integer'],
             'actual_start_time' => ['nullable', Rule::requiredIf($this->input('service_status') === 'closed')],
             'actual_end_time' => ['nullable', Rule::requiredIf($this->input('service_status') === 'closed'), 'after:actual_start_time'],
+            'actual_start_at' => ['nullable', 'date'],
+            'actual_end_at' => ['nullable', 'date', 'after:actual_start_at'],
             'unit_value' => ['required', 'numeric', 'between:-9999999999.99,9999999999.99'],
             'quantity' => ['required', 'integer'],
             'billing_group' => ['nullable', 'string', 'max:50'],
@@ -70,23 +81,21 @@ class ServiceStoreRequest extends FormRequest
             'manual_entry_justification' => ['nullable', 'string', 'min:10', 'max:500'],
         ];
 
-        if ($this->filled('vehicle_id') && $this->filled('service_date') && $this->filled('planned_start_time') && $this->filled('planned_duration')) {
+        if ($this->filled('vehicle_id') && $this->filled('planned_start_at') && $this->filled('planned_duration')) {
             $rules['vehicle_id'][] = new NoScheduleConflict(
                 'vehicle_id',
                 (int) $this->input('vehicle_id'),
-                $this->input('service_date'),
-                $this->input('planned_start_time'),
+                $this->input('planned_start_at'),
                 (int) $this->input('planned_duration'),
                 $this->excludeServiceId(),
             );
         }
 
-        if ($this->filled('driver_id') && $this->filled('service_date') && $this->filled('planned_start_time') && $this->filled('planned_duration')) {
+        if ($this->filled('driver_id') && $this->filled('planned_start_at') && $this->filled('planned_duration')) {
             $rules['driver_id'][] = new NoScheduleConflict(
                 'driver_id',
                 (int) $this->input('driver_id'),
-                $this->input('service_date'),
-                $this->input('planned_start_time'),
+                $this->input('planned_start_at'),
                 (int) $this->input('planned_duration'),
                 $this->excludeServiceId(),
             );
@@ -139,7 +148,7 @@ class ServiceStoreRequest extends FormRequest
             return;
         }
 
-        if (! $this->filled('service_date') || ! $this->filled('service_status')) {
+        if (! $this->filled('service_date_local') || ! $this->filled('service_status')) {
             return;
         }
 
@@ -148,11 +157,8 @@ class ServiceStoreRequest extends FormRequest
             return;
         }
 
-        $today = \Illuminate\Support\Carbon::today()->toDateString();
-        $serviceDate = $this->input('service_date');
-        $serviceDateString = $serviceDate instanceof \Illuminate\Support\Carbon
-            ? $serviceDate->toDateString()
-            : (string) $serviceDate;
+        $today = Carbon::now($this->resolveServiceTimezone())->toDateString();
+        $serviceDateString = (string) $this->input('service_date_local');
 
         if ($serviceDateString >= $today) {
             $validator->errors()->add(
@@ -174,11 +180,11 @@ class ServiceStoreRequest extends FormRequest
 
     protected function validateExecutedDayRestriction($validator): void
     {
-        if (! $this->filled('service_date')) {
+        if (! $this->filled('service_date_local')) {
             return;
         }
 
-        $dayStatus = DayStatus::whereDate('date', $this->input('service_date'))->first();
+        $dayStatus = DayStatus::whereDate('date', $this->input('service_date_local'))->first();
 
         if ($dayStatus?->status === DayStatusEnum::Executed) {
             $validator->errors()->add('service_date', 'No se pueden crear servicios en un día ejecutado.');
@@ -187,7 +193,7 @@ class ServiceStoreRequest extends FormRequest
 
     protected function validateContractCoversDate($validator): void
     {
-        if (! $this->filled('contract_id') || ! $this->filled('service_date')) {
+        if (! $this->filled('contract_id') || ! $this->filled('service_date_local')) {
             return;
         }
 
@@ -201,7 +207,7 @@ class ServiceStoreRequest extends FormRequest
             $validator->errors()->add('contract_id', 'El contrato seleccionado no esta activo.');
         }
 
-        $serviceDate = $this->input('service_date');
+        $serviceDate = (string) $this->input('service_date_local');
 
         $startDate = $contract->start_date instanceof \Illuminate\Support\Carbon ? $contract->start_date->toDateString() : (string) $contract->start_date;
         $endDate = $contract->end_date instanceof \Illuminate\Support\Carbon ? $contract->end_date->toDateString() : (string) $contract->end_date;
@@ -234,7 +240,7 @@ class ServiceStoreRequest extends FormRequest
      */
     protected function validateVehicleDocumentsNotExpired($validator): void
     {
-        if (! $this->filled('vehicle_id') || ! $this->filled('service_date')) {
+        if (! $this->filled('vehicle_id') || ! $this->filled('service_date_local')) {
             return;
         }
 
@@ -244,7 +250,7 @@ class ServiceStoreRequest extends FormRequest
             return;
         }
 
-        $serviceDate = $this->input('service_date');
+        $serviceDate = (string) $this->input('service_date_local');
         $documents = [
             'soat_due_date' => 'SOAT',
             'rtm_due_date' => 'RTM',
@@ -284,7 +290,7 @@ class ServiceStoreRequest extends FormRequest
      */
     protected function validateDriverLicense($validator): void
     {
-        if (! $this->filled('driver_id') || ! $this->filled('service_date')) {
+        if (! $this->filled('driver_id') || ! $this->filled('service_date_local')) {
             return;
         }
 
@@ -294,7 +300,7 @@ class ServiceStoreRequest extends FormRequest
             return;
         }
 
-        $serviceDate = $this->input('service_date');
+        $serviceDate = (string) $this->input('service_date_local');
 
         if ($driver->license_due_date === null) {
             $validator->errors()->add('driver_id', 'El conductor no tiene registrada la fecha de vencimiento de la licencia.');
@@ -352,5 +358,96 @@ class ServiceStoreRequest extends FormRequest
                 $this->merge(['driver_id' => null]);
             }
         }
+
+        $timezone = $this->resolveServiceTimezone();
+        $this->merge(['timezone' => $timezone]);
+
+        $serviceDate = $this->input('service_date');
+        $plannedTime = $this->input('planned_start_time');
+
+        // Project the wall-clock day + time-of-day in the service's TZ to a
+        // UTC instant. This mirrors the iCalendar "instant + IANA TZ"
+        // pattern: persistence is universal, presentation is event-TZ.
+        if (is_string($serviceDate) && is_string($plannedTime)) {
+            $serviceDate = substr($serviceDate, 0, 10);
+            $plannedTime = substr($plannedTime, 0, 5);
+
+            try {
+                $plannedStartAt = CarbonImmutable::createFromFormat(
+                    'Y-m-d H:i',
+                    "{$serviceDate} {$plannedTime}",
+                    $timezone,
+                );
+
+                if ($plannedStartAt !== false) {
+                    $this->merge([
+                        'planned_start_at' => $plannedStartAt->utc()->toIso8601String(),
+                        'service_date_local' => $serviceDate,
+                    ]);
+                }
+            } catch (\Exception $e) {
+                // Wall-clock parsing failed; per-field validation rules will
+                // surface a clearer error to the user.
+            }
+        }
+
+        $this->mergeActualInstantsIfPresent($timezone);
+    }
+
+    /**
+     * Project optional wall-clock actual_*_time inputs into UTC instants.
+     */
+    protected function mergeActualInstantsIfPresent(string $timezone): void
+    {
+        $serviceDate = (string) $this->input('service_date');
+        if ($serviceDate === '') {
+            return;
+        }
+        $serviceDate = substr($serviceDate, 0, 10);
+
+        foreach (['actual_start_time' => 'actual_start_at', 'actual_end_time' => 'actual_end_at'] as $wallclock => $instant) {
+            $time = $this->input($wallclock);
+            if (! is_string($time) || $time === '') {
+                $this->merge([$instant => null]);
+
+                continue;
+            }
+            $time = substr($time, 0, 5);
+
+            try {
+                $value = CarbonImmutable::createFromFormat(
+                    'Y-m-d H:i',
+                    "{$serviceDate} {$time}",
+                    $timezone,
+                );
+                if ($value !== false) {
+                    $this->merge([$instant => $value->utc()->toIso8601String()]);
+                }
+            } catch (\Exception $e) {
+                // Surface to per-field rule.
+            }
+        }
+    }
+
+    /**
+     * Resolve the service's IANA timezone in priority order:
+     * request body → selected contract → app operation TZ.
+     */
+    protected function resolveServiceTimezone(): string
+    {
+        $requested = $this->input('timezone');
+        if (is_string($requested) && $requested !== '' && in_array($requested, timezone_identifiers_list(), true)) {
+            return $requested;
+        }
+
+        if ($this->filled('contract_id')) {
+            $contract = Contract::find($this->input('contract_id'));
+            $contractTz = is_object($contract) && property_exists($contract, 'timezone') ? $contract->timezone : null;
+            if (is_string($contractTz) && $contractTz !== '') {
+                return $contractTz;
+            }
+        }
+
+        return (string) config('app.operation_tz', 'America/Bogota');
     }
 }

@@ -46,7 +46,7 @@ class ScanThirdPartyVehicleDocuments implements ShouldQueue
         $entriesByProvider = [];
 
         foreach (self::THRESHOLDS as $days) {
-            $targetDate = Carbon::today()->addDays($days);
+            $targetDate = Carbon::now((string) config('app.operation_tz'))->startOfDay()->addDays($days);
 
             foreach (self::DOCUMENT_LABELS as $column => $label) {
                 $vehicles = Vehicle::query()

@@ -1,4 +1,5 @@
 import { Badge } from '@/components/ui/badge';
+import { formatEventTime } from '@/lib/datetime';
 
 import type { ColumnDef } from '@tanstack/react-table';
 import type { Service } from '@/types';
@@ -9,10 +10,6 @@ function addMinutes(time: string, minutes: number): string {
     const hh = Math.floor(total / 60) % 24;
     const mm = total % 60;
     return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
-}
-
-function formatTime(time: string): string {
-    return time.slice(0, 5);
 }
 
 function thirdPartyName(
@@ -80,19 +77,23 @@ export const columns: ColumnDef<Service, unknown>[] = [
         header: 'Horario',
         cell: ({ row }) => {
             const s = row.original;
-            const plannedEnd = addMinutes(
-                s.planned_start_time,
-                s.planned_duration,
+            const plannedStart = formatEventTime(
+                s.planned_start_at,
+                s.timezone,
             );
+            const plannedEnd = plannedStart
+                ? addMinutes(plannedStart, s.planned_duration)
+                : '';
+            const actualStart = formatEventTime(s.actual_start_at, s.timezone);
+            const actualEnd = formatEventTime(s.actual_end_at, s.timezone);
             return (
                 <div className="flex flex-col">
                     <span>
-                        {formatTime(s.planned_start_time)} - {plannedEnd}
+                        {plannedStart} - {plannedEnd}
                     </span>
-                    {s.actual_start_time && s.actual_end_time && (
+                    {actualStart && actualEnd && (
                         <span className="text-xs text-muted-foreground">
-                            Real: {formatTime(s.actual_start_time)} -{' '}
-                            {formatTime(s.actual_end_time)}
+                            Real: {actualStart} - {actualEnd}
                         </span>
                     )}
                 </div>

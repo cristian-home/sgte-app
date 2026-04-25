@@ -29,6 +29,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { ServiceStatusLabel } from '@/enums/ServiceStatus';
 import AppLayout from '@/layouts/app-layout';
+import { formatEventTime } from '@/lib/datetime';
 import type { BreadcrumbItem, Service } from '@/types';
 
 interface Driver {
@@ -39,9 +40,8 @@ interface Driver {
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Mis Servicios', href: '#' }];
 
-function formatTime(time: string | null): string {
-    if (!time) return '\u2014';
-    return time.substring(0, 5);
+function formatServiceTime(at: string | null, timezone: string): string {
+    return formatEventTime(at, timezone) || '\u2014';
 }
 
 function municipalityName(municipality?: { name: string } | null): string {
@@ -124,8 +124,8 @@ export default function DriverDashboard({
 
                 <div className="grid gap-4 md:grid-cols-2">
                     {services.map((service) => {
-                        const hasStarted = !!service.actual_start_time;
-                        const hasEnded = !!service.actual_end_time;
+                        const hasStarted = !!service.actual_start_at;
+                        const hasEnded = !!service.actual_end_at;
                         const isDeclined = !!service.driver_declined_at;
                         const incidentCount =
                             service.service_incidents_count ?? 0;
@@ -194,8 +194,9 @@ export default function DriverDashboard({
                                         <Clock className="size-4 shrink-0 text-muted-foreground" />
                                         <span>
                                             Planificado:{' '}
-                                            {formatTime(
-                                                service.planned_start_time,
+                                            {formatServiceTime(
+                                                service.planned_start_at,
+                                                service.timezone,
                                             )}{' '}
                                             ({service.planned_duration} min)
                                         </span>
@@ -207,15 +208,17 @@ export default function DriverDashboard({
                                             <Play className="size-4 shrink-0 text-green-600" />
                                             <span>
                                                 Inicio real:{' '}
-                                                {formatTime(
-                                                    service.actual_start_time,
+                                                {formatServiceTime(
+                                                    service.actual_start_at,
+                                                    service.timezone,
                                                 )}
                                             </span>
                                             {hasEnded && (
                                                 <span className="ml-2">
                                                     | Fin:{' '}
-                                                    {formatTime(
-                                                        service.actual_end_time,
+                                                    {formatServiceTime(
+                                                        service.actual_end_at,
+                                                        service.timezone,
                                                     )}
                                                 </span>
                                             )}

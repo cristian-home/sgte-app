@@ -26,7 +26,7 @@ class VehicleLocationController extends Controller
         $locations = QueryBuilder::for(VehicleLocation::class)
             ->with([
                 'vehicle:id,plate',
-                'service:id,service_date',
+                'service:id,service_date_local,planned_start_at,timezone',
                 'capturedBy:id,name',
             ])
             ->allowedFilters([
@@ -99,7 +99,7 @@ class VehicleLocationController extends Controller
 
         $vehicleLocation->load([
             'vehicle:id,plate,brand,line',
-            'service:id,service_date,vehicle_id',
+            'service:id,service_date_local,planned_start_at,timezone,vehicle_id',
             'capturedBy:id,name,email',
         ]);
 

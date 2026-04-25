@@ -7,6 +7,7 @@ use App\Enums\ServiceStatus;
 use App\Models\DayStatus;
 use App\Models\Service;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -22,9 +23,10 @@ class DaySummaryController extends Controller
             'date' => ['sometimes', 'date_format:Y-m-d'],
         ]);
 
-        $date = $request->query('date', now()->format('Y-m-d'));
+        $operationTz = (string) config('app.operation_tz', 'America/Bogota');
+        $date = $request->query('date', Carbon::now($operationTz)->toDateString());
 
-        $services = Service::whereDate('service_date', $date)
+        $services = Service::whereDate('service_date_local', $date)
             ->whereNull('deleted_at')
             ->with([
                 'vehicle:id,plate,is_third_party,third_party_id',
@@ -34,7 +36,7 @@ class DaySummaryController extends Controller
                 'contract.thirdParty:id,company_name,first_name,first_lastname,is_natural_person',
             ])
             ->withCount('serviceIncidents')
-            ->orderBy('planned_start_time')
+            ->orderBy('planned_start_at')
             ->get();
 
         $dayStatus = DayStatus::whereDate('date', $date)->with('executor:id,name')->first();
@@ -69,7 +71,7 @@ class DaySummaryController extends Controller
 
         $date = $request->query('date');
 
-        $services = Service::whereDate('service_date', $date)
+        $services = Service::whereDate('service_date_local', $date)
             ->whereNull('deleted_at')
             ->with([
                 'vehicle:id,plate,is_third_party,third_party_id',
@@ -79,7 +81,7 @@ class DaySummaryController extends Controller
                 'contract.thirdParty:id,company_name,first_name,first_lastname,is_natural_person',
             ])
             ->withCount('serviceIncidents')
-            ->orderBy('planned_start_time')
+            ->orderBy('planned_start_at')
             ->get();
 
         return response()->streamDownload(function () use ($services) {
@@ -97,8 +99,8 @@ class DaySummaryController extends Controller
                 fputcsv($handle, [
                     $service->vehicle?->plate ?? '',
                     $driverOrProvider ?? '',
-                    $service->planned_start_time,
-                    $service->actual_end_time ?? '',
+                    $service->planned_start_local ?? '',
+                    $service->actual_end_local ?? '',
                     $service->planned_duration,
                     $client ?? '',
                     $service->service_status->value === 'closed' ? 'Cerrado' : 'Abierto',

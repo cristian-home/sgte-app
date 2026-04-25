@@ -1,3 +1,4 @@
+import { usePage } from '@inertiajs/react';
 import { AlertTriangle, Info, Lock, ShieldAlert } from 'lucide-react';
 import { useMemo } from 'react';
 import InputError from '@/components/input-error';
@@ -100,6 +101,83 @@ function computeActualDuration(start: string, end: string): string | null {
     const diff = eh * 60 + em - (sh * 60 + sm);
     if (diff <= 0) return null;
     return `${diff} min`;
+}
+
+/**
+ * Native-Intl projection of a wall-clock day + time-of-day in
+ * `timezone` to a UTC instant ISO string. Returns null when inputs are
+ * incomplete or unparseable.
+ */
+function projectToUtcIso(
+    date: string,
+    time: string,
+    timezone: string,
+): string | null {
+    if (!date || !time) return null;
+    const [y, mo, d] = date.split('-').map(Number);
+    const [h, m] = time.split(':').map(Number);
+    if (!y || !mo || !d || Number.isNaN(h) || Number.isNaN(m)) return null;
+
+    // Compute the offset of the target wall-clock in the target TZ by
+    // formatting an arbitrary UTC instant and reading back the parts.
+    // This avoids pulling in date-fns-tz (per REQ AC-7).
+    const utcGuess = Date.UTC(y, mo - 1, d, h, m);
+    const fmt = new Intl.DateTimeFormat('en-US', {
+        timeZone: timezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hourCycle: 'h23',
+    });
+    const parts = fmt.formatToParts(new Date(utcGuess));
+    const map: Record<string, string> = {};
+    for (const p of parts) map[p.type] = p.value;
+    const projected = Date.UTC(
+        Number(map.year),
+        Number(map.month) - 1,
+        Number(map.day),
+        Number(map.hour),
+        Number(map.minute),
+    );
+    const offset = projected - utcGuess;
+    const realUtc = utcGuess - offset;
+    return new Date(realUtc).toISOString();
+}
+
+/**
+ * Read-only confirmation rendered next to the planned-start-time
+ * picker so operators can see exactly what's about to be persisted
+ * before submitting. Sourced from the contract's TZ when available,
+ * else config('app.operation_tz') via Inertia shared props.
+ */
+function ScheduleTimezoneHint({
+    date,
+    time,
+    timezone,
+}: {
+    date: string;
+    time: string;
+    timezone: string;
+}) {
+    if (!date || !time) {
+        return (
+            <p className="text-xs text-muted-foreground">
+                Zona horaria del servicio: <strong>{timezone}</strong>.
+            </p>
+        );
+    }
+    const utcIso = projectToUtcIso(date, time, timezone);
+    return (
+        <p className="text-xs text-muted-foreground">
+            Se guardará como{' '}
+            <strong>
+                {date} {time} {timezone}
+            </strong>
+            {utcIso ? <> → {utcIso}</> : null}.
+        </p>
+    );
 }
 
 interface ServiceFormProps {
@@ -212,6 +290,20 @@ export default function ServiceForm({
             ? `Contrato ${selectedContract.contract_number} factura por ${selectedContract.billing_unit_type}.`
             : `Contrato ${selectedContract.contract_number} no tiene unidad de facturación definida.`
         : 'Seleccione un contrato para conocer la unidad de cobro.';
+
+    // Resolve the service's IANA timezone for the schedule confirmation
+    // hint near the time picker. Source priority matches the backend's
+    // ServiceStoreRequest::resolveServiceTimezone — selected contract
+    // first (when contract carries a TZ column), else the
+    // operator-default operation_tz from the Inertia shared props.
+    const sharedConfig = usePage().props.config as
+        | { operation_tz?: string }
+        | undefined;
+    const operationTz = sharedConfig?.operation_tz ?? 'America/Bogota';
+    const contractTimezone =
+        (selectedContract as ContractOption & { timezone?: string | null })
+            ?.timezone ?? null;
+    const resolvedTimezone = contractTimezone ?? operationTz;
 
     // REQ-009 retroactive-entry gate. Backend rejects service_date >=
     // today + closed; allows service_date < today + closed but only
@@ -587,6 +679,11 @@ export default function ServiceForm({
                         }
                     />
                     <InputError message={errors.planned_start_time} />
+                    <ScheduleTimezoneHint
+                        date={data.service_date}
+                        time={data.planned_start_time}
+                        timezone={resolvedTimezone}
+                    />
                 </div>
                 <div
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"

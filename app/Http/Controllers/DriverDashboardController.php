@@ -30,6 +30,8 @@ class DriverDashboardController extends Controller
         Gate::authorize(Permission::REGISTER_SERVICE_TIMES->value);
 
         $driver = $request->user()->driver;
+        $operationTz = (string) config('app.operation_tz', 'America/Bogota');
+        $today = Carbon::now($operationTz)->toDateString();
 
         $services = $driver
             ? Service::with([
@@ -42,8 +44,8 @@ class DriverDashboardController extends Controller
             ])
                 ->withCount('serviceIncidents')
                 ->where('driver_id', $driver->id)
-                ->whereDate('service_date', today())
-                ->orderBy('planned_start_time')
+                ->whereDate('service_date_local', $today)
+                ->orderBy('planned_start_at')
                 ->get()
             : collect();
 
@@ -63,7 +65,7 @@ class DriverDashboardController extends Controller
         $this->assertDocumentsStillValid($service);
 
         $service->update([
-            'actual_start_time' => now()->format('H:i:s'),
+            'actual_start_at' => now(),
         ]);
 
         $this->persistLocationIfProvided($service, $request);
@@ -73,17 +75,18 @@ class DriverDashboardController extends Controller
 
     /**
      * REQ-004 / REQ-005 execution-time re-check. Documents are validated
-     * against service.service_date (NOT today) — a service scheduled days
-     * ago might have been created while papers were valid, but the driver
-     * must still have valid paperwork as-of the service date at the
-     * moment they start. 422s with the first reason so the driver sees
-     * a clear, actionable message.
+     * against service.service_date_local (NOT today) — a service scheduled
+     * days ago might have been created while papers were valid, but the
+     * driver must still have valid paperwork as-of the service date at
+     * the moment they start. 422s with the first reason so the driver
+     * sees a clear, actionable message.
      */
     protected function assertDocumentsStillValid(Service $service): void
     {
-        $serviceDate = $service->service_date instanceof Carbon
-            ? $service->service_date
-            : Carbon::parse((string) $service->service_date);
+        $operationTz = $service->timezone ?: (string) config('app.operation_tz', 'America/Bogota');
+        $serviceDate = $service->service_date_local instanceof \DateTimeInterface
+            ? Carbon::parse($service->service_date_local->format('Y-m-d'), $operationTz)
+            : Carbon::parse((string) $service->service_date_local, $operationTz);
 
         $vehicle = $service->vehicle;
         $driver = $service->driver;
@@ -110,7 +113,7 @@ class DriverDashboardController extends Controller
         abort_unless($driver && $service->driver_id === $driver->id, 403);
 
         $service->update([
-            'actual_end_time' => now()->format('H:i:s'),
+            'actual_end_at' => now(),
         ]);
 
         $this->persistLocationIfProvided($service, $request);
@@ -130,7 +133,7 @@ class DriverDashboardController extends Controller
     {
         $driver = $request->user()->driver;
         abort_unless($driver && $service->driver_id === $driver->id, 403);
-        abort_if($service->actual_start_time !== null, 422, 'El servicio ya tiene una hora de inicio registrada.');
+        abort_if($service->actual_start_at !== null, 422, 'El servicio ya tiene una hora de inicio registrada.');
         abort_if($service->driver_declined_at !== null, 422, 'Este servicio ya fue declinado.');
 
         $reason = trim((string) $request->input('reason_text'));

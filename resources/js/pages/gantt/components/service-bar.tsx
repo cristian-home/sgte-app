@@ -4,6 +4,7 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { formatEventTime } from '@/lib/datetime';
 import { cn } from '@/lib/utils';
 import type { Service } from '@/types/models';
 
@@ -29,9 +30,8 @@ function getDriverName(service: Service): string {
         .join(' ');
 }
 
-function formatTime(time: string | null): string {
-    if (!time) return '--:--';
-    return time.slice(0, 5);
+function formatServiceTime(at: string | null, timezone: string): string {
+    return formatEventTime(at, timezone) || '--:--';
 }
 
 export default function ServiceBar({
@@ -95,14 +95,21 @@ export default function ServiceBar({
                         <p>Conductor: {getDriverName(service)}</p>
                         <p>
                             Planificado:{' '}
-                            {formatTime(service.planned_start_time)} (
-                            {service.planned_duration} min)
+                            {formatServiceTime(
+                                service.planned_start_at,
+                                service.timezone,
+                            )}{' '}
+                            ({service.planned_duration} min)
                         </p>
-                        {service.actual_start_time && (
+                        {service.actual_start_at && (
                             <p>
-                                Real: {formatTime(service.actual_start_time)}
-                                {service.actual_end_time
-                                    ? ` - ${formatTime(service.actual_end_time)}`
+                                Real:{' '}
+                                {formatServiceTime(
+                                    service.actual_start_at,
+                                    service.timezone,
+                                )}
+                                {service.actual_end_at
+                                    ? ` - ${formatServiceTime(service.actual_end_at, service.timezone)}`
                                     : ''}
                             </p>
                         )}

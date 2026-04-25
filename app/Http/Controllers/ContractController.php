@@ -72,8 +72,8 @@ class ContractController extends Controller
      */
     private function applyContractStatusFilter(Builder $query, string $value): void
     {
-        $today = Carbon::today()->toDateString();
-        $threshold = Carbon::today()->addDays(self::CONTRACT_EXPIRY_WINDOW_DAYS)->toDateString();
+        $today = Carbon::now((string) config('app.operation_tz'))->toDateString();
+        $threshold = Carbon::now((string) config('app.operation_tz'))->addDays(self::CONTRACT_EXPIRY_WINDOW_DAYS)->toDateString();
 
         $normalized = match ($value) {
             'expiring_soon' => 'por_vencer',
@@ -170,10 +170,10 @@ class ContractController extends Controller
                 'vehicle:id,plate',
                 'driver:id,first_name,first_lastname',
             ])
-            ->orderByDesc('service_date')
-            ->orderByDesc('planned_start_time')
+            ->orderByDesc('service_date_local')
+            ->orderByDesc('planned_start_at')
             ->limit(5)
-            ->get(['id', 'service_date', 'service_status', 'vehicle_id', 'driver_id', 'contract_id', 'planned_start_time']);
+            ->get(['id', 'service_date_local', 'planned_start_at', 'timezone', 'service_status', 'vehicle_id', 'driver_id', 'contract_id']);
 
         return Inertia::render('contracts/show', [
             'contract' => $contract,

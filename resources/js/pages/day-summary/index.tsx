@@ -324,10 +324,7 @@ export default function DaySummaryIndex({
                                                 )}
                                             </div>
                                             <span className="text-xs text-muted-foreground">
-                                                {s.planned_start_time?.substring(
-                                                    0,
-                                                    5,
-                                                )}
+                                                {s.planned_start_local}
                                             </span>
                                         </li>
                                     ))}

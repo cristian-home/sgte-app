@@ -118,12 +118,12 @@ class InvoiceController extends Controller
                 'driver:id,first_name,first_lastname',
                 'contract:id,contract_number',
             ])
-            ->orderByDesc('service_date')
-            ->orderByDesc('planned_start_time')
+            ->orderByDesc('service_date_local')
+            ->orderByDesc('planned_start_at')
             ->limit(5)
             ->get([
                 'id',
-                'service_date',
+                'service_date_local',
                 'service_status',
                 'vehicle_id',
                 'driver_id',
@@ -131,7 +131,8 @@ class InvoiceController extends Controller
                 'invoice_id',
                 'unit_value',
                 'quantity',
-                'planned_start_time',
+                'planned_start_at',
+                'timezone',
             ]);
 
         $candidates = $this->candidateServices($invoice);
@@ -338,7 +339,7 @@ class InvoiceController extends Controller
         $invoice = $invoice->fresh()->load([
             'thirdParty.documentType',
             'thirdParty.municipality.department',
-            'services' => fn ($q) => $q->orderBy('service_date'),
+            'services' => fn ($q) => $q->orderBy('service_date_local'),
             'services.vehicle:id,plate',
             'services.contract:id,contract_number',
             'services.serviceIncidents' => fn ($q) => $q->where('affects_billing', true),
@@ -406,12 +407,12 @@ class InvoiceController extends Controller
 
     private function candidateServices(Invoice $invoice): \Illuminate\Database\Eloquent\Collection
     {
-        $cutoff = Carbon::today()->subDays(90);
+        $cutoff = Carbon::now((string) config('app.operation_tz'))->subDays(90)->toDateString();
 
         return Service::query()
             ->whereNull('invoice_id')
             ->where('service_status', ServiceStatus::Closed->value)
-            ->whereDate('service_date', '>=', $cutoff)
+            ->whereDate('service_date_local', '>=', $cutoff)
             ->whereHas('contract', fn ($q) => $q->where('third_party_id', $invoice->third_party_id))
             ->with([
                 'vehicle:id,plate',
@@ -419,11 +420,13 @@ class InvoiceController extends Controller
                 'contract:id,contract_number',
                 'serviceIncidents:id,service_id,affects_billing,additional_value',
             ])
-            ->orderByDesc('service_date')
+            ->orderByDesc('service_date_local')
             ->orderByDesc('id')
             ->get([
                 'id',
-                'service_date',
+                'service_date_local',
+                'planned_start_at',
+                'timezone',
                 'vehicle_id',
                 'driver_id',
                 'contract_id',

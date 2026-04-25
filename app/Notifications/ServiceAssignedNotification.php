@@ -28,7 +28,7 @@ class ServiceAssignedNotification extends Notification implements ShouldQueue
     {
         $vehicle = $this->service->vehicle;
         $date = $this->service->service_date;
-        $time = substr($this->service->planned_start_time ?? '', 0, 5);
+        $time = $this->service->planned_start_local ?? '';
 
         return (new MailMessage)
             ->subject('Servicio Asignado - '.$date)

@@ -166,8 +166,9 @@ export default function HourlyGrid({
                             {/* Service bars */}
                             {services.map((service) => {
                                 const pos = serviceBarPosition(
-                                    service.planned_start_time,
+                                    service.planned_start_at,
                                     service.planned_duration,
+                                    service.timezone,
                                 );
                                 if (!pos) return null;
                                 return (

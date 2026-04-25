@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Permission } from '@/enums/Permission';
 import AppLayout from '@/layouts/app-layout';
+import { formatTimestampInViewerTz } from '@/lib/datetime';
 
 import type { BreadcrumbItem } from '@/types';
 
@@ -29,14 +30,6 @@ interface Location {
     captured_by_user?: { id: number; name: string; email: string } | null;
 }
 
-const dateTimeFormatter = new Intl.DateTimeFormat('es-CO', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-});
-
 export default function VehicleLocationShow({
     vehicleLocation,
 }: {
@@ -51,9 +44,8 @@ export default function VehicleLocationShow({
         },
     ];
 
-    const recordedAt = vehicleLocation.recorded_at
-        ? dateTimeFormatter.format(new Date(vehicleLocation.recorded_at))
-        : '—';
+    const recordedAt =
+        formatTimestampInViewerTz(vehicleLocation.recorded_at) || '—';
 
     function handleDelete() {
         if (confirm('¿Eliminar esta ubicación? Esta acción es auditable.')) {

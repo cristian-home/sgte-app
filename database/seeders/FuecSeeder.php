@@ -78,7 +78,7 @@ class FuecSeeder extends Seeder
                     'service_id' => $service->id,
                     'fuec_number_range_id' => $range->id,
                     'consecutive_number' => $range->range_from + $index,
-                    'generated_at' => $service->service_date->format('Y-m-d').' 18:00:00',
+                    'generated_at' => $service->planned_start_at,
                     'qr_code' => (string) Str::uuid(),
                     'status' => 'active',
                     'pdf_path' => null,

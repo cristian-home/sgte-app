@@ -3,6 +3,7 @@ import { Eye } from 'lucide-react';
 import { DataTableColumnHeader } from '@/components/data-table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { formatTimestampInViewerTz } from '@/lib/datetime';
 import {
     subjectTypeLabel,
     SUBJECT_TYPE_LINK_MAP,
@@ -23,17 +24,8 @@ export interface AuditLogTableMeta {
     onSelect: (activity: ActivityRow) => void;
 }
 
-const dateTimeFormatter = new Intl.DateTimeFormat('es-CO', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-});
-
 function formatTimestamp(iso: string | null): string {
-    if (!iso) return '—';
-    return dateTimeFormatter.format(new Date(iso));
+    return formatTimestampInViewerTz(iso) || '—';
 }
 
 function isReservedPropertyKey(key: string): boolean {
