@@ -50,7 +50,7 @@ Web-based system for the operational management of special transport in Colombia
 | **Day Status**           | Accounting condition: "Proyectado" or "Ejecutado"                                                               |
 | **Invoice**              | Accounting document that records the charge for a service provided                                              |
 | **Notification**         | Automatic message sent by email to users based on system events                                                 |
-| **COD**                  | Internal vehicle code combined between the table and the cost center                                            |
+| **COD**                  | Internal vehicle code (`internal_code`) used alongside the plate to identify a vehicle in operations            |
 | **TERCERO**              | Unified entity representing natural or legal persons (clients, providers, except drivers)                       |
 | **PROVEEDOR**            | Third party that provides outsourced vehicles for the operation                                                 |
 | **NOVEDAD**              | Incident or event recorded during the execution of a service that may affect invoicing                          |
@@ -88,7 +88,7 @@ state GanttDiario {
   FormularioServicio --> GestionNovedades : Registrar novedad
 }
 
-state Administracion {
+state Gestion {
   [*] --> GestionFlota
   GestionFlota --> DetalleVehiculo
   [*] --> GestionConductores
@@ -97,13 +97,38 @@ state Administracion {
   GestionContratos --> DetalleContrato
   [*] --> GestionTerceros
   GestionTerceros --> DetalleTercero
-  [*] --> GestionFacturacion
-  [*] --> GestionNovedades
+}
+
+state Catalogos {
+  [*] --> TiposDocumento
+  [*] --> Eps
+  [*] --> FondosPension
+  [*] --> FondosCesantias
+  [*] --> TiposNovedad
+}
+
+state Facturacion {
+  [*] --> ListadoFacturas
+  ListadoFacturas --> DetalleFactura
+}
+
+state Administracion {
+  [*] --> GestionUsuarios
+  GestionUsuarios --> DetalleUsuario
+  [*] --> AuditLog
+}
+
+state Opcionales {
+  [*] --> GenerarFUEC
+  [*] --> GPS
 }
 
 DashboardGeneral --> Produccion : Menú lateral
-DashboardGeneral --> Administracion : Menú lateral
-DashboardGeneral --> GenerarFUEC : Generar FUEC (Opcional)
+DashboardGeneral --> Gestion : Menú lateral
+DashboardGeneral --> Catalogos : Menú lateral
+DashboardGeneral --> Facturacion : Menú lateral
+DashboardGeneral --> Administracion : Menú lateral (admin only)
+DashboardGeneral --> Opcionales : FUEC + GPS (admin only)
 DashboardGeneral --> Settings : Menú usuario
 
 state Settings {
