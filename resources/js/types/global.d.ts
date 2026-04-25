@@ -6,6 +6,9 @@ declare module '@inertiajs/core' {
             name: string;
             auth: Auth;
             sidebarOpen: boolean;
+            config: {
+                operation_tz: string;
+            };
             [key: string]: unknown;
         };
     }
