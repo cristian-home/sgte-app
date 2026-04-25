@@ -69,8 +69,8 @@ test('Open → Open transition does not touch actual_*_time fields', function ()
 
     $service->refresh();
     expect($service->service_status->value)->toBe('open')
-        ->and($service->actual_start_time)->toBeNull()
-        ->and($service->actual_end_time)->toBeNull();
+        ->and($service->actual_start_at)->toBeNull()
+        ->and($service->actual_end_at)->toBeNull();
 
     $transitionActivity = Activity::query()
         ->where('subject_type', Service::class)
@@ -105,8 +105,8 @@ test('Open → Closed transition requires both actual_*_time fields and persists
 
     $service->refresh();
     expect($service->service_status->value)->toBe('closed')
-        ->and((string) $service->actual_start_time)->toContain('08:00')
-        ->and((string) $service->actual_end_time)->toContain('09:30');
+        ->and((string) $service->actual_start_local)->toContain('08:00')
+        ->and((string) $service->actual_end_local)->toContain('09:30');
 
     $transitionActivity = Activity::query()
         ->where('subject_type', Service::class)
@@ -116,8 +116,8 @@ test('Open → Closed transition requires both actual_*_time fields and persists
     expect($transitionActivity)->not->toBeNull()
         ->and($transitionActivity->properties['status_from'])->toBe('open')
         ->and($transitionActivity->properties['status_to'])->toBe('closed')
-        ->and($transitionActivity->properties['set_fields'])->toContain('actual_start_time')
-        ->and($transitionActivity->properties['set_fields'])->toContain('actual_end_time')
+        ->and($transitionActivity->properties['set_fields'])->toContain('actual_start_at')
+        ->and($transitionActivity->properties['set_fields'])->toContain('actual_end_at')
         ->and($transitionActivity->properties['cleared_fields'])->toBe([]);
 });
 
@@ -142,8 +142,8 @@ test('Closed → Open transition clears actual_end_time but preserves actual_sta
 
     $service->refresh();
     expect($service->service_status->value)->toBe('open')
-        ->and((string) $service->actual_start_time)->toContain('08:00')
-        ->and($service->actual_end_time)->toBeNull();
+        ->and((string) $service->actual_start_local)->toContain('08:00')
+        ->and($service->actual_end_at)->toBeNull();
 
     $transitionActivity = Activity::query()
         ->where('subject_type', Service::class)
@@ -153,8 +153,8 @@ test('Closed → Open transition clears actual_end_time but preserves actual_sta
     expect($transitionActivity)->not->toBeNull()
         ->and($transitionActivity->properties['status_from'])->toBe('closed')
         ->and($transitionActivity->properties['status_to'])->toBe('open')
-        ->and($transitionActivity->properties['cleared_fields'])->toContain('actual_end_time')
-        ->and($transitionActivity->properties['cleared_fields'])->not->toContain('actual_start_time')
+        ->and($transitionActivity->properties['cleared_fields'])->toContain('actual_end_at')
+        ->and($transitionActivity->properties['cleared_fields'])->not->toContain('actual_start_at')
         ->and($transitionActivity->properties['set_fields'])->toBe([]);
 });
 
@@ -177,8 +177,8 @@ test('Closed → Closed transition leaves actual_*_time fields untouched', funct
 
     $service->refresh();
     expect($service->service_status->value)->toBe('closed')
-        ->and((string) $service->actual_start_time)->toContain('08:00')
-        ->and((string) $service->actual_end_time)->toContain('09:30');
+        ->and((string) $service->actual_start_local)->toContain('08:00')
+        ->and((string) $service->actual_end_local)->toContain('09:30');
 
     $transitionActivity = Activity::query()
         ->where('subject_type', Service::class)
