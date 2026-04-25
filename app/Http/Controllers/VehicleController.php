@@ -92,8 +92,8 @@ class VehicleController extends Controller
      */
     private function applyDocsStatusFilter(Builder $query, string $value): void
     {
-        $today = Carbon::today()->toDateString();
-        $threshold = Carbon::today()->addDays(self::DOCS_EXPIRY_WINDOW_DAYS)->toDateString();
+        $today = Carbon::now((string) config('app.operation_tz'))->toDateString();
+        $threshold = Carbon::now((string) config('app.operation_tz'))->addDays(self::DOCS_EXPIRY_WINDOW_DAYS)->toDateString();
 
         match ($value) {
             'expired' => $query->where(function (Builder $q) use ($today): void {
@@ -141,7 +141,7 @@ class VehicleController extends Controller
             return;
         }
 
-        $today = Carbon::today()->toDateString();
+        $today = Carbon::now((string) config('app.operation_tz'))->toDateString();
 
         $query->where(function (Builder $q) use ($column, $today): void {
             $q->whereNull($column)->orWhereDate($column, '<', $today);
@@ -189,8 +189,8 @@ class VehicleController extends Controller
                 'contract:id,contract_number,third_party_id',
                 'contract.thirdParty:id,company_name,first_name,first_lastname,is_natural_person',
             ])
-            ->orderByDesc('service_date')
-            ->orderByDesc('planned_start_time')
+            ->orderByDesc('service_date_local')
+            ->orderByDesc('planned_start_at')
             ->limit(5)
             ->get();
 

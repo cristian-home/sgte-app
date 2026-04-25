@@ -88,8 +88,8 @@ class DriverController extends Controller
      */
     private function applyLicenseStatusFilter(Builder $query, string $value): void
     {
-        $today = Carbon::today()->toDateString();
-        $threshold = Carbon::today()->addDays(self::LICENSE_EXPIRY_WINDOW_DAYS)->toDateString();
+        $today = Carbon::now((string) config('app.operation_tz'))->toDateString();
+        $threshold = Carbon::now((string) config('app.operation_tz'))->addDays(self::LICENSE_EXPIRY_WINDOW_DAYS)->toDateString();
 
         match ($value) {
             'expired' => $query->where(function (Builder $q) use ($today): void {
@@ -162,8 +162,8 @@ class DriverController extends Controller
                 'contract:id,contract_number,third_party_id',
                 'contract.thirdParty:id,company_name,first_name,first_lastname,is_natural_person',
             ])
-            ->orderByDesc('service_date')
-            ->orderByDesc('planned_start_time')
+            ->orderByDesc('service_date_local')
+            ->orderByDesc('planned_start_at')
             ->limit(5)
             ->get();
 

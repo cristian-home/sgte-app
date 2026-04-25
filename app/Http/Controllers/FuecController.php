@@ -31,7 +31,7 @@ class FuecController extends Controller
 
         $fuecs = QueryBuilder::for(Fuec::class)
             ->with([
-                'service:id,service_date,vehicle_id,driver_id,contract_id,planned_start_time',
+                'service:id,service_date_local,planned_start_at,timezone,vehicle_id,driver_id,contract_id',
                 'service.vehicle:id,plate',
                 'service.driver:id,first_name,first_lastname',
                 'service.contract:id,contract_number',
@@ -90,9 +90,9 @@ class FuecController extends Controller
                         });
                 });
             })
-            ->orderByDesc('service_date')
+            ->orderByDesc('service_date_local')
             ->limit(50)
-            ->get(['id', 'service_date', 'vehicle_id', 'driver_id', 'contract_id', 'planned_start_time']);
+            ->get(['id', 'service_date_local', 'planned_start_at', 'timezone', 'vehicle_id', 'driver_id', 'contract_id']);
 
         return response()->json($candidates);
     }
@@ -121,7 +121,7 @@ class FuecController extends Controller
         Gate::authorize(Permission::VIEW_FUEC->value);
 
         $fuec->load([
-            'service:id,service_date,vehicle_id,driver_id,contract_id,planned_start_time,planned_duration,origin_municipality_id,destination_municipality_id,origin_address,destination_address',
+            'service:id,service_date_local,planned_start_at,timezone,vehicle_id,driver_id,contract_id,planned_duration,origin_municipality_id,destination_municipality_id,origin_address,destination_address',
             'service.vehicle:id,plate,brand,line,model_year',
             'service.driver:id,first_name,first_lastname,identification_number',
             'service.contract:id,contract_number,third_party_id',

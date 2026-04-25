@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -36,7 +37,7 @@ class ServiceController extends Controller
             ->allowedIncludes(['invoice'])
             ->allowedFilters([
                 AllowedFilter::callback('search', fn (Builder $query, $value) => $query->searchWithRelevance($value)),
-                AllowedFilter::exact('service_date'),
+                AllowedFilter::callback('service_date', fn (Builder $query, $value) => $query->whereDate('service_date_local', $value)),
                 AllowedFilter::exact('origin_municipality_id'),
                 AllowedFilter::exact('destination_municipality_id'),
                 AllowedFilter::exact('service_status'),
@@ -44,10 +45,10 @@ class ServiceController extends Controller
                 AllowedFilter::exact('contract_id'),
                 AllowedFilter::exact('driver_id'),
                 AllowedFilter::exact('vehicle_id'),
-                AllowedFilter::callback('date_from', fn (Builder $query, $value) => $query->whereDate('service_date', '>=', $value)),
-                AllowedFilter::callback('date_to', fn (Builder $query, $value) => $query->whereDate('service_date', '<=', $value)),
+                AllowedFilter::callback('date_from', fn (Builder $query, $value) => $query->whereDate('service_date_local', '>=', $value)),
+                AllowedFilter::callback('date_to', fn (Builder $query, $value) => $query->whereDate('service_date_local', '<=', $value)),
             ])
-            ->allowedSorts(['service_date', 'unit_value', 'service_status'])
+            ->allowedSorts(['service_date_local', 'unit_value', 'service_status'])
             ->paginate($request->perPage())
             ->withQueryString();
 
@@ -122,9 +123,10 @@ class ServiceController extends Controller
                 ->withProperties([
                     'source' => 'retroactive_entry',
                     'manual_entry_justification' => $justification,
-                    'service_date' => $service->service_date instanceof \Carbon\CarbonInterface
-                        ? $service->service_date->toDateString()
-                        : (string) $service->service_date,
+                    'service_date_local' => $service->service_date_local instanceof \DateTimeInterface
+                        ? $service->service_date_local->format('Y-m-d')
+                        : (string) $service->service_date_local,
+                    'timezone' => (string) $service->timezone,
                 ])
                 ->log('Registro retroactivo de servicio cerrado');
         }
@@ -156,7 +158,7 @@ class ServiceController extends Controller
         ]);
         $service->loadCount('serviceIncidents');
 
-        $dayStatus = DayStatus::with('executor')->whereDate('date', $service->service_date)->first();
+        $dayStatus = DayStatus::with('executor')->whereDate('date', $service->service_date_local)->first();
 
         // Dedicated payload for the Novedades card — limits to the last
         // 5 incidents and pins the ordering. The full serviceIncidents
@@ -202,7 +204,7 @@ class ServiceController extends Controller
         ]);
         $service->loadCount('serviceIncidents');
 
-        $dayStatus = DayStatus::whereDate('date', $service->service_date)->first();
+        $dayStatus = DayStatus::whereDate('date', $service->service_date_local)->first();
 
         return Inertia::render('services/edit', [
             'service' => $service,
@@ -229,8 +231,8 @@ class ServiceController extends Controller
         $statusBefore = $service->service_status instanceof \App\Enums\ServiceStatus
             ? $service->service_status->value
             : (string) $service->service_status;
-        $actualStartBefore = $service->actual_start_time;
-        $actualEndBefore = $service->actual_end_time;
+        $actualStartBefore = $service->actual_start_at;
+        $actualEndBefore = $service->actual_end_at;
 
         $service->update($validated);
         $service->refresh();
@@ -243,17 +245,17 @@ class ServiceController extends Controller
             $clearedFields = [];
             $setFields = [];
 
-            if ($actualStartBefore !== null && $service->actual_start_time === null) {
-                $clearedFields[] = 'actual_start_time';
+            if ($actualStartBefore !== null && $service->actual_start_at === null) {
+                $clearedFields[] = 'actual_start_at';
             }
-            if ($actualEndBefore !== null && $service->actual_end_time === null) {
-                $clearedFields[] = 'actual_end_time';
+            if ($actualEndBefore !== null && $service->actual_end_at === null) {
+                $clearedFields[] = 'actual_end_at';
             }
-            if ($actualStartBefore === null && $service->actual_start_time !== null) {
-                $setFields[] = 'actual_start_time';
+            if ($actualStartBefore === null && $service->actual_start_at !== null) {
+                $setFields[] = 'actual_start_at';
             }
-            if ($actualEndBefore === null && $service->actual_end_time !== null) {
-                $setFields[] = 'actual_end_time';
+            if ($actualEndBefore === null && $service->actual_end_at !== null) {
+                $setFields[] = 'actual_end_at';
             }
 
             activity()
@@ -268,7 +270,7 @@ class ServiceController extends Controller
                 ->log('Servicio cambió de estado');
         }
 
-        $dayStatus = DayStatus::whereDate('date', $service->service_date)->first();
+        $dayStatus = DayStatus::whereDate('date', $service->service_date_local)->first();
 
         if ($dayStatus?->status === DayStatusEnum::Executed && $justification) {
             activity()
@@ -288,7 +290,7 @@ class ServiceController extends Controller
     {
         Gate::authorize(Permission::DELETE_SERVICES->value);
 
-        $dayStatus = DayStatus::whereDate('date', $service->service_date)->first();
+        $dayStatus = DayStatus::whereDate('date', $service->service_date_local)->first();
 
         if ($dayStatus?->status === DayStatusEnum::Executed) {
             if (! auth()->user()->hasAnyRole([Role::ADMIN, Role::SUPER_ADMIN])) {
@@ -312,7 +314,7 @@ class ServiceController extends Controller
                 ->with('thirdParty:id,identification_number,first_name,first_lastname,company_name,is_natural_person')
                 ->get(['id', 'plate', 'is_third_party', 'third_party_id']),
             'drivers' => Driver::query()
-                ->where('license_due_date', '>=', now()->toDateString())
+                ->where('license_due_date', '>=', Carbon::now((string) config('app.operation_tz'))->toDateString())
                 ->get(['id', 'first_name', 'first_lastname', 'identification_number', 'license_due_date', 'eps_id', 'pension_fund_id']),
             'contracts' => Contract::query()
                 ->where('active', true)

@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Notifications\DayExecutedNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Notification;
 use Inertia\Inertia;
@@ -23,7 +24,9 @@ class DayStatusController extends Controller
 {
     public function index(): RedirectResponse
     {
-        return redirect()->route('day-statuses.calendar', ['year' => now()->year]);
+        $operationTz = (string) config('app.operation_tz', 'America/Bogota');
+
+        return redirect()->route('day-statuses.calendar', ['year' => Carbon::now($operationTz)->year]);
     }
 
     public function calendar(int $year): Response
@@ -50,8 +53,8 @@ class DayStatusController extends Controller
             $selectedDate = sprintf('%d-%02d-%02d', $year, $month, (int) $selectedDay);
             $dayServices = Service::query()
                 ->with(['contract:id,contract_number', 'vehicle:id,plate', 'driver:id,first_name,first_lastname'])
-                ->whereDate('service_date', $selectedDate)
-                ->orderBy('planned_start_time')
+                ->whereDate('service_date_local', $selectedDate)
+                ->orderBy('planned_start_at')
                 ->get();
         }
 
@@ -71,12 +74,12 @@ class DayStatusController extends Controller
             ->keyBy(fn (DayStatus $ds): string => $ds->date->format('Y-m-d'));
 
         $serviceCounts = Service::query()
-            ->selectRaw("service_date, count(*) as total, sum(case when service_status = 'open' then 1 else 0 end) as open_count")
-            ->whereYear('service_date', $year)
+            ->selectRaw("service_date_local, count(*) as total, sum(case when service_status = 'open' then 1 else 0 end) as open_count")
+            ->whereYear('service_date_local', $year)
             ->whereNull('deleted_at')
-            ->groupBy('service_date')
+            ->groupBy('service_date_local')
             ->get()
-            ->keyBy(fn ($row): string => $row->service_date instanceof \DateTimeInterface ? $row->service_date->format('Y-m-d') : (string) $row->service_date);
+            ->keyBy(fn ($row): string => $row->service_date_local instanceof \DateTimeInterface ? $row->service_date_local->format('Y-m-d') : (string) $row->service_date_local);
 
         return [
             'dayStatuses' => $dayStatuses,
@@ -132,7 +135,7 @@ class DayStatusController extends Controller
     {
         Gate::authorize(Permission::EXECUTE_DAY->value);
 
-        $services = Service::whereDate('service_date', $dayStatus->date)
+        $services = Service::whereDate('service_date_local', $dayStatus->date)
             ->whereNull('deleted_at')
             ->get();
 

@@ -68,7 +68,7 @@ class FuecPreGenerationChecks
             return;
         }
 
-        $today = Carbon::today();
+        $today = Carbon::now((string) config('app.operation_tz'));
 
         if ($error = ServiceDocumentChecks::contractCoversDate($contract, $today)) {
             $validator->errors()->add('fuec_pre_generation.contract', $error);
