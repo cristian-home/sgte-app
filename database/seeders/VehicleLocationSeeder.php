@@ -7,6 +7,7 @@ use App\Models\Service;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Models\VehicleLocation;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 
@@ -42,10 +43,11 @@ class VehicleLocationSeeder extends Seeder
         $admin = User::query()->where('email', 'admin@sgte.app')->first();
 
         // 1. Ensure there are 4 open services for today the map can plot.
-        $today = Carbon::today()->toDateString();
+        $tz = (string) config('app.operation_tz', 'America/Bogota');
+        $today = Carbon::now($tz)->toDateString();
         $services = Service::query()
             ->where('service_status', ServiceStatus::Open)
-            ->whereDate('service_date', $today)
+            ->whereDate('service_date_local', $today)
             ->get();
 
         if ($services->count() < 4) {
@@ -57,8 +59,15 @@ class VehicleLocationSeeder extends Seeder
                 ->get();
 
             foreach ($promoted as $service) {
+                $newPlannedAt = CarbonImmutable::createFromFormat(
+                    'Y-m-d H:i',
+                    $today.' '.($service->planned_start_local ?? '08:00'),
+                    $service->timezone ?: $tz,
+                )->utc();
+
                 $service->update([
-                    'service_date' => $today,
+                    'service_date_local' => $today,
+                    'planned_start_at' => $newPlannedAt,
                     'service_status' => ServiceStatus::Open,
                 ]);
             }

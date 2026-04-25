@@ -11,6 +11,7 @@ use App\Models\Invoice;
 use App\Models\Municipality;
 use App\Models\Service;
 use App\Models\Vehicle;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
 
 class ServiceSeeder extends Seeder
@@ -145,26 +146,37 @@ class ServiceSeeder extends Seeder
             ],
         ];
 
+        $tz = (string) config('app.operation_tz', 'America/Bogota');
+
         foreach ($services as $s) {
             $contract = $contracts[$s['contract_index'] % $contracts->count()];
             $vehicle = $vehicles[$s['vehicle_index'] % $vehicles->count()];
             $driver = $drivers[$s['driver_index'] % $drivers->count()];
             $invoice = $s['invoice_index'] !== null ? $invoices[$s['invoice_index'] % $invoices->count()] : null;
 
+            $plannedAt = CarbonImmutable::createFromFormat('Y-m-d H:i', "{$s['service_date']} {$s['planned_start_time']}", $tz)->utc();
+            $actualStart = $s['actual_start_time']
+                ? CarbonImmutable::createFromFormat('Y-m-d H:i', "{$s['service_date']} {$s['actual_start_time']}", $tz)->utc()
+                : null;
+            $actualEnd = $s['actual_end_time']
+                ? CarbonImmutable::createFromFormat('Y-m-d H:i', "{$s['service_date']} {$s['actual_end_time']}", $tz)->utc()
+                : null;
+
             Service::create([
                 'contract_id' => $contract->id,
                 'vehicle_id' => $vehicle->id,
                 'driver_id' => $driver->id,
                 'invoice_id' => $invoice?->id,
-                'service_date' => $s['service_date'],
+                'service_date_local' => $s['service_date'],
                 'origin_municipality_id' => $s['origin_municipality_id'],
                 'origin_address' => $s['origin_address'],
                 'destination_municipality_id' => $s['destination_municipality_id'],
                 'destination_address' => $s['destination_address'],
-                'planned_start_time' => $s['planned_start_time'],
+                'planned_start_at' => $plannedAt,
                 'planned_duration' => $s['planned_duration'],
-                'actual_start_time' => $s['actual_start_time'],
-                'actual_end_time' => $s['actual_end_time'],
+                'actual_start_at' => $actualStart,
+                'actual_end_at' => $actualEnd,
+                'timezone' => $tz,
                 'unit_value' => $s['unit_value'],
                 'quantity' => $s['quantity'],
                 'billing_group' => $s['billing_group'],
