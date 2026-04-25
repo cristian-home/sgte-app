@@ -6,7 +6,7 @@
 
 ## Context
 
-SGTE uses `spatie/laravel-permission` with a role+permission model (5 roles, ~49 permissions). Authorization checks happen in **three** places in the codebase, but the pattern was never written down. New contributors repeatedly look for an `app/Policies/` directory (it does not exist) or try to add `authorize()` calls inside controller methods (too late in the request lifecycle for the FormRequest path).
+SGTE uses `spatie/laravel-permission` with a role+permission model (5 roles, 53 permissions as of 2026-04-24). Authorization checks happen in **three** places in the codebase, but the pattern was never written down. New contributors repeatedly look for an `app/Policies/` directory (it does not exist) or try to add `authorize()` calls inside controller methods (too late in the request lifecycle for the FormRequest path).
 
 This ADR documents where authorization lives and why.
 

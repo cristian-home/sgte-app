@@ -48,7 +48,7 @@ The frontend layer is UX only (hiding what doesn't apply). Real authorization st
 
 **Negative:**
 - Requires running `php artisan enum:typescript` manually when PHP enums change.
-- Permissions ship on every Inertia response (minimal weight, ~1–2 KB for the current permission set — 49 cases as of 2026-04).
+- Permissions ship on every Inertia response (minimal weight, ~1–2 KB for the current permission set — 53 cases as of 2026-04-24).
 
 **Key files:**
 - `app/Console/Commands/GenerateTypescriptEnums.php`
