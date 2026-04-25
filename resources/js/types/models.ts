@@ -167,17 +167,26 @@ export type Service = {
     vehicle_id: number;
     driver_id: number | null;
     invoice_id: number | null;
-    service_date: string;
+    /**
+     * Denormalized DATE column (Y-m-d in `timezone`). Source of truth for
+     * day-bucket queries (Gantt, Day Summary, Annual Calendar).
+     */
+    service_date_local: string;
     origin_municipality_id: number | null;
     origin_address: string | null;
     origin_coordinates: string | null;
     destination_municipality_id: number | null;
     destination_address: string | null;
     destination_coordinates: string | null;
-    planned_start_time: string;
+    /** UTC instant (ISO 8601). Render via `lib/datetime.ts` helpers in `timezone`. */
+    planned_start_at: string;
     planned_duration: number;
-    actual_start_time: string | null;
-    actual_end_time: string | null;
+    /** UTC instant (ISO 8601) or null. */
+    actual_start_at: string | null;
+    /** UTC instant (ISO 8601) or null. */
+    actual_end_at: string | null;
+    /** IANA timezone the service is operationally anchored in (e.g. "America/Bogota"). */
+    timezone: string;
     unit_value: string;
     quantity: number;
     billing_group: string | null;
@@ -196,6 +205,16 @@ export type Service = {
     destination_municipality?: Municipality;
     service_incidents_count?: number;
     service_incidents?: ServiceIncident[];
+
+    // Backend accessors appended to the model's array form (read-only on the wire).
+    /** Wall-clock service date (Y-m-d) in `timezone`. */
+    service_date: string;
+    /** Wall-clock planned start time (HH:mm) in `timezone`. */
+    planned_start_local: string;
+    /** Wall-clock actual start time (HH:mm) in `timezone`, null when not started yet. */
+    actual_start_local: string | null;
+    /** Wall-clock actual end time (HH:mm) in `timezone`, null when not finished yet. */
+    actual_end_local: string | null;
 } & Timestamps &
     SoftDeletes;
 
