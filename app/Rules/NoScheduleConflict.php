@@ -29,9 +29,14 @@ class NoScheduleConflict implements ValidationRule
         $startDay = $newStart->copy()->toDateString();
         $endDay = $newEnd->copy()->toDateString();
 
+        $candidateDays = array_unique([$startDay, $endDay]);
         $conflicts = Service::query()
             ->where($this->field, $this->fieldValue)
-            ->whereIn('service_date_local', array_unique([$startDay, $endDay]))
+            ->where(function ($query) use ($candidateDays): void {
+                foreach ($candidateDays as $day) {
+                    $query->orWhereDate('service_date_local', $day);
+                }
+            })
             ->when($this->excludeServiceId, fn ($q) => $q->where('id', '!=', $this->excludeServiceId))
             ->get(['id', 'planned_start_at', 'planned_duration', 'timezone']);
 

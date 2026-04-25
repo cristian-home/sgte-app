@@ -153,5 +153,5 @@ test('accounting user cannot update service_date on executed day', function (): 
     $response->assertRedirect(route('services.index'));
 
     $this->service->refresh();
-    expect($this->service->service_date->toDateString())->toBe($this->serviceDate);
+    expect($this->service->service_date)->toBe($this->serviceDate);
 });
