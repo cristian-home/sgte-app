@@ -5,6 +5,7 @@ import { DataTableColumnHeader } from '@/components/data-table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Permission } from '@/enums/Permission';
+import { formatTimestampInViewerTz } from '@/lib/datetime';
 
 import type { ColumnDef } from '@tanstack/react-table';
 
@@ -25,17 +26,8 @@ export interface VehicleLocationRow {
     // with the default convention; our controller aliases it.
 }
 
-const dateTimeFormatter = new Intl.DateTimeFormat('es-CO', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-});
-
 function formatTimestamp(iso: string | null): string {
-    if (!iso) return '—';
-    return dateTimeFormatter.format(new Date(iso));
+    return formatTimestampInViewerTz(iso) || '—';
 }
 
 type VehicleLocationRowWithCauser = VehicleLocationRow & {

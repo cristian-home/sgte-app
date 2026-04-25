@@ -10,6 +10,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Permission } from '@/enums/Permission';
 import { usePermissions } from '@/hooks/use-permissions';
+import { formatTimestampInViewerTz } from '@/lib/datetime';
 import { dateFormatter, parseDueDate } from '@/lib/document-status';
 import serviceIncidents from '@/routes/service-incidents';
 import services from '@/routes/services';
@@ -45,11 +46,6 @@ export type ServiceIncidentRow = ServiceIncident & {
     registrar?: { id: number; name: string } | null;
 };
 
-const reportedAtFormatter = new Intl.DateTimeFormat('es-CO', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-});
-
 function formatServiceDate(date: string | null | undefined): string {
     const parsed = parseDueDate(date ?? null);
     if (parsed === null) {
@@ -63,13 +59,13 @@ function formatReportedAt(reportedAt: string | null | undefined): string {
     // Incident reported_at is sent as epoch-seconds by the cast.
     const ms = Number(reportedAt) * 1000;
     if (Number.isNaN(ms) || ms <= 0) {
-        const fallback = new Date(reportedAt);
-        if (Number.isNaN(fallback.getTime())) {
-            return '—';
-        }
-        return reportedAtFormatter.format(fallback);
+        return formatTimestampInViewerTz(reportedAt) || '—';
     }
-    return reportedAtFormatter.format(new Date(ms));
+    return (
+        formatTimestampInViewerTz(new Date(ms).toISOString(), {
+            dateStyle: 'medium',
+        }) || '—'
+    );
 }
 
 export const columns: ColumnDef<ServiceIncidentRow, unknown>[] = [

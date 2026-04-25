@@ -6,6 +6,7 @@ import {
 } from '@/components/data-table';
 import { Badge } from '@/components/ui/badge';
 import { Permission } from '@/enums/Permission';
+import { formatEventDate } from '@/lib/datetime';
 import services from '@/routes/services';
 
 import type { ColumnDef } from '@tanstack/react-table';
@@ -30,17 +31,9 @@ function formatCurrency(value: string | number): string {
     }).format(Number(value));
 }
 
-function formatDate(date: string): string {
-    return new Intl.DateTimeFormat('es-CO', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-    }).format(new Date(date));
-}
-
 export const columns: ColumnDef<Service, unknown>[] = [
     {
-        accessorKey: 'service_date',
+        accessorKey: 'service_date_local',
         meta: { label: 'Fecha' },
         header: ({ column }) => (
             <DataTableColumnHeader column={column} title="Fecha" />
@@ -50,7 +43,11 @@ export const columns: ColumnDef<Service, unknown>[] = [
                 href={services.show(row.original.id).url}
                 className="text-primary hover:underline"
             >
-                {formatDate(row.original.service_date)}
+                {formatEventDate(
+                    row.original.planned_start_at,
+                    row.original.timezone,
+                    { dateStyle: 'medium' },
+                )}
             </Link>
         ),
     },

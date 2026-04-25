@@ -8,6 +8,7 @@ import { useEffect, useMemo } from 'react';
 import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
 import { Badge } from '@/components/ui/badge';
 import AppLayout from '@/layouts/app-layout';
+import { formatTimestampInViewerTz } from '@/lib/datetime';
 
 import type { BreadcrumbItem } from '@/types';
 
@@ -31,14 +32,6 @@ const breadcrumbs: BreadcrumbItem[] = [
 const MEDELLIN_CENTER: [number, number] = [6.2518, -75.5636];
 const MEDELLIN_ZOOM = 11;
 const REFRESH_INTERVAL_MS = 30_000;
-
-const dateTimeFormatter = new Intl.DateTimeFormat('es-CO', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-});
 
 interface ActiveService {
     service_id: number;
@@ -139,14 +132,9 @@ export default function GpsMap({
                                         </div>
                                         <div>{service.driver_name ?? '—'}</div>
                                         <div className="text-xs text-muted-foreground">
-                                            {service.location.recorded_at
-                                                ? dateTimeFormatter.format(
-                                                      new Date(
-                                                          service.location
-                                                              .recorded_at,
-                                                      ),
-                                                  )
-                                                : '—'}
+                                            {formatTimestampInViewerTz(
+                                                service.location.recorded_at,
+                                            ) || '—'}
                                         </div>
                                         <div>
                                             {service.location.is_manual ? (

@@ -28,6 +28,7 @@ import { PaymentMethodLabel } from '@/enums/PaymentMethod';
 import { Permission } from '@/enums/Permission';
 import { ServiceStatusLabel } from '@/enums/ServiceStatus';
 import AppLayout from '@/layouts/app-layout';
+import { formatEventTime } from '@/lib/datetime';
 import services from '@/routes/services';
 import { type BreadcrumbItem } from '@/types';
 import type { Service } from '@/types/models';
@@ -70,9 +71,8 @@ function formatDateTime(date: string): string {
     }).format(new Date(date));
 }
 
-function formatTime(time: string | null): string {
-    if (!time) return '\u2014';
-    return time.substring(0, 5);
+function formatServiceTime(at: string | null, timezone: string): string {
+    return formatEventTime(at, timezone) || '\u2014';
 }
 
 function municipalityDisplay(
@@ -174,15 +174,11 @@ export default function ServicesShow({
         : '\u2014';
 
     const actualDuration =
-        service.actual_start_time && service.actual_end_time
+        service.actual_start_at && service.actual_end_at
             ? (() => {
-                  const [sh, sm] = service.actual_start_time
-                      .split(':')
-                      .map(Number);
-                  const [eh, em] = service.actual_end_time
-                      .split(':')
-                      .map(Number);
-                  const diff = eh * 60 + em - (sh * 60 + sm);
+                  const start = new Date(service.actual_start_at).getTime();
+                  const end = new Date(service.actual_end_at).getTime();
+                  const diff = Math.round((end - start) / 60000);
                   return diff > 0 ? `${diff} min` : '\u2014';
               })()
             : '\u2014';
@@ -373,23 +369,33 @@ export default function ServicesShow({
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <ServiceTimelineBar
-                                plannedStartTime={service.planned_start_time}
+                                plannedStartAt={service.planned_start_at}
                                 plannedDuration={service.planned_duration}
-                                actualStartTime={service.actual_start_time}
-                                actualEndTime={service.actual_end_time}
+                                actualStartAt={service.actual_start_at}
+                                actualEndAt={service.actual_end_at}
+                                timezone={service.timezone}
                             />
                             <dl className="grid gap-3 sm:grid-cols-2">
                                 <Field label="Hora Inicio Planificada">
-                                    {formatTime(service.planned_start_time)}
+                                    {formatServiceTime(
+                                        service.planned_start_at,
+                                        service.timezone,
+                                    )}
                                 </Field>
                                 <Field label="Duración Planificada">
                                     {service.planned_duration} min
                                 </Field>
                                 <Field label="Hora Inicio Real">
-                                    {formatTime(service.actual_start_time)}
+                                    {formatServiceTime(
+                                        service.actual_start_at,
+                                        service.timezone,
+                                    )}
                                 </Field>
                                 <Field label="Hora Fin Real">
-                                    {formatTime(service.actual_end_time)}
+                                    {formatServiceTime(
+                                        service.actual_end_at,
+                                        service.timezone,
+                                    )}
                                 </Field>
                                 <Field label="Duración Real">
                                     {actualDuration}

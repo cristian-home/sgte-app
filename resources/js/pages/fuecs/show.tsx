@@ -31,7 +31,7 @@ interface FuecDetail {
     service?: {
         id: number;
         service_date: string | null;
-        planned_start_time: string | null;
+        planned_start_local: string | null;
         planned_duration: number | null;
         vehicle?: { id: number; plate: string } | null;
         driver?: {
@@ -257,7 +257,7 @@ export default function FuecShow({
                             <div className="text-muted-foreground">
                                 Hora planificada
                             </div>
-                            <div>{service?.planned_start_time ?? '—'}</div>
+                            <div>{service?.planned_start_local ?? '—'}</div>
                         </div>
                         <div>
                             <div className="text-muted-foreground">Origen</div>

@@ -10,15 +10,17 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { formatEventTime } from '@/lib/datetime';
 
 export interface DayServiceEntry {
     id: number;
-    service_date: string;
+    service_date_local: string;
     origin_address: string | null;
     destination_address: string | null;
     unit_value: string;
     service_status: string;
-    planned_start_time: string | null;
+    planned_start_at: string | null;
+    timezone: string;
     contract: { id: number; contract_number: string } | null;
     vehicle: { id: number; plate: string } | null;
     driver: {
@@ -46,9 +48,8 @@ function formatCurrency(value: string | number): string {
     }).format(Number(value));
 }
 
-function formatTime(time: string | null): string {
-    if (!time) return '—';
-    return time.substring(0, 5);
+function formatPlannedStart(at: string | null, timezone: string): string {
+    return formatEventTime(at, timezone) || '—';
 }
 
 export default function DayServicesTable({
@@ -81,7 +82,10 @@ export default function DayServicesTable({
                             {services.map((service) => (
                                 <TableRow key={service.id}>
                                     <TableCell>
-                                        {formatTime(service.planned_start_time)}
+                                        {formatPlannedStart(
+                                            service.planned_start_at,
+                                            service.timezone,
+                                        )}
                                     </TableCell>
                                     <TableCell>
                                         <Link

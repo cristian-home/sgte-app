@@ -1,33 +1,49 @@
 import { Badge } from '@/components/ui/badge';
+import { formatEventTime } from '@/lib/datetime';
 
 interface ServiceTimelineBarProps {
-    plannedStartTime: string;
+    /** UTC instant (ISO 8601) of the planned start. */
+    plannedStartAt: string;
     plannedDuration: number;
-    actualStartTime: string | null;
-    actualEndTime: string | null;
+    /** UTC instant (ISO 8601) of the actual start, null when not started yet. */
+    actualStartAt: string | null;
+    /** UTC instant (ISO 8601) of the actual end, null when not finished yet. */
+    actualEndAt: string | null;
+    /** IANA timezone the service is operationally anchored in. */
+    timezone: string;
 }
 
-function timeToMinutes(time: string): number {
-    const [h, m] = time.split(':').map(Number);
-    return h * 60 + m;
-}
-
-function formatTime(time: string): string {
-    return time.substring(0, 5);
+/**
+ * Convert a UTC instant to fractional minutes-of-day in `timezone`.
+ */
+function instantToMinutesInTz(at: string, timezone: string): number {
+    const fmt = new Intl.DateTimeFormat('en-GB', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+        timeZone: timezone,
+    });
+    const [hStr, mStr] = fmt.format(new Date(at)).split(':');
+    return Number(hStr) * 60 + Number(mStr);
 }
 
 export function ServiceTimelineBar({
-    plannedStartTime,
+    plannedStartAt,
     plannedDuration,
-    actualStartTime,
-    actualEndTime,
+    actualStartAt,
+    actualEndAt,
+    timezone,
 }: ServiceTimelineBarProps) {
-    const plannedStart = timeToMinutes(plannedStartTime);
+    const plannedStart = instantToMinutesInTz(plannedStartAt, timezone);
     const plannedEnd = plannedStart + plannedDuration;
 
-    const hasActual = actualStartTime !== null && actualEndTime !== null;
-    const actualStart = hasActual ? timeToMinutes(actualStartTime) : null;
-    const actualEnd = hasActual ? timeToMinutes(actualEndTime) : null;
+    const hasActual = actualStartAt !== null && actualEndAt !== null;
+    const actualStart = hasActual
+        ? instantToMinutesInTz(actualStartAt, timezone)
+        : null;
+    const actualEnd = hasActual
+        ? instantToMinutesInTz(actualEndAt, timezone)
+        : null;
 
     const actualDuration =
         actualStart !== null && actualEnd !== null
@@ -61,7 +77,7 @@ export function ServiceTimelineBar({
                         }}
                     >
                         <span className="truncate px-1.5 text-[10px] font-medium text-white">
-                            {formatTime(plannedStartTime)}
+                            {formatEventTime(plannedStartAt, timezone)}
                         </span>
                     </div>
                 </div>
@@ -87,7 +103,7 @@ export function ServiceTimelineBar({
                             }}
                         >
                             <span className="truncate px-1.5 text-[10px] font-medium text-white">
-                                {formatTime(actualStartTime!)}
+                                {formatEventTime(actualStartAt, timezone)}
                             </span>
                         </div>
                     ) : (
