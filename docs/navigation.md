@@ -151,17 +151,12 @@ state "Facturación (solo Admin)" as Facturacion <<admin>> {
   AsociarFactura --> GenerarPDF
 }
 
-state "Reportes" as Reportes {
-  [*] --> ReportesOperativos
-}
-
 state "Auditoría (solo Admin)" as Auditoria <<admin>> {
   [*] --> LogCambios
 }
 
 Dashboard --> Administracion : Menú lateral\n(solo Admin)
 Dashboard --> Facturacion : Menú lateral\n(solo Admin)
-Dashboard --> Reportes : Menú lateral
 Dashboard --> Auditoria : Menú lateral\n(solo Admin)
 
 note right of Administracion
@@ -276,21 +271,10 @@ state "Registrar Novedad" as RegistrarNovedad {
   FormNovedad : Tipo, descripción,\n¿afecta facturación?
 }
 
-state "Mapa GPS (Opcional)" as MapaGPS {
-  [*] --> VistaUbicacion
-  VistaUbicacion : Ubicación automática\no entrada manual
-}
-
-state "Notificaciones" as Notificaciones {
-  [*] --> ListaNotificaciones
-  ListaNotificaciones : Servicios asignados,\nalertas
-}
-
-MisServicios --> MapaGPS : Menú
-MisServicios --> Notificaciones : Menú
-
 @enduml
 ```
+
+> **Note:** Earlier mockups showed `Mapa GPS` and `Notificaciones` as driver-side menu entries. Neither is implemented in the current driver portal — GPS capture is server-scaffolded only and notifications are delivered by email, not surfaced as an in-app inbox.
 
 ### Driver flow during a service
 
@@ -345,13 +329,19 @@ The Contabilidad role accesses the calendar in read mode to navigate to executed
 
 ### Sidebar menu
 
-| Section                 | Access |
-| ----------------------- | :----: |
-| Calendario (lectura)    |   ✓    |
-| Servicios Ejecutados    |   ✓    |
-| Facturación             |   ✓    |
-| Reportes                |   ✓    |
-| Notificaciones          |   ✓    |
+Contabilidad sees a subset of the canonical sidebar (Producción + Gestión read-only + Facturación). It does **not** see Catálogos, Administración, FUEC, or GPS. There is no dedicated "Reportes" or "Notificaciones" sidebar entry — these were on earlier mockups but are not implemented in the live sidebar.
+
+| Group → item                         | Access  |
+| ------------------------------------ | :-----: |
+| Panel (top-level link)               |   ✓     |
+| Producción → Servicios               |   ✓ RO  |
+| Producción → Resumen del Día         |   ✓ RO  |
+| Producción → Calendario              |   ✓ RO  |
+| Gestión → Vehículos                  |   👁 RO  |
+| Gestión → Conductores                |   👁 RO  |
+| Gestión → Terceros                   |   👁 RO  |
+| Gestión → Contratos                  |   👁 RO  |
+| Facturación → Facturas               |   ✓     |
 
 ### Navigation map
 

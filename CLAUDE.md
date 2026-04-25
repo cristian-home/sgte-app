@@ -84,7 +84,7 @@ php artisan enum:typescript              # Regenerate TS enums from PHP enums �
 - **Routing**: `bootstrap/app.php` registers routes (web, api, console, channels) and middleware. No `Kernel.php`.
 - **Providers**: `bootstrap/providers.php` → AppServiceProvider, FortifyServiceProvider, HorizonServiceProvider.
 - **Auth**: Laravel Fortify (headless). Super Admin role bypasses all gates via `Gate::before` in AppServiceProvider.
-- **Permissions**: Spatie Permission package. Roles defined in `app/Enums/Role.php` (5 roles: Super Admin, Admin, Operator, Driver, Accounting). Permissions in `app/Enums/Permission.php` (~50 permissions, CRUD pattern per module, including `VIEW_AUDIT_LOG`). Super Admin bypasses all gates via `Gate::before` (see Auth above).
+- **Permissions**: Spatie Permission package. Roles defined in `app/Enums/Role.php` (5 roles: Super Admin, Admin, Operator, Driver, Accounting). Permissions in `app/Enums/Permission.php` (53 permissions as of 2026-04-24, CRUD pattern per module, including `VIEW_AUDIT_LOG`). Super Admin bypasses all gates via `Gate::before` (see Auth above).
 - **Sidebar groups** (see `resources/js/components/app-sidebar.tsx`):
     - `Panel` (top-level link) — all authenticated roles
     - `Producción` (admin, operator) — Servicios, Planificador, Resumen del Día, Calendario, Novedades

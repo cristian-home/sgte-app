@@ -333,18 +333,21 @@ Reference matrix for configuring `spatie/laravel-permission`:
 
 | Function                              | Administrador | Operación | Conductor | Contabilidad |
 | ------------------------------------- | :-----------: | :-------: | :-------: | :----------: |
-| Manage vehicles                       |       ✓       |     -     |     -     |      -       |
-| Manage drivers                        |       ✓       |     -     |     -     |      -       |
-| Manage contracts                      |       ✓       |     -     |     -     |      -       |
+| Manage vehicles                       |       ✓       |     ✓     |     -     |   👁 read    |
+| Manage drivers                        |       ✓       |     ✓     |     -     |   👁 read    |
+| Manage third parties                  |       ✓       |     ✓     |     -     |   👁 read    |
+| Manage contracts                      |       ✓       |     ✓     |     -     |   👁 read    |
 | Create services                       |       ✓       |     ✓     |     -     |      -       |
 | Edit services (projected)             |       ✓       |     ✓     |     -     |      -       |
 | Edit services (executed)              |       ✓       |     -     |     -     |      ✓       |
-| Generate FUEC (optional)              |       ✓       |     ✓     |     -     |      -       |
+| Generate FUEC (optional)              |       ✓       |     -     |     -     |      -       |
 | Execute day                           |       ✓       |     ✓     |     -     |      -       |
 | View reports                          |       ✓       |     ✓     |     -     |      ✓       |
 | View completed services               |       ✓       |     -     |     -     |      ✓       |
 | Generate invoices                     |       ✓       |     -     |     -     |      ✓       |
 | Associate services with invoices      |       ✓       |     -     |     -     |      ✓       |
+| Manage users (Administración)         |       ✓       |     -     |     -     |      -       |
+| View audit log (Administración)       |       ✓       |     -     |     -     |      -       |
 | Record real times and incidents       |       -       |     -     |     ✓     |      -       |
 | Receive notifications                 |       ✓       |     ✓     |     ✓     |      ✓       |
 
