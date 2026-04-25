@@ -12,31 +12,39 @@ class NoScheduleConflict implements ValidationRule
     public function __construct(
         protected string $field,
         protected int $fieldValue,
-        protected string $serviceDate,
-        protected string $plannedStartTime,
+        protected string $plannedStartAt,
         protected int $plannedDuration,
         protected ?int $excludeServiceId = null,
     ) {}
 
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        $dateOnly = Carbon::parse($this->serviceDate)->toDateString();
-        $newStart = Carbon::parse($dateOnly.' '.$this->plannedStartTime);
+        $newStart = Carbon::parse($this->plannedStartAt);
         $newEnd = $newStart->copy()->addMinutes($this->plannedDuration);
+
+        // Use the denormalized day column to limit the candidate set to a
+        // 1- or 2-day window (a service may straddle midnight in some TZ),
+        // then compare instants. Comparing instants makes the conflict
+        // detection TZ-agnostic.
+        $startDay = $newStart->copy()->toDateString();
+        $endDay = $newEnd->copy()->toDateString();
 
         $conflicts = Service::query()
             ->where($this->field, $this->fieldValue)
-            ->whereDate('service_date', $dateOnly)
+            ->whereIn('service_date_local', array_unique([$startDay, $endDay]))
             ->when($this->excludeServiceId, fn ($q) => $q->where('id', '!=', $this->excludeServiceId))
-            ->get(['id', 'planned_start_time', 'planned_duration']);
+            ->get(['id', 'planned_start_at', 'planned_duration', 'timezone']);
 
         foreach ($conflicts as $existing) {
-            $existingStart = Carbon::parse($this->serviceDate.' '.$existing->planned_start_time);
+            $existingStart = Carbon::parse($existing->planned_start_at);
             $existingEnd = $existingStart->copy()->addMinutes($existing->planned_duration);
 
             if ($existingStart < $newEnd && $newStart < $existingEnd) {
                 $label = $this->field === 'vehicle_id' ? 'vehiculo' : 'conductor';
-                $fail("El {$label} ya tiene un servicio asignado en este horario ({$existingStart->format('H:i')} - {$existingEnd->format('H:i')}).");
+                $tz = $existing->timezone ?: (string) config('app.operation_tz', 'America/Bogota');
+                $startLabel = $existingStart->copy()->setTimezone($tz)->format('H:i');
+                $endLabel = $existingEnd->copy()->setTimezone($tz)->format('H:i');
+                $fail("El {$label} ya tiene un servicio asignado en este horario ({$startLabel} - {$endLabel}).");
 
                 return;
             }
