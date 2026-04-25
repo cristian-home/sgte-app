@@ -209,6 +209,8 @@ URL: `/day-statuses/{year}` — year arrows change the path, not query params.
 URL: `/day-statuses/{year}/{month}?selectedDay={day}`. The `[<]` `[>]` arrows navigate to the previous/next month.
 Clicking the month title (e.g. "Octubre 2025") returns to the yearly view. Colors indicate day status.
 
+> **Implementation status:** the `[Ciudad: Todas v] [Modalidad: Todas v] [Buscar]` filter bar at the top of the monthly view is mockup-only and not implemented. The current view shows the calendar grid + the inline day services table only.
+
 ---
 
 ## 3. DAILY GANTT - Fleet Planner
@@ -253,6 +255,8 @@ Clicking the month title (e.g. "Octubre 2025") returns to the yearly view. Color
 - Horizontal bars = Assigned services
 - Blocked vehicles shown in grey with the expired document
 - `//////` = blocked row (vehicle with expired documents)
+
+> **Implementation status:** the `[< Día Anterior] [Gantt] [Resumen] [Siguiente Día >]` action bar and the per-row vehicle state column (`Act.` / `Prec.` / `BLOQ.` / `3ro.` indicators next to each plate) are mockup-only and not implemented. The live `/gantt` shows the date picker, vehicle rows, service bars, and the SOAT/RTM/Tarjeta blocked-row treatment — navigation between days happens via the date picker, not arrow buttons.
 
 ---
 
