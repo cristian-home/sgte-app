@@ -21,7 +21,7 @@ return new class extends Migration
                 ->constrained('fuec_number_ranges')
                 ->restrictOnDelete();
             $table->integer('consecutive_number');
-            $table->timestamp('generated_at');
+            $table->timestampTz('generated_at');
             $table->string('qr_code', 255);
             $table->enum('status', ['active', 'cancelled'])->default('active');
             $table->string('pdf_path', 500)->nullable();
@@ -30,8 +30,8 @@ return new class extends Migration
             // consecutive number was burned (typo vs. legitimate
             // service cancellation). Populated on POST /fuecs/{fuec}/cancel.
             $table->string('cancellation_reason', 1000)->nullable();
-            $table->timestamps();
-            $table->softDeletes();
+            $table->timestampsTz();
+            $table->softDeletesTz();
 
             $table->index('consecutive_number');
             $table->index('fuec_number_range_id', 'fuecs_range_idx');

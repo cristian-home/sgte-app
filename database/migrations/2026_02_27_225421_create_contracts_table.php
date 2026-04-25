@@ -29,8 +29,8 @@ return new class extends Migration
             // days, or hours. Nullable because legacy seeded contracts
             // and historical data predate this column.
             $table->enum('billing_unit_type', ['viaje', 'pasajero', 'dia', 'hora'])->nullable();
-            $table->timestamps();
-            $table->softDeletes();
+            $table->timestampsTz();
+            $table->softDeletesTz();
         });
 
         Schema::enableForeignKeyConstraints();

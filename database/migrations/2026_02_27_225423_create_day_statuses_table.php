@@ -18,8 +18,8 @@ return new class extends Migration
             $table->date('date')->unique();
             $table->enum('status', ['projected', 'executed'])->default('projected');
             $table->foreignId('executor_id')->nullable()->constrained('users');
-            $table->timestamp('executed_at')->nullable();
-            $table->timestamps();
+            $table->timestampTz('executed_at')->nullable();
+            $table->timestampsTz();
         });
 
         Schema::enableForeignKeyConstraints();

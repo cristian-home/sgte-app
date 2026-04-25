@@ -18,8 +18,8 @@ return new class extends Migration
             $table->string('severity', 20);
             $table->boolean('affects_billing_default')->default(false);
             $table->text('description')->nullable();
-            $table->timestamps();
-            $table->softDeletes();
+            $table->timestampsTz();
+            $table->softDeletesTz();
         });
     }
 

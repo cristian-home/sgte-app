@@ -27,7 +27,7 @@ return new class extends Migration
             $table->unsignedInteger('range_to');
             $table->boolean('active')->default(false);
             $table->text('notes')->nullable();
-            $table->timestamps();
+            $table->timestampsTz();
         });
 
         if (Schema::getConnection()->getDriverName() === 'pgsql') {

@@ -15,8 +15,8 @@ return new class extends Migration
             $table->id();
             $table->string('code', 10);
             $table->string('name', 100);
-            $table->timestamps();
-            $table->softDeletes();
+            $table->timestampsTz();
+            $table->softDeletesTz();
         });
     }
 

@@ -20,10 +20,10 @@ return new class extends Migration
             $table->text('description');
             $table->foreignId('registrar_id')->constrained('users');
             $table->boolean('is_driver_report')->default(false);
-            $table->timestamp('reported_at');
+            $table->timestampTz('reported_at');
             $table->boolean('affects_billing')->default(false);
             $table->decimal('additional_value', 12, 2)->nullable();
-            $table->timestamps();
+            $table->timestampsTz();
         });
 
         Schema::enableForeignKeyConstraints();

@@ -31,8 +31,8 @@ return new class extends Migration
             $table->boolean('is_customer')->default(false);
             $table->boolean('is_provider')->default(false);
             $table->boolean('active')->default(true);
-            $table->timestamps();
-            $table->softDeletes();
+            $table->timestampsTz();
+            $table->softDeletesTz();
         });
 
         Schema::enableForeignKeyConstraints();

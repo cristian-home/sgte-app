@@ -21,8 +21,8 @@ return new class extends Migration
             $table->date('issue_date');
             $table->enum('payment_status', ['pending', 'paid', 'overdue'])->default('pending');
             $table->text('notes')->nullable();
-            $table->timestamps();
-            $table->softDeletes();
+            $table->timestampsTz();
+            $table->softDeletesTz();
         });
 
         Schema::enableForeignKeyConstraints();
