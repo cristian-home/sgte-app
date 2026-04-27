@@ -192,6 +192,10 @@ return [
     */
 
     'attributes' => [
+        'csv' => 'archivo',
+        'dry_run' => 'modo dry-run',
+        'update_existing' => 'actualizar registros existentes',
+        'from_import_id' => 'import de origen',
         'name' => 'nombre',
         'email' => 'correo electrónico',
         'password' => 'contraseña',
