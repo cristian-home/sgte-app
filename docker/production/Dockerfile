@@ -77,6 +77,7 @@ COPY --from=build /app/bootstrap/ssr ./bootstrap/ssr
 # Copy production config files
 COPY docker/production/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY docker/production/start-container /usr/local/bin/start-container
+COPY docker/production/php-uploads.ini /usr/local/etc/php/conf.d/php-uploads.ini
 RUN chmod +x /usr/local/bin/start-container
 
 # Create required directories
