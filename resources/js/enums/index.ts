@@ -3,6 +3,8 @@
 
 export * from './BillingUnitType';
 export * from './ContractObject';
+export * from './DataImportStatus';
+export * from './DataImportType';
 export * from './DayStatusEnum';
 export * from './FuecStatus';
 export * from './IncidentSeverity';
