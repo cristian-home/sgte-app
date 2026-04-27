@@ -1,0 +1,3 @@
+document_type_code,identification_number,is_natural_person,first_name,second_name,first_lastname,second_lastname,company_name,trade_name,address,phone,email,is_customer,is_provider,municipality_code
+NIT,900123456,0,,,,,Empresa Transporte SA,Transporte SA,Cra 1 #2-3,3001234567,contacto@empresa.co,1,0,11001
+CC,1023456789,1,Carlos,Andrés,Ramírez,Pérez,,,Cl 5 #6-7,3107654321,carlos@cliente.co,0,1,11001
