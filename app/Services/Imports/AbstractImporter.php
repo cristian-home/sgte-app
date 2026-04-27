@@ -62,9 +62,8 @@ abstract class AbstractImporter
     public function validateHeader(string $path): HeaderCheck
     {
         $reader = SimpleExcelReader::create($path);
-        $first = $reader->getRows()->first() ?? [];
+        $actual = $reader->getHeaders() ?? [];
         $reader->close();
-        $actual = array_keys($first);
 
         $expected = $this->expectedHeaders();
         $missing = array_diff($expected, $actual);

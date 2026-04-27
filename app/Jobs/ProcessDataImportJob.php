@@ -29,13 +29,14 @@ class ProcessDataImportJob implements ShouldQueue
     use Queueable;
     use SerializesModels;
 
-    public string $queue = 'imports';
-
     public int $tries = 1;
 
     public int $timeout = 1800;
 
-    public function __construct(public DataImport $import) {}
+    public function __construct(public DataImport $import)
+    {
+        $this->onQueue('imports');
+    }
 
     public function handle(ImporterRegistry $registry): void
     {
