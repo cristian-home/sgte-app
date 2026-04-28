@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { index as auditLogIndex } from '@/actions/App/Http/Controllers/AuditLogController';
 import { index as contractsIndex } from '@/actions/App/Http/Controllers/ContractController';
+import { index as dataImportsIndex } from '@/actions/App/Http/Controllers/DataImportController';
 import { calendar as dayStatusesCalendar } from '@/actions/App/Http/Controllers/DayStatusController';
 import { index as daySummaryIndex } from '@/actions/App/Http/Controllers/DaySummaryController';
 import { index as documentTypesIndex } from '@/actions/App/Http/Controllers/DocumentTypeController';
@@ -154,6 +155,11 @@ const navGroups: NavGroup[] = [
                 title: 'Auditoría',
                 href: auditLogIndex(),
                 permission: Permission.VIEW_AUDIT_LOG,
+            },
+            {
+                title: 'Importaciones',
+                href: dataImportsIndex(),
+                permission: Permission.MANAGE_DATA_IMPORTS,
             },
         ],
     },

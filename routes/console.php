@@ -19,3 +19,17 @@ Schedule::job(new ScanThirdPartyVehicleDocuments)
     ->dailyAt('06:30')
     ->onOneServer()
     ->name('scan-third-party-vehicle-documents');
+
+// admin-data-imports: reaper for jobs whose worker died without flipping
+// status to failed (OOM, container redeploy mid-run). Runs every 5 min.
+Schedule::command('imports:reap-stuck')
+    ->everyFiveMinutes()
+    ->onOneServer()
+    ->name('reap-stuck-imports');
+
+// admin-data-imports: 90-day file retention policy. Row stays forever
+// (audit trail), only the MinIO blobs go away.
+Schedule::command('imports:purge-old-files')
+    ->dailyAt('03:00')
+    ->onOneServer()
+    ->name('purge-old-import-files');

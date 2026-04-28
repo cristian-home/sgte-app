@@ -88,6 +88,9 @@ enum Permission: string
     // Audit log (Administración)
     case VIEW_AUDIT_LOG = 'audit-log.view';
 
+    // Data Imports (Administración) — bulk CSV/XLSX uploads (super admin only)
+    case MANAGE_DATA_IMPORTS = 'data-imports.manage';
+
     // Notifications
     case RECEIVE_NOTIFICATIONS = 'notifications.receive';
 
@@ -146,6 +149,7 @@ enum Permission: string
             self::DELETE_INCIDENT_TYPES => 'Eliminar tipos de novedad',
             self::MANAGE_CATALOGS => 'Gestionar catálogos (documentos, EPS, fondos)',
             self::VIEW_AUDIT_LOG => 'Ver registro de auditoría',
+            self::MANAGE_DATA_IMPORTS => 'Gestionar importaciones masivas',
             self::RECEIVE_NOTIFICATIONS => 'Recibir notificaciones',
         };
     }

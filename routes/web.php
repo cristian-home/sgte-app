@@ -135,4 +135,28 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('audit-log', [App\Http\Controllers\AuditLogController::class, 'index'])
         ->middleware('can:'.App\Enums\Permission::VIEW_AUDIT_LOG->value)
         ->name('audit-log.index');
+
+    // Admin > Data Imports (super admin only via MANAGE_DATA_IMPORTS).
+    // Templates and reference catalogs are gated by the same permission so
+    // a non-super-admin cannot exfiltrate the catalog list either.
+    Route::middleware('can:'.App\Enums\Permission::MANAGE_DATA_IMPORTS->value)
+        ->prefix('admin/imports')
+        ->name('admin.imports.')
+        ->group(function (): void {
+            Route::get('/', [App\Http\Controllers\DataImportController::class, 'index'])->name('index');
+            Route::get('/create', [App\Http\Controllers\DataImportController::class, 'create'])->name('create');
+            Route::post('/', [App\Http\Controllers\DataImportController::class, 'store'])->name('store');
+
+            Route::get('/templates/{type}', [App\Http\Controllers\DataImportTemplateController::class, 'show'])
+                ->where('type', 'users|third-parties|drivers|vehicles')
+                ->name('templates.show');
+            Route::get('/reference/{catalog}', [App\Http\Controllers\DataImportReferenceController::class, 'show'])
+                ->where('catalog', 'eps|pension-funds|severance-funds|municipalities|departments|document-types|incident-types')
+                ->name('reference.show');
+
+            Route::get('/{import}', [App\Http\Controllers\DataImportController::class, 'show'])->name('show');
+            Route::delete('/{import}/files', [App\Http\Controllers\DataImportController::class, 'purge'])->name('purge');
+            Route::get('/{import}/download/source', [App\Http\Controllers\DataImportController::class, 'downloadSource'])->name('download.source');
+            Route::get('/{import}/download/errors', [App\Http\Controllers\DataImportController::class, 'downloadErrors'])->name('download.errors');
+        });
 });

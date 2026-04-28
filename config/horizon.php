@@ -219,11 +219,46 @@ return [
                 'balanceMaxShift' => 1,
                 'balanceCooldown' => 3,
             ],
+            'supervisor-imports' => [
+                'connection' => 'redis',
+                'queue' => ['imports'],
+                'balance' => 'simple',
+                'maxProcesses' => 1,
+                'memory' => 256,
+                'tries' => 1,
+                'timeout' => 1800,
+            ],
+        ],
+
+        'staging' => [
+            'supervisor-1' => [
+                'maxProcesses' => 5,
+                'balanceMaxShift' => 1,
+                'balanceCooldown' => 3,
+            ],
+            'supervisor-imports' => [
+                'connection' => 'redis',
+                'queue' => ['imports'],
+                'balance' => 'simple',
+                'maxProcesses' => 1,
+                'memory' => 256,
+                'tries' => 1,
+                'timeout' => 1800,
+            ],
         ],
 
         'local' => [
             'supervisor-1' => [
                 'maxProcesses' => 3,
+            ],
+            'supervisor-imports' => [
+                'connection' => 'redis',
+                'queue' => ['imports'],
+                'balance' => 'simple',
+                'maxProcesses' => 1,
+                'memory' => 256,
+                'tries' => 1,
+                'timeout' => 1800,
             ],
         ],
     ],
