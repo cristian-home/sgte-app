@@ -128,19 +128,26 @@ test('store with from_import_id clones metadata and dispatches a new job', funct
     Storage::disk('s3')->put($source->path, 'placeholder');
 
     post(route('admin.imports.store'), [
-        'type' => DataImportType::Drivers->value,
         'from_import_id' => $source->id,
     ])->assertRedirect();
 
     $clone = DataImport::query()->whereKeyNot($source->id)->latest('id')->first();
     expect($clone)->not->toBeNull();
     expect($clone->id)->not->toBe($source->id);
+    expect($clone->type)->toBe($source->type);
     expect($clone->path)->toBe($source->path);
     expect($clone->original_filename)->toBe($source->original_filename);
     expect($clone->dry_run)->toBeFalse();
     expect($clone->status)->toBe(DataImportStatus::Queued);
 
     Bus::assertDispatched(ProcessDataImportJob::class);
+});
+
+test('store without type or from_import_id fails validation', function (): void {
+    actingAs(superAdmin());
+
+    post(route('admin.imports.store'), [])
+        ->assertSessionHasErrors(['type', 'csv']);
 });
 
 test('show renders the inertia page with the import', function (): void {

@@ -18,14 +18,15 @@ class DataImportStoreRequest extends FormRequest
     public function rules(): array
     {
         $rules = [
-            'type' => ['required', Rule::enum(DataImportType::class)],
             'dry_run' => ['nullable', 'boolean'],
             'update_existing' => ['nullable', 'boolean'],
             'from_import_id' => ['nullable', 'integer', 'exists:data_imports,id'],
         ];
 
-        // CSV is required only when not retrying from a previous dry-run
+        // type + csv are required only on a fresh upload; on retry-as-real we
+        // inherit them from the source import.
         if (! $this->filled('from_import_id')) {
+            $rules['type'] = ['required', Rule::enum(DataImportType::class)];
             $rules['csv'] = ['required', 'file', 'max:20480', 'mimes:csv,txt,xlsx'];
         }
 
