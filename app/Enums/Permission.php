@@ -153,4 +153,165 @@ enum Permission: string
             self::RECEIVE_NOTIFICATIONS => 'Recibir notificaciones',
         };
     }
+
+    public function description(): string
+    {
+        return match ($this) {
+            self::VIEW_DASHBOARD => 'Acceso al panel principal con métricas en tiempo real.',
+            self::VIEW_SETTINGS => 'Modificar parámetros generales del sistema.',
+            self::VIEW_VEHICLES => 'Consultar el listado de la flota.',
+            self::CREATE_VEHICLES => 'Registrar nuevos vehículos.',
+            self::UPDATE_VEHICLES => 'Actualizar información de vehículos.',
+            self::DELETE_VEHICLES => 'Dar de baja vehículos del sistema.',
+            self::VIEW_DRIVERS => 'Consultar el listado de conductores.',
+            self::CREATE_DRIVERS => 'Registrar nuevos conductores.',
+            self::UPDATE_DRIVERS => 'Actualizar información de conductores.',
+            self::DELETE_DRIVERS => 'Remover conductores del sistema.',
+            self::VIEW_THIRD_PARTIES => 'Consultar terceros registrados.',
+            self::CREATE_THIRD_PARTIES => 'Registrar nuevos terceros.',
+            self::UPDATE_THIRD_PARTIES => 'Editar información de terceros.',
+            self::DELETE_THIRD_PARTIES => 'Remover terceros.',
+            self::VIEW_CONTRACTS => 'Consultar contratos vigentes y finalizados.',
+            self::CREATE_CONTRACTS => 'Registrar nuevos contratos.',
+            self::UPDATE_CONTRACTS => 'Editar contratos existentes.',
+            self::DELETE_CONTRACTS => 'Archivar contratos.',
+            self::VIEW_SERVICES => 'Consultar servicios proyectados y ejecutados.',
+            self::CREATE_SERVICES => 'Programar nuevos servicios.',
+            self::UPDATE_PROJECTED_SERVICES => 'Modificar servicios aún no ejecutados.',
+            self::UPDATE_EXECUTED_SERVICES => 'Ajustar servicios cerrados (acción auditada).',
+            self::DELETE_SERVICES => 'Eliminar servicios proyectados.',
+            self::REGISTER_SERVICE_TIMES => 'Capturar tiempos reales de ejecución.',
+            self::VIEW_DAY_SUMMARY => 'Vista consolidada de la operación diaria.',
+            self::EXECUTE_DAY => 'Cerrar y ejecutar el día de operación.',
+            self::VIEW_INCIDENTS => 'Consultar novedades reportadas.',
+            self::CREATE_INCIDENTS => 'Registrar nuevas novedades.',
+            self::UPDATE_INCIDENTS => 'Editar novedades existentes.',
+            self::DELETE_INCIDENTS => 'Eliminar novedades.',
+            self::VIEW_INVOICES => 'Consultar facturas.',
+            self::CREATE_INVOICES => 'Emitir nuevas facturas.',
+            self::UPDATE_INVOICES => 'Editar facturas.',
+            self::DELETE_INVOICES => 'Anular facturas.',
+            self::ASSIGN_SERVICES_TO_INVOICES => 'Enlazar servicios ejecutados a una factura.',
+            self::VIEW_REPORTS => 'Acceso a reportes operativos y financieros.',
+            self::VIEW_FUEC => 'Consultar formatos FUEC emitidos.',
+            self::GENERATE_FUEC => 'Emitir nuevos formatos FUEC.',
+            self::MANAGE_FUEC_NUMBER_RANGES => 'Administrar rangos de numeración asignados por MinTransporte.',
+            self::VIEW_VEHICLE_LOCATIONS => 'Consultar ubicaciones registradas de la flota.',
+            self::REGISTER_VEHICLE_LOCATION => 'Capturar ubicaciones GPS desde el portal del conductor.',
+            self::DELETE_VEHICLE_LOCATIONS => 'Eliminar registros de ubicación.',
+            self::VIEW_USERS => 'Consultar usuarios.',
+            self::CREATE_USERS => 'Crear nuevos usuarios.',
+            self::UPDATE_USERS => 'Editar usuarios y roles asignados.',
+            self::DELETE_USERS => 'Eliminar usuarios.',
+            self::VIEW_INCIDENT_TYPES => 'Consultar tipos de novedad.',
+            self::CREATE_INCIDENT_TYPES => 'Crear tipos de novedad.',
+            self::UPDATE_INCIDENT_TYPES => 'Editar tipos de novedad.',
+            self::DELETE_INCIDENT_TYPES => 'Eliminar tipos de novedad.',
+            self::MANAGE_CATALOGS => 'Gestionar catálogos: documentos, EPS, fondos y municipios.',
+            self::VIEW_AUDIT_LOG => 'Historial de cambios sensibles registrados en el sistema.',
+            self::MANAGE_DATA_IMPORTS => 'Cargar archivos masivos de usuarios, conductores, terceros o vehículos.',
+            self::RECEIVE_NOTIFICATIONS => 'Recibir alertas del sistema por correo y en la aplicación.',
+        };
+    }
+
+    public function group(): PermissionGroup
+    {
+        return match ($this) {
+            self::VIEW_DASHBOARD,
+            self::VIEW_SETTINGS => PermissionGroup::DASHBOARD_SETTINGS,
+            self::VIEW_VEHICLES,
+            self::CREATE_VEHICLES,
+            self::UPDATE_VEHICLES,
+            self::DELETE_VEHICLES => PermissionGroup::VEHICLES,
+            self::VIEW_DRIVERS,
+            self::CREATE_DRIVERS,
+            self::UPDATE_DRIVERS,
+            self::DELETE_DRIVERS => PermissionGroup::DRIVERS,
+            self::VIEW_THIRD_PARTIES,
+            self::CREATE_THIRD_PARTIES,
+            self::UPDATE_THIRD_PARTIES,
+            self::DELETE_THIRD_PARTIES => PermissionGroup::THIRD_PARTIES,
+            self::VIEW_CONTRACTS,
+            self::CREATE_CONTRACTS,
+            self::UPDATE_CONTRACTS,
+            self::DELETE_CONTRACTS => PermissionGroup::CONTRACTS,
+            self::VIEW_SERVICES,
+            self::CREATE_SERVICES,
+            self::UPDATE_PROJECTED_SERVICES,
+            self::UPDATE_EXECUTED_SERVICES,
+            self::DELETE_SERVICES,
+            self::REGISTER_SERVICE_TIMES => PermissionGroup::SERVICES,
+            self::VIEW_DAY_SUMMARY,
+            self::EXECUTE_DAY => PermissionGroup::DAY_SUMMARY,
+            self::VIEW_INCIDENTS,
+            self::CREATE_INCIDENTS,
+            self::UPDATE_INCIDENTS,
+            self::DELETE_INCIDENTS => PermissionGroup::INCIDENTS,
+            self::VIEW_INVOICES,
+            self::CREATE_INVOICES,
+            self::UPDATE_INVOICES,
+            self::DELETE_INVOICES,
+            self::ASSIGN_SERVICES_TO_INVOICES => PermissionGroup::INVOICES,
+            self::VIEW_REPORTS => PermissionGroup::REPORTS,
+            self::VIEW_FUEC,
+            self::GENERATE_FUEC,
+            self::MANAGE_FUEC_NUMBER_RANGES => PermissionGroup::FUEC,
+            self::VIEW_VEHICLE_LOCATIONS,
+            self::REGISTER_VEHICLE_LOCATION,
+            self::DELETE_VEHICLE_LOCATIONS => PermissionGroup::GPS,
+            self::VIEW_USERS,
+            self::CREATE_USERS,
+            self::UPDATE_USERS,
+            self::DELETE_USERS => PermissionGroup::USERS,
+            self::VIEW_INCIDENT_TYPES,
+            self::CREATE_INCIDENT_TYPES,
+            self::UPDATE_INCIDENT_TYPES,
+            self::DELETE_INCIDENT_TYPES => PermissionGroup::INCIDENT_TYPES,
+            self::MANAGE_CATALOGS => PermissionGroup::CATALOGS,
+            self::VIEW_AUDIT_LOG => PermissionGroup::AUDIT,
+            self::MANAGE_DATA_IMPORTS => PermissionGroup::DATA_IMPORTS,
+            self::RECEIVE_NOTIFICATIONS => PermissionGroup::NOTIFICATIONS,
+        };
+    }
+
+    /**
+     * Permissions grouped by PermissionGroup, ordered for the admin UI.
+     *
+     * @return array<int, array{
+     *     id: string,
+     *     label: string,
+     *     permissions: array<int, array{key: string, label: string, description: string}>
+     * }>
+     */
+    public static function groupedForUi(): array
+    {
+        $buckets = [];
+        foreach (PermissionGroup::cases() as $group) {
+            $buckets[$group->value] = [
+                'id' => $group->value,
+                'label' => $group->label(),
+                'order' => $group->order(),
+                'permissions' => [],
+            ];
+        }
+
+        foreach (self::cases() as $perm) {
+            $buckets[$perm->group()->value]['permissions'][] = [
+                'key' => $perm->value,
+                'label' => $perm->label(),
+                'description' => $perm->description(),
+            ];
+        }
+
+        usort($buckets, fn ($a, $b) => $a['order'] <=> $b['order']);
+
+        return array_map(
+            fn (array $b) => [
+                'id' => $b['id'],
+                'label' => $b['label'],
+                'permissions' => $b['permissions'],
+            ],
+            $buckets,
+        );
+    }
 }
