@@ -61,11 +61,13 @@ return new class extends Migration
         // Super Admin (bypasses all gates via Gate::before)
         SpatieRole::firstOrCreate(
             ['name' => Role::SUPER_ADMIN->value, 'guard_name' => 'web'],
+            ['description' => 'Acceso total al sistema. Omite todas las verificaciones de permisos.'],
         );
 
         // Admin
         $adminRole = SpatieRole::firstOrCreate(
             ['name' => Role::ADMIN->value, 'guard_name' => 'web'],
+            ['description' => 'Administra usuarios, configuración y catálogos de la plataforma.'],
         );
         $adminRole->syncPermissions(array_map(fn ($p) => $p->value, [
             Permission::VIEW_DASHBOARD,
@@ -125,6 +127,7 @@ return new class extends Migration
         // Operator
         $operatorRole = SpatieRole::firstOrCreate(
             ['name' => Role::OPERATOR->value, 'guard_name' => 'web'],
+            ['description' => 'Gestiona servicios, contratos, conductores y vehículos día a día.'],
         );
         $operatorRole->syncPermissions(array_map(fn ($p) => $p->value, [
             Permission::VIEW_DASHBOARD,
@@ -171,6 +174,7 @@ return new class extends Migration
         // (/driver) and register tiempos/novedades from there.
         $driverRole = SpatieRole::firstOrCreate(
             ['name' => Role::DRIVER->value, 'guard_name' => 'web'],
+            ['description' => 'Acceso limitado a sus propios servicios y novedades asignadas.'],
         );
         $driverRole->syncPermissions(array_map(fn ($p) => $p->value, [
             Permission::VIEW_DASHBOARD,
@@ -184,6 +188,7 @@ return new class extends Migration
         // Accounting
         $accountingRole = SpatieRole::firstOrCreate(
             ['name' => Role::ACCOUNTING->value, 'guard_name' => 'web'],
+            ['description' => 'Visualiza servicios ejecutados y gestiona facturación.'],
         );
         $accountingRole->syncPermissions(array_map(fn ($p) => $p->value, [
             Permission::VIEW_DASHBOARD,

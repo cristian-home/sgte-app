@@ -18,6 +18,8 @@ return new class extends Migration
             $table->timestampTz('email_verified_at')->nullable();
             $table->string('password');
             $table->boolean('must_change_password')->default(false);
+            $table->boolean('is_active')->default(true);
+            $table->timestampTz('last_login_at')->nullable();
             $table->rememberToken();
             $table->timestampsTz();
         });
