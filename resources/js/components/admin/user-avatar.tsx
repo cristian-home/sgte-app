@@ -1,6 +1,5 @@
+import { avatarColorForId } from '@/lib/avatar-color';
 import { cn } from '@/lib/utils';
-
-const HUES = [40, 180, 260, 140, 20, 300, 220, 90];
 
 function initials(name: string): string {
     return name
@@ -9,11 +8,6 @@ function initials(name: string): string {
         .slice(0, 2)
         .map((s) => s[0]?.toUpperCase() ?? '')
         .join('');
-}
-
-function colorForId(id: number): string {
-    const hue = HUES[id % HUES.length];
-    return `oklch(0.75 0.09 ${hue})`;
 }
 
 interface Props {
@@ -35,7 +29,7 @@ export function UserAvatar({ id, name, size = 32, className }: Props) {
             style={{
                 width: dim,
                 height: dim,
-                backgroundColor: colorForId(id),
+                backgroundColor: avatarColorForId(id),
                 fontSize: `${Math.max(10, Math.round(size * 0.42))}px`,
             }}
         >

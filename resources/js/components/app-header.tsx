@@ -28,6 +28,7 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { UserMenuContent } from '@/components/user-menu-content';
+import { avatarColorForId } from '@/lib/avatar-color';
 import { Permission } from '@/enums/Permission';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { useInitials } from '@/hooks/use-initials';
@@ -234,7 +235,15 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                             src={auth.user.avatar}
                                             alt={auth.user.name}
                                         />
-                                        <AvatarFallback className="rounded-lg bg-neutral-200 text-black dark:bg-neutral-700 dark:text-white">
+                                        <AvatarFallback
+                                            className="rounded-full font-semibold text-white"
+                                            style={{
+                                                backgroundColor:
+                                                    avatarColorForId(
+                                                        auth.user.id,
+                                                    ),
+                                            }}
+                                        >
                                             {getInitials(auth.user.name)}
                                         </AvatarFallback>
                                     </Avatar>
