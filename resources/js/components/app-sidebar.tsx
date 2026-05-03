@@ -29,6 +29,8 @@ import { index as servicesIndex } from '@/actions/App/Http/Controllers/ServiceCo
 import { index as serviceIncidentsIndex } from '@/actions/App/Http/Controllers/ServiceIncidentController';
 import { index as severanceFundsIndex } from '@/actions/App/Http/Controllers/SeveranceFundController';
 import { index as thirdPartiesIndex } from '@/actions/App/Http/Controllers/ThirdPartyController';
+import { index as permissionsIndex } from '@/actions/App/Http/Controllers/PermissionController';
+import { index as rolesIndex } from '@/actions/App/Http/Controllers/RoleController';
 import { index as usersIndex } from '@/actions/App/Http/Controllers/UserController';
 import { index as vehiclesIndex } from '@/actions/App/Http/Controllers/VehicleController';
 import { index as vehicleLocationsIndex } from '@/actions/App/Http/Controllers/VehicleLocationController';
@@ -149,6 +151,16 @@ const navGroups: NavGroup[] = [
             {
                 title: 'Usuarios',
                 href: usersIndex(),
+                permission: Permission.VIEW_USERS,
+            },
+            {
+                title: 'Roles',
+                href: rolesIndex(),
+                permission: Permission.VIEW_USERS,
+            },
+            {
+                title: 'Permisos',
+                href: permissionsIndex(),
                 permission: Permission.VIEW_USERS,
             },
             {
