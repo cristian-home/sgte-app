@@ -25,6 +25,8 @@ import { index as ganttIndex } from '@/actions/App/Http/Controllers/GanttControl
 import { index as incidentTypesIndex } from '@/actions/App/Http/Controllers/IncidentTypeController';
 import { index as invoicesIndex } from '@/actions/App/Http/Controllers/InvoiceController';
 import { index as pensionFundsIndex } from '@/actions/App/Http/Controllers/PensionFundController';
+import { index as permissionsIndex } from '@/actions/App/Http/Controllers/PermissionController';
+import { index as rolesIndex } from '@/actions/App/Http/Controllers/RoleController';
 import { index as servicesIndex } from '@/actions/App/Http/Controllers/ServiceController';
 import { index as serviceIncidentsIndex } from '@/actions/App/Http/Controllers/ServiceIncidentController';
 import { index as severanceFundsIndex } from '@/actions/App/Http/Controllers/SeveranceFundController';
@@ -149,6 +151,16 @@ const navGroups: NavGroup[] = [
             {
                 title: 'Usuarios',
                 href: usersIndex(),
+                permission: Permission.VIEW_USERS,
+            },
+            {
+                title: 'Roles',
+                href: rolesIndex(),
+                permission: Permission.VIEW_USERS,
+            },
+            {
+                title: 'Permisos',
+                href: permissionsIndex(),
                 permission: Permission.VIEW_USERS,
             },
             {

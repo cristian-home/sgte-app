@@ -74,6 +74,17 @@ export interface UseServerTableReturn<TData> {
 
     /** Clear all faceted filters (preserves search). */
     clearFilters: () => void;
+
+    /**
+     * Update rows in `paginatedData.data` in place. Useful when an XHR
+     * action mutates a single row and the server returns the new state,
+     * so we can merge it without re-fetching the entire page or going
+     * through Inertia's full reload cycle.
+     */
+    mutateRow: (
+        predicate: (row: TData) => boolean,
+        updater: (row: TData) => TData,
+    ) => void;
 }
 
 export function useServerTable<TData>({
@@ -86,6 +97,10 @@ export function useServerTable<TData>({
     const [paginatedData, setPaginatedData] =
         useState<PaginatedData<TData>>(initialData);
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        setPaginatedData(initialData);
+    }, [initialData]);
     const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(
         initialColumnVisibility,
     );
@@ -242,6 +257,19 @@ export function useServerTable<TData>({
         [currentParams, fetchData],
     );
 
+    const mutateRow = useCallback(
+        (
+            predicate: (row: TData) => boolean,
+            updater: (row: TData) => TData,
+        ) => {
+            setPaginatedData((prev) => ({
+                ...prev,
+                data: prev.data.map((r) => (predicate(r) ? updater(r) : r)),
+            }));
+        },
+        [],
+    );
+
     const clearFilters = useCallback(() => {
         const overrides: Record<string, string | undefined> = {
             page: undefined,
@@ -288,5 +316,6 @@ export function useServerTable<TData>({
         setFilter,
         setFilters,
         clearFilters,
+        mutateRow,
     };
 }

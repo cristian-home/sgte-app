@@ -12,6 +12,7 @@ export * from './LicenseCategory';
 export * from './PaymentMethod';
 export * from './PaymentStatus';
 export * from './Permission';
+export * from './PermissionGroup';
 export * from './Role';
 export * from './ServiceStatus';
 export * from './VehicleStatus';
