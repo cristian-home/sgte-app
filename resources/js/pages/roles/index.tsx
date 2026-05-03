@@ -41,7 +41,7 @@ export default function RolesIndex({ roles: items }: { roles: RoleCard[] }) {
                     <h1 className="text-[26px] font-semibold tracking-tight">
                         Roles
                     </h1>
-                    <p className="text-muted-foreground text-sm">
+                    <p className="text-sm text-muted-foreground">
                         Define qué puede hacer cada conjunto de usuarios dentro
                         del sistema.
                     </p>
@@ -49,7 +49,7 @@ export default function RolesIndex({ roles: items }: { roles: RoleCard[] }) {
 
                 <AdminTabs current="roles" />
 
-                <div className="grid gap-4 [grid-template-columns:repeat(auto-fill,minmax(320px,1fr))]">
+                <div className="grid [grid-template-columns:repeat(auto-fill,minmax(320px,1fr))] gap-4">
                     {items.map((role) => (
                         <Card key={role.id} className="flex flex-col gap-3 p-5">
                             <div className="flex items-start gap-3">
@@ -76,7 +76,7 @@ export default function RolesIndex({ roles: items }: { roles: RoleCard[] }) {
                                             <TooltipProvider>
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
-                                                        <Lock className="text-muted-foreground size-3.5" />
+                                                        <Lock className="size-3.5 text-muted-foreground" />
                                                     </TooltipTrigger>
                                                     <TooltipContent>
                                                         Este rol omite todas las
@@ -87,12 +87,12 @@ export default function RolesIndex({ roles: items }: { roles: RoleCard[] }) {
                                             </TooltipProvider>
                                         )}
                                     </div>
-                                    <code className="text-muted-foreground text-[11.5px]">
+                                    <code className="text-[11.5px] text-muted-foreground">
                                         {role.name}
                                     </code>
                                 </div>
                             </div>
-                            <p className="text-muted-foreground min-h-10 text-[13px] leading-relaxed">
+                            <p className="min-h-10 text-[13px] leading-relaxed text-muted-foreground">
                                 {role.description ?? 'Sin descripción.'}
                             </p>
                             <Separator />
@@ -101,7 +101,7 @@ export default function RolesIndex({ roles: items }: { roles: RoleCard[] }) {
                                     <span className="text-[20px] font-semibold tabular-nums">
                                         {role.users_count}
                                     </span>
-                                    <span className="text-muted-foreground text-xs">
+                                    <span className="text-xs text-muted-foreground">
                                         usuarios
                                     </span>
                                 </div>
@@ -109,7 +109,7 @@ export default function RolesIndex({ roles: items }: { roles: RoleCard[] }) {
                                     <span className="text-[20px] font-semibold tabular-nums">
                                         {role.permissions_count}
                                     </span>
-                                    <span className="text-muted-foreground text-xs">
+                                    <span className="text-xs text-muted-foreground">
                                         permisos
                                     </span>
                                 </div>
@@ -125,9 +125,7 @@ export default function RolesIndex({ roles: items }: { roles: RoleCard[] }) {
                                     </Button>
                                 ) : (
                                     <Button asChild variant="outline" size="sm">
-                                        <Link
-                                            href={rolesShow(role.name).url}
-                                        >
+                                        <Link href={rolesShow(role.name).url}>
                                             Editar
                                         </Link>
                                     </Button>

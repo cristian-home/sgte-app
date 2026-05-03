@@ -92,10 +92,7 @@ export default function RoleShow({
     );
     const totalPermissions = useMemo(
         () =>
-            permissionGroups.reduce(
-                (acc, g) => acc + g.permissions.length,
-                0,
-            ),
+            permissionGroups.reduce((acc, g) => acc + g.permissions.length, 0),
         [permissionGroups],
     );
 
@@ -131,12 +128,12 @@ export default function RoleShow({
                                 {role.label}
                             </h1>
                             {role.locked && (
-                                <span className="bg-muted text-muted-foreground inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs">
+                                <span className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-xs text-muted-foreground">
                                     <Lock className="size-3" /> Bloqueado
                                 </span>
                             )}
                         </div>
-                        <p className="text-muted-foreground text-sm">
+                        <p className="text-sm text-muted-foreground">
                             Edita la información del rol y los permisos que
                             otorga.
                         </p>
@@ -160,7 +157,7 @@ export default function RoleShow({
                             </CardHeader>
                             <CardContent className="flex flex-col gap-3">
                                 <div>
-                                    <span className="text-muted-foreground text-xs">
+                                    <span className="text-xs text-muted-foreground">
                                         Nombre
                                     </span>
                                     <p className="text-sm font-medium">
@@ -168,21 +165,21 @@ export default function RoleShow({
                                     </p>
                                 </div>
                                 <div>
-                                    <span className="text-muted-foreground text-xs">
+                                    <span className="text-xs text-muted-foreground">
                                         Etiqueta
                                     </span>
                                     <p>
-                                        <code className="bg-muted text-muted-foreground rounded px-1.5 py-0.5 text-xs">
+                                        <code className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
                                             {role.name}
                                         </code>
                                     </p>
                                 </div>
                                 <div>
-                                    <span className="text-muted-foreground text-xs">
+                                    <span className="text-xs text-muted-foreground">
                                         Descripción
                                     </span>
                                     {role.locked ? (
-                                        <p className="text-muted-foreground text-sm">
+                                        <p className="text-sm text-muted-foreground">
                                             {role.description ??
                                                 'Sin descripción.'}
                                         </p>
@@ -197,7 +194,7 @@ export default function RoleShow({
                                                 setEditingDescription(false)
                                             }
                                             rows={3}
-                                            className="border-input bg-background focus-visible:ring-ring w-full rounded-md border px-2 py-1 text-sm focus-visible:ring-2 focus-visible:outline-none"
+                                            className="w-full rounded-md border border-input bg-background px-2 py-1 text-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                                         />
                                     ) : (
                                         <button
@@ -205,13 +202,13 @@ export default function RoleShow({
                                             onClick={() =>
                                                 setEditingDescription(true)
                                             }
-                                            className="hover:bg-muted/40 flex w-full items-start gap-1.5 rounded p-1 text-left text-sm transition-colors"
+                                            className="flex w-full items-start gap-1.5 rounded p-1 text-left text-sm transition-colors hover:bg-muted/40"
                                         >
                                             <span className="flex-1">
                                                 {description ||
                                                     'Sin descripción.'}
                                             </span>
-                                            <Pencil className="text-muted-foreground size-3" />
+                                            <Pencil className="size-3 text-muted-foreground" />
                                         </button>
                                     )}
                                 </div>
@@ -221,7 +218,7 @@ export default function RoleShow({
                                         <p className="text-[20px] font-semibold tabular-nums">
                                             {current.size}
                                         </p>
-                                        <p className="text-muted-foreground text-xs">
+                                        <p className="text-xs text-muted-foreground">
                                             permisos
                                         </p>
                                     </div>
@@ -229,7 +226,7 @@ export default function RoleShow({
                                         <p className="text-[20px] font-semibold tabular-nums">
                                             {role.users_count}
                                         </p>
-                                        <p className="text-muted-foreground text-xs">
+                                        <p className="text-xs text-muted-foreground">
                                             usuarios
                                         </p>
                                     </div>
@@ -243,7 +240,7 @@ export default function RoleShow({
                                     <CardTitle className="text-base">
                                         Usuarios con este rol
                                     </CardTitle>
-                                    <p className="text-muted-foreground text-xs">
+                                    <p className="text-xs text-muted-foreground">
                                         {role.users_count}{' '}
                                         {role.users_count === 1
                                             ? 'usuario'
@@ -272,7 +269,7 @@ export default function RoleShow({
                             </CardHeader>
                             <CardContent>
                                 {roleUsers.length === 0 ? (
-                                    <p className="text-muted-foreground text-sm">
+                                    <p className="text-sm text-muted-foreground">
                                         Aún no hay usuarios con este rol.
                                     </p>
                                 ) : (
@@ -290,8 +287,9 @@ export default function RoleShow({
                                                 }
                                             />
                                         ))}
-                                        {role.users_count > roleUsers.length && (
-                                            <span className="text-muted-foreground ml-2 text-xs">
+                                        {role.users_count >
+                                            roleUsers.length && (
+                                            <span className="ml-2 text-xs text-muted-foreground">
                                                 +
                                                 {role.users_count -
                                                     roleUsers.length}{' '}
@@ -310,7 +308,7 @@ export default function RoleShow({
                                 <CardTitle className="text-base">
                                     Permisos
                                 </CardTitle>
-                                <p className="text-muted-foreground text-xs">
+                                <p className="text-xs text-muted-foreground">
                                     {role.locked
                                         ? 'Este rol omite las verificaciones de permisos y tiene acceso completo.'
                                         : `${current.size} permisos activos de ${totalPermissions}.`}

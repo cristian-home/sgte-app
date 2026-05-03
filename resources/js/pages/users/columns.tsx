@@ -123,7 +123,9 @@ export const columns: ColumnDef<UserRow, unknown>[] = [
                         }
                     />
                     <Badge
-                        variant={row.original.is_active ? 'default' : 'secondary'}
+                        variant={
+                            row.original.is_active ? 'default' : 'secondary'
+                        }
                         className={cn(
                             row.original.is_active &&
                                 'bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-400',
@@ -146,9 +148,7 @@ export const columns: ColumnDef<UserRow, unknown>[] = [
                     <UserRowActions
                         isActive={row.original.is_active}
                         onEdit={() => m.onEdit(row.original)}
-                        onResetPassword={() =>
-                            m.onResetPassword(row.original)
-                        }
+                        onResetPassword={() => m.onResetPassword(row.original)}
                         onToggleActive={() => m.onToggleActive(row.original)}
                         onDelete={() => m.onDelete(row.original)}
                     />

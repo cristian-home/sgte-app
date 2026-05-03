@@ -91,7 +91,7 @@ export default function UsersIndex({
             onResetPassword: resetPassword,
             onToggleActive: toggleActive,
         }),
-         
+
         [],
     );
 
@@ -143,7 +143,7 @@ export default function UsersIndex({
                         <h1 className="text-[26px] font-semibold tracking-tight">
                             Usuarios
                         </h1>
-                        <p className="text-muted-foreground text-sm">
+                        <p className="text-sm text-muted-foreground">
                             Gestiona las cuentas que acceden al sistema.
                         </p>
                     </div>

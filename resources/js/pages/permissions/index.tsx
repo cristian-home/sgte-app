@@ -40,7 +40,7 @@ export default function PermissionsIndex({
                     <h1 className="text-[26px] font-semibold tracking-tight">
                         Permisos
                     </h1>
-                    <p className="text-muted-foreground text-sm">
+                    <p className="text-sm text-muted-foreground">
                         Referencia de todos los permisos disponibles en el
                         sistema, agrupados por módulo.
                     </p>
@@ -84,7 +84,7 @@ export default function PermissionsIndex({
                                         <p className="text-sm font-medium">
                                             {perm.label}
                                         </p>
-                                        <code className="text-muted-foreground/80 text-xs">
+                                        <code className="text-xs text-muted-foreground/80">
                                             {perm.key}
                                         </code>
                                     </div>
