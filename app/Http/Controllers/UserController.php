@@ -34,9 +34,10 @@ class UserController extends Controller
             ->with('roles:id,name')
             ->allowedFilters([
                 AllowedFilter::callback('search', function (Builder $query, $value): void {
-                    $query->where(function (Builder $q) use ($value): void {
-                        $q->where('name', 'ilike', '%'.$value.'%')
-                            ->orWhere('email', 'ilike', '%'.$value.'%');
+                    $needle = '%'.mb_strtolower((string) $value).'%';
+                    $query->where(function (Builder $q) use ($needle): void {
+                        $q->whereRaw('lower(name) like ?', [$needle])
+                            ->orWhereRaw('lower(email) like ?', [$needle]);
                     });
                 }),
                 AllowedFilter::callback('roles', function (Builder $query, $value): void {
