@@ -17,6 +17,8 @@ import {
 
 interface Props {
     isActive: boolean;
+    isSelf?: boolean;
+    isToggling?: boolean;
     onEdit: () => void;
     onResetPassword: () => void;
     onToggleActive: () => void;
@@ -25,6 +27,8 @@ interface Props {
 
 export function UserRowActions({
     isActive,
+    isSelf = false,
+    isToggling = false,
     onEdit,
     onResetPassword,
     onToggleActive,
@@ -45,7 +49,10 @@ export function UserRowActions({
                 <DropdownMenuItem onSelect={onResetPassword}>
                     <KeyRound className="size-4" /> Restablecer contraseña
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={onToggleActive}>
+                <DropdownMenuItem
+                    onSelect={onToggleActive}
+                    disabled={isSelf || isToggling}
+                >
                     {isActive ? (
                         <>
                             <LogOut className="size-4" /> Desactivar
@@ -59,6 +66,7 @@ export function UserRowActions({
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                     onSelect={onDelete}
+                    disabled={isSelf}
                     className="text-destructive focus:bg-destructive/10 focus:text-destructive"
                 >
                     <Trash2 className="size-4" /> Eliminar

@@ -160,11 +160,18 @@ class UserController extends Controller
         return redirect()->route('users.index')->with('success', 'Usuario eliminado.');
     }
 
-    public function toggleActive(UserToggleActiveRequest $request, User $user): RedirectResponse
+    public function toggleActive(UserToggleActiveRequest $request, User $user): RedirectResponse|JsonResponse
     {
         $user->forceFill(['is_active' => ! $user->is_active])->save();
 
         $message = $user->is_active ? 'Usuario activado.' : 'Usuario desactivado.';
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'user' => $this->serializeUser($user->fresh()->load('roles:id,name')),
+                'message' => $message,
+            ]);
+        }
 
         return redirect()->back()->with('success', $message);
     }

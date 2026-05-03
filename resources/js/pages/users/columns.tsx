@@ -5,6 +5,12 @@ import { UserRowActions } from '@/components/admin/user-row-actions';
 import { DataTableColumnHeader } from '@/components/data-table';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { Role as RoleEnum } from '@/enums/Role';
 import { cn } from '@/lib/utils';
 
@@ -25,6 +31,8 @@ export interface UserTableMeta {
     onDelete: (user: UserRow) => void;
     onResetPassword: (user: UserRow) => void;
     onToggleActive: (user: UserRow) => void;
+    currentUserId: number;
+    pendingIds: ReadonlySet<number>;
 }
 
 function lastLoginText(iso: string | null): string {
@@ -110,18 +118,42 @@ export const columns: ColumnDef<UserRow, unknown>[] = [
         meta: { label: 'Estado' },
         header: 'Estado',
         cell: ({ row, table }) => {
-            const { onToggleActive } = meta(table);
+            const { onToggleActive, currentUserId, pendingIds } = meta(table);
+            const isSelf = row.original.id === currentUserId;
+            const isPending = pendingIds.has(row.original.id);
+            const ariaLabel = row.original.is_active
+                ? 'Desactivar usuario'
+                : 'Activar usuario';
+
+            const sw = (
+                <Switch
+                    checked={row.original.is_active}
+                    onCheckedChange={() => onToggleActive(row.original)}
+                    aria-label={ariaLabel}
+                    disabled={isSelf || isPending}
+                    className={cn(
+                        (isSelf || isPending) &&
+                            'cursor-not-allowed opacity-60',
+                    )}
+                />
+            );
+
             return (
                 <div className="flex items-center gap-2">
-                    <Switch
-                        checked={row.original.is_active}
-                        onCheckedChange={() => onToggleActive(row.original)}
-                        aria-label={
-                            row.original.is_active
-                                ? 'Desactivar usuario'
-                                : 'Activar usuario'
-                        }
-                    />
+                    {isSelf ? (
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <span tabIndex={0}>{sw}</span>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    No puedes desactivar tu propia cuenta.
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    ) : (
+                        sw
+                    )}
                     <Badge
                         variant={
                             row.original.is_active ? 'default' : 'secondary'
@@ -143,10 +175,14 @@ export const columns: ColumnDef<UserRow, unknown>[] = [
         header: '',
         cell: ({ row, table }) => {
             const m = meta(table);
+            const isSelf = row.original.id === m.currentUserId;
+            const isToggling = m.pendingIds.has(row.original.id);
             return (
                 <div className="flex justify-end">
                     <UserRowActions
                         isActive={row.original.is_active}
+                        isSelf={isSelf}
+                        isToggling={isToggling}
                         onEdit={() => m.onEdit(row.original)}
                         onResetPassword={() => m.onResetPassword(row.original)}
                         onToggleActive={() => m.onToggleActive(row.original)}

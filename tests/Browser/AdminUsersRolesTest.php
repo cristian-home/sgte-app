@@ -5,6 +5,8 @@ use App\Models\User;
 use Laravel\Dusk\Browser;
 use Spatie\Permission\Models\Role as SpatieRole;
 
+use function Pest\Laravel\actingAs;
+
 beforeEach(function (): void {
     $this->artisan('migrate:fresh', ['--no-interaction' => true]);
 });
@@ -154,6 +156,77 @@ test('admin sees permissions reference page', function (): void {
             ->assertDontSee('Exception')
             ->screenshot('admin-permissions-reference');
     });
+});
+
+test('toggling a user active switch reflects in the UI without a hard refresh', function (): void {
+    $admin = adminAuthenticateAsAdmin();
+    $operator = adminCreateOperator('Camila Switch');
+
+    $clickRowSwitch = sprintf(
+        "var r = Array.from(document.querySelectorAll('table tbody tr')).find(function(x){ return x.textContent.indexOf('%s') !== -1; }); if (r) { var s = r.querySelector('button[role=switch]'); if (s) s.click(); } return !!r;",
+        $operator->email,
+    );
+
+    $rowText = sprintf(
+        "var r = Array.from(document.querySelectorAll('table tbody tr')).find(function(x){ return x.textContent.indexOf('%s') !== -1; }); return r ? r.textContent : '';",
+        $operator->email,
+    );
+
+    $clickCount = "return performance.getEntriesByType('navigation').length + performance.getEntriesByType('reload').length;";
+
+    $this->browse(function (Browser $browser) use ($admin, $operator, $clickRowSwitch, $rowText, $clickCount): void {
+        $browser->loginAs($admin)
+            ->visit('/users')
+            ->waitForText('Camila Switch')
+            ->assertSee($operator->email);
+
+        $beforeText = (string) ($browser->script($rowText)[0] ?? '');
+        expect(str_contains($beforeText, 'Activo'))->toBeTrue();
+
+        $navsBefore = (int) ($browser->script($clickCount)[0] ?? 0);
+
+        $browser->script($clickRowSwitch);
+        $browser->waitUsing(8, 250, function () use ($browser, $rowText): bool {
+            $text = (string) ($browser->script($rowText)[0] ?? '');
+
+            return str_contains($text, 'Inactivo');
+        }, 'expected the row to reflect "Inactivo" after toggling without a hard refresh');
+
+        $navsAfter = (int) ($browser->script($clickCount)[0] ?? 0);
+        // Async PATCH must not trigger a navigation/reload of the page.
+        expect($navsAfter)->toBe($navsBefore);
+
+        $browser->screenshot('admin-users-toggle-reflects');
+    });
+
+    expect($operator->fresh()->is_active)->toBeFalse();
+});
+
+test('admin cannot toggle their own account from the UI (switch is disabled)', function (): void {
+    $admin = adminAuthenticateAsAdmin();
+
+    $selfRowSwitchDisabled = sprintf(
+        "var r = Array.from(document.querySelectorAll('table tbody tr')).find(function(x){ return x.textContent.indexOf('%s') !== -1; }); if (!r) return 'no-row'; var s = r.querySelector('button[role=switch]'); return s && s.hasAttribute('disabled') ? 'disabled' : 'enabled';",
+        $admin->email,
+    );
+
+    $this->browse(function (Browser $browser) use ($admin, $selfRowSwitchDisabled): void {
+        $browser->loginAs($admin)
+            ->visit('/users')
+            ->waitForText('Usuarios')
+            ->assertSee($admin->email);
+
+        $state = (string) ($browser->script($selfRowSwitchDisabled)[0] ?? '');
+        expect($state)->toBe('disabled');
+
+        $browser->screenshot('admin-users-self-switch-disabled');
+    });
+
+    // Sanity: the server-side guard still works regardless of UI state.
+    actingAs($admin)
+        ->patch(route('users.toggle-active', $admin))
+        ->assertSessionHasErrors(['is_active']);
+    expect($admin->fresh()->is_active)->toBeTrue();
 });
 
 test('non-admin operator gets forbidden on users index', function (): void {

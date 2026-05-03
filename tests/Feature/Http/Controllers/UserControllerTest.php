@@ -248,6 +248,23 @@ test('admin can toggle active state on another user', function (): void {
     expect($target->fresh()->is_active)->toBeTrue();
 });
 
+test('toggle-active returns JSON with the updated user when the request expects JSON', function (): void {
+    $target = User::factory()->create(['is_active' => true]);
+    $target->assignRole(Role::OPERATOR->value);
+
+    $response = $this->withHeaders([
+        'Accept' => 'application/json',
+        'X-Requested-With' => 'XMLHttpRequest',
+    ])->patch(route('users.toggle-active', $target));
+
+    $response->assertOk()
+        ->assertJsonPath('user.id', $target->id)
+        ->assertJsonPath('user.is_active', false)
+        ->assertJsonPath('message', 'Usuario desactivado.');
+
+    expect($target->fresh()->is_active)->toBeFalse();
+});
+
 test('admin cannot deactivate themselves', function (): void {
     patch(route('users.toggle-active', $this->admin))
         ->assertSessionHasErrors(['is_active']);
