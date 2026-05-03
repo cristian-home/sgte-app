@@ -1,7 +1,10 @@
 <?php
 
 use App\Http\Controllers\DashboardController;
+use App\Models\Role;
 use Illuminate\Support\Facades\Route;
+
+Route::bind('role', fn (string $value): Role => Role::where('name', $value)->firstOrFail());
 
 Route::get('/', function () {
     return redirect()->route('dashboard');
@@ -130,8 +133,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     // Administración (admin only)
-    Route::resource('users', App\Http\Controllers\UserController::class)
-        ->middleware('can:'.App\Enums\Permission::VIEW_USERS->value);
+    Route::middleware('can:'.App\Enums\Permission::VIEW_USERS->value)->group(function (): void {
+        Route::get('users', [App\Http\Controllers\UserController::class, 'index'])->name('users.index');
+        Route::post('users', [App\Http\Controllers\UserController::class, 'store'])->name('users.store');
+        Route::put('users/{user}', [App\Http\Controllers\UserController::class, 'update'])->name('users.update');
+        Route::delete('users/{user}', [App\Http\Controllers\UserController::class, 'destroy'])->name('users.destroy');
+        Route::patch('users/{user}/active', [App\Http\Controllers\UserController::class, 'toggleActive'])->name('users.toggle-active');
+        Route::post('users/{user}/reset-password', [App\Http\Controllers\UserController::class, 'resetPassword'])->name('users.reset-password');
+
+        Route::get('roles', [App\Http\Controllers\RoleController::class, 'index'])->name('roles.index');
+        Route::get('roles/{role}', [App\Http\Controllers\RoleController::class, 'show'])->name('roles.show');
+        Route::put('roles/{role}', [App\Http\Controllers\RoleController::class, 'update'])->name('roles.update');
+
+        Route::get('permissions', [App\Http\Controllers\PermissionController::class, 'index'])->name('permissions.index');
+    });
     Route::get('audit-log', [App\Http\Controllers\AuditLogController::class, 'index'])
         ->middleware('can:'.App\Enums\Permission::VIEW_AUDIT_LOG->value)
         ->name('audit-log.index');
