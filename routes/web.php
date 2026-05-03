@@ -1,10 +1,7 @@
 <?php
 
 use App\Http\Controllers\DashboardController;
-use App\Models\Role;
 use Illuminate\Support\Facades\Route;
-
-Route::bind('role', fn (string $value): Role => Role::where('name', $value)->firstOrFail());
 
 Route::get('/', function () {
     return redirect()->route('dashboard');

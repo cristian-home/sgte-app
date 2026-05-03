@@ -19,6 +19,11 @@ class Role extends SpatieRole
         'description',
     ];
 
+    public function getRouteKeyName(): string
+    {
+        return 'name';
+    }
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()

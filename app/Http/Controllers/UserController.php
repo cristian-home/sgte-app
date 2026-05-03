@@ -11,6 +11,7 @@ use App\Http\Requests\UserUpdateRequest;
 use App\Models\User;
 use App\Notifications\WelcomeUserNotification;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -26,7 +27,7 @@ use Spatie\QueryBuilder\QueryBuilder;
 
 class UserController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request): Response|JsonResponse
     {
         Gate::authorize(Permission::VIEW_USERS->value);
 
@@ -63,20 +64,15 @@ class UserController extends Controller
             ->paginate($request->perPage(10))
             ->withQueryString();
 
-        $payload = $users->toArray();
-        $payload['data'] = array_map(
-            fn (User $user) => $this->serializeUser($user),
-            $users->items(),
-        );
+        $users->through(fn (User $user): array => $this->serializeUser($user));
+
+        if ($request->wantsJson()) {
+            return response()->json($users);
+        }
 
         return Inertia::render('users/index', [
-            'users' => $payload,
+            'users' => $users,
             'availableRoles' => $this->availableRoles(),
-            'filters' => [
-                'search' => $request->input('filter.search'),
-                'roles' => $this->normalizeRolesFilter($request->input('filter.roles')),
-                'is_active' => $request->input('filter.is_active'),
-            ],
         ]);
     }
 
@@ -225,20 +221,5 @@ class UserController extends Controller
     private function roleLabel(string $name): string
     {
         return RoleEnum::tryFrom($name)?->label() ?? $name;
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function normalizeRolesFilter(mixed $value): array
-    {
-        if ($value === null || $value === '') {
-            return [];
-        }
-        if (is_array($value)) {
-            return array_values(array_filter(array_map('strval', $value)));
-        }
-
-        return array_values(array_filter(array_map('trim', explode(',', (string) $value))));
     }
 }

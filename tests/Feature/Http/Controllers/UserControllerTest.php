@@ -33,7 +33,6 @@ test('admin can list users with paginated payload + filters', function (): void 
             ->has('users.data')
             ->has('users.current_page')
             ->has('availableRoles', 4)
-            ->has('filters')
     );
 });
 
@@ -45,6 +44,7 @@ test('list filters by search and roles and is_active', function (): void {
     $driver = User::factory()->create(['name' => 'Diego Driver']);
     $driver->assignRole(Role::DRIVER->value);
 
+    // search filter — names are case-insensitive (cross-DB lower(name) like)
     $response = get(route('users.index', ['filter' => ['search' => 'camila']]));
     $response->assertOk();
     $response->assertInertia(
