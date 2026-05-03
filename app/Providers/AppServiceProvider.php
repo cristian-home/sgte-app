@@ -3,12 +3,15 @@
 namespace App\Providers;
 
 use App\Enums\Role;
+use App\Listeners\UpdateLastLoginAt;
 use App\Models\Service;
 use App\Observers\ServiceObserver;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Events\Login;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
@@ -32,6 +35,8 @@ class AppServiceProvider extends ServiceProvider
         $this->configureMacros();
 
         Service::observe(ServiceObserver::class);
+
+        Event::listen(Login::class, UpdateLastLoginAt::class);
 
         // Super Admin User can bypass all authorization checks
         Gate::before(function ($user, $ability) {
