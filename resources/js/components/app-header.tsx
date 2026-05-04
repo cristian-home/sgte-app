@@ -28,11 +28,11 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { UserMenuContent } from '@/components/user-menu-content';
-import { avatarColorForId } from '@/lib/avatar-color';
 import { Permission } from '@/enums/Permission';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { useInitials } from '@/hooks/use-initials';
 import { usePermissions } from '@/hooks/use-permissions';
+import { avatarColorForId } from '@/lib/avatar-color';
 import { cn, toUrl } from '@/lib/utils';
 import { dashboard } from '@/routes';
 import AppLogo from './app-logo';
