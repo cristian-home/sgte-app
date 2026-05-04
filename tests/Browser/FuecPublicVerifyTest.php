@@ -72,7 +72,7 @@ test('public verify page renders VIGENTE for an active FUEC without authenticati
         // bearing fields.
         $browser->visit("/fuec/verify/{$fuec->uuid}")
             ->waitForText('VIGENTE')
-            ->assertSee('SGTE')
+            ->assertSee(config('app.name'))
             ->assertSee('9001')
             ->assertSee('RES-VERIFY')
             ->assertSee('CT-VERIFY-001')

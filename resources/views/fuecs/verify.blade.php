@@ -30,7 +30,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verificación FUEC Nº {{ $fuec->consecutive_number }} — SGTE</title>
+    <title>Verificación FUEC Nº {{ $fuec->consecutive_number }} — {{ config('app.name') }}</title>
     <style>
         * { box-sizing: border-box; }
         body {
@@ -122,7 +122,7 @@
 </head>
 <body>
 <div class="wrap">
-    <div class="brand">SGTE · Sistema de Gestión de Transporte Especial</div>
+    <div class="brand">{{ config('app.name') }} · {{ config('app.tagline') }}</div>
 
     <div class="status-badge {{ $isActive ? 'vigente' : 'anulado' }}">
         @if ($isActive)

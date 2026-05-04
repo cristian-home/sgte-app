@@ -17,6 +17,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Application Tagline
+    |--------------------------------------------------------------------------
+    |
+    | A short descriptive subtitle shown next to the application name in
+    | branded surfaces (sidebar header, public FUEC verify page, invoice
+    | PDF header, transactional emails). Keep this aligned with APP_NAME
+    | when rebranding.
+    |
+    */
+
+    'tagline' => env('APP_TAGLINE', 'Sistema de Gestión de Transporte Especial'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Environment
     |--------------------------------------------------------------------------
     |

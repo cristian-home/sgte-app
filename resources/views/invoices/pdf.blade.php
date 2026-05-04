@@ -175,9 +175,9 @@
     <table>
         <tr>
             <td style="vertical-align: top;">
-                <h1 style="font-size: 22pt; font-weight: bold; color: #111827;">SGTE</h1>
+                <h1 style="font-size: 22pt; font-weight: bold; color: #111827;">{{ config('app.name') }}</h1>
                 <p class="muted" style="font-size: 9pt; margin-top: 2px;">
-                    Sistema de Gestión de Transporte Especial
+                    {{ config('app.tagline') }}
                 </p>
             </td>
             <td style="vertical-align: top; text-align: right;">
