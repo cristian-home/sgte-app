@@ -21,7 +21,7 @@
     <p>Estimado(a) <strong>{{ $providerLabel }}</strong>:</p>
 
     <p>
-        Algunos documentos de los vehículos que usted provee a SGTE están próximos
+        Algunos documentos de los vehículos que usted provee a {{ config('app.name') }} están próximos
         a vencerse. Le solicitamos compartir las versiones actualizadas con nuestro
         equipo de operaciones antes de la fecha indicada para evitar la suspensión
         automática de la asignación de servicios.
@@ -54,8 +54,8 @@
     </table>
 
     <p class="footer">
-        Este mensaje se envía automáticamente desde el Sistema de Gestión de
-        Transporte Especial (SGTE). Para cualquier consulta, responda a este correo
+        Este mensaje se envía automáticamente desde el {{ config('app.tagline') }}
+        ({{ config('app.name') }}). Para cualquier consulta, responda a este correo
         o escriba al equipo de operaciones.
     </p>
 </body>
