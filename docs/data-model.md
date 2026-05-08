@@ -17,6 +17,7 @@ This file contains the updated data model based on client notes and meetings.
 7. **Invoice ↔ Tercero** - `invoices.third_party_id` FK (added during Phase D refactor) enforces "one invoice groups services from a single tercero".
 8. **CONTABILIDAD role added** - With specific permissions
 9. **Optional GPS** - Location is no longer required
+10. **Datetime + per-row IANA timezone (rollout 2026-05-08)** - Every business datetime field is stored as a UTC instant (`TIMESTAMPTZ`, columns named `*_at`) plus a `timezone` (`VARCHAR(64)`) column on the same row. Calendar-day fields use half-open intervals: `start_at` = 00:00 of first day in `timezone`, `end_at` = 00:00 of the day after the last covered day. The model exposes wall-clock `*_date` accessors for the UI. See ADR-007 and `docs/audits/2026-05-08-datetime-timezone-discovery.md`.
 
 ---
 
@@ -78,10 +79,13 @@ Unifies clients, providers, and any natural or legal person (except drivers).
 | municipality_id         | BIGINT     | FK → municipalities (used as Gantt filter)                     |
 | is_third_party          | BOOLEAN    | Whether it is a third-party vehicle                            |
 | third_party_id          | BIGINT     | FK → third_parties (if outsourced, otherwise NULL)             |
-| soat_due_date           | DATE       | SOAT expiration date                                           |
-| rtm_due_date            | DATE       | RTM expiration date                                            |
-| operation_card_due_date | DATE       | Operating Card (Tarjeta de Operación) expiration date          |
+| timezone                | VARCHAR(64)| IANA timezone for the document due-at instants below           |
+| soat_due_at             | TIMESTAMPTZ| SOAT expiration instant (next-midnight in `timezone` after the conventional last valid day) |
+| rtm_due_at              | TIMESTAMPTZ| RTM expiration instant (same convention)                       |
+| operation_card_due_at   | TIMESTAMPTZ| Operating Card (Tarjeta de Operación) expiration instant       |
 | status                  | ENUM       | Vehicle status                                                 |
+
+> **Wall-clock `*_due_date` accessors** project each instant to `Y-m-d` in the row's `timezone` for the UI / activity log payloads.
 
 > **Note:** There is no `cost_center` column — internal vehicle identification is via `internal_code` alone.
 
@@ -167,7 +171,8 @@ Catalog of Colombian Severance Funds.
 | phone                 | VARCHAR | Contact phone                                                 |
 | email                 | VARCHAR | Email address                                                 |
 | license_category      | ENUM    | License category (`C1`, `C2`, `C3`)                           |
-| license_due_date      | DATE    | License expiration date                                       |
+| timezone              | VARCHAR(64) | IANA timezone for the license expiration instant          |
+| license_due_at        | TIMESTAMPTZ | License expiration instant (next-midnight in `timezone`)  |
 | eps_id                | BIGINT  | Foreign Key → eps                                             |
 | pension_fund_id       | BIGINT  | Foreign Key → pension_funds                                   |
 | severance_fund_id     | BIGINT  | Foreign Key → severance_funds                                 |
@@ -184,10 +189,13 @@ Catalog of Colombian Severance Funds.
 | contract_number   | VARCHAR | Contract number                            |
 | third_party_id    | BIGINT  | Foreign Key → third_parties (client)       |
 | contract_object   | ENUM    | Empresarial, Turismo, Salud, Ocasional     |
-| start_date        | DATE    | Start date of validity                     |
-| end_date          | DATE    | End date of validity                      |
+| timezone          | VARCHAR(64) | IANA timezone for the start/end instants below |
+| start_at          | TIMESTAMPTZ | First valid instant (00:00 of first day in `timezone`) |
+| end_at            | TIMESTAMPTZ | Half-open exclusive end (00:00 of the day after the last valid day) |
 | route_description | TEXT    | Description of the authorized route        |
 | is_generic        | BOOLEAN | Whether it is a temporary generic contract |
+
+> **Vigencia query**: `start_at <= now() AND end_at > now()`. Wall-clock `start_date` / `end_date` accessors project to `Y-m-d`.
 
 ---
 
@@ -207,15 +215,22 @@ Catalog of Colombian Severance Funds.
 | destination_municipality_id | BIGINT | FK → municipalities                                      |
 | destination_address        | VARCHAR | Free-text destination address                            |
 | destination_coordinates    | VARCHAR | Optional lat/lng pair for destination                    |
-| planned_start_time         | TIME    | Planned start time                                       |
+| timezone                   | VARCHAR(64) | IANA timezone the service is operationally scheduled in (defaults from contract / `config('app.operation_tz')`) |
+| service_date_local         | DATE    | Denormalized day-bucket projected from `planned_start_at` in `timezone`; powers Gantt / Day Summary / Calendar BTree queries |
+| planned_start_at           | TIMESTAMPTZ | Planned start instant (UTC)                          |
 | planned_duration           | INTEGER | Estimated duration in minutes                            |
-| actual_start_time          | TIME    | Actual start time                                        |
-| actual_end_time            | TIME    | Actual end time                                          |
+| actual_start_at            | TIMESTAMPTZ | Actual start instant (UTC, nullable)                |
+| actual_end_at              | TIMESTAMPTZ | Actual end instant (UTC, nullable)                  |
+| driver_declined_at         | TIMESTAMPTZ | Pre-flight decline timestamp (REQ-012, nullable)    |
+| driver_decline_reason      | VARCHAR | Free-text decline reason (nullable)                      |
 | unit_value                 | DECIMAL | Unit value of the service                                |
 | quantity                   | INT     | Quantity                                                 |
 | billing_group              | VARCHAR | Billing category (nullable)                              |
 | payment_method             | ENUM    | Payment method                                           |
 | service_status             | ENUM    | `open` / `closed`                                        |
+| manual_entry_justification | VARCHAR | REQ-009 retroactive-entry provenance (nullable)          |
+
+> **Wall-clock accessors**: `service_date`, `planned_start_local`, `actual_start_local`, `actual_end_local` project the instants to `Y-m-d` / `H:i` in the row's `timezone`. The setters accept wall-clock strings and project to UTC instants.
 
 ---
 
@@ -303,7 +318,8 @@ A single invoice groups multiple services from the same tercero. The `third_part
 | third_party_id | BIGINT  | Foreign Key → third_parties (invoice client)         |
 | invoice_number | VARCHAR | Invoice number                                       |
 | total_value    | DECIMAL | Total invoice amount                                 |
-| issue_date     | DATE    | Issue date                                           |
+| timezone       | VARCHAR(64) | IANA timezone for the issue instant              |
+| issued_at      | TIMESTAMPTZ | Issue instant (00:00 of issue day in `timezone`) |
 | payment_status | ENUM    | `pending` / `paid` / `overdue`                       |
 | notes          | TEXT    | Free-form notes (nullable)                           |
 | deleted_at     | TIMESTAMP | Soft delete                                        |

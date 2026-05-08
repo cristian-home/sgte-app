@@ -12,6 +12,7 @@ Record of architectural decisions for the SGTE project.
 | ADR-004 | [Hybrid search strategy (Scout+Typesense + SearchesDatabase)](ADR-004-hybrid-search-strategy.md) | Accepted | 2026-04-13 |
 | ADR-005 | [Authorization layering (no Eloquent Policies)](ADR-005-authorization-layering.md) | Accepted | 2026-04-13 |
 | ADR-006 | [Platform conventions](ADR-006-platform-conventions.md) | Accepted | 2026-04-13 |
+| ADR-007 | [Datetime and timezone model](ADR-007-datetime-and-timezone-model.md) | Accepted | 2026-05-08 |
 
 ## Format
 

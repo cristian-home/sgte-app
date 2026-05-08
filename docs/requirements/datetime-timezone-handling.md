@@ -5,12 +5,14 @@ scope: shared
 status: completed
 priority: high
 created_date: 2026-04-24
-completed_date: 2026-04-25
+completed_date: 2026-05-08
 srs_refs: [REQ-001, REQ-002, REQ-003, REQ-004, REQ-005, REQ-008, REQ-009, REQ-012]
 migration_strategy: modify-existing
 ---
 
 # Datetime and timezone handling — instant + event timezone storage with viewer-aware rendering
+
+> **Status note (2026-05-08)** — Phase 1 (Service-only) was merged 2026-04-25. A second-pass rollout on 2026-05-08 extended the same model to **all** business datetime fields across Contract, Driver, Vehicle, Invoice, Fuec, ServiceIncident, DayStatus, and DataImport, and added the viewer-TZ capture flow. See `docs/audits/2026-05-08-datetime-timezone-discovery.md` for the audit, the 10 findings (F-001..F-010) and their resolutions, plus the cross-day Europe/Madrid smoke verification. ADR-007 captures the architectural decisions.
 
 ## Description
 

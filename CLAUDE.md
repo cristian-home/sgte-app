@@ -96,7 +96,18 @@ php artisan enum:typescript              # Regenerate TS enums from PHP enums �
     - `Catálogos` (admin, operator) — Tipos de Documento, EPS, Fondos de Pensiones, Fondos de Cesantías, Tipos de Novedad
     - Driver-only: `Panel` → redirects to `/driver`, plus `Conductor > Mis Servicios`.
 - **Validation**: Form Request classes in `app/Http/Requests/` — never inline validation in controllers.
-- **Shared Inertia data**: `HandleInertiaRequests` middleware shares `auth.user`, `auth.permissions`, `auth.roles`, `sidebarOpen`, `name`, `url` to all pages.
+- **Shared Inertia data**: `HandleInertiaRequests` middleware shares `auth.user`, `auth.permissions`, `auth.roles`, `sidebarOpen`, `name`, `url`, `config.operation_tz`, and `config.viewer_tz` to all pages.
+
+### Datetime + per-row timezone (rollout 2026-05-08)
+
+Every business datetime field follows a single pattern; do not regress to raw `date` / `timestamp` casts.
+
+- **Storage**: UTC instant in a `*_at` column (`TIMESTAMPTZ`) plus a `timezone` column (`VARCHAR(64)`, default `config('app.operation_tz')`) on the same row. Calendar-day fields use **half-open intervals**: `start_at` = 00:00 of first day in `timezone`, `end_at` = 00:00 of the day after the last covered day; "active right now" is `start_at <= now() AND end_at > now()`.
+- **Models that own a TZ**: Service, Contract, Driver, Vehicle, Invoice, Fuec, ServiceIncident, DayStatus, DataImport. Each uses `App\Concerns\HasTimezone`, casts `*_at` as `'immutable_datetime:Y-m-d H:i:sP'`, and exposes wall-clock accessors (`*_date`, `*_local`) that project the instant to `Y-m-d` / `H:i` in the row's `timezone`. Setters accept a wall-clock string and project to the UTC instant — never write the raw column directly when the wall-clock value is what you have.
+- **Backend helper**: `App\Support\Tz` exposes `Tz::operation()`, `Tz::viewer($request)`, `Tz::for($modelOrTz)`, `Tz::nowIn($tz)`, `Tz::startOfDayInTzAsUtc($ymd, $tz)`, `Tz::endOfDayInTzAsUtc($ymd, $tz)`. Use these instead of `Carbon::today()` / `Carbon::now()->toDateString()` whenever the answer depends on the operational calendar day.
+- **Viewer TZ capture**: `App\Http\Middleware\CaptureViewerTimezone` reads the `X-Viewer-Timezone` header and the `viewer_tz` cookie (header wins), validates against `timezone_identifiers_list()`, and persists to `users.timezone` for authenticated users. `resources/js/hooks/use-viewer-timezone.tsx` (mounted in `app-sidebar-layout.tsx`) detects `Intl.DateTimeFormat().resolvedOptions().timeZone` on every authenticated visit and partial-reloads `config` when it changes. Cookie is non-encrypted (`bootstrap/app.php`).
+- **Frontend helpers**: `resources/js/lib/datetime.ts` — use `formatEventDate(at, tz)` / `formatEventTime(at, tz)` for instants anchored to a record TZ; `formatTimestampInViewerTz(at)` for audit timestamps; `viewerToday(tz)` for "today" Y-m-d strings. Never compute "today" via `new Date().toISOString().slice(0, 10)`.
+- **Reference implementation**: `app/Models/Service.php` — copy this pattern when adding a new business model with datetime fields. ADR-007 documents the conventions; the rollout audit lives at `docs/audits/2026-05-08-datetime-timezone-discovery.md`.
 
 ### Frontend (React 19 + Inertia v2)
 
