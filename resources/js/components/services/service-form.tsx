@@ -48,7 +48,9 @@ export interface DriverOption {
     first_name: string;
     first_lastname: string;
     identification_number: string;
+    license_due_at: string | null;
     license_due_date: string | null;
+    timezone?: string | null;
     eps_id: number | null;
     pension_fund_id: number | null;
 }

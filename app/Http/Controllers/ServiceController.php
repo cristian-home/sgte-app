@@ -314,8 +314,8 @@ class ServiceController extends Controller
                 ->with('thirdParty:id,identification_number,first_name,first_lastname,company_name,is_natural_person')
                 ->get(['id', 'plate', 'is_third_party', 'third_party_id']),
             'drivers' => Driver::query()
-                ->where('license_due_date', '>=', Carbon::now((string) config('app.operation_tz'))->toDateString())
-                ->get(['id', 'first_name', 'first_lastname', 'identification_number', 'license_due_date', 'eps_id', 'pension_fund_id']),
+                ->where('license_due_at', '>', Carbon::now((string) config('app.operation_tz'))->utc())
+                ->get(['id', 'first_name', 'first_lastname', 'identification_number', 'license_due_at', 'timezone', 'eps_id', 'pension_fund_id']),
             'contracts' => Contract::query()
                 ->where('active', true)
                 ->with('thirdParty:id,identification_number,first_name,first_lastname,company_name,is_natural_person')

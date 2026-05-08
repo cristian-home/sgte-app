@@ -23,8 +23,8 @@ class ContractUpdateRequest extends FormRequest
             'contract_number' => [Rule::when(! $this->boolean('is_generic'), ['required', 'string', 'max:50'], ['nullable', 'string', 'max:50'])],
             'third_party_id' => ['required', 'integer', 'exists:third_parties,id'],
             'contract_object' => ['required', Rule::enum(ContractObject::class)],
-            'start_date' => ['required', 'date_format:Y-m-d'],
-            'end_date' => ['required', 'date_format:Y-m-d', 'after_or_equal:start_date'],
+            'start_date' => ['required', 'date'],
+            'end_date' => ['required', 'date', 'after_or_equal:start_date'],
             'timezone' => ['required', 'string', Rule::in(timezone_identifiers_list())],
             'start_at' => ['required', 'date'],
             'end_at' => ['required', 'date'],
@@ -43,14 +43,29 @@ class ContractUpdateRequest extends FormRequest
         }
         $this->merge(['timezone' => $timezone]);
 
-        $startDate = $this->input('start_date');
-        $endDate = $this->input('end_date');
+        $start = $this->normalizeYmd($this->input('start_date'));
+        $end = $this->normalizeYmd($this->input('end_date'));
 
-        if (is_string($startDate) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $startDate)) {
-            $this->merge(['start_at' => Tz::startOfDayInTzAsUtc($startDate, $timezone)->utc()->toIso8601String()]);
+        if ($start !== null) {
+            $this->merge(['start_at' => Tz::startOfDayInTzAsUtc($start, $timezone)->utc()->toIso8601String()]);
         }
-        if (is_string($endDate) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $endDate)) {
-            $this->merge(['end_at' => Tz::endOfDayInTzAsUtc($endDate, $timezone)->utc()->toIso8601String()]);
+        if ($end !== null) {
+            $this->merge(['end_at' => Tz::endOfDayInTzAsUtc($end, $timezone)->utc()->toIso8601String()]);
         }
+    }
+
+    protected function normalizeYmd(mixed $value): ?string
+    {
+        if ($value instanceof \DateTimeInterface) {
+            return $value->format('Y-m-d');
+        }
+        if (! is_string($value) || $value === '') {
+            return null;
+        }
+        if (preg_match('/^(\d{4}-\d{2}-\d{2})/', $value, $m)) {
+            return $m[1];
+        }
+
+        return null;
     }
 }

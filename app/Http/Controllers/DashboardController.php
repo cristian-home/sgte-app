@@ -87,33 +87,34 @@ class DashboardController extends Controller
      */
     private function buildDocumentAlerts(Carbon $today, Carbon $expiryThreshold, Carbon $contractExpiryThreshold): array
     {
+        $expiryThresholdInstant = $expiryThreshold->copy()->utc();
         $vehicleAlerts = Vehicle::query()
-            ->select(['id', 'plate', 'internal_code', 'soat_due_date', 'rtm_due_date', 'operation_card_due_date'])
-            ->where(function ($query) use ($expiryThreshold) {
-                $query->whereNotNull('soat_due_date')->where('soat_due_date', '<=', $expiryThreshold)
-                    ->orWhereNotNull('rtm_due_date')->where('rtm_due_date', '<=', $expiryThreshold)
-                    ->orWhereNotNull('operation_card_due_date')->where('operation_card_due_date', '<=', $expiryThreshold);
+            ->select(['id', 'plate', 'internal_code', 'timezone', 'soat_due_at', 'rtm_due_at', 'operation_card_due_at'])
+            ->where(function ($query) use ($expiryThresholdInstant) {
+                $query->whereNotNull('soat_due_at')->where('soat_due_at', '<=', $expiryThresholdInstant)
+                    ->orWhereNotNull('rtm_due_at')->where('rtm_due_at', '<=', $expiryThresholdInstant)
+                    ->orWhereNotNull('operation_card_due_at')->where('operation_card_due_at', '<=', $expiryThresholdInstant);
             })
             ->get()
-            ->flatMap(function (Vehicle $vehicle) use ($today, $expiryThreshold) {
+            ->flatMap(function (Vehicle $vehicle) use ($today, $expiryThresholdInstant) {
                 $fields = [
-                    'soat_due_date' => 'SOAT',
-                    'rtm_due_date' => 'RTM',
-                    'operation_card_due_date' => 'Tarjeta de Operación',
+                    'soat_due_at' => 'SOAT',
+                    'rtm_due_at' => 'RTM',
+                    'operation_card_due_at' => 'Tarjeta de Operación',
                 ];
 
                 $rows = [];
                 foreach ($fields as $column => $label) {
-                    $dueDate = $vehicle->{$column};
-                    if ($dueDate === null || $dueDate->greaterThan($expiryThreshold)) {
+                    $dueAt = $vehicle->{$column};
+                    if ($dueAt === null || $dueAt->greaterThan($expiryThresholdInstant)) {
                         continue;
                     }
-                    $daysRemaining = (int) $today->diffInDays($dueDate, false);
+                    $daysRemaining = (int) $today->diffInDays($dueAt, false);
                     $rows[] = [
                         'kind' => 'vehicle',
                         'label' => $label,
                         'subject' => $vehicle->plate,
-                        'due_date' => $dueDate->toDateString(),
+                        'due_date' => $vehicle->{str_replace('_at', '_date', $column)},
                         'days_remaining' => $daysRemaining,
                         'link' => $this->vehicleAlertLink($daysRemaining),
                     ];
@@ -123,18 +124,18 @@ class DashboardController extends Controller
             });
 
         $driverAlerts = Driver::query()
-            ->select(['id', 'first_name', 'first_lastname', 'license_due_date'])
-            ->whereNotNull('license_due_date')
-            ->where('license_due_date', '<=', $expiryThreshold)
+            ->select(['id', 'first_name', 'first_lastname', 'timezone', 'license_due_at'])
+            ->whereNotNull('license_due_at')
+            ->where('license_due_at', '<=', $expiryThresholdInstant)
             ->get()
             ->map(function (Driver $driver) use ($today) {
-                $daysRemaining = (int) $today->diffInDays($driver->license_due_date, false);
+                $daysRemaining = (int) $today->diffInDays($driver->license_due_at, false);
 
                 return [
                     'kind' => 'driver',
                     'label' => 'Licencia',
                     'subject' => trim($driver->first_name.' '.$driver->first_lastname),
-                    'due_date' => $driver->license_due_date?->toDateString(),
+                    'due_date' => $driver->license_due_date,
                     'days_remaining' => $daysRemaining,
                     'link' => $this->driverAlertLink($daysRemaining),
                 ];
@@ -175,7 +176,11 @@ class DashboardController extends Controller
      */
     private function vehicleAlertLink(int $daysRemaining): string
     {
-        return $daysRemaining < 0
+        // <= 0 because license_due_at is the half-open exclusive instant
+        // (next-midnight after the conventional last day): when "today
+        // is the conventional last day", daysRemaining = 0 means the
+        // document already lapsed at start of business today.
+        return $daysRemaining <= 0
             ? '/vehicles?filter[docs_status]=expired'
             : '/vehicles?filter[docs_status]=expiring_soon';
     }
@@ -188,7 +193,7 @@ class DashboardController extends Controller
      */
     private function driverAlertLink(int $daysRemaining): string
     {
-        return $daysRemaining < 0
+        return $daysRemaining <= 0
             ? '/drivers?filter[license_status]=expired'
             : '/drivers?filter[license_status]=expiring_soon';
     }
@@ -203,7 +208,7 @@ class DashboardController extends Controller
      */
     private function contractAlertLink(int $daysRemaining): string
     {
-        return $daysRemaining < 0
+        return $daysRemaining <= 0
             ? '/contracts?filter[contract_status]=vencido'
             : '/contracts?filter[contract_status]=expiring_soon';
     }

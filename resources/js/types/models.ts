@@ -95,9 +95,13 @@ export type Vehicle = {
     municipality_id: number | null;
     is_third_party: boolean;
     third_party_id: number | null;
-    soat_due_date: string | null;
-    rtm_due_date: string | null;
-    operation_card_due_date: string | null;
+    timezone: string;
+    soat_due_at: string;
+    rtm_due_at: string;
+    operation_card_due_at: string;
+    soat_due_date: string;
+    rtm_due_date: string;
+    operation_card_due_date: string;
     status: string;
     third_party?: ThirdParty;
     municipality?: Municipality;
@@ -118,7 +122,9 @@ export type Driver = {
     phone: string | null;
     email: string | null;
     license_category: string;
-    license_due_date: string | null;
+    timezone: string;
+    license_due_at: string;
+    license_due_date: string;
     eps_id: number | null;
     pension_fund_id: number | null;
     severance_fund_id: number | null;

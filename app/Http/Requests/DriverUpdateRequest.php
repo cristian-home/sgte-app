@@ -36,6 +36,7 @@ class DriverUpdateRequest extends FormRequest
             'email' => ['required', 'email', 'max:255'],
             'license_category' => ['required', 'string', Rule::enum(LicenseCategory::class)],
             'license_due_date' => ['required', 'date'],
+            'timezone' => ['nullable', 'string', Rule::in(timezone_identifiers_list())],
             'eps_id' => ['required', 'integer', 'exists:eps,id'],
             'pension_fund_id' => ['required', 'integer', 'exists:pension_funds,id'],
             'severance_fund_id' => ['required', 'integer', 'exists:severance_funds,id'],

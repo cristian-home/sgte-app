@@ -54,9 +54,9 @@ class VehicleController extends Controller
                     $first = is_array($value) ? ($value[0] ?? '') : explode(',', (string) $value)[0];
                     $this->applyDocsStatusFilter($query, $first);
                 }),
-                AllowedFilter::callback('soat_expired', fn (Builder $query, $value) => $this->applyDocumentExpiredFilter($query, 'soat_due_date', $value)),
-                AllowedFilter::callback('rtm_expired', fn (Builder $query, $value) => $this->applyDocumentExpiredFilter($query, 'rtm_due_date', $value)),
-                AllowedFilter::callback('operation_card_expired', fn (Builder $query, $value) => $this->applyDocumentExpiredFilter($query, 'operation_card_due_date', $value)),
+                AllowedFilter::callback('soat_expired', fn (Builder $query, $value) => $this->applyDocumentExpiredFilter($query, 'soat_due_at', $value)),
+                AllowedFilter::callback('rtm_expired', fn (Builder $query, $value) => $this->applyDocumentExpiredFilter($query, 'rtm_due_at', $value)),
+                AllowedFilter::callback('operation_card_expired', fn (Builder $query, $value) => $this->applyDocumentExpiredFilter($query, 'operation_card_due_at', $value)),
             ])
             ->allowedSorts(['internal_code', 'plate', 'model_year', 'municipality_id', 'status'])
             ->defaultSort('plate')
@@ -92,39 +92,40 @@ class VehicleController extends Controller
      */
     private function applyDocsStatusFilter(Builder $query, string $value): void
     {
-        $today = Carbon::now((string) config('app.operation_tz'))->toDateString();
-        $threshold = Carbon::now((string) config('app.operation_tz'))->addDays(self::DOCS_EXPIRY_WINDOW_DAYS)->toDateString();
+        $now = Carbon::now((string) config('app.operation_tz'));
+        $nowInstant = $now->copy()->utc();
+        $thresholdInstant = $now->copy()->addDays(self::DOCS_EXPIRY_WINDOW_DAYS)->utc();
 
         match ($value) {
-            'expired' => $query->where(function (Builder $q) use ($today): void {
-                $q->whereDate('soat_due_date', '<', $today)
-                    ->orWhereDate('rtm_due_date', '<', $today)
-                    ->orWhereDate('operation_card_due_date', '<', $today)
-                    ->orWhereNull('soat_due_date')
-                    ->orWhereNull('rtm_due_date')
-                    ->orWhereNull('operation_card_due_date');
+            'expired' => $query->where(function (Builder $q) use ($nowInstant): void {
+                $q->where('soat_due_at', '<=', $nowInstant)
+                    ->orWhere('rtm_due_at', '<=', $nowInstant)
+                    ->orWhere('operation_card_due_at', '<=', $nowInstant)
+                    ->orWhereNull('soat_due_at')
+                    ->orWhereNull('rtm_due_at')
+                    ->orWhereNull('operation_card_due_at');
             }),
             'expiring_soon' => $query
-                ->where(function (Builder $q) use ($today, $threshold): void {
-                    // At least one document is in the [today, today+30] window.
-                    $q->whereBetween('soat_due_date', [$today, $threshold])
-                        ->orWhereBetween('rtm_due_date', [$today, $threshold])
-                        ->orWhereBetween('operation_card_due_date', [$today, $threshold]);
+                ->where(function (Builder $q) use ($nowInstant, $thresholdInstant): void {
+                    // At least one document is in the [now, now+30d] window.
+                    $q->whereBetween('soat_due_at', [$nowInstant, $thresholdInstant])
+                        ->orWhereBetween('rtm_due_at', [$nowInstant, $thresholdInstant])
+                        ->orWhereBetween('operation_card_due_at', [$nowInstant, $thresholdInstant]);
                 })
-                ->whereNotNull('soat_due_date')
-                ->whereNotNull('rtm_due_date')
-                ->whereNotNull('operation_card_due_date')
+                ->whereNotNull('soat_due_at')
+                ->whereNotNull('rtm_due_at')
+                ->whereNotNull('operation_card_due_at')
                 // …and no document is already expired.
-                ->whereDate('soat_due_date', '>=', $today)
-                ->whereDate('rtm_due_date', '>=', $today)
-                ->whereDate('operation_card_due_date', '>=', $today),
+                ->where('soat_due_at', '>', $nowInstant)
+                ->where('rtm_due_at', '>', $nowInstant)
+                ->where('operation_card_due_at', '>', $nowInstant),
             'ok' => $query
-                ->whereNotNull('soat_due_date')
-                ->whereNotNull('rtm_due_date')
-                ->whereNotNull('operation_card_due_date')
-                ->whereDate('soat_due_date', '>', $threshold)
-                ->whereDate('rtm_due_date', '>', $threshold)
-                ->whereDate('operation_card_due_date', '>', $threshold),
+                ->whereNotNull('soat_due_at')
+                ->whereNotNull('rtm_due_at')
+                ->whereNotNull('operation_card_due_at')
+                ->where('soat_due_at', '>', $thresholdInstant)
+                ->where('rtm_due_at', '>', $thresholdInstant)
+                ->where('operation_card_due_at', '>', $thresholdInstant),
             default => null, // ignore unknown values
         };
     }
@@ -141,10 +142,10 @@ class VehicleController extends Controller
             return;
         }
 
-        $today = Carbon::now((string) config('app.operation_tz'))->toDateString();
+        $nowInstant = Carbon::now((string) config('app.operation_tz'))->utc();
 
-        $query->where(function (Builder $q) use ($column, $today): void {
-            $q->whereNull($column)->orWhereDate($column, '<', $today);
+        $query->where(function (Builder $q) use ($column, $nowInstant): void {
+            $q->whereNull($column)->orWhere($column, '<=', $nowInstant);
         });
     }
 

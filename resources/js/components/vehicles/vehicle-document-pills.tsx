@@ -1,31 +1,33 @@
 import { Badge } from '@/components/ui/badge';
 import {
     dateFormatter,
-    localTodayMs,
     parseDueDate,
     statusBadgeVariant,
-    statusFor,
+    statusForInstant,
     type DocumentStatus,
 } from '@/lib/document-status';
 
 type DocumentInput = {
-    soat_due_date: string | null;
-    rtm_due_date: string | null;
-    operation_card_due_date: string | null;
+    soat_due_at: string | null;
+    rtm_due_at: string | null;
+    operation_card_due_at: string | null;
+    soat_due_date?: string | null;
+    rtm_due_date?: string | null;
+    operation_card_due_date?: string | null;
 };
 
 interface DocumentSlot {
     label: string;
-    dueDate: string | null;
+    visibleDate: string | null;
     status: DocumentStatus;
 }
 
 function tooltipFor(
     label: string,
-    dueDate: string | null,
+    visibleDate: string | null,
     status: DocumentStatus,
 ): string {
-    const parsed = parseDueDate(dueDate);
+    const parsed = parseDueDate(visibleDate);
     if (parsed === null) {
         return `${label} sin registrar`;
     }
@@ -41,41 +43,32 @@ function tooltipFor(
 
 /**
  * Three-pill component summarizing a vehicle's legal document state.
- *
- * Each pill (SOAT, RTM, T.O.) renders with a Badge variant computed
- * against the supplied `today` (defaulting to the local browser date):
- *
- * - destructive: due date is null or in the past
- * - secondary:   due date is within the next 30 days
- * - outline:     due date is more than 30 days away
- *
- * Reused on the vehicles index Documentos column and on the show page
- * Documentos card.
+ * Compares half-open `*_due_at` instants against `now`.
  */
 export function VehicleDocumentPills({
     vehicle,
-    today,
+    now,
 }: {
     vehicle: DocumentInput;
-    today?: string;
+    now?: Date;
 }) {
-    const todayMs = localTodayMs(today);
+    const reference = now ?? new Date();
 
     const slots: DocumentSlot[] = [
         {
             label: 'SOAT',
-            dueDate: vehicle.soat_due_date,
-            status: statusFor(vehicle.soat_due_date, todayMs),
+            visibleDate: vehicle.soat_due_date ?? null,
+            status: statusForInstant(vehicle.soat_due_at, reference),
         },
         {
             label: 'RTM',
-            dueDate: vehicle.rtm_due_date,
-            status: statusFor(vehicle.rtm_due_date, todayMs),
+            visibleDate: vehicle.rtm_due_date ?? null,
+            status: statusForInstant(vehicle.rtm_due_at, reference),
         },
         {
             label: 'T.O.',
-            dueDate: vehicle.operation_card_due_date,
-            status: statusFor(vehicle.operation_card_due_date, todayMs),
+            visibleDate: vehicle.operation_card_due_date ?? null,
+            status: statusForInstant(vehicle.operation_card_due_at, reference),
         },
     ];
 
@@ -85,7 +78,11 @@ export function VehicleDocumentPills({
                 <Badge
                     key={slot.label}
                     variant={statusBadgeVariant(slot.status)}
-                    title={tooltipFor(slot.label, slot.dueDate, slot.status)}
+                    title={tooltipFor(
+                        slot.label,
+                        slot.visibleDate,
+                        slot.status,
+                    )}
                 >
                     {slot.label}
                     {slot.status === 'expired' ? '!' : ''}
@@ -96,32 +93,22 @@ export function VehicleDocumentPills({
 }
 
 /**
- * Public helper exposed so the vehicles index can compute the row tint
- * without re-instantiating the pill component just to read its state.
- *
- * Returns:
- * - 'expired' when any document is expired or null
- * - 'expiring_soon' when at least one document is within 30 days and none is expired
- * - 'ok' otherwise
+ * Public helper for the vehicles index row tint. Returns the worst of
+ * the three slot statuses.
  */
 export function vehicleDocsAggregateStatus(
     vehicle: DocumentInput,
-    today?: string,
+    now?: Date,
 ): DocumentStatus {
-    const todayMs = localTodayMs(today);
-
+    const reference = now ?? new Date();
     const statuses = [
-        statusFor(vehicle.soat_due_date, todayMs),
-        statusFor(vehicle.rtm_due_date, todayMs),
-        statusFor(vehicle.operation_card_due_date, todayMs),
+        statusForInstant(vehicle.soat_due_at, reference),
+        statusForInstant(vehicle.rtm_due_at, reference),
+        statusForInstant(vehicle.operation_card_due_at, reference),
     ];
 
-    if (statuses.includes('expired')) {
-        return 'expired';
-    }
-    if (statuses.includes('expiring_soon')) {
-        return 'expiring_soon';
-    }
+    if (statuses.includes('expired')) return 'expired';
+    if (statuses.includes('expiring_soon')) return 'expiring_soon';
     return 'ok';
 }
 

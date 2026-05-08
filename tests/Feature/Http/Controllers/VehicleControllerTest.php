@@ -273,13 +273,13 @@ test('store saves and redirects', function (): void {
         ->where('municipality_id', $municipality->id)
         ->where('is_third_party', $is_third_party)
         ->where('third_party_id', $third_party->id)
-        ->where('soat_due_date', $soat_due_date)
-        ->where('rtm_due_date', $rtm_due_date)
-        ->where('operation_card_due_date', $operation_card_due_date)
         ->where('status', $status)
         ->get();
     expect($vehicles)->toHaveCount(1);
     $vehicle = $vehicles->first();
+    expect($vehicle->soat_due_date)->toBe($soat_due_date->format('Y-m-d'));
+    expect($vehicle->rtm_due_date)->toBe($rtm_due_date->format('Y-m-d'));
+    expect($vehicle->operation_card_due_date)->toBe($operation_card_due_date->format('Y-m-d'));
 
     $response->assertRedirect(route('vehicles.index'));
 });
@@ -424,9 +424,9 @@ test('update redirects', function (): void {
     expect($municipality->id)->toEqual($vehicle->municipality_id);
     expect($is_third_party)->toEqual($vehicle->is_third_party);
     expect($third_party->id)->toEqual($vehicle->third_party_id);
-    expect($soat_due_date)->toEqual($vehicle->soat_due_date);
-    expect($rtm_due_date)->toEqual($vehicle->rtm_due_date);
-    expect($operation_card_due_date)->toEqual($vehicle->operation_card_due_date);
+    expect($soat_due_date->format('Y-m-d'))->toEqual($vehicle->soat_due_date);
+    expect($rtm_due_date->format('Y-m-d'))->toEqual($vehicle->rtm_due_date);
+    expect($operation_card_due_date->format('Y-m-d'))->toEqual($vehicle->operation_card_due_date);
     expect($status)->toEqual($vehicle->status->value);
 });
 

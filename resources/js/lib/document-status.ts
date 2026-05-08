@@ -128,6 +128,29 @@ export function localTodayMs(today?: string): number {
 }
 
 /**
+ * Three-state status for a half-open `*_due_at` instant. The instant
+ * is the next-midnight after the conventional last day, so:
+ *
+ * - `now >= due_at` → expired (already lapsed at start of business today)
+ * - `now <  due_at` and `due_at - now <= window` → expiring_soon
+ * - otherwise → ok
+ */
+export function statusForInstant(
+    dueAt: string | null,
+    now: Date = new Date(),
+): DocumentStatus {
+    if (!dueAt) return 'expired';
+    const parsed = new Date(dueAt);
+    if (Number.isNaN(parsed.getTime())) return 'expired';
+    const dueMs = parsed.getTime();
+    const nowMs = now.getTime();
+    if (dueMs <= nowMs) return 'expired';
+    const daysOut = Math.round((dueMs - nowMs) / DAYS_IN_MS);
+    if (daysOut <= EXPIRY_WINDOW_DAYS) return 'expiring_soon';
+    return 'ok';
+}
+
+/**
  * Days-ahead window used to flag contracts as "por vencer".
  * Contracts have a longer renewal lead time than SOAT/RTM/license,
  * so we surface them earlier. Mirrors `CONTRACT_EXPIRY_ALERT_DAYS`

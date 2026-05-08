@@ -264,17 +264,26 @@ class ServiceStoreRequest extends FormRequest
             return;
         }
 
-        $serviceDate = (string) $this->input('service_date_local');
+        $plannedStart = $this->input('planned_start_at');
+        if (! is_string($plannedStart) || $plannedStart === '') {
+            return;
+        }
+        try {
+            $instant = CarbonImmutable::parse($plannedStart)->utc();
+        } catch (\Exception) {
+            return;
+        }
+
         $documents = [
-            'soat_due_date' => 'SOAT',
-            'rtm_due_date' => 'RTM',
-            'operation_card_due_date' => 'Tarjeta de Operación',
+            'soat_due_at' => 'SOAT',
+            'rtm_due_at' => 'RTM',
+            'operation_card_due_at' => 'Tarjeta de Operación',
         ];
 
         foreach ($documents as $column => $label) {
-            $dueDate = $vehicle->{$column};
+            $dueAt = $vehicle->{$column};
 
-            if ($dueDate === null) {
+            if ($dueAt === null) {
                 $validator->errors()->add(
                     'vehicle_id',
                     "El vehiculo no tiene registrado el {$label}."
@@ -283,12 +292,11 @@ class ServiceStoreRequest extends FormRequest
                 continue;
             }
 
-            $dueDateString = $dueDate instanceof \Illuminate\Support\Carbon ? $dueDate->toDateString() : (string) $dueDate;
-
-            if ($dueDateString < $serviceDate) {
+            if ($instant->gte($dueAt)) {
+                $visible = $vehicle->{str_replace('_at', '_date', $column)};
                 $validator->errors()->add(
                     'vehicle_id',
-                    "El {$label} del vehiculo esta vencido ({$dueDateString})."
+                    "El {$label} del vehiculo esta vencido ({$visible})."
                 );
             }
         }
@@ -314,21 +322,23 @@ class ServiceStoreRequest extends FormRequest
             return;
         }
 
-        $serviceDate = (string) $this->input('service_date_local');
-
-        if ($driver->license_due_date === null) {
-            $validator->errors()->add('driver_id', 'El conductor no tiene registrada la fecha de vencimiento de la licencia.');
-        } else {
-            $licenseDueString = $driver->license_due_date instanceof \Illuminate\Support\Carbon
-                ? $driver->license_due_date->toDateString()
-                : (string) $driver->license_due_date;
-
-            if ($licenseDueString < $serviceDate) {
-                $validator->errors()->add(
-                    'driver_id',
-                    "La licencia del conductor esta vencida ({$licenseDueString})."
-                );
+        $plannedStart = $this->input('planned_start_at');
+        $instant = null;
+        if (is_string($plannedStart) && $plannedStart !== '') {
+            try {
+                $instant = CarbonImmutable::parse($plannedStart)->utc();
+            } catch (\Exception) {
+                $instant = null;
             }
+        }
+
+        if ($driver->license_due_at === null) {
+            $validator->errors()->add('driver_id', 'El conductor no tiene registrada la fecha de vencimiento de la licencia.');
+        } elseif ($instant !== null && $instant->gte($driver->license_due_at)) {
+            $validator->errors()->add(
+                'driver_id',
+                "La licencia del conductor esta vencida ({$driver->license_due_date})."
+            );
         }
 
         if ($driver->has_social_security === false) {

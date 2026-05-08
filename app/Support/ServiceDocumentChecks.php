@@ -59,34 +59,33 @@ class ServiceDocumentChecks
     /**
      * REQ-004 AC 3-5. Returns a list of Spanish error messages (one
      * per expired/missing document). Empty list means all documents
-     * are valid on the given date.
+     * are valid at the given service instant.
      *
      * @return list<string>
      */
     public static function vehicleDocumentsValid(Vehicle $vehicle, Carbon $date): array
     {
-        $dateString = $date->toDateString();
+        $instant = $date->copy()->utc();
         $documents = [
-            'soat_due_date' => 'SOAT',
-            'rtm_due_date' => 'RTM',
-            'operation_card_due_date' => 'Tarjeta de Operación',
+            'soat_due_at' => 'SOAT',
+            'rtm_due_at' => 'RTM',
+            'operation_card_due_at' => 'Tarjeta de Operación',
         ];
 
         $errors = [];
 
         foreach ($documents as $column => $label) {
-            $dueDate = $vehicle->{$column};
+            $dueAt = $vehicle->{$column};
 
-            if ($dueDate === null) {
+            if ($dueAt === null) {
                 $errors[] = "El vehículo no tiene registrado el {$label}.";
 
                 continue;
             }
 
-            $dueDateString = $dueDate instanceof Carbon ? $dueDate->toDateString() : (string) $dueDate;
-
-            if ($dueDateString < $dateString) {
-                $errors[] = "El {$label} del vehículo está vencido (venció {$dueDateString}).";
+            if ($instant->greaterThanOrEqualTo($dueAt)) {
+                $visible = $vehicle->{str_replace('_at', '_date', $column)};
+                $errors[] = "El {$label} del vehículo está vencido (venció {$visible}).";
             }
         }
 
@@ -104,18 +103,12 @@ class ServiceDocumentChecks
     public static function driverLicenseValid(Driver $driver, Vehicle $vehicle, Carbon $date): array
     {
         $errors = [];
-        $dateString = $date->toDateString();
+        $instant = $date->copy()->utc();
 
-        if ($driver->license_due_date === null) {
+        if ($driver->license_due_at === null) {
             $errors[] = 'El conductor no tiene registrada la fecha de vencimiento de la licencia.';
-        } else {
-            $licenseDueString = $driver->license_due_date instanceof Carbon
-                ? $driver->license_due_date->toDateString()
-                : (string) $driver->license_due_date;
-
-            if ($licenseDueString < $dateString) {
-                $errors[] = "La licencia del conductor está vencida (venció {$licenseDueString}).";
-            }
+        } elseif ($instant->greaterThanOrEqualTo($driver->license_due_at)) {
+            $errors[] = "La licencia del conductor está vencida (venció {$driver->license_due_date}).";
         }
 
         if ($driver->has_social_security === false) {
