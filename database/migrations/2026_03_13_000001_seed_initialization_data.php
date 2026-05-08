@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\Role;
+use App\Models\Driver;
 use App\Models\User;
 use Database\Seeders\DriverSeeder;
 use Database\Seeders\ThirdPartySeeder;
@@ -35,10 +36,14 @@ return new class extends Migration
         (new DriverSeeder)->run();
         (new VehicleSeeder)->run();
 
-        // NOTE: linking driver@sgte.app to a Driver record happens in
-        // 2026_04_12_213633_link_driver_reference_user_to_driver.php,
-        // which runs after 2026_03_22_055857_add_user_id_to_drivers_table.
-        // We can't do it here because the user_id column doesn't exist yet.
+        // Link the reference driver user (driver@sgte.app) to the first
+        // Driver record so DriverDashboardController can resolve
+        // $user->driver and show their assigned services.
+        $driverUser = User::where('email', 'driver@sgte.app')->first();
+        if ($driverUser) {
+            $unlinkedDriver = Driver::whereNull('user_id')->orderBy('id')->first();
+            $unlinkedDriver?->update(['user_id' => $driverUser->id]);
+        }
     }
 
     public function down(): void

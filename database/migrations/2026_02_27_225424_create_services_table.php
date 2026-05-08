@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -68,6 +69,14 @@ return new class extends Migration
         });
 
         Schema::enableForeignKeyConstraints();
+
+        // Trigram GIN index over `billing_group` for ILIKE search in the
+        // services index toolbar. Postgres-only; SQLite test driver
+        // skips this branch silently.
+        if (DB::connection()->getDriverName() === 'pgsql') {
+            DB::statement('CREATE EXTENSION IF NOT EXISTS pg_trgm');
+            DB::statement('CREATE INDEX services_billing_group_trgm_idx ON services USING gin (billing_group gin_trgm_ops)');
+        }
     }
 
     /**
@@ -75,6 +84,9 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (DB::connection()->getDriverName() === 'pgsql') {
+            DB::statement('DROP INDEX IF EXISTS services_billing_group_trgm_idx');
+        }
         Schema::dropIfExists('services');
     }
 };

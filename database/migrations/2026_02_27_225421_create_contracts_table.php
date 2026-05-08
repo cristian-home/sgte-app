@@ -18,8 +18,14 @@ return new class extends Migration
             $table->string('contract_number', 50);
             $table->foreignId('third_party_id')->constrained();
             $table->enum('contract_object', ['business', 'tourism', 'health', 'occasional']);
-            $table->date('start_date');
-            $table->date('end_date');
+            // Half-open interval `[start_at, end_at)`. Both are UTC
+            // TIMESTAMPTZ projected from the wall-clock first/last day
+            // in `timezone` (start = 00:00 of first day; end =
+            // next-midnight after last day). See HasTimezone +
+            // Contract::scopeActiveAt.
+            $table->timestampTz('start_at');
+            $table->timestampTz('end_at');
+            $table->string('timezone', 64)->default('America/Bogota');
             $table->text('route_description');
             $table->boolean('is_generic')->default(false);
             $table->boolean('active')->default(true);

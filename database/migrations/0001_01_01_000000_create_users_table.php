@@ -19,6 +19,10 @@ return new class extends Migration
             $table->string('password');
             $table->boolean('must_change_password')->default(false);
             $table->boolean('is_active')->default(true);
+            // Best-effort store of the IANA timezone the user's browser
+            // last reported via CaptureViewerTimezone middleware. Null
+            // until the first authenticated visit with a header.
+            $table->string('timezone', 64)->nullable();
             $table->timestampTz('last_login_at')->nullable();
             $table->rememberToken();
             $table->timestampsTz();

@@ -29,6 +29,7 @@ return new class extends Migration
             $table->timestampTz('started_at')->nullable();
             $table->timestampTz('completed_at')->nullable();
             $table->timestampTz('files_purged_at')->nullable();
+            $table->string('timezone', 64)->default('America/Bogota');
             $table->timestampsTz();
 
             $table->index(['user_id', 'type', 'status']);
