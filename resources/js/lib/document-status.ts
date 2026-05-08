@@ -58,18 +58,24 @@ export function parseDueDate(dueDate: string | null): Date | null {
 }
 
 /**
- * Compute the three-state status of a single due date relative to the
- * supplied `today` (defaulting to the local browser date).
+ * Legacy three-state status for a wall-clock `Y-m-d` due date string.
+ * Anchors "today" in the viewer's local timezone (the calling code
+ * usually passes one in to anchor it in operation_tz instead).
  *
- * - `'expired'` — due date is null or strictly before today.
- * - `'expiring_soon'` — due date is within the next EXPIRY_WINDOW_DAYS days.
- * - `'ok'` — due date is more than EXPIRY_WINDOW_DAYS days away.
+ * Prefer `statusForInstant(due_at, now)` over this when a TIMESTAMPTZ
+ * `*_due_at` instant is available — it sidesteps F-003.
  */
 export function documentStatus(
     dueDate: string | null,
     today?: string,
 ): DocumentStatus {
-    const todayString = today ?? new Date().toISOString().slice(0, 10);
+    const todayString =
+        today ??
+        new Intl.DateTimeFormat('en-CA', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+        }).format(new Date());
     const todayMs = new Date(`${todayString}T00:00:00`).getTime();
     return statusFor(dueDate, todayMs);
 }
@@ -123,7 +129,13 @@ export function statusBadgeVariant(
  * that compute several `statusFor` calls in the same render.
  */
 export function localTodayMs(today?: string): number {
-    const todayString = today ?? new Date().toISOString().slice(0, 10);
+    const todayString =
+        today ??
+        new Intl.DateTimeFormat('en-CA', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+        }).format(new Date());
     return new Date(`${todayString}T00:00:00`).getTime();
 }
 

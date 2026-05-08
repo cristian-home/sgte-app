@@ -1,4 +1,4 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
 import { useMemo } from 'react';
 import { Can } from '@/components/can';
@@ -8,6 +8,7 @@ import { type MunicipalityOption } from '@/components/municipality-combobox';
 import { Button } from '@/components/ui/button';
 import { type VehicleOption } from '@/components/vehicles/vehicle-combobox';
 import { Permission } from '@/enums/Permission';
+import { viewerToday } from '@/lib/datetime';
 import { useServerTable } from '@/hooks/use-server-table';
 import AppLayout from '@/layouts/app-layout';
 import services from '@/routes/services';
@@ -143,6 +144,11 @@ export default function ServicesIndex({
         clearFilters,
     } = useServerTable({ data: paginatedServices, columns });
 
+    const sharedConfig = usePage().props.config as
+        | { operation_tz?: string }
+        | undefined;
+    const operationTz = sharedConfig?.operation_tz ?? 'America/Bogota';
+
     // Fold the dynamic server-shipped option lists into the existing
     // toolbar FilterDefinition[] shape so Contrato / Conductor /
     // Vehículo / Municipio Origen / Municipio Destino render as the
@@ -214,7 +220,7 @@ export default function ServicesIndex({
 
     function applyPreset(preset: 'today' | 'this_week' | 'open_only') {
         if (preset === 'today') {
-            const today = new Date().toISOString().slice(0, 10);
+            const today = viewerToday(operationTz);
             setFilters({ date_from: [today], date_to: [today] });
         } else if (preset === 'this_week') {
             setFilters({

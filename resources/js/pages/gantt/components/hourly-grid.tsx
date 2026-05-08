@@ -1,9 +1,10 @@
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import { useMemo } from 'react';
 import {
     create as servicesCreate,
     edit as servicesEdit,
 } from '@/actions/App/Http/Controllers/ServiceController';
+import { viewerToday } from '@/lib/datetime';
 import { cn } from '@/lib/utils';
 import {
     computeVehicleDocStatus,
@@ -32,7 +33,11 @@ export default function HourlyGrid({
     canCreateServices,
     isExecuted,
 }: HourlyGridProps) {
-    const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
+    const sharedConfig = usePage().props.config as
+        | { operation_tz?: string }
+        | undefined;
+    const operationTz = sharedConfig?.operation_tz ?? 'America/Bogota';
+    const today = useMemo(() => viewerToday(operationTz), [operationTz]);
 
     const vehicleStatuses = useMemo(() => {
         const map: Record<

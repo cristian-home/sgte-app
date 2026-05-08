@@ -1,4 +1,4 @@
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import {
     AlertCircle,
     Ban,
@@ -81,12 +81,24 @@ export default function DriverDashboard({
         });
     }
 
+    const sharedConfig = usePage().props.config as
+        | { operation_tz?: string; viewer_tz?: string }
+        | undefined;
+    const operationTz = sharedConfig?.operation_tz ?? 'America/Bogota';
+    const viewerTz = sharedConfig?.viewer_tz ?? operationTz;
+    // F-005 fix: anchor the header in operation_tz so it matches the
+    // service list (which the backend filters with
+    // `Carbon::now($operationTz)->toDateString()`). When the viewer is
+    // in a different TZ, surface that explicitly so the date that the
+    // operator sees can't disagree silently with their wall clock.
     const today = new Intl.DateTimeFormat('es-CO', {
         weekday: 'long',
         year: 'numeric',
         month: 'long',
         day: 'numeric',
+        timeZone: operationTz,
     }).format(new Date());
+    const showViewerHint = viewerTz && viewerTz !== operationTz;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -99,6 +111,12 @@ export default function DriverDashboard({
                     <p className="text-sm text-muted-foreground capitalize">
                         {today}
                     </p>
+                    {showViewerHint && (
+                        <p className="text-xs text-muted-foreground">
+                            Operación en <strong>{operationTz}</strong>; tu
+                            navegador está en <strong>{viewerTz}</strong>.
+                        </p>
+                    )}
                 </div>
 
                 {!driver && (

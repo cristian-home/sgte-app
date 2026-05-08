@@ -2,6 +2,7 @@ import { usePage } from '@inertiajs/react';
 import { AlertTriangle, Info, Lock, ShieldAlert } from 'lucide-react';
 import { useMemo } from 'react';
 import InputError from '@/components/input-error';
+import { viewerToday } from '@/lib/datetime';
 import MunicipalityCombobox, {
     type MunicipalityOption,
 } from '@/components/municipality-combobox';
@@ -320,9 +321,11 @@ export default function ServiceForm({
 
     // REQ-009 retroactive-entry gate. Backend rejects service_date >=
     // today + closed; allows service_date < today + closed but only
-    // with a justification. Surface the textarea when the operator
-    // picks that specific combo so a clean save is possible.
-    const todayIso = new Date().toISOString().slice(0, 10);
+    // with a justification. F-004 fix: anchor "today" in operation TZ
+    // (matches the backend's `Tz::nowIn(operation_tz)`); the legacy
+    // `new Date().toISOString().slice(0,10)` used browser-UTC and
+    // drifted in the evening Bogotá hours.
+    const todayIso = viewerToday(operationTz);
     const isPastDate =
         mode === 'create' &&
         data.service_date !== '' &&
