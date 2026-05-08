@@ -56,15 +56,11 @@ function formatServiceDate(date: string | null | undefined): string {
 
 function formatReportedAt(reportedAt: string | null | undefined): string {
     if (!reportedAt) return '—';
-    // Incident reported_at is sent as epoch-seconds by the cast.
-    const ms = Number(reportedAt) * 1000;
-    if (Number.isNaN(ms) || ms <= 0) {
-        return formatTimestampInViewerTz(reportedAt) || '—';
-    }
+    // Phase 1: `reported_at` is now an ISO string (cast switched from
+    // `timestamp` to `immutable_datetime`). Forward directly to the
+    // viewer-TZ formatter.
     return (
-        formatTimestampInViewerTz(new Date(ms).toISOString(), {
-            dateStyle: 'medium',
-        }) || '—'
+        formatTimestampInViewerTz(reportedAt, { dateStyle: 'medium' }) || '—'
     );
 }
 

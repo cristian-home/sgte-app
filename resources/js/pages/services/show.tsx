@@ -128,9 +128,12 @@ function Field({
 
 function formatIncidentTimestamp(reportedAt: string | null): string {
     if (!reportedAt) return '\u2014';
-    const ms = Number(reportedAt) * 1000;
-    if (isNaN(ms)) return '\u2014';
-    return formatDateTime(new Date(ms).toISOString());
+    // `reported_at` is now an ISO string (Phase 1: cast switched from
+    // `timestamp` to `immutable_datetime`). The legacy Unix-int path
+    // produced `NaN * 1000 = NaN` \u2192 Invalid Date \u2192 RangeError.
+    const parsed = new Date(reportedAt);
+    if (isNaN(parsed.getTime())) return '\u2014';
+    return formatDateTime(parsed.toISOString());
 }
 
 interface RecentIncidentRow {
@@ -233,11 +236,7 @@ export default function ServicesShow({
                             Ejecutado por{' '}
                             {dayStatus.executor?.name ?? 'Usuario'} el{' '}
                             {dayStatus.executed_at
-                                ? formatDateTime(
-                                      new Date(
-                                          Number(dayStatus.executed_at) * 1000,
-                                      ).toISOString(),
-                                  )
+                                ? formatDateTime(dayStatus.executed_at)
                                 : '\u2014'}
                         </AlertDescription>
                     </Alert>

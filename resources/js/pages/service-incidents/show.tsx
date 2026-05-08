@@ -82,14 +82,14 @@ function formatDate(date: string | null): string {
 
 function formatReportedAt(reportedAt: string | null): string {
     if (!reportedAt) return '—';
-    const ms = Number(reportedAt) * 1000;
-    if (Number.isNaN(ms) || ms <= 0) {
-        const fallback = new Date(reportedAt);
-        if (Number.isNaN(fallback.getTime())) {
-            return '—';
-        }
-        return reportedAtFormatter.format(fallback);
+    // Phase 1 fix: `reported_at` is now an ISO string. Defensive
+    // fallback parses Unix integers from any legacy log entries.
+    const parsed = new Date(reportedAt);
+    if (!Number.isNaN(parsed.getTime())) {
+        return reportedAtFormatter.format(parsed);
     }
+    const ms = Number(reportedAt) * 1000;
+    if (Number.isNaN(ms) || ms <= 0) return '—';
     return reportedAtFormatter.format(new Date(ms));
 }
 
