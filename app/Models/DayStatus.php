@@ -35,10 +35,10 @@ class DayStatus extends Model
     {
         return [
             'id' => 'integer',
-            'date' => 'date',
+            'date' => 'immutable_date:Y-m-d',
             'status' => DayStatusEnum::class,
             'executor_id' => 'integer',
-            'executed_at' => 'timestamp',
+            'executed_at' => 'immutable_datetime:Y-m-d H:i:sP',
         ];
     }
 
@@ -73,7 +73,7 @@ class DayStatus extends Model
             'date' => $this->date?->toDateString(),
             'status' => $this->status?->value,
             'executor_id' => $this->executor_id,
-            'executed_at' => $this->executed_at !== null ? date('c', $this->executed_at) : null,
+            'executed_at' => $this->executed_at?->toIso8601String(),
         ];
     }
 }
