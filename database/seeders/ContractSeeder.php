@@ -5,13 +5,11 @@ namespace Database\Seeders;
 use App\Enums\ContractObject;
 use App\Models\Contract;
 use App\Models\ThirdParty;
+use App\Support\Tz;
 use Illuminate\Database\Seeder;
 
 class ContractSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
         $customers = ThirdParty::where('is_customer', true)->get();
@@ -24,6 +22,8 @@ class ContractSeeder extends Seeder
         if ($customers->isEmpty()) {
             return;
         }
+
+        $tz = Tz::operation();
 
         $contractData = [
             [
@@ -76,9 +76,18 @@ class ContractSeeder extends Seeder
         foreach ($contractData as $index => $data) {
             $customer = $customers[$index % $customers->count()];
 
+            $startDate = $data['start_date'];
+            $endDate = $data['end_date'];
+            unset($data['start_date'], $data['end_date']);
+
             Contract::firstOrCreate(
                 ['contract_number' => $data['contract_number']],
-                array_merge($data, ['third_party_id' => $customer->id]),
+                array_merge($data, [
+                    'third_party_id' => $customer->id,
+                    'timezone' => $tz,
+                    'start_at' => Tz::startOfDayInTzAsUtc($startDate, $tz),
+                    'end_at' => Tz::endOfDayInTzAsUtc($endDate, $tz),
+                ]),
             );
         }
     }

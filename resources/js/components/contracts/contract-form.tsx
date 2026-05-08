@@ -1,3 +1,4 @@
+import { usePage } from '@inertiajs/react';
 import InputError from '@/components/input-error';
 import ThirdPartyCombobox, {
     type ThirdPartyOption,
@@ -18,6 +19,7 @@ export interface ContractFormData {
     contract_number: string;
     third_party_id: string;
     contract_object: string;
+    timezone: string;
     start_date: string;
     end_date: string;
     route_description: string;
@@ -79,6 +81,12 @@ export default function ContractForm({
     const id = (name: string) => (idPrefix ? `${idPrefix}_${name}` : name);
     const invalid = (field: keyof ContractFormData) =>
         errors[field] ? true : undefined;
+
+    const sharedConfig = usePage().props.config as
+        | { operation_tz?: string }
+        | undefined;
+    const operationTz = sharedConfig?.operation_tz ?? 'America/Bogota';
+    const timezoneLabel = data.timezone || operationTz;
 
     return (
         <div className="space-y-6">
@@ -183,6 +191,25 @@ export default function ContractForm({
                     />
                     <InputError message={errors.end_date} />
                 </div>
+            </div>
+
+            <div className="grid gap-2 md:max-w-xs">
+                <Label htmlFor={id('timezone')}>Zona horaria</Label>
+                <Input
+                    id={id('timezone')}
+                    type="text"
+                    value={data.timezone || operationTz}
+                    aria-invalid={invalid('timezone')}
+                    onChange={(e) => setData('timezone', e.target.value)}
+                    list={id('timezone-options')}
+                    placeholder={operationTz}
+                />
+                <p className="text-xs text-muted-foreground">
+                    Las fechas del contrato se almacenan como instantes en{' '}
+                    <strong>{timezoneLabel}</strong>. Por defecto:{' '}
+                    <code>{operationTz}</code>.
+                </p>
+                <InputError message={errors.timezone} />
             </div>
 
             <div className="grid gap-2">

@@ -19,6 +19,9 @@ type EditContract = Pick<
     | 'contract_number'
     | 'third_party_id'
     | 'contract_object'
+    | 'start_at'
+    | 'end_at'
+    | 'timezone'
     | 'start_date'
     | 'end_date'
     | 'route_description'
@@ -75,6 +78,7 @@ export default function ContractsEdit({
             contract_number: contract.contract_number,
             third_party_id: String(contract.third_party_id),
             contract_object: contract.contract_object,
+            timezone: contract.timezone,
             start_date: toDateInput(contract.start_date),
             end_date: toDateInput(contract.end_date),
             route_description: contract.route_description ?? '',

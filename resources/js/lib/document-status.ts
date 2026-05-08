@@ -154,31 +154,34 @@ export type ContractPeriodStatus =
     | 'inactivo';
 
 /**
- * Compute the four-state contract status against the supplied
- * `today` (defaulting to the local browser date). Mirrors the server
- * `applyContractStatusFilter` in ContractController — they must agree.
+ * Compute the four-state contract status. Operates on the UTC
+ * instant `end_at` (half-open: contract active when `now < end_at`),
+ * mirroring the server's `applyContractStatusFilter` in ContractController.
+ *
+ * F-003 fix: previously this anchored "today" against browser-UTC
+ * midnight reinterpreted as local time, which made contracts appear
+ * vencido up to ~5h before the real local end-of-day.
  */
 export function contractPeriodStatus(
     contract: {
-        start_date: string | null;
-        end_date: string | null;
+        end_at: string | null;
         active: boolean;
     },
-    today?: string,
+    now: Date = new Date(),
 ): ContractPeriodStatus {
     if (!contract.active) {
         return 'inactivo';
     }
-    const parsedEnd = parseDueDate(contract.end_date);
-    if (parsedEnd === null) {
+    const parsedEnd = contract.end_at ? new Date(contract.end_at) : null;
+    if (parsedEnd === null || Number.isNaN(parsedEnd.getTime())) {
         return 'vencido';
     }
-    const todayMs = localTodayMs(today);
+    const nowMs = now.getTime();
     const endMs = parsedEnd.getTime();
-    if (endMs < todayMs) {
+    if (endMs <= nowMs) {
         return 'vencido';
     }
-    const daysOut = Math.round((endMs - todayMs) / DAYS_IN_MS);
+    const daysOut = Math.round((endMs - nowMs) / DAYS_IN_MS);
     if (daysOut <= CONTRACT_EXPIRY_WINDOW_DAYS) {
         return 'por_vencer';
     }
@@ -186,19 +189,17 @@ export function contractPeriodStatus(
 }
 
 /**
- * Compute the signed days-remaining from today until `end_date`.
- * Negative for expired contracts, 0 for "ends today".
+ * Signed days-remaining from `now` until the contract's `end_at` instant.
+ * Negative for expired contracts, ~0 for "ends in less than a day".
  */
 export function contractDaysRemaining(
-    endDate: string | null,
-    today?: string,
+    endAt: string | null,
+    now: Date = new Date(),
 ): number | null {
-    const parsed = parseDueDate(endDate);
-    if (parsed === null) {
-        return null;
-    }
-    const todayMs = localTodayMs(today);
-    return Math.round((parsed.getTime() - todayMs) / DAYS_IN_MS);
+    if (!endAt) return null;
+    const parsed = new Date(endAt);
+    if (Number.isNaN(parsed.getTime())) return null;
+    return Math.round((parsed.getTime() - now.getTime()) / DAYS_IN_MS);
 }
 
 /**

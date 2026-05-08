@@ -42,15 +42,14 @@ class ServiceDocumentChecks
             return 'El contrato asociado no está vigente.';
         }
 
-        $dateString = $date->toDateString();
-        $startDate = $contract->start_date instanceof Carbon
-            ? $contract->start_date->toDateString()
-            : (string) $contract->start_date;
-        $endDate = $contract->end_date instanceof Carbon
-            ? $contract->end_date->toDateString()
-            : (string) $contract->end_date;
+        if ($contract->start_at === null || $contract->end_at === null) {
+            return 'El contrato no tiene fechas de vigencia configuradas.';
+        }
 
-        if ($dateString < $startDate || $dateString > $endDate) {
+        // Half-open interval [start_at, end_at). The contract covers
+        // `$date` when the service's instant lies inside it.
+        $instant = $date->copy()->utc();
+        if ($instant->lt($contract->start_at) || $instant->gte($contract->end_at)) {
             return 'La fecha del servicio no está dentro del rango del contrato.';
         }
 

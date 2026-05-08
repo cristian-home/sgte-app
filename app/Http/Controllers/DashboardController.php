@@ -141,19 +141,19 @@ class DashboardController extends Controller
             });
 
         $contractAlerts = Contract::query()
-            ->select(['id', 'contract_number', 'end_date', 'active'])
+            ->select(['id', 'contract_number', 'end_at', 'timezone', 'active'])
             ->where('active', true)
-            ->whereNotNull('end_date')
-            ->where('end_date', '<=', $contractExpiryThreshold)
+            ->whereNotNull('end_at')
+            ->where('end_at', '<=', $contractExpiryThreshold->copy()->utc())
             ->get()
             ->map(function (Contract $contract) use ($today) {
-                $daysRemaining = (int) $today->diffInDays($contract->end_date, false);
+                $daysRemaining = (int) $today->diffInDays($contract->end_at, false);
 
                 return [
                     'kind' => 'contract',
                     'label' => 'Contrato',
                     'subject' => $contract->contract_number,
-                    'due_date' => $contract->end_date?->toDateString(),
+                    'due_date' => $contract->end_date,
                     'days_remaining' => $daysRemaining,
                     'link' => $this->contractAlertLink($daysRemaining),
                 ];

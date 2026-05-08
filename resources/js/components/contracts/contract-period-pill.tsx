@@ -7,8 +7,7 @@ import {
 } from '@/lib/document-status';
 
 type ContractInput = {
-    start_date: string | null;
-    end_date: string | null;
+    end_at: string | null;
     active: boolean;
 };
 
@@ -49,15 +48,15 @@ function tooltipFor(
  */
 export function ContractPeriodPill({
     contract,
-    today,
+    now,
     showDays = false,
 }: {
     contract: ContractInput;
-    today?: string;
+    now?: Date;
     showDays?: boolean;
 }) {
-    const status = contractPeriodStatus(contract, today);
-    const days = contractDaysRemaining(contract.end_date, today);
+    const status = contractPeriodStatus(contract, now);
+    const days = contractDaysRemaining(contract.end_at, now);
     const label = STATUS_LABELS[status];
     const suffix =
         showDays &&
@@ -84,9 +83,9 @@ export function ContractPeriodPill({
  */
 export function contractRowTint(
     contract: ContractInput,
-    today?: string,
+    now?: Date,
 ): string | undefined {
-    const status = contractPeriodStatus(contract, today);
+    const status = contractPeriodStatus(contract, now);
     if (status === 'vencido') {
         return 'bg-destructive/10 hover:bg-destructive/15';
     }

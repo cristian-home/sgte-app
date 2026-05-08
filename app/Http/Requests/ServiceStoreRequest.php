@@ -207,12 +207,26 @@ class ServiceStoreRequest extends FormRequest
             $validator->errors()->add('contract_id', 'El contrato seleccionado no esta activo.');
         }
 
-        $serviceDate = (string) $this->input('service_date_local');
+        // Compare instants: the contract is active when its half-open
+        // [start_at, end_at) interval contains the service's planned
+        // start. F-002 fix — string-lex on the JSON-serialized dates was
+        // dropping contracts whose `start_at` matched the service day.
+        $plannedStart = $this->input('planned_start_at');
+        if (! is_string($plannedStart) || $plannedStart === '') {
+            return;
+        }
 
-        $startDate = $contract->start_date instanceof \Illuminate\Support\Carbon ? $contract->start_date->toDateString() : (string) $contract->start_date;
-        $endDate = $contract->end_date instanceof \Illuminate\Support\Carbon ? $contract->end_date->toDateString() : (string) $contract->end_date;
+        try {
+            $instant = \Carbon\CarbonImmutable::parse($plannedStart)->utc();
+        } catch (\Exception) {
+            return;
+        }
 
-        if ($serviceDate < $startDate || $serviceDate > $endDate) {
+        if ($contract->start_at === null || $contract->end_at === null) {
+            return;
+        }
+
+        if ($instant->lt($contract->start_at) || $instant->gte($contract->end_at)) {
             $validator->errors()->add('contract_id', 'La fecha del servicio no esta dentro del rango del contrato.');
         }
     }

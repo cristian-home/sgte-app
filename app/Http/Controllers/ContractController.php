@@ -8,11 +8,12 @@ use App\Http\Requests\ContractUpdateRequest;
 use App\Models\Contract;
 use App\Models\Service;
 use App\Models\ThirdParty;
+use App\Support\Tz;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -49,7 +50,7 @@ class ContractController extends Controller
                     $this->applyContractStatusFilter($query, $first);
                 }),
             ])
-            ->allowedSorts(['contract_number', 'start_date', 'end_date', 'created_at'])
+            ->allowedSorts(['contract_number', 'start_at', 'end_at', 'created_at'])
             ->defaultSort('-created_at')
             ->paginate($request->perPage())
             ->withQueryString();
@@ -72,8 +73,9 @@ class ContractController extends Controller
      */
     private function applyContractStatusFilter(Builder $query, string $value): void
     {
-        $today = Carbon::now((string) config('app.operation_tz'))->toDateString();
-        $threshold = Carbon::now((string) config('app.operation_tz'))->addDays(self::CONTRACT_EXPIRY_WINDOW_DAYS)->toDateString();
+        $now = CarbonImmutable::now(Tz::operation());
+        $thresholdInstant = $now->addDays(self::CONTRACT_EXPIRY_WINDOW_DAYS)->utc();
+        $nowInstant = $now->utc();
 
         $normalized = match ($value) {
             'expiring_soon' => 'por_vencer',
@@ -85,18 +87,18 @@ class ContractController extends Controller
             'inactivo' => $query->where('active', false),
             'vencido' => $query
                 ->where('active', true)
-                ->where(function (Builder $q) use ($today): void {
-                    $q->whereNull('end_date')->orWhereDate('end_date', '<', $today);
+                ->where(function (Builder $q) use ($nowInstant): void {
+                    $q->whereNull('end_at')->orWhere('end_at', '<=', $nowInstant);
                 }),
             'por_vencer' => $query
                 ->where('active', true)
-                ->whereNotNull('end_date')
-                ->whereDate('end_date', '>=', $today)
-                ->whereDate('end_date', '<=', $threshold),
+                ->whereNotNull('end_at')
+                ->where('end_at', '>', $nowInstant)
+                ->where('end_at', '<=', $thresholdInstant),
             'vigente' => $query
                 ->where('active', true)
-                ->whereNotNull('end_date')
-                ->whereDate('end_date', '>', $threshold),
+                ->whereNotNull('end_at')
+                ->where('end_at', '>', $thresholdInstant),
             default => null,
         };
     }
