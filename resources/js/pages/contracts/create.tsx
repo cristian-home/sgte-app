@@ -1,4 +1,4 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import ContractController from '@/actions/App/Http/Controllers/ContractController';
 import ContractForm, {
     type ContractFormData,
@@ -16,23 +16,26 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Crear', href: contracts.create().url },
 ];
 
-const initialData: ContractFormData = {
-    contract_number: '',
-    third_party_id: '',
-    contract_object: 'business',
-    start_date: '',
-    end_date: '',
-    route_description: '',
-    is_generic: false,
-    active: true,
-    billing_unit_type: '',
-};
-
 export default function ContractsCreate({
     thirdParties,
 }: {
     thirdParties: ThirdPartyOption[];
 }) {
+    const sharedConfig = usePage().props.config as
+        | { operation_tz?: string }
+        | undefined;
+    const initialData: ContractFormData = {
+        contract_number: '',
+        third_party_id: '',
+        contract_object: 'business',
+        timezone: sharedConfig?.operation_tz ?? 'America/Bogota',
+        start_date: '',
+        end_date: '',
+        route_description: '',
+        is_generic: false,
+        active: true,
+        billing_unit_type: '',
+    };
     const { data, setData, post, processing, errors } =
         useForm<ContractFormData>({ ...initialData });
 

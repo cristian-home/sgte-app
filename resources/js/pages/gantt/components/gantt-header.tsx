@@ -1,4 +1,4 @@
-import { router } from '@inertiajs/react';
+import { router, usePage } from '@inertiajs/react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { index as daySummaryIndex } from '@/actions/App/Http/Controllers/DaySummaryController';
 import { index as ganttIndex } from '@/actions/App/Http/Controllers/GanttController';
@@ -8,6 +8,7 @@ import MunicipalityCombobox, {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { viewerToday } from '@/lib/datetime';
 import { cn } from '@/lib/utils';
 import type { DayStatus } from '@/types/models';
 
@@ -35,8 +36,8 @@ function formatDateEs(dateStr: string): string {
     });
 }
 
-function isToday(dateStr: string): boolean {
-    return dateStr === new Date().toISOString().slice(0, 10);
+function isToday(dateStr: string, operationTz: string): boolean {
+    return dateStr === viewerToday(operationTz);
 }
 
 export default function GanttHeader({
@@ -46,6 +47,10 @@ export default function GanttHeader({
     dayStatus,
 }: GanttHeaderProps) {
     const isExecuted = dayStatus?.status === 'executed';
+    const sharedConfig = usePage().props.config as
+        | { operation_tz?: string }
+        | undefined;
+    const operationTz = sharedConfig?.operation_tz ?? 'America/Bogota';
 
     function navigate(newDate: string, newMunicipalityId?: number | null) {
         const params: Record<string, string | number> = { date: newDate };
@@ -93,14 +98,12 @@ export default function GanttHeader({
                     className="h-8 w-auto"
                 />
 
-                {!isToday(date) && (
+                {!isToday(date, operationTz) && (
                     <Button
                         variant="outline"
                         size="sm"
                         className="h-8"
-                        onClick={() =>
-                            navigate(new Date().toISOString().slice(0, 10))
-                        }
+                        onClick={() => navigate(viewerToday(operationTz))}
                     >
                         Hoy
                     </Button>

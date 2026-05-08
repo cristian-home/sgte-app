@@ -159,6 +159,45 @@ export function formatTimeRange(
 }
 
 /**
+ * Wall-clock `Y-m-d` of "now" projected into the given IANA timezone.
+ * Replaces all the legacy `new Date().toISOString().slice(0, 10)` call
+ * sites that were silently using browser-UTC as "today".
+ *
+ * Caller decides which TZ to use — typically the viewer TZ from the
+ * Inertia shared `config.viewer_tz`, the operation TZ for retroactive
+ * gates, or a per-record TZ for record-anchored decisions.
+ */
+export function viewerToday(tz: string, now: Date = new Date()): string {
+    const fmt = new Intl.DateTimeFormat('en-CA', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        timeZone: tz,
+    });
+    // en-CA happens to format as YYYY-MM-DD; safer than building from parts.
+    return fmt.format(now);
+}
+
+/**
+ * Project a UTC instant onto the wall-clock `Y-m-d` it lands on in the
+ * given timezone. The mirror of `viewerToday` for an arbitrary instant
+ * — used to derive a calendar day from a `*_at` instant for filters and
+ * comparisons.
+ */
+export function instantToDateInTz(at: DateLike, tz: string): string {
+    const date = toDate(at);
+    if (!date) {
+        return '';
+    }
+    return new Intl.DateTimeFormat('en-CA', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        timeZone: tz,
+    }).format(date);
+}
+
+/**
  * Render an instant in the *viewer's* timezone — i.e. the browser's
  * local TZ, not an event-anchored one. Use for `created_at`,
  * `updated_at`, audit-log entries, etc. where the value is genuinely

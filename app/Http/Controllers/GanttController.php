@@ -43,30 +43,32 @@ class GanttController extends Controller
             ])
             ->select([
                 'id', 'plate', 'internal_code', 'is_third_party', 'third_party_id',
-                'municipality_id', 'soat_due_date', 'rtm_due_date', 'operation_card_due_date',
+                'municipality_id', 'timezone', 'soat_due_at', 'rtm_due_at', 'operation_card_due_at',
             ])
             ->orderBy('plate')
             ->get()
-            ->map(function (Vehicle $vehicle) use ($date): array {
+            ->map(function (Vehicle $vehicle) use ($date, $operationTz): array {
                 // REQ-004: annotate vehicles whose legal documents have
                 // expired on the service date. The frontend renders the
                 // row disabled and the service form blocks creation
                 // (ServiceStoreRequest::validateVehicleDocumentsNotExpired).
                 $expiredDocuments = [];
                 $documents = [
-                    'soat_due_date' => 'SOAT',
-                    'rtm_due_date' => 'RTM',
-                    'operation_card_due_date' => 'Tarjeta de Operación',
+                    'soat_due_at' => 'SOAT',
+                    'rtm_due_at' => 'RTM',
+                    'operation_card_due_at' => 'Tarjeta de Operación',
                 ];
 
+                $dayInstant = \App\Support\Tz::startOfDayInTzAsUtc($date, $operationTz);
+
                 foreach ($documents as $column => $label) {
-                    $dueDate = $vehicle->{$column};
-                    if ($dueDate === null) {
+                    $dueAt = $vehicle->{$column};
+                    if ($dueAt === null) {
                         $expiredDocuments[] = $label;
 
                         continue;
                     }
-                    if ($dueDate->toDateString() < $date) {
+                    if ($dueAt->lessThanOrEqualTo($dayInstant)) {
                         $expiredDocuments[] = $label;
                     }
                 }
@@ -88,8 +90,8 @@ class GanttController extends Controller
             ->whereDate('service_date_local', $date)
             ->whereIn('vehicle_id', $vehicles->pluck('id'))
             ->with([
-                'vehicle:id,plate,type,is_third_party,soat_due_date,rtm_due_date,operation_card_due_date',
-                'driver:id,first_name,first_lastname,license_category,license_due_date,has_social_security',
+                'vehicle:id,plate,type,is_third_party,timezone,soat_due_at,rtm_due_at,operation_card_due_at',
+                'driver:id,first_name,first_lastname,license_category,timezone,license_due_at,has_social_security',
                 'contract:id,contract_number,third_party_id',
                 'contract.thirdParty:id,company_name,first_name,first_lastname,is_natural_person',
             ])

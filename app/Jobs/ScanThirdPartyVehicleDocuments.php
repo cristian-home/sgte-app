@@ -35,31 +35,34 @@ class ScanThirdPartyVehicleDocuments implements ShouldQueue
 
     /** @var array<string, string> */
     public const DOCUMENT_LABELS = [
-        'soat_due_date' => 'SOAT',
-        'rtm_due_date' => 'RTM',
-        'operation_card_due_date' => 'Tarjeta de Operación',
+        'soat_due_at' => 'SOAT',
+        'rtm_due_at' => 'RTM',
+        'operation_card_due_at' => 'Tarjeta de Operación',
     ];
 
     public function handle(): void
     {
+        $operationTz = (string) config('app.operation_tz');
         // Provider-indexed digest: third_party_id => list<entry>.
         $entriesByProvider = [];
 
         foreach (self::THRESHOLDS as $days) {
-            $targetDate = Carbon::now((string) config('app.operation_tz'))->startOfDay()->addDays($days);
+            $targetDate = Carbon::now($operationTz)->startOfDay()->addDays($days)->toDateString();
+            $startInstant = \App\Support\Tz::endOfDayInTzAsUtc($targetDate, $operationTz);
+            $endInstant = $startInstant->copy()->addDay();
 
             foreach (self::DOCUMENT_LABELS as $column => $label) {
                 $vehicles = Vehicle::query()
                     ->where('is_third_party', true)
                     ->whereNotNull('third_party_id')
-                    ->whereDate($column, $targetDate)
-                    ->get(['id', 'plate', 'third_party_id', $column]);
+                    ->where($column, '>=', $startInstant)
+                    ->where($column, '<', $endInstant)
+                    ->get(['id', 'plate', 'third_party_id', 'timezone', $column]);
 
                 foreach ($vehicles as $vehicle) {
-                    $dueValue = $vehicle->{$column};
-                    $dueString = $dueValue instanceof Carbon
-                        ? $dueValue->toDateString()
-                        : (string) $dueValue;
+                    $dueAt = $vehicle->{$column};
+                    $dateColumn = str_replace('_at', '_date', $column);
+                    $dueString = $vehicle->{$dateColumn} ?? ($dueAt instanceof Carbon ? $dueAt->toDateString() : (string) $dueAt);
 
                     $entriesByProvider[$vehicle->third_party_id][] = [
                         'plate' => $vehicle->plate,

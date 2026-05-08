@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Concerns\HasTimezone;
 use App\Enums\VehicleStatus;
 use App\Enums\VehicleType;
+use App\Support\Tz;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,8 +17,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
 
 class Vehicle extends Model
 {
-    use HasFactory, SoftDeletes;
-    use LogsActivity, Searchable;
+    use HasFactory, HasTimezone, LogsActivity, Searchable, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -37,11 +38,23 @@ class Vehicle extends Model
         'municipality_id',
         'is_third_party',
         'third_party_id',
+        'timezone',
+        'soat_due_at',
+        'rtm_due_at',
+        'operation_card_due_at',
+        // Wall-clock virtuals: setters project Y-m-d into the matching
+        // *_due_at instant using the row's TZ. After `timezone` so
+        // mass-assign sees the TZ first.
         'soat_due_date',
         'rtm_due_date',
         'operation_card_due_date',
         'status',
     ];
+
+    /**
+     * @var list<string>
+     */
+    protected $appends = ['soat_due_date', 'rtm_due_date', 'operation_card_due_date'];
 
     /**
      * Get the attributes that should be cast.
@@ -56,11 +69,76 @@ class Vehicle extends Model
             'municipality_id' => 'integer',
             'is_third_party' => 'boolean',
             'third_party_id' => 'integer',
-            'soat_due_date' => 'date',
-            'rtm_due_date' => 'date',
-            'operation_card_due_date' => 'date',
+            'soat_due_at' => 'immutable_datetime:Y-m-d H:i:sP',
+            'rtm_due_at' => 'immutable_datetime:Y-m-d H:i:sP',
+            'operation_card_due_at' => 'immutable_datetime:Y-m-d H:i:sP',
+            'timezone' => 'string',
             'status' => VehicleStatus::class,
         ];
+    }
+
+    public function getSoatDueDateAttribute(): ?string
+    {
+        return $this->projectDueAtToYmd('soat_due_at');
+    }
+
+    public function setSoatDueDateAttribute(mixed $value): void
+    {
+        $this->setDueAtFromWallClock('soat_due_at', $value);
+    }
+
+    public function getRtmDueDateAttribute(): ?string
+    {
+        return $this->projectDueAtToYmd('rtm_due_at');
+    }
+
+    public function setRtmDueDateAttribute(mixed $value): void
+    {
+        $this->setDueAtFromWallClock('rtm_due_at', $value);
+    }
+
+    public function getOperationCardDueDateAttribute(): ?string
+    {
+        return $this->projectDueAtToYmd('operation_card_due_at');
+    }
+
+    public function setOperationCardDueDateAttribute(mixed $value): void
+    {
+        $this->setDueAtFromWallClock('operation_card_due_at', $value);
+    }
+
+    /**
+     * Project a `*_due_at` UTC instant onto the conventional `Y-m-d`
+     * representation in the row's TZ. Half-open semantics: due_at is
+     * the next-midnight after the conventional last day, so the visible
+     * date is `(due_at - 1 second)`.
+     */
+    protected function projectDueAtToYmd(string $column): ?string
+    {
+        $value = $this->getAttribute($column);
+        if ($value === null) {
+            return null;
+        }
+
+        return $value->setTimezone($this->resolveTimezone())->subSecond()->format('Y-m-d');
+    }
+
+    /**
+     * Project a wall-clock `Y-m-d` (or DateTime) onto the matching
+     * `*_due_at` instant.
+     */
+    protected function setDueAtFromWallClock(string $column, mixed $value): void
+    {
+        if ($value === null || $value === '') {
+            return;
+        }
+        $date = $value instanceof \DateTimeInterface
+            ? $value->format('Y-m-d')
+            : (preg_match('/^\d{4}-\d{2}-\d{2}/', (string) $value, $m) ? $m[0] : null);
+        if ($date === null) {
+            return;
+        }
+        $this->setAttribute($column, Tz::endOfDayInTzAsUtc($date, $this->resolveTimezone())->utc());
     }
 
     public function municipality(): BelongsTo
@@ -95,7 +173,7 @@ class Vehicle extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['id', 'internal_code', 'plate', 'mobile_number', 'brand', 'line', 'model_year', 'type', 'engine_number', 'chassis_number', 'capacity', 'municipality_id', 'is_third_party', 'third_party_id', 'soat_due_date', 'rtm_due_date', 'operation_card_due_date', 'status']);
+            ->logOnly(['id', 'internal_code', 'plate', 'mobile_number', 'brand', 'line', 'model_year', 'type', 'engine_number', 'chassis_number', 'capacity', 'municipality_id', 'is_third_party', 'third_party_id', 'timezone', 'soat_due_at', 'rtm_due_at', 'operation_card_due_at', 'status']);
     }
 
     /**
@@ -128,9 +206,13 @@ class Vehicle extends Model
             'municipality_id' => $this->municipality_id,
             'is_third_party' => $this->is_third_party,
             'third_party_id' => $this->third_party_id,
-            'soat_due_date' => $this->soat_due_date?->toDateString(),
-            'rtm_due_date' => $this->rtm_due_date?->toDateString(),
-            'operation_card_due_date' => $this->operation_card_due_date?->toDateString(),
+            'soat_due_date' => $this->soat_due_date,
+            'rtm_due_date' => $this->rtm_due_date,
+            'operation_card_due_date' => $this->operation_card_due_date,
+            'soat_due_at' => $this->soat_due_at?->toIso8601String(),
+            'rtm_due_at' => $this->rtm_due_at?->toIso8601String(),
+            'operation_card_due_at' => $this->operation_card_due_at?->toIso8601String(),
+            'timezone' => $this->resolveTimezone(),
             'status' => $this->status?->value,
         ];
     }

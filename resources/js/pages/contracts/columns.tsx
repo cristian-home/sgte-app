@@ -108,7 +108,10 @@ export const columns: ColumnDef<ContractRow, unknown>[] = [
             <DataTableColumnHeader column={column} title="Vigencia" />
         ),
         cell: ({ row }) => (
-            <span className="text-sm whitespace-nowrap">
+            <span
+                className="text-sm whitespace-nowrap"
+                title={`Zona horaria: ${row.original.timezone}`}
+            >
                 {formatDate(row.original.start_date)}
                 {' → '}
                 {formatDate(row.original.end_date)}

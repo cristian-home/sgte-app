@@ -42,7 +42,7 @@ class ServiceIncident extends Model
             'incident_type_id' => 'integer',
             'registrar_id' => 'integer',
             'is_driver_report' => 'boolean',
-            'reported_at' => 'timestamp',
+            'reported_at' => 'immutable_datetime:Y-m-d H:i:sP',
             'affects_billing' => 'boolean',
             'additional_value' => 'decimal:2',
         ];
@@ -91,7 +91,7 @@ class ServiceIncident extends Model
             'description' => $this->description,
             'registrar_id' => $this->registrar_id,
             'is_driver_report' => $this->is_driver_report,
-            'reported_at' => $this->reported_at !== null ? date('c', $this->reported_at) : null,
+            'reported_at' => $this->reported_at?->toIso8601String(),
             'affects_billing' => $this->affects_billing,
             'additional_value' => $this->additional_value !== null ? (float) $this->additional_value : null,
         ];

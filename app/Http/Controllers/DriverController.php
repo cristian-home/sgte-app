@@ -59,7 +59,7 @@ class DriverController extends Controller
                     $this->applyLicenseStatusFilter($query, $first);
                 }),
             ])
-            ->allowedSorts(['first_name', 'first_lastname', 'municipality_id', 'license_due_date', 'active'])
+            ->allowedSorts(['first_name', 'first_lastname', 'municipality_id', 'license_due_at', 'active'])
             ->defaultSort('first_lastname')
             ->paginate($request->perPage())
             ->withQueryString();
@@ -88,20 +88,21 @@ class DriverController extends Controller
      */
     private function applyLicenseStatusFilter(Builder $query, string $value): void
     {
-        $today = Carbon::now((string) config('app.operation_tz'))->toDateString();
-        $threshold = Carbon::now((string) config('app.operation_tz'))->addDays(self::LICENSE_EXPIRY_WINDOW_DAYS)->toDateString();
+        $now = Carbon::now((string) config('app.operation_tz'));
+        $nowInstant = $now->copy()->utc();
+        $thresholdInstant = $now->copy()->addDays(self::LICENSE_EXPIRY_WINDOW_DAYS)->utc();
 
         match ($value) {
-            'expired' => $query->where(function (Builder $q) use ($today): void {
-                $q->whereNull('license_due_date')
-                    ->orWhereDate('license_due_date', '<', $today);
+            'expired' => $query->where(function (Builder $q) use ($nowInstant): void {
+                $q->whereNull('license_due_at')
+                    ->orWhere('license_due_at', '<=', $nowInstant);
             }),
             'expiring_soon' => $query
-                ->whereNotNull('license_due_date')
-                ->whereBetween('license_due_date', [$today, $threshold]),
+                ->whereNotNull('license_due_at')
+                ->whereBetween('license_due_at', [$nowInstant, $thresholdInstant]),
             'ok' => $query
-                ->whereNotNull('license_due_date')
-                ->whereDate('license_due_date', '>', $threshold),
+                ->whereNotNull('license_due_at')
+                ->where('license_due_at', '>', $thresholdInstant),
             default => null, // ignore unknown values
         };
     }

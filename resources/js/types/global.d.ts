@@ -9,6 +9,7 @@ declare module '@inertiajs/core' {
             sidebarOpen: boolean;
             config: {
                 operation_tz: string;
+                viewer_tz: string;
             };
             [key: string]: unknown;
         };

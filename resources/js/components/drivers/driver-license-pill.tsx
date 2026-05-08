@@ -1,18 +1,22 @@
 import { Badge } from '@/components/ui/badge';
 import {
     dateFormatter,
-    documentStatus,
     parseDueDate,
     statusBadgeVariant,
+    statusForInstant,
     type DocumentStatus,
 } from '@/lib/document-status';
 
 type DriverInput = {
-    license_due_date: string | null;
+    /** UTC instant exclusive end-of-validity of the license (half-open). */
+    license_due_at: string | null;
+    /** Y-m-d projection of license_due_at in the driver's TZ (used for the tooltip). */
+    license_due_date?: string | null;
 };
 
-function tooltipFor(dueDate: string | null, status: DocumentStatus): string {
-    const parsed = parseDueDate(dueDate);
+function tooltipFor(driver: DriverInput, status: DocumentStatus): string {
+    const visible = driver.license_due_date ?? null;
+    const parsed = parseDueDate(visible);
     if (parsed === null) {
         return 'Licencia sin registrar';
     }
@@ -29,28 +33,24 @@ function tooltipFor(dueDate: string | null, status: DocumentStatus): string {
 /**
  * Single Badge summarizing a driver's license state.
  *
- * Reuses the same three-state machine as `<VehicleDocumentPills />`:
- *
- * - destructive + `!` suffix: license is null or already expired
+ * Compares the half-open `license_due_at` instant against `now`:
+ * - destructive + `!` suffix: license already lapsed
  * - secondary: license is within the next 30 days
  * - outline: license is more than 30 days away
- *
- * Used on the drivers index Licencia column and on the show page
- * Licencia y Seguridad Social card.
  */
 export function DriverLicensePill({
     driver,
-    today,
+    now,
 }: {
     driver: DriverInput;
-    today?: string;
+    now?: Date;
 }) {
-    const status = documentStatus(driver.license_due_date, today);
+    const status = statusForInstant(driver.license_due_at, now);
 
     return (
         <Badge
             variant={statusBadgeVariant(status)}
-            title={tooltipFor(driver.license_due_date, status)}
+            title={tooltipFor(driver, status)}
         >
             Licencia
             {status === 'expired' ? '!' : ''}
@@ -61,15 +61,12 @@ export function DriverLicensePill({
 /**
  * Public helper exposed so the drivers index can compute the row tint
  * without re-instantiating the pill component just to read its state.
- *
- * Returns `'expired' | 'expiring_soon' | 'ok'` against today's date
- * with the shared 30-day window.
  */
 export function driverLicenseStatus(
     driver: DriverInput,
-    today?: string,
+    now?: Date,
 ): DocumentStatus {
-    return documentStatus(driver.license_due_date, today);
+    return statusForInstant(driver.license_due_at, now);
 }
 
 export default DriverLicensePill;

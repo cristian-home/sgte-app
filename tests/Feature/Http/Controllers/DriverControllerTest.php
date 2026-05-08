@@ -269,7 +269,6 @@ test('store saves and redirects', function (): void {
         ->where('phone', $phone)
         ->where('email', $email)
         ->where('license_category', $license_category)
-        ->where('license_due_date', $license_due_date)
         ->where('eps_id', $eps->id)
         ->where('pension_fund_id', $pension_fund->id)
         ->where('severance_fund_id', $severance_fund->id)
@@ -278,6 +277,7 @@ test('store saves and redirects', function (): void {
         ->get();
     expect($drivers)->toHaveCount(1);
     $driver = $drivers->first();
+    expect($driver->license_due_date)->toBe($license_due_date->format('Y-m-d'));
 
     $response->assertRedirect(route('drivers.index'));
 });
@@ -446,7 +446,7 @@ test('update redirects', function (): void {
     expect($phone)->toEqual($driver->phone);
     expect($email)->toEqual($driver->email);
     expect($license_category)->toEqual($driver->license_category->value);
-    expect($license_due_date)->toEqual($driver->license_due_date);
+    expect($license_due_date->format('Y-m-d'))->toEqual($driver->license_due_date);
     expect($eps->id)->toEqual($driver->eps_id);
     expect($pension_fund->id)->toEqual($driver->pension_fund_id);
     expect($severance_fund->id)->toEqual($driver->severance_fund_id);

@@ -6,6 +6,7 @@ use App\Enums\PaymentStatus;
 use App\Enums\Permission;
 use App\Models\Invoice;
 use App\Rules\TotalValueLockedWhenServicesAttached;
+use App\Support\Tz;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -39,9 +40,28 @@ class InvoiceUpdateRequest extends FormRequest
                 new TotalValueLockedWhenServicesAttached($invoiceModel),
             ],
             'issue_date' => ['required', 'date'],
+            'timezone' => ['nullable', 'string', Rule::in(timezone_identifiers_list())],
+            'issued_at' => ['required', 'date'],
             'payment_status' => ['required', Rule::enum(PaymentStatus::class)],
             'notes' => ['nullable', 'string'],
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $timezone = $this->input('timezone');
+        if (! is_string($timezone) || $timezone === '' || ! in_array($timezone, timezone_identifiers_list(), true)) {
+            $timezone = Tz::operation();
+        }
+        $this->merge(['timezone' => $timezone]);
+
+        $issueDate = $this->input('issue_date');
+        $ymd = $issueDate instanceof \DateTimeInterface
+            ? $issueDate->format('Y-m-d')
+            : (is_string($issueDate) && preg_match('/^(\d{4}-\d{2}-\d{2})/', $issueDate, $m) ? $m[1] : null);
+        if ($ymd !== null) {
+            $this->merge(['issued_at' => Tz::startOfDayInTzAsUtc($ymd, $timezone)->utc()->toIso8601String()]);
+        }
     }
 
     /**

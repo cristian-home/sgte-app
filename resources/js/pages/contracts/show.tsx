@@ -37,6 +37,9 @@ type ShowContract = Pick<
     | 'contract_number'
     | 'third_party_id'
     | 'contract_object'
+    | 'start_at'
+    | 'end_at'
+    | 'timezone'
     | 'start_date'
     | 'end_date'
     | 'route_description'
@@ -143,7 +146,7 @@ export default function ContractsShow({
     ];
 
     const tp = contract.third_party ?? null;
-    const daysRemaining = contractDaysRemaining(contract.end_date);
+    const daysRemaining = contractDaysRemaining(contract.end_at);
     const status = contractPeriodStatus(contract);
     const daysLabel =
         daysRemaining === null

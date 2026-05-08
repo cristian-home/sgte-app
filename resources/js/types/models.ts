@@ -95,9 +95,13 @@ export type Vehicle = {
     municipality_id: number | null;
     is_third_party: boolean;
     third_party_id: number | null;
-    soat_due_date: string | null;
-    rtm_due_date: string | null;
-    operation_card_due_date: string | null;
+    timezone: string;
+    soat_due_at: string;
+    rtm_due_at: string;
+    operation_card_due_at: string;
+    soat_due_date: string;
+    rtm_due_date: string;
+    operation_card_due_date: string;
     status: string;
     third_party?: ThirdParty;
     municipality?: Municipality;
@@ -118,7 +122,9 @@ export type Driver = {
     phone: string | null;
     email: string | null;
     license_category: string;
-    license_due_date: string | null;
+    timezone: string;
+    license_due_at: string;
+    license_due_date: string;
     eps_id: number | null;
     pension_fund_id: number | null;
     severance_fund_id: number | null;
@@ -137,7 +143,15 @@ export type Contract = {
     contract_number: string;
     third_party_id: number;
     contract_object: string;
+    /** UTC instant marking start of the contract's first day in `timezone`. */
+    start_at: string;
+    /** UTC instant marking the start of the day after the contract's last day in `timezone` (half-open). */
+    end_at: string;
+    /** IANA timezone the contract is anchored to. */
+    timezone: string;
+    /** Y-m-d projection of `start_at` in the contract's timezone (accessor). */
     start_date: string;
+    /** Y-m-d projection of the contract's last covered day (one second before `end_at`). */
     end_date: string;
     route_description: string | null;
     is_generic: boolean;
@@ -153,6 +167,8 @@ export type Invoice = {
     third_party_id: number;
     invoice_number: string;
     total_value: string;
+    timezone: string;
+    issued_at: string;
     issue_date: string;
     payment_status: string;
     notes: string | null;

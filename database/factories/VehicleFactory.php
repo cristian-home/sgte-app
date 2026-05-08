@@ -6,6 +6,7 @@ use App\Enums\VehicleStatus;
 use App\Enums\VehicleType;
 use App\Models\Municipality;
 use App\Models\ThirdParty;
+use App\Support\Tz;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class VehicleFactory extends Factory
@@ -31,6 +32,7 @@ class VehicleFactory extends Factory
             'municipality_id' => Municipality::inRandomOrder()->first()?->id ?? Municipality::factory(),
             'is_third_party' => $isThirdParty,
             'third_party_id' => $isThirdParty ? ThirdParty::factory() : null,
+            'timezone' => Tz::operation(),
             'soat_due_date' => fake()->dateTimeBetween('+1 month', '+1 year'),
             'rtm_due_date' => fake()->dateTimeBetween('+1 month', '+1 year'),
             'operation_card_due_date' => fake()->dateTimeBetween('+1 month', '+2 years'),

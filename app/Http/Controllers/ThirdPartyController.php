@@ -111,9 +111,9 @@ class ThirdPartyController extends Controller
 
         $recentContracts = Contract::query()
             ->where('third_party_id', $thirdParty->id)
-            ->orderByDesc('start_date')
+            ->orderByDesc('start_at')
             ->limit(5)
-            ->get(['id', 'contract_number', 'contract_object', 'start_date', 'end_date', 'active']);
+            ->get(['id', 'contract_number', 'contract_object', 'start_at', 'end_at', 'timezone', 'active']);
 
         return Inertia::render('third-parties/show', [
             'thirdParty' => $thirdParty,

@@ -106,7 +106,7 @@ test('update redirects', function (): void {
     expect($date)->toEqual($dayStatus->date);
     expect($status)->toEqual($dayStatus->status->value);
     expect($executor->id)->toEqual($dayStatus->executor_id);
-    expect($executed_at->timestamp)->toEqual($dayStatus->executed_at);
+    expect($executed_at->timestamp)->toEqual($dayStatus->executed_at?->timestamp);
 });
 
 test('destroy deletes and redirects', function (): void {

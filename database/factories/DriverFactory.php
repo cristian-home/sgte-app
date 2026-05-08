@@ -8,6 +8,7 @@ use App\Models\Eps;
 use App\Models\Municipality;
 use App\Models\PensionFund;
 use App\Models\SeveranceFund;
+use App\Support\Tz;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class DriverFactory extends Factory
@@ -32,6 +33,7 @@ class DriverFactory extends Factory
             // drivers are always compatible with every vehicle type. Tests that
             // need a specific category or an expired license can override.
             'license_category' => LicenseCategory::C3,
+            'timezone' => Tz::operation(),
             'license_due_date' => fake()->dateTimeBetween('+1 month', '+3 years'),
             'eps_id' => Eps::factory(),
             'pension_fund_id' => PensionFund::factory(),

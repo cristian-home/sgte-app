@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/tooltip';
 import { PaymentMethod, PaymentMethodLabel } from '@/enums/PaymentMethod';
 import { ServiceStatus, ServiceStatusLabel } from '@/enums/ServiceStatus';
+import { viewerToday } from '@/lib/datetime';
 import type { DayStatus } from '@/types/models';
 
 export interface VehicleOption {
@@ -48,7 +49,9 @@ export interface DriverOption {
     first_name: string;
     first_lastname: string;
     identification_number: string;
+    license_due_at: string | null;
     license_due_date: string | null;
+    timezone?: string | null;
     eps_id: number | null;
     pension_fund_id: number | null;
 }
@@ -58,8 +61,11 @@ export interface ContractOption {
     contract_number: string;
     third_party_id: number;
     contract_object: string;
-    start_date: string;
-    end_date: string;
+    /** UTC instant marking start of contract in the contract's timezone. */
+    start_at: string;
+    /** Half-open UTC instant: contract is active when service.planned_start_at < end_at. */
+    end_at: string;
+    timezone: string;
     is_generic: boolean;
     billing_unit_type: string | null;
     third_party?: ThirdPartyOption | null;
@@ -244,12 +250,22 @@ export default function ServiceForm({
 
     const filteredContracts = useMemo(() => {
         if (!data.service_date) return contracts;
-        return contracts.filter(
-            (c) =>
-                c.start_date <= data.service_date &&
-                c.end_date >= data.service_date,
-        );
-    }, [contracts, data.service_date]);
+        // Project the operator's selected wall-clock service start into
+        // a UTC instant using the contract's TZ — same pattern Service
+        // backend uses. Half-open interval: [start_at, end_at). Falls
+        // back to the day's start in the contract's TZ when the form
+        // doesn't yet have a planned_start_time.
+        const time = data.planned_start_time || '00:00';
+        return contracts.filter((c) => {
+            const instantIso = projectToUtcIso(
+                data.service_date,
+                time,
+                c.timezone,
+            );
+            if (!instantIso) return true;
+            return c.start_at <= instantIso && c.end_at > instantIso;
+        });
+    }, [contracts, data.service_date, data.planned_start_time]);
 
     const driverMissingSocialSecurity =
         selectedDriver &&
@@ -300,16 +316,16 @@ export default function ServiceForm({
         | { operation_tz?: string }
         | undefined;
     const operationTz = sharedConfig?.operation_tz ?? 'America/Bogota';
-    const contractTimezone =
-        (selectedContract as ContractOption & { timezone?: string | null })
-            ?.timezone ?? null;
+    const contractTimezone = selectedContract?.timezone ?? null;
     const resolvedTimezone = contractTimezone ?? operationTz;
 
     // REQ-009 retroactive-entry gate. Backend rejects service_date >=
     // today + closed; allows service_date < today + closed but only
-    // with a justification. Surface the textarea when the operator
-    // picks that specific combo so a clean save is possible.
-    const todayIso = new Date().toISOString().slice(0, 10);
+    // with a justification. F-004 fix: anchor "today" in operation TZ
+    // (matches the backend's `Tz::nowIn(operation_tz)`); the legacy
+    // `new Date().toISOString().slice(0,10)` used browser-UTC and
+    // drifted in the evening Bogotá hours.
+    const todayIso = viewerToday(operationTz);
     const isPastDate =
         mode === 'create' &&
         data.service_date !== '' &&

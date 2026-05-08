@@ -58,18 +58,24 @@ export function parseDueDate(dueDate: string | null): Date | null {
 }
 
 /**
- * Compute the three-state status of a single due date relative to the
- * supplied `today` (defaulting to the local browser date).
+ * Legacy three-state status for a wall-clock `Y-m-d` due date string.
+ * Anchors "today" in the viewer's local timezone (the calling code
+ * usually passes one in to anchor it in operation_tz instead).
  *
- * - `'expired'` — due date is null or strictly before today.
- * - `'expiring_soon'` — due date is within the next EXPIRY_WINDOW_DAYS days.
- * - `'ok'` — due date is more than EXPIRY_WINDOW_DAYS days away.
+ * Prefer `statusForInstant(due_at, now)` over this when a TIMESTAMPTZ
+ * `*_due_at` instant is available — it sidesteps F-003.
  */
 export function documentStatus(
     dueDate: string | null,
     today?: string,
 ): DocumentStatus {
-    const todayString = today ?? new Date().toISOString().slice(0, 10);
+    const todayString =
+        today ??
+        new Intl.DateTimeFormat('en-CA', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+        }).format(new Date());
     const todayMs = new Date(`${todayString}T00:00:00`).getTime();
     return statusFor(dueDate, todayMs);
 }
@@ -123,8 +129,37 @@ export function statusBadgeVariant(
  * that compute several `statusFor` calls in the same render.
  */
 export function localTodayMs(today?: string): number {
-    const todayString = today ?? new Date().toISOString().slice(0, 10);
+    const todayString =
+        today ??
+        new Intl.DateTimeFormat('en-CA', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+        }).format(new Date());
     return new Date(`${todayString}T00:00:00`).getTime();
+}
+
+/**
+ * Three-state status for a half-open `*_due_at` instant. The instant
+ * is the next-midnight after the conventional last day, so:
+ *
+ * - `now >= due_at` → expired (already lapsed at start of business today)
+ * - `now <  due_at` and `due_at - now <= window` → expiring_soon
+ * - otherwise → ok
+ */
+export function statusForInstant(
+    dueAt: string | null,
+    now: Date = new Date(),
+): DocumentStatus {
+    if (!dueAt) return 'expired';
+    const parsed = new Date(dueAt);
+    if (Number.isNaN(parsed.getTime())) return 'expired';
+    const dueMs = parsed.getTime();
+    const nowMs = now.getTime();
+    if (dueMs <= nowMs) return 'expired';
+    const daysOut = Math.round((dueMs - nowMs) / DAYS_IN_MS);
+    if (daysOut <= EXPIRY_WINDOW_DAYS) return 'expiring_soon';
+    return 'ok';
 }
 
 /**
@@ -154,31 +189,34 @@ export type ContractPeriodStatus =
     | 'inactivo';
 
 /**
- * Compute the four-state contract status against the supplied
- * `today` (defaulting to the local browser date). Mirrors the server
- * `applyContractStatusFilter` in ContractController — they must agree.
+ * Compute the four-state contract status. Operates on the UTC
+ * instant `end_at` (half-open: contract active when `now < end_at`),
+ * mirroring the server's `applyContractStatusFilter` in ContractController.
+ *
+ * F-003 fix: previously this anchored "today" against browser-UTC
+ * midnight reinterpreted as local time, which made contracts appear
+ * vencido up to ~5h before the real local end-of-day.
  */
 export function contractPeriodStatus(
     contract: {
-        start_date: string | null;
-        end_date: string | null;
+        end_at: string | null;
         active: boolean;
     },
-    today?: string,
+    now: Date = new Date(),
 ): ContractPeriodStatus {
     if (!contract.active) {
         return 'inactivo';
     }
-    const parsedEnd = parseDueDate(contract.end_date);
-    if (parsedEnd === null) {
+    const parsedEnd = contract.end_at ? new Date(contract.end_at) : null;
+    if (parsedEnd === null || Number.isNaN(parsedEnd.getTime())) {
         return 'vencido';
     }
-    const todayMs = localTodayMs(today);
+    const nowMs = now.getTime();
     const endMs = parsedEnd.getTime();
-    if (endMs < todayMs) {
+    if (endMs <= nowMs) {
         return 'vencido';
     }
-    const daysOut = Math.round((endMs - todayMs) / DAYS_IN_MS);
+    const daysOut = Math.round((endMs - nowMs) / DAYS_IN_MS);
     if (daysOut <= CONTRACT_EXPIRY_WINDOW_DAYS) {
         return 'por_vencer';
     }
@@ -186,19 +224,17 @@ export function contractPeriodStatus(
 }
 
 /**
- * Compute the signed days-remaining from today until `end_date`.
- * Negative for expired contracts, 0 for "ends today".
+ * Signed days-remaining from `now` until the contract's `end_at` instant.
+ * Negative for expired contracts, ~0 for "ends in less than a day".
  */
 export function contractDaysRemaining(
-    endDate: string | null,
-    today?: string,
+    endAt: string | null,
+    now: Date = new Date(),
 ): number | null {
-    const parsed = parseDueDate(endDate);
-    if (parsed === null) {
-        return null;
-    }
-    const todayMs = localTodayMs(today);
-    return Math.round((parsed.getTime() - todayMs) / DAYS_IN_MS);
+    if (!endAt) return null;
+    const parsed = new Date(endAt);
+    if (Number.isNaN(parsed.getTime())) return null;
+    return Math.round((parsed.getTime() - now.getTime()) / DAYS_IN_MS);
 }
 
 /**

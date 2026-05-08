@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\CaptureViewerTimezone;
 use App\Http\Middleware\EnsureFuecEnabled;
 use App\Http\Middleware\EnsureGpsEnabled;
 use App\Http\Middleware\EnsurePasswordChanged;
@@ -20,10 +21,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
+        $middleware->encryptCookies(except: ['appearance', 'sidebar_state', 'viewer_tz']);
 
         $middleware->web(append: [
             HandleAppearance::class,
+            CaptureViewerTimezone::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
             EnsureUserIsActive::class,

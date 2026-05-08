@@ -48,7 +48,7 @@ class Fuec extends Model
             'service_id' => 'integer',
             'fuec_number_range_id' => 'integer',
             'consecutive_number' => 'integer',
-            'generated_at' => 'timestamp',
+            'generated_at' => 'immutable_datetime:Y-m-d H:i:sP',
             'status' => FuecStatus::class,
         ];
     }
@@ -111,7 +111,7 @@ class Fuec extends Model
             'service_id' => $this->service_id,
             'fuec_number_range_id' => $this->fuec_number_range_id,
             'consecutive_number' => (string) $this->consecutive_number,
-            'generated_at' => $this->generated_at !== null ? date('c', $this->generated_at) : null,
+            'generated_at' => $this->generated_at?->toIso8601String(),
             'qr_code' => $this->qr_code,
             'status' => $this->status?->value,
             'pdf_path' => $this->pdf_path,

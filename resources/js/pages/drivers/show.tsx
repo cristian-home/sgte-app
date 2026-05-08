@@ -36,6 +36,8 @@ type ShowDriver = Pick<
     | 'phone'
     | 'email'
     | 'license_category'
+    | 'timezone'
+    | 'license_due_at'
     | 'license_due_date'
     | 'has_social_security'
     | 'active'

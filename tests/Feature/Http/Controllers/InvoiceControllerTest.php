@@ -67,11 +67,11 @@ test('store saves and redirects', function (): void {
     $invoices = Invoice::query()
         ->where('invoice_number', $invoice_number)
         ->where('total_value', $total_value)
-        ->where('issue_date', $issue_date)
         ->where('payment_status', $payment_status)
         ->where('notes', $notes)
         ->get();
     expect($invoices)->toHaveCount(1);
+    expect($invoices->first()->issue_date)->toBe($issue_date->format('Y-m-d'));
     $invoice = $invoices->first();
 
     $response->assertRedirect(route('invoices.index'));
@@ -123,7 +123,7 @@ test('update redirects', function (): void {
 
     expect($invoice_number)->toEqual($invoice->invoice_number);
     expect($total_value)->toEqual($invoice->total_value);
-    expect($issue_date)->toEqual($invoice->issue_date);
+    expect($issue_date->format('Y-m-d'))->toEqual($invoice->issue_date);
     expect($payment_status)->toEqual($invoice->payment_status->value);
     expect($notes)->toEqual($invoice->notes);
 });
@@ -656,7 +656,7 @@ test('update: rejects total_value changes when services are attached', function 
         'third_party_id' => $customer->id,
         'invoice_number' => $invoice->invoice_number,
         'total_value' => 9999,
-        'issue_date' => $invoice->issue_date->toDateString(),
+        'issue_date' => $invoice->issue_date,
         'payment_status' => PaymentStatus::Pending->value,
         'notes' => 'attempt to change',
     ]);
@@ -678,7 +678,7 @@ test('update: allows other field changes when services are attached if total_val
         'third_party_id' => $customer->id,
         'invoice_number' => $invoice->invoice_number,
         'total_value' => 2500,
-        'issue_date' => $invoice->issue_date->toDateString(),
+        'issue_date' => $invoice->issue_date,
         'payment_status' => PaymentStatus::Pending->value,
         'notes' => 'new notes',
     ]);
@@ -695,7 +695,7 @@ test('update: allows total_value changes when no services are attached', functio
         'third_party_id' => $customer->id,
         'invoice_number' => $invoice->invoice_number,
         'total_value' => 5000,
-        'issue_date' => $invoice->issue_date->toDateString(),
+        'issue_date' => $invoice->issue_date,
         'payment_status' => PaymentStatus::Pending->value,
     ]);
 

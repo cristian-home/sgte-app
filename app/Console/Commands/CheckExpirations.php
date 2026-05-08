@@ -42,17 +42,23 @@ class CheckExpirations extends Command
      */
     private function checkVehicleDocuments($admins, array $thresholds): void
     {
+        $operationTz = (string) config('app.operation_tz');
         $documentFields = [
-            'soat_due_date' => 'SOAT',
-            'rtm_due_date' => 'RTM',
-            'operation_card_due_date' => 'Tarjeta de Operación',
+            'soat_due_at' => 'SOAT',
+            'rtm_due_at' => 'RTM',
+            'operation_card_due_at' => 'Tarjeta de Operación',
         ];
 
         foreach ($thresholds as $days) {
-            $targetDate = today()->addDays($days);
+            $targetDate = \Illuminate\Support\Carbon::now($operationTz)->startOfDay()->addDays($days)->toDateString();
+            $startInstant = \App\Support\Tz::endOfDayInTzAsUtc($targetDate, $operationTz);
+            $endInstant = $startInstant->copy()->addDay();
 
             foreach ($documentFields as $field => $label) {
-                $vehicles = Vehicle::whereDate($field, $targetDate)->get();
+                $vehicles = Vehicle::query()
+                    ->where($field, '>=', $startInstant)
+                    ->where($field, '<', $endInstant)
+                    ->get();
 
                 foreach ($vehicles as $vehicle) {
                     Notification::send($admins, new DocumentExpirationNotification($vehicle, $label, $days));
@@ -68,10 +74,15 @@ class CheckExpirations extends Command
      */
     private function checkDriverLicenses($admins, array $thresholds): void
     {
+        $operationTz = (string) config('app.operation_tz');
         foreach ($thresholds as $days) {
-            $targetDate = today()->addDays($days);
+            $targetDate = \Illuminate\Support\Carbon::now($operationTz)->startOfDay()->addDays($days)->toDateString();
+            $startInstant = \App\Support\Tz::endOfDayInTzAsUtc($targetDate, $operationTz);
+            $endInstant = $startInstant->copy()->addDay();
 
-            $drivers = Driver::whereDate('license_due_date', $targetDate)
+            $drivers = Driver::query()
+                ->where('license_due_at', '>=', $startInstant)
+                ->where('license_due_at', '<', $endInstant)
                 ->where('active', true)
                 ->get();
 

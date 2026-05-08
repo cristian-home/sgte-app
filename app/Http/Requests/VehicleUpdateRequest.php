@@ -41,6 +41,7 @@ class VehicleUpdateRequest extends FormRequest
             'soat_due_date' => ['required', 'date'],
             'rtm_due_date' => ['required', 'date'],
             'operation_card_due_date' => ['required', 'date'],
+            'timezone' => ['nullable', 'string', Rule::in(timezone_identifiers_list())],
             'status' => ['required', Rule::enum(VehicleStatus::class)],
         ];
     }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\Tz;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -51,7 +52,8 @@ class HandleInertiaRequests extends Middleware
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'config' => [
-                'operation_tz' => config('app.operation_tz'),
+                'operation_tz' => Tz::operation(),
+                'viewer_tz' => Tz::viewer($request),
             ],
         ];
     }
