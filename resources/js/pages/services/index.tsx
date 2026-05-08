@@ -8,9 +8,9 @@ import { type MunicipalityOption } from '@/components/municipality-combobox';
 import { Button } from '@/components/ui/button';
 import { type VehicleOption } from '@/components/vehicles/vehicle-combobox';
 import { Permission } from '@/enums/Permission';
-import { viewerToday } from '@/lib/datetime';
 import { useServerTable } from '@/hooks/use-server-table';
 import AppLayout from '@/layouts/app-layout';
+import { viewerToday } from '@/lib/datetime';
 import services from '@/routes/services';
 import { columns } from './columns';
 

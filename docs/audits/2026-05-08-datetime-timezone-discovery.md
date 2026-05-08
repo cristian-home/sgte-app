@@ -1,6 +1,6 @@
 # Datetime/timezone discovery audit — 2026-05-08
 
-Status: ready-for-fix-plan
+Status: fix-merged-to-feat-branch (smoke verified)
 Owner: cristian + Claude Code
 Goal: reproduce, locate and document every observable date/datetime/timezone bug across SGTE so a follow-up plan-mode session can design the fix.
 
@@ -244,6 +244,24 @@ Probed via DB inspection (`tinker`) + JSON shape capture from Inertia endpoints 
 | Gantt / Planificador | uses `instantToHoursInTz` (TZ-aware) ✓ | n/a | probably OK; deserves a UI smoke. |
 | Calendar (`/day-statuses/2026`) | DayStatus rows | F-001 on `date` | header & cells render via `parseDueDate` which tolerates ISO+Z; visual smoke recommended. |
 | Audit log | activity_log_table uses `timestampsTz` ✓ | created_at ISO+Z | OK; ensure `formatTimestampInViewerTz` is wired in the renderer. |
+
+## Smoke verification 2026-05-08 (post-fix)
+
+Branch: `feat/datetime-tz-rollout`. Browser TZ override: UTC via CDP. Operation TZ: America/Bogota.
+
+| Check | Result |
+|---|---|
+| `users.timezone` populated after admin login (browser=UTC) | ✓ persisted as `UTC` |
+| Inertia shared `config.viewer_tz` matches captured TZ | ✓ `UTC` |
+| Driver dashboard header in operation TZ + viewer hint when different | ✓ "viernes, 8 de mayo de 2026" + "Operación en America/Bogota; tu navegador está en UTC." |
+| F-002 reproduction: contract with `start_date == service_date` appears in dropdown | ✓ `BUG2-START-TODAY` (start 2026-05-08) selectable for service on 2026-05-08 |
+| F-001 disappearance: `Contract.toArray()` emits `start_date='2026-01-01'` (not ISO+Z) | ✓ accessor projection in row TZ |
+| F-008 disappearance: `Fuec.generated_at`, `ServiceIncident.reported_at`, `DayStatus.executed_at` emit ISO instants | ✓ via tinker |
+| Migration ordering: `migrate:fresh --seed` succeeds end-to-end | ✓ all seeders complete |
+| Pest suite | ✓ 850/850 |
+
+Pending: cross-TZ Dusk regression and a manual click-through with browser TZ Asia/Tokyo or Europe/Madrid (CDP override is currently sticky after first set; a fresh MCP session would be needed to revisit). The instant-based logic is invariant to viewer TZ as long as `operation_tz` is the source of truth for service-day decisions, which the smoke above already confirms.
+
 
 ## Summary table
 
