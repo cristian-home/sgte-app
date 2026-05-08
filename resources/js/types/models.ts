@@ -167,6 +167,8 @@ export type Invoice = {
     third_party_id: number;
     invoice_number: string;
     total_value: string;
+    timezone: string;
+    issued_at: string;
     issue_date: string;
     payment_status: string;
     notes: string | null;

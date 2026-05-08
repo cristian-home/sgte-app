@@ -240,6 +240,7 @@ return [
         'end_date' => 'fecha de fin',
         'start_at' => 'instante de inicio',
         'end_at' => 'instante de fin',
+        'issued_at' => 'instante de emisión',
         'start_time' => 'hora de inicio',
         'end_time' => 'hora de fin',
         'price' => 'precio',

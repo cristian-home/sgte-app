@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Enums\PaymentStatus;
 use App\Enums\Permission;
+use App\Support\Tz;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -28,9 +29,28 @@ class InvoiceStoreRequest extends FormRequest
             'invoice_number' => ['required', 'string', 'max:50', 'unique:invoices,invoice_number'],
             'total_value' => ['required', 'numeric', 'min:0.01', 'max:9999999999.99'],
             'issue_date' => ['required', 'date'],
+            'timezone' => ['nullable', 'string', Rule::in(timezone_identifiers_list())],
+            'issued_at' => ['required', 'date'],
             'payment_status' => ['required', Rule::enum(PaymentStatus::class)],
             'notes' => ['nullable', 'string'],
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $timezone = $this->input('timezone');
+        if (! is_string($timezone) || $timezone === '' || ! in_array($timezone, timezone_identifiers_list(), true)) {
+            $timezone = Tz::operation();
+        }
+        $this->merge(['timezone' => $timezone]);
+
+        $issueDate = $this->input('issue_date');
+        $ymd = $issueDate instanceof \DateTimeInterface
+            ? $issueDate->format('Y-m-d')
+            : (is_string($issueDate) && preg_match('/^(\d{4}-\d{2}-\d{2})/', $issueDate, $m) ? $m[1] : null);
+        if ($ymd !== null) {
+            $this->merge(['issued_at' => Tz::startOfDayInTzAsUtc($ymd, $timezone)->utc()->toIso8601String()]);
+        }
     }
 
     /**

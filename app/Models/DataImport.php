@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\HasTimezone;
 use App\Enums\DataImportStatus;
 use App\Enums\DataImportType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,7 +14,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
 class DataImport extends Model
 {
     /** @use HasFactory<\Database\Factories\DataImportFactory> */
-    use HasFactory, LogsActivity;
+    use HasFactory, HasTimezone, LogsActivity;
 
     /**
      * The attributes that are mass assignable.
@@ -40,6 +41,7 @@ class DataImport extends Model
         'started_at',
         'completed_at',
         'files_purged_at',
+        'timezone',
     ];
 
     /**
@@ -60,9 +62,10 @@ class DataImport extends Model
             'rows_updated' => 'integer',
             'rows_skipped' => 'integer',
             'rows_errored' => 'integer',
-            'started_at' => 'immutable_datetime',
-            'completed_at' => 'immutable_datetime',
-            'files_purged_at' => 'immutable_datetime',
+            'started_at' => 'immutable_datetime:Y-m-d H:i:sP',
+            'completed_at' => 'immutable_datetime:Y-m-d H:i:sP',
+            'files_purged_at' => 'immutable_datetime:Y-m-d H:i:sP',
+            'timezone' => 'string',
         ];
     }
 

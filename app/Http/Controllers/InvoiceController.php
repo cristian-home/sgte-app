@@ -42,8 +42,8 @@ class InvoiceController extends Controller
                 AllowedFilter::exact('payment_status'),
                 AllowedFilter::exact('third_party_id'),
             ])
-            ->allowedSorts(['invoice_number', 'issue_date', 'total_value', 'payment_status'])
-            ->defaultSort('-issue_date')
+            ->allowedSorts(['invoice_number', 'issued_at', 'total_value', 'payment_status'])
+            ->defaultSort('-issued_at')
             ->paginate($request->perPage())
             ->withQueryString();
 
