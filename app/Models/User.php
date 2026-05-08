@@ -32,6 +32,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'must_change_password',
         'is_active',
         'last_login_at',
+        'timezone',
     ];
 
     /**
