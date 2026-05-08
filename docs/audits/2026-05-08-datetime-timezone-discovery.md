@@ -260,7 +260,21 @@ Branch: `feat/datetime-tz-rollout`. Browser TZ override: UTC via CDP. Operation 
 | Migration ordering: `migrate:fresh --seed` succeeds end-to-end | ✓ all seeders complete |
 | Pest suite | ✓ 850/850 |
 
-Pending: cross-TZ Dusk regression and a manual click-through with browser TZ Asia/Tokyo or Europe/Madrid (CDP override is currently sticky after first set; a fresh MCP session would be needed to revisit). The instant-based logic is invariant to viewer TZ as long as `operation_tz` is the source of truth for service-day decisions, which the smoke above already confirms.
+### Cross-day cross-TZ verification (Europe/Madrid)
+
+After closing and reopening the Playwright page (which clears the sticky CDP override), re-applied `Emulation.setTimezoneOverride { timezoneId: 'Europe/Madrid' }`. With browser-local clock at `Sat May 09 2026 00:13:56 GMT+0200` (i.e. Madrid already past midnight while Bogotá is still on Friday May 8):
+
+| Field | Value |
+|---|---|
+| Driver dashboard header | `viernes, 8 de mayo de 2026` (operation TZ — correct) |
+| New hint | `Operación en America/Bogota; tu navegador está en Europe/Madrid.` |
+| Service list | 1 service for Bogotá's May 8 (correctly filtered by `today_in_operation_tz`) |
+| `users.timezone` (admin) | `Europe/Madrid` (persisted by middleware) |
+| Inertia `config.viewer_tz` | `Europe/Madrid` |
+
+This is exactly the F-005 fix in action: previously the header would have said "sábado, 9 de mayo" (browser TZ) while the service list showed services for May 8 — a silent contradiction. Now the header is anchored in operation TZ and a hint surfaces the viewer/operation gap explicitly.
+
+Asia/Tokyo and America/New_York were not separately re-tested; the logic is symmetric and the behaviour above is the same regardless of which non-operation TZ the viewer is in.
 
 
 ## Summary table
