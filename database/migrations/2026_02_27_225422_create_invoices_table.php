@@ -18,7 +18,10 @@ return new class extends Migration
             $table->foreignId('third_party_id')->nullable()->constrained()->nullOnDelete();
             $table->string('invoice_number', 50)->unique();
             $table->decimal('total_value', 12, 2)->default(0);
-            $table->date('issue_date');
+            // UTC TIMESTAMPTZ at start-of-day in `timezone`. Y-m-d view
+            // is exposed via the model's `issue_date` accessor.
+            $table->timestampTz('issued_at');
+            $table->string('timezone', 64)->default('America/Bogota');
             $table->enum('payment_status', ['pending', 'paid', 'overdue'])->default('pending');
             $table->text('notes')->nullable();
             $table->timestampsTz();

@@ -28,9 +28,14 @@ return new class extends Migration
             $table->foreignId('municipality_id')->nullable()->constrained();
             $table->boolean('is_third_party')->default(false);
             $table->foreignId('third_party_id')->nullable()->constrained();
-            $table->date('soat_due_date');
-            $table->date('rtm_due_date');
-            $table->date('operation_card_due_date');
+            // Half-open exclusive instants for legal document validity.
+            // UTC TIMESTAMPTZ projected from the wall-clock day in
+            // `timezone` (next-midnight semantics). See
+            // App\Concerns\HasTimezone + Vehicle model accessors.
+            $table->timestampTz('soat_due_at');
+            $table->timestampTz('rtm_due_at');
+            $table->timestampTz('operation_card_due_at');
+            $table->string('timezone', 64)->default('America/Bogota');
             $table->enum('status', ['active', 'maintenance', 'retired'])->default('active');
             $table->timestampsTz();
             $table->softDeletesTz();
