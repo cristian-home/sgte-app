@@ -228,19 +228,20 @@ export default function AddressAutocomplete({
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const next = e.target.value;
-        const cleared = !!(coordinates && coordinatesSource === 'mapbox');
         dlog(channel, 'input change', {
             value: next,
             length: next.length,
-            cleared_mapbox_coords: cleared,
+            existingSource: coordinatesSource || null,
         });
+        // Text edits never auto-clear coords — we treat the input as
+        // free annotation on top of whatever pick / pin the operator
+        // confirmed. The X button (visible whenever there's text) is
+        // the explicit "start over" gesture; that's where coords get
+        // wiped together with the address. Symmetrizes Mapbox-pick
+        // and manual-pin paths and lets the operator refine the
+        // canonical Mapbox text (e.g. "83 17 Calle 41A Sur") into
+        // Colombian nomenclature without losing the lat/lng.
         onChange(next);
-        // Clear coords on edit ONLY when they came from mapbox — the
-        // user is iterating on a typeahead pick. A manual pin is
-        // intentional; preserve it across text edits.
-        if (cleared) {
-            onCoordinatesChange('', 'mapbox', null);
-        }
         setCommitError(null);
         setOpen(true);
         scheduleSuggest(next);
@@ -321,6 +322,16 @@ export default function AddressAutocomplete({
                     usedRoutable,
                     coords: `${lat.toFixed(7)},${lng.toFixed(7)}`,
                 });
+                // Replace the input text with Mapbox's canonical name.
+                // Without this the saved address can be a fragment of
+                // what the operator actually picked ("universidad" when
+                // they chose "Universidad Externado") and the conductor
+                // would read the fragment, not the place. Anglo-format
+                // street addresses are still the API's call ("83 17
+                // Calle 41A Sur"); the operator can refine the text
+                // afterward without losing coords (text edits no longer
+                // auto-clear them).
+                onChange(matched.properties.name);
                 onCoordinatesChange(
                     `${lat.toFixed(7)},${lng.toFixed(7)}`,
                     'mapbox',
@@ -352,6 +363,7 @@ export default function AddressAutocomplete({
             cancelPendingCommit,
             cancelPendingSuggest,
             channel,
+            onChange,
             onCoordinatesChange,
             proximityParam,
         ],

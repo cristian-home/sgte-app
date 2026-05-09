@@ -762,7 +762,8 @@ export default function ServiceForm({
                         initialPin={parseCoordsString(data.origin_coordinates)}
                         addressHint={data.origin_address}
                         municipalityHint={originProximity?.cityName ?? null}
-                        onConfirm={(coords) => {
+                        onConfirm={({ coords, address }) => {
+                            setData('origin_address', address);
                             setData(
                                 'origin_coordinates',
                                 `${coords.lat.toFixed(7)},${coords.lng.toFixed(7)}`,
@@ -853,7 +854,8 @@ export default function ServiceForm({
                         municipalityHint={
                             destinationProximity?.cityName ?? null
                         }
-                        onConfirm={(coords) => {
+                        onConfirm={({ coords, address }) => {
+                            setData('destination_address', address);
                             setData(
                                 'destination_coordinates',
                                 `${coords.lat.toFixed(7)},${coords.lng.toFixed(7)}`,
