@@ -64,13 +64,18 @@ class ServiceStoreRequest extends FormRequest
             'planned_start_at' => ['required', 'date'],
             'origin_municipality_id' => ['nullable', 'integer', 'exists:municipalities,id'],
             'origin_address' => ['nullable', 'string', 'max:255'],
-            'origin_coordinates' => ['nullable', 'string', 'max:50', 'regex:/^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/'],
-            'origin_coordinates_source' => ['nullable', Rule::in(['mapbox', 'manual'])],
+            // When the operator fills the address text, they must also
+            // confirm the location — by picking a Mapbox suggestion or
+            // by placing a pin on the map. We refuse to persist a free-
+            // text-only address because it has no usable geographic
+            // meaning for FUEC, GPS, or driver navigation.
+            'origin_coordinates' => ['required_with:origin_address', 'nullable', 'string', 'max:50', 'regex:/^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/'],
+            'origin_coordinates_source' => ['required_with:origin_address', 'nullable', Rule::in(['mapbox', 'manual'])],
             'origin_coordinates_accuracy' => ['nullable', 'string', 'max:20'],
             'destination_municipality_id' => ['nullable', 'integer', 'exists:municipalities,id'],
             'destination_address' => ['nullable', 'string', 'max:255'],
-            'destination_coordinates' => ['nullable', 'string', 'max:50', 'regex:/^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/'],
-            'destination_coordinates_source' => ['nullable', Rule::in(['mapbox', 'manual'])],
+            'destination_coordinates' => ['required_with:destination_address', 'nullable', 'string', 'max:50', 'regex:/^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/'],
+            'destination_coordinates_source' => ['required_with:destination_address', 'nullable', Rule::in(['mapbox', 'manual'])],
             'destination_coordinates_accuracy' => ['nullable', 'string', 'max:20'],
             'planned_duration' => ['required', 'integer'],
             'actual_start_time' => ['nullable', Rule::requiredIf($this->input('service_status') === 'closed')],

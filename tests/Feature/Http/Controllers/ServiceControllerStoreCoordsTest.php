@@ -96,13 +96,19 @@ test('store rejects unknown coordinate source with 422', function (): void {
     )->assertStatus(302)->assertSessionHasErrors(['origin_coordinates_source']);
 });
 
-test('store accepts null source/accuracy for legacy compat', function (): void {
+test('store accepts fully empty origin and destination', function (): void {
+    // Service without a known origin or destination is legitimate (e.g. ad-hoc).
+    // Empty everything must pass.
     post(
         route('services.store'),
         buildStoreCoordsPayload([
+            'origin_address' => null,
+            'origin_municipality_id' => null,
             'origin_coordinates' => null,
             'origin_coordinates_source' => null,
             'origin_coordinates_accuracy' => null,
+            'destination_address' => null,
+            'destination_municipality_id' => null,
             'destination_coordinates' => null,
             'destination_coordinates_source' => null,
             'destination_coordinates_accuracy' => null,
@@ -110,8 +116,54 @@ test('store accepts null source/accuracy for legacy compat', function (): void {
     )->assertRedirect(route('services.index'));
 
     $service = Service::query()->latest('id')->first();
+    expect($service->origin_address)->toBeNull();
     expect($service->origin_coordinates)->toBeNull();
     expect($service->origin_coordinates_source)->toBeNull();
+});
+
+test('store rejects address text without coordinates (origin)', function (): void {
+    post(
+        route('services.store'),
+        buildStoreCoordsPayload([
+            'origin_address' => 'Calle inventada sin pin',
+            'origin_coordinates' => null,
+            'origin_coordinates_source' => null,
+        ])
+    )
+        ->assertStatus(302)
+        ->assertSessionHasErrors([
+            'origin_coordinates',
+            'origin_coordinates_source',
+        ]);
+});
+
+test('store rejects address text without coordinates (destination)', function (): void {
+    post(
+        route('services.store'),
+        buildStoreCoordsPayload([
+            'destination_address' => 'Otra calle sin pin',
+            'destination_coordinates' => null,
+            'destination_coordinates_source' => null,
+        ])
+    )
+        ->assertStatus(302)
+        ->assertSessionHasErrors([
+            'destination_coordinates',
+            'destination_coordinates_source',
+        ]);
+});
+
+test('store rejects address text with coords but missing source', function (): void {
+    post(
+        route('services.store'),
+        buildStoreCoordsPayload([
+            'origin_address' => 'Calle 41A Sur #83-17',
+            'origin_coordinates' => '4.6,-74.1',
+            'origin_coordinates_source' => null,
+        ])
+    )
+        ->assertStatus(302)
+        ->assertSessionHasErrors(['origin_coordinates_source']);
 });
 
 test('update can switch source from mapbox to manual', function (): void {

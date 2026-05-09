@@ -1,4 +1,4 @@
-import { AlertTriangle, Loader2, MapPin } from 'lucide-react';
+import { AlertTriangle, Loader2, MapPin, X } from 'lucide-react';
 import {
     useCallback,
     useEffect,
@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { dlog, dperf } from '@/lib/debug-log';
 import {
     type GeocodingAccuracy,
     type GeocodingFeature,
@@ -67,6 +68,8 @@ export default function AddressAutocomplete({
     autoComplete = 'street-address',
     placeholder,
 }: AddressAutocompleteProps) {
+    const channel = `autocomplete:${id}`;
+
     const [suggestions, setSuggestions] = useState<GeocodingFeature[]>([]);
     const [open, setOpen] = useState(false);
     const [activeIndex, setActiveIndex] = useState(-1);
@@ -133,6 +136,11 @@ export default function AddressAutocomplete({
         (text: string) => {
             const normalized = normalizeForMapbox(text);
             if (normalized.length < MIN_QUERY_LENGTH) {
+                dlog(channel, 'suggest skip (below min length)', {
+                    text,
+                    normalized,
+                    minLength: MIN_QUERY_LENGTH,
+                });
                 setSuggestions([]);
                 setLoadingSuggest(false);
                 return;
@@ -142,6 +150,12 @@ export default function AddressAutocomplete({
             const ac = new AbortController();
             suggestAbortRef.current = ac;
             setLoadingSuggest(true);
+            dlog(channel, 'suggest fire', {
+                rawText: text,
+                normalized,
+                proximity: proximityParam,
+                targetCity: targetCity || null,
+            });
             forwardGeocode(
                 normalized,
                 {
@@ -157,7 +171,9 @@ export default function AddressAutocomplete({
             )
                 .then((res) => {
                     if (ac.signal.aborted) return;
+                    const total = res.features?.length ?? 0;
                     let features = res.features ?? [];
+                    let cityFiltered = false;
                     if (targetCity) {
                         const matched = features.filter(
                             (f) =>
@@ -165,19 +181,38 @@ export default function AddressAutocomplete({
                                     f.properties.context?.place?.name ?? '',
                                 ) === targetCity,
                         );
-                        if (matched.length > 0) features = matched;
+                        if (matched.length > 0) {
+                            features = matched;
+                            cityFiltered = true;
+                        }
                     }
+                    dlog(channel, 'suggest result', {
+                        total,
+                        kept: features.length,
+                        cityFiltered,
+                        targetCity: targetCity || null,
+                        items: features.map((f) => ({
+                            name: f.properties.name,
+                            place: f.properties.context?.place?.name ?? null,
+                            accuracy: f.properties.coordinates.accuracy ?? null,
+                        })),
+                    });
                     setSuggestions(features);
                     setActiveIndex(-1);
                     setLoadingSuggest(false);
                 })
                 .catch((err) => {
-                    if ((err as { name?: string }).name === 'AbortError')
+                    if ((err as { name?: string }).name === 'AbortError') {
+                        dlog(channel, 'suggest aborted');
                         return;
+                    }
+                    dlog(channel, 'suggest error', {
+                        error: (err as Error).message,
+                    });
                     setLoadingSuggest(false);
                 });
         },
-        [cancelPendingSuggest, proximityParam, targetCity],
+        [cancelPendingSuggest, channel, proximityParam, targetCity],
     );
 
     const scheduleSuggest = useCallback(
@@ -193,11 +228,17 @@ export default function AddressAutocomplete({
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const next = e.target.value;
+        const cleared = !!(coordinates && coordinatesSource === 'mapbox');
+        dlog(channel, 'input change', {
+            value: next,
+            length: next.length,
+            cleared_mapbox_coords: cleared,
+        });
         onChange(next);
         // Clear coords on edit ONLY when they came from mapbox — the
         // user is iterating on a typeahead pick. A manual pin is
         // intentional; preserve it across text edits.
-        if (coordinates && coordinatesSource === 'mapbox') {
+        if (cleared) {
             onCoordinatesChange('', 'mapbox', null);
         }
         setCommitError(null);
@@ -214,6 +255,12 @@ export default function AddressAutocomplete({
             commitAbortRef.current = ac;
             setCommitting(true);
             setCommitError(null);
+            const done = dperf(channel, 'commit', {
+                pickedName: suggestion.properties.name,
+                pickedMapboxId: suggestion.properties.mapbox_id,
+                pickedAccuracy:
+                    suggestion.properties.coordinates.accuracy ?? null,
+            });
 
             try {
                 // Re-query with the SUGGESTION's canonical name (not the
@@ -244,12 +291,16 @@ export default function AddressAutocomplete({
                 // query. Prefer mapbox_id match when possible; fall back
                 // to the top result of the same query, which Mapbox
                 // canonicalizes consistently.
-                const matched =
-                    findFeatureByMapboxId(
-                        res,
-                        suggestion.properties.mapbox_id,
-                    ) ?? res.features?.[0] ?? null;
+                const byId = findFeatureByMapboxId(
+                    res,
+                    suggestion.properties.mapbox_id,
+                );
+                const matched = byId ?? res.features?.[0] ?? null;
                 if (!matched) {
+                    done({
+                        outcome: 'no-match',
+                        respFeatures: res.features?.length ?? 0,
+                    });
                     setCommitError(
                         'No se pudo confirmar la dirección. Intenta de nuevo o marca el punto en el mapa.',
                     );
@@ -258,6 +309,18 @@ export default function AddressAutocomplete({
                 const { lat, lng } = pickRoutableCoords(matched);
                 const accuracy =
                     matched.properties.coordinates.accuracy ?? null;
+                const usedRoutable =
+                    !!matched.properties.coordinates.routable_points?.find(
+                        (p) => p.name === 'default',
+                    );
+                done({
+                    outcome: byId ? 'matched-by-id' : 'fallback-features[0]',
+                    matchedName: matched.properties.name,
+                    matchedMapboxId: matched.properties.mapbox_id,
+                    accuracy,
+                    usedRoutable,
+                    coords: `${lat.toFixed(7)},${lng.toFixed(7)}`,
+                });
                 onCoordinatesChange(
                     `${lat.toFixed(7)},${lng.toFixed(7)}`,
                     'mapbox',
@@ -267,7 +330,14 @@ export default function AddressAutocomplete({
                 setSuggestions([]);
                 setActiveIndex(-1);
             } catch (err) {
-                if ((err as { name?: string }).name === 'AbortError') return;
+                if ((err as { name?: string }).name === 'AbortError') {
+                    done({ outcome: 'aborted' });
+                    return;
+                }
+                done({
+                    outcome: 'error',
+                    error: (err as Error).message,
+                });
                 setCommitError(
                     'No se pudo confirmar la dirección. Intenta de nuevo o marca el punto en el mapa.',
                 );
@@ -281,12 +351,19 @@ export default function AddressAutocomplete({
         [
             cancelPendingCommit,
             cancelPendingSuggest,
+            channel,
             onCoordinatesChange,
             proximityParam,
         ],
     );
 
     const handleSelect = (suggestion: GeocodingFeature) => {
+        dlog(channel, 'suggestion pick', {
+            name: suggestion.properties.name,
+            mapboxId: suggestion.properties.mapbox_id,
+            accuracy: suggestion.properties.coordinates.accuracy ?? null,
+            place: suggestion.properties.context?.place?.name ?? null,
+        });
         void commitPick(suggestion);
     };
 
@@ -338,6 +415,28 @@ export default function AddressAutocomplete({
         (loadingSuggest || suggestions.length > 0) &&
         normalizeForMapbox(value).length >= MIN_QUERY_LENGTH;
 
+    const hasText = value.trim().length > 0;
+    const needsConfirmation = hasText && !coordinates;
+    const showClearButton = hasText && !committing && !disabled;
+
+    const handleClear = useCallback(() => {
+        dlog(channel, 'cleared by X');
+        cancelPendingSuggest();
+        cancelPendingCommit();
+        setSuggestions([]);
+        setActiveIndex(-1);
+        setOpen(false);
+        setCommitError(null);
+        onChange('');
+        onCoordinatesChange('', 'mapbox', null);
+    }, [
+        cancelPendingCommit,
+        cancelPendingSuggest,
+        channel,
+        onChange,
+        onCoordinatesChange,
+    ]);
+
     return (
         <div ref={containerRef} className="space-y-1">
             <div className="relative flex items-stretch gap-2">
@@ -365,9 +464,21 @@ export default function AddressAutocomplete({
                         disabled={disabled || committing}
                         aria-invalid={invalid}
                         placeholder={placeholder}
+                        className="pr-9"
                     />
                     {committing && (
                         <Loader2 className="absolute top-1/2 right-2 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+                    )}
+                    {showClearButton && (
+                        <button
+                            type="button"
+                            onClick={handleClear}
+                            aria-label="Limpiar dirección"
+                            title="Limpiar dirección"
+                            className="absolute top-1/2 right-2 inline-flex size-5 -translate-y-1/2 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                        >
+                            <X className="size-3.5" />
+                        </button>
                     )}
                     {showDropdown && (
                         <div
@@ -441,6 +552,11 @@ export default function AddressAutocomplete({
                     variant="outline"
                     size="sm"
                     onClick={() => {
+                        dlog(channel, 'map picker open requested', {
+                            currentValue: value,
+                            currentCoords: coordinates || null,
+                            currentSource: coordinatesSource || null,
+                        });
                         cancelPendingSuggest();
                         setOpen(false);
                         onOpenMapPicker();
@@ -457,6 +573,16 @@ export default function AddressAutocomplete({
                 <p className="flex items-start gap-1 text-xs text-red-600 dark:text-red-400">
                     <AlertTriangle className="mt-0.5 size-3 shrink-0" />
                     <span>{commitError}</span>
+                </p>
+            )}
+
+            {needsConfirmation && !commitError && !committing && (
+                <p className="flex items-start gap-1 text-xs text-amber-700 dark:text-amber-400">
+                    <AlertTriangle className="mt-0.5 size-3 shrink-0" />
+                    <span>
+                        Selecciona una sugerencia o marca el punto en el mapa
+                        para confirmar la ubicación.
+                    </span>
                 </p>
             )}
 
