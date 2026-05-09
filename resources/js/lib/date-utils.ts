@@ -38,6 +38,33 @@ export function formatDateKey(date: Date): string {
     return format(date, 'yyyy-MM-dd');
 }
 
+/**
+ * Add `days` to a `Y-m-d` string and return a new `Y-m-d` string.
+ * Anchors at midday to avoid DST hour-shift edge cases.
+ */
+export function addDays(dateStr: string, days: number): string {
+    const d = new Date(dateStr + 'T12:00:00');
+    d.setDate(d.getDate() + days);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+}
+
+/**
+ * Format a `Y-m-d` string as a long Spanish date
+ * (e.g. "viernes, 8 de mayo de 2026"), parsing at midday to avoid DST.
+ */
+export function formatDateEs(dateStr: string): string {
+    const d = new Date(dateStr + 'T12:00:00');
+    return d.toLocaleDateString('es-CO', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+    });
+}
+
 export { isTodayFn as isToday };
 
 export interface CalendarDay {

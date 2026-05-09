@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Models\VehicleLocation;
 use App\Notifications\DriverDeclinedServiceNotification;
 use App\Support\ServiceDocumentChecks;
+use App\Support\Tz;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -30,8 +31,9 @@ class DriverDashboardController extends Controller
         Gate::authorize(Permission::REGISTER_SERVICE_TIMES->value);
 
         $driver = $request->user()->driver;
-        $operationTz = (string) config('app.operation_tz', 'America/Bogota');
+        $operationTz = Tz::operation();
         $today = Carbon::now($operationTz)->toDateString();
+        $selectedDate = $this->resolveSelectedDate($request, $today);
 
         $services = $driver
             ? Service::with([
@@ -44,7 +46,7 @@ class DriverDashboardController extends Controller
             ])
                 ->withCount('serviceIncidents')
                 ->where('driver_id', $driver->id)
-                ->whereDate('service_date_local', $today)
+                ->whereDate('service_date_local', $selectedDate)
                 ->orderBy('planned_start_at')
                 ->get()
             : collect();
@@ -52,7 +54,53 @@ class DriverDashboardController extends Controller
         return Inertia::render('driver/index', [
             'services' => $services,
             'driver' => $driver,
+            'selectedDate' => $selectedDate,
+            'isToday' => $selectedDate === $today,
         ]);
+    }
+
+    /**
+     * Read the optional `?date=Y-m-d` query param. Returns the request
+     * value when valid; otherwise falls back to today in operation TZ.
+     */
+    protected function resolveSelectedDate(Request $request, string $today): string
+    {
+        $raw = $request->query('date');
+        if (! is_string($raw)) {
+            return $today;
+        }
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $raw) !== 1) {
+            return $today;
+        }
+        try {
+            $parsed = Carbon::createFromFormat('!Y-m-d', $raw, Tz::operation());
+        } catch (\Throwable) {
+            return $today;
+        }
+        if (! $parsed instanceof Carbon || $parsed->format('Y-m-d') !== $raw) {
+            return $today;
+        }
+
+        return $parsed->format('Y-m-d');
+    }
+
+    /**
+     * Reject confirm-start / confirm-end / decline when the service's
+     * day (in its own timezone) doesn't match operation TZ today. Drivers
+     * navigate past/future days for visibility only — retroactive
+     * registration goes through the operator flow with
+     * `manual_entry_justification`.
+     */
+    protected function assertActionAllowedToday(Service $service): void
+    {
+        $today = Carbon::now(Tz::operation())->toDateString();
+        $serviceDate = $service->service_date_local instanceof \DateTimeInterface
+            ? $service->service_date_local->format('Y-m-d')
+            : (string) $service->service_date_local;
+
+        if ($serviceDate !== $today) {
+            abort(422, 'Solo puedes actuar sobre servicios del día actual.');
+        }
     }
 
     public function confirmStart(Request $request, Service $service): RedirectResponse
@@ -62,6 +110,7 @@ class DriverDashboardController extends Controller
         $driver = $request->user()->driver;
         abort_unless($driver && $service->driver_id === $driver->id, 403);
 
+        $this->assertActionAllowedToday($service);
         $this->assertDocumentsStillValid($service);
 
         $service->update([
@@ -112,6 +161,8 @@ class DriverDashboardController extends Controller
         $driver = $request->user()->driver;
         abort_unless($driver && $service->driver_id === $driver->id, 403);
 
+        $this->assertActionAllowedToday($service);
+
         $service->update([
             'actual_end_at' => now(),
         ]);
@@ -133,6 +184,7 @@ class DriverDashboardController extends Controller
     {
         $driver = $request->user()->driver;
         abort_unless($driver && $service->driver_id === $driver->id, 403);
+        $this->assertActionAllowedToday($service);
         abort_if($service->actual_start_at !== null, 422, 'El servicio ya tiene una hora de inicio registrada.');
         abort_if($service->driver_declined_at !== null, 422, 'Este servicio ya fue declinado.');
 
