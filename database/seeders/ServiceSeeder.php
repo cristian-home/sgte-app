@@ -12,6 +12,7 @@ use App\Models\Municipality;
 use App\Models\Service;
 use App\Models\Vehicle;
 use Carbon\CarbonImmutable;
+use Database\Factories\Support\RealColombianAddresses;
 use Illuminate\Database\Seeder;
 
 class ServiceSeeder extends Seeder
@@ -40,8 +41,26 @@ class ServiceSeeder extends Seeder
             return;
         }
 
-        $bogota = Municipality::where('code', '11001')->first();
-        $zipaquira = Municipality::where('code', '25899')->first();
+        // Resolve municipality_id by DANE code from the curated landmark
+        // list, so demo origins/destinations always carry a real
+        // (address, coordinates, source, accuracy) tuple — same shape
+        // the address autocomplete and pin picker would produce in
+        // production.
+        $byCode = Municipality::whereIn('code', ['11001', '25899', '25754', '05001'])
+            ->pluck('id', 'code');
+
+        $landmarks = collect(RealColombianAddresses::all())->keyBy(
+            fn (array $row) => "{$row['municipality_code']}::{$row['address']}",
+        );
+
+        $pickLandmark = function (string $key) use ($landmarks): array {
+            $row = $landmarks->get($key);
+            if ($row === null) {
+                throw new \RuntimeException("Landmark not found in fixture: {$key}");
+            }
+
+            return $row;
+        };
 
         $services = [
             [
@@ -50,10 +69,8 @@ class ServiceSeeder extends Seeder
                 'driver_index' => 0,
                 'invoice_index' => 0,
                 'service_date' => '2026-02-24',
-                'origin_municipality_id' => $bogota?->id,
-                'origin_address' => 'Barrio Kennedy',
-                'destination_municipality_id' => $bogota?->id,
-                'destination_address' => 'Clinica San Rafael - Calle 17',
+                'origin' => $pickLandmark('11001::Calle 170 #54-90'),
+                'destination' => $pickLandmark('11001::Carrera 7 #40-62'),
                 'planned_start_time' => '06:00',
                 'planned_duration' => 60,
                 'actual_start_time' => '06:05',
@@ -70,10 +87,8 @@ class ServiceSeeder extends Seeder
                 'driver_index' => 1,
                 'invoice_index' => 1,
                 'service_date' => '2026-02-24',
-                'origin_municipality_id' => $bogota?->id,
-                'origin_address' => 'Calle 170',
-                'destination_municipality_id' => $bogota?->id,
-                'destination_address' => 'Colegio del Rosario - Carrera 7',
+                'origin' => $pickLandmark('11001::Calle 100 #11A-35'),
+                'destination' => $pickLandmark('11001::Carrera 13 #93-40'),
                 'planned_start_time' => '05:30',
                 'planned_duration' => 90,
                 'actual_start_time' => '05:35',
@@ -90,10 +105,8 @@ class ServiceSeeder extends Seeder
                 'driver_index' => 2,
                 'invoice_index' => 2,
                 'service_date' => '2026-02-25',
-                'origin_municipality_id' => $bogota?->id,
-                'origin_address' => 'Hotel Dann Carlton - Av 19',
-                'destination_municipality_id' => $zipaquira?->id,
-                'destination_address' => 'Catedral de Sal',
+                'origin' => $pickLandmark('11001::Carrera 11 #82-71'),
+                'destination' => $pickLandmark('25899::Calle 1 #6-14'),
                 'planned_start_time' => '08:00',
                 'planned_duration' => 240,
                 'actual_start_time' => '08:10',
@@ -110,10 +123,8 @@ class ServiceSeeder extends Seeder
                 'driver_index' => 3,
                 'invoice_index' => null,
                 'service_date' => '2026-02-27',
-                'origin_municipality_id' => $bogota?->id,
-                'origin_address' => 'Aeropuerto El Dorado',
-                'destination_municipality_id' => $bogota?->id,
-                'destination_address' => 'Centro Empresarial Salitre',
+                'origin' => $pickLandmark('11001::Calle 26 #103-09'),
+                'destination' => $pickLandmark('11001::Avenida Calle 26 #57-83'),
                 'planned_start_time' => '14:00',
                 'planned_duration' => 45,
                 'actual_start_time' => null,
@@ -130,10 +141,8 @@ class ServiceSeeder extends Seeder
                 'driver_index' => 4,
                 'invoice_index' => null,
                 'service_date' => '2026-02-28',
-                'origin_municipality_id' => $bogota?->id,
-                'origin_address' => 'Suba',
-                'destination_municipality_id' => $bogota?->id,
-                'destination_address' => 'Clinica San Rafael - Calle 17',
+                'origin' => $pickLandmark('11001::Calle 41A Sur #83-17'),
+                'destination' => $pickLandmark('11001::Carrera 7 #40-62'),
                 'planned_start_time' => '07:00',
                 'planned_duration' => 75,
                 'actual_start_time' => null,
@@ -168,10 +177,16 @@ class ServiceSeeder extends Seeder
                 'driver_id' => $driver->id,
                 'invoice_id' => $invoice?->id,
                 'service_date_local' => $s['service_date'],
-                'origin_municipality_id' => $s['origin_municipality_id'],
-                'origin_address' => $s['origin_address'],
-                'destination_municipality_id' => $s['destination_municipality_id'],
-                'destination_address' => $s['destination_address'],
+                'origin_municipality_id' => $byCode->get($s['origin']['municipality_code']),
+                'origin_address' => $s['origin']['address'],
+                'origin_coordinates' => $s['origin']['coordinates'],
+                'origin_coordinates_source' => $s['origin']['source'],
+                'origin_coordinates_accuracy' => $s['origin']['accuracy'],
+                'destination_municipality_id' => $byCode->get($s['destination']['municipality_code']),
+                'destination_address' => $s['destination']['address'],
+                'destination_coordinates' => $s['destination']['coordinates'],
+                'destination_coordinates_source' => $s['destination']['source'],
+                'destination_coordinates_accuracy' => $s['destination']['accuracy'],
                 'planned_start_at' => $plannedAt,
                 'planned_duration' => $s['planned_duration'],
                 'actual_start_at' => $actualStart,
