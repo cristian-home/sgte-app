@@ -8,6 +8,7 @@ import { useEffect, useMemo } from 'react';
 import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
 import { Badge } from '@/components/ui/badge';
 import AppLayout from '@/layouts/app-layout';
+import { MAPBOX_ATTRIBUTION, mapboxTileUrl } from '@/lib/mapbox';
 import { formatTimestampInViewerTz } from '@/lib/datetime';
 
 import type { BreadcrumbItem } from '@/types';
@@ -113,8 +114,10 @@ export default function GpsMap({
                         style={{ height: '100%', width: '100%' }}
                     >
                         <TileLayer
-                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                            url={mapboxTileUrl()}
+                            attribution={MAPBOX_ATTRIBUTION}
+                            tileSize={512}
+                            zoomOffset={-1}
                         />
                         <FitBoundsOnData services={markerServices} />
                         {markerServices.map((service) => (
