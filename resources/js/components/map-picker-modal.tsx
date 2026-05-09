@@ -263,7 +263,8 @@ function MapPickerBody({
                         value={addressDraft}
                         onChange={(e) => setAddressDraft(e.target.value)}
                         placeholder="Ej: Calle 41A Sur #83-17, Casa de don Pepe…"
-                        autoComplete="street-address"
+                        autoComplete="off"
+                        spellCheck={false}
                     />
                     <Button
                         type="button"

@@ -721,7 +721,7 @@ export default function ServiceForm({
                     <AddressAutocomplete
                         id="origin_address"
                         name="origin_address"
-                        autoComplete="street-address"
+                        autoComplete="off"
                         value={data.origin_address}
                         onChange={(v) => setData('origin_address', v)}
                         coordinates={data.origin_coordinates}
@@ -808,7 +808,7 @@ export default function ServiceForm({
                     <AddressAutocomplete
                         id="destination_address"
                         name="destination_address"
-                        autoComplete="street-address"
+                        autoComplete="off"
                         value={data.destination_address}
                         onChange={(v) => setData('destination_address', v)}
                         coordinates={data.destination_coordinates}

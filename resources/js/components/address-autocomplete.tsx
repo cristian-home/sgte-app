@@ -65,7 +65,7 @@ export default function AddressAutocomplete({
     proximity,
     disabled,
     invalid,
-    autoComplete = 'street-address',
+    autoComplete = 'off',
     placeholder,
 }: AddressAutocompleteProps) {
     const channel = `autocomplete:${id}`;
@@ -467,6 +467,11 @@ export default function AddressAutocomplete({
                                 : undefined
                         }
                         autoComplete={autoComplete}
+                        // Stop password managers from injecting their
+                        // toolbar icons into the address field.
+                        data-1p-ignore="true"
+                        data-lpignore="true"
+                        spellCheck={false}
                         value={value}
                         onChange={handleInputChange}
                         onKeyDown={handleKeyDown}
