@@ -1,4 +1,5 @@
 import { Head, Link, useForm } from '@inertiajs/react';
+import { useState } from 'react';
 import ServiceController from '@/actions/App/Http/Controllers/ServiceController';
 import { type MunicipalityOption } from '@/components/municipality-combobox';
 import ServiceForm, {
@@ -42,9 +43,13 @@ export default function ServicesCreate({
         origin_municipality_id: '',
         origin_address: '',
         origin_coordinates: '',
+        origin_coordinates_source: '',
+        origin_coordinates_accuracy: '',
         destination_municipality_id: '',
         destination_address: '',
         destination_coordinates: '',
+        destination_coordinates_source: '',
+        destination_coordinates_accuracy: '',
         planned_start_time: prefill?.planned_start_time ?? '',
         planned_duration: '',
         actual_start_time: '',
@@ -62,6 +67,8 @@ export default function ServicesCreate({
         e.preventDefault();
         post(ServiceController.store().url);
     }
+
+    const [addressCommitInFlight, setAddressCommitInFlight] = useState(false);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -82,10 +89,18 @@ export default function ServicesCreate({
                                 contracts={contracts}
                                 municipalities={municipalities}
                                 mode="create"
+                                onAddressCommitInFlight={
+                                    setAddressCommitInFlight
+                                }
                             />
 
                             <div className="flex items-center gap-4">
-                                <Button type="submit" disabled={processing}>
+                                <Button
+                                    type="submit"
+                                    disabled={
+                                        processing || addressCommitInFlight
+                                    }
+                                >
                                     Guardar
                                 </Button>
                                 <Link href={services.index().url}>

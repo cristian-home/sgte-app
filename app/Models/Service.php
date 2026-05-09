@@ -35,9 +35,13 @@ class Service extends Model
         'origin_municipality_id',
         'origin_address',
         'origin_coordinates',
+        'origin_coordinates_source',
+        'origin_coordinates_accuracy',
         'destination_municipality_id',
         'destination_address',
         'destination_coordinates',
+        'destination_coordinates_source',
+        'destination_coordinates_accuracy',
         'planned_start_at',
         'planned_duration',
         'actual_start_at',
@@ -314,7 +318,7 @@ class Service extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['id', 'contract_id', 'vehicle_id', 'driver_id', 'invoice_id', 'service_date_local', 'origin_municipality_id', 'origin_address', 'origin_coordinates', 'destination_municipality_id', 'destination_address', 'destination_coordinates', 'planned_start_at', 'planned_duration', 'actual_start_at', 'actual_end_at', 'timezone', 'unit_value', 'quantity', 'billing_group', 'payment_method', 'service_status', 'manual_entry_justification', 'driver_declined_at', 'driver_decline_reason']);
+            ->logOnly(['id', 'contract_id', 'vehicle_id', 'driver_id', 'invoice_id', 'service_date_local', 'origin_municipality_id', 'origin_address', 'origin_coordinates', 'origin_coordinates_source', 'origin_coordinates_accuracy', 'destination_municipality_id', 'destination_address', 'destination_coordinates', 'destination_coordinates_source', 'destination_coordinates_accuracy', 'planned_start_at', 'planned_duration', 'actual_start_at', 'actual_end_at', 'timezone', 'unit_value', 'quantity', 'billing_group', 'payment_method', 'service_status', 'manual_entry_justification', 'driver_declined_at', 'driver_decline_reason']);
     }
 
     /**
