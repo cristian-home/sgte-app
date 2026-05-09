@@ -9,6 +9,8 @@ import {
     Truck,
 } from 'lucide-react';
 import { useState } from 'react';
+import { index as driverDashboard } from '@/actions/App/Http/Controllers/DriverDashboardController';
+import { DateNavigator } from '@/components/date-navigator';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -41,19 +43,60 @@ interface Driver {
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Mis Servicios', href: '#' }];
 
 function formatServiceTime(at: string | null, timezone: string): string {
-    return formatEventTime(at, timezone) || '\u2014';
+    return formatEventTime(at, timezone) || '—';
 }
 
 function municipalityName(municipality?: { name: string } | null): string {
-    return municipality?.name ?? '\u2014';
+    return municipality?.name ?? '—';
 }
+
+type ServiceStatePill =
+    | 'completado'
+    | 'iniciado'
+    | 'declinado'
+    | 'pendiente'
+    | 'no_ejecutado';
+
+function classifyServiceState(
+    service: Service,
+    isToday: boolean,
+): ServiceStatePill {
+    if (service.driver_declined_at) return 'declinado';
+    if (service.actual_end_at) return 'completado';
+    if (service.actual_start_at) return 'iniciado';
+    if (isToday) return 'pendiente';
+    return 'no_ejecutado';
+}
+
+const STATE_LABEL: Record<ServiceStatePill, string> = {
+    completado: 'Completado',
+    iniciado: 'En curso',
+    declinado: 'Declinado',
+    pendiente: 'Pendiente',
+    no_ejecutado: 'No ejecutado',
+};
+
+const STATE_VARIANT: Record<
+    ServiceStatePill,
+    'default' | 'secondary' | 'destructive' | 'outline'
+> = {
+    completado: 'default',
+    iniciado: 'secondary',
+    declinado: 'destructive',
+    pendiente: 'secondary',
+    no_ejecutado: 'outline',
+};
 
 export default function DriverDashboard({
     services,
     driver,
+    selectedDate,
+    isToday,
 }: {
     services: Service[];
     driver?: Driver | null;
+    selectedDate: string;
+    isToday: boolean;
 }) {
     const [declineServiceId, setDeclineServiceId] = useState<number | null>(
         null,
@@ -81,40 +124,63 @@ export default function DriverDashboard({
         });
     }
 
+    function navigateToDate(newDate: string) {
+        router.get(
+            driverDashboard().url,
+            { date: newDate },
+            { preserveState: true, preserveScroll: true },
+        );
+    }
+
     const sharedConfig = usePage().props.config as
         | { operation_tz?: string; viewer_tz?: string }
         | undefined;
     const operationTz = sharedConfig?.operation_tz ?? 'America/Bogota';
     const viewerTz = sharedConfig?.viewer_tz ?? operationTz;
-    // F-005 fix: anchor the header in operation_tz so it matches the
-    // service list (which the backend filters with
-    // `Carbon::now($operationTz)->toDateString()`). When the viewer is
-    // in a different TZ, surface that explicitly so the date that the
-    // operator sees can't disagree silently with their wall clock.
-    const today = new Intl.DateTimeFormat('es-CO', {
+    // Header date is anchored on the selected day in operation TZ so the
+    // service list (filtered server-side by the same Y-m-d) and the label
+    // can never disagree, regardless of the viewer's browser TZ.
+    const headerDate = new Intl.DateTimeFormat('es-CO', {
         weekday: 'long',
         year: 'numeric',
         month: 'long',
         day: 'numeric',
         timeZone: operationTz,
-    }).format(new Date());
+    }).format(new Date(selectedDate + 'T12:00:00'));
     const showViewerHint = viewerTz && viewerTz !== operationTz;
+
+    const emptyStateMessage = isToday
+        ? 'No tiene servicios asignados para hoy.'
+        : 'No tiene servicios asignados para este día.';
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Mis Servicios" />
             <div className="flex h-full flex-1 flex-col gap-4 p-4">
-                <div>
+                <div className="space-y-2">
                     <h1 className="text-2xl font-bold tracking-tight">
                         Mis Servicios
                     </h1>
                     <p className="text-sm text-muted-foreground capitalize">
-                        {today}
+                        {headerDate}
                     </p>
                     {showViewerHint && (
                         <p className="text-xs text-muted-foreground">
                             Operación en <strong>{operationTz}</strong>; tu
                             navegador está en <strong>{viewerTz}</strong>.
+                        </p>
+                    )}
+                    <DateNavigator
+                        date={selectedDate}
+                        operationTz={operationTz}
+                        onDateChange={navigateToDate}
+                        showFormattedLabel={false}
+                    />
+                    {!isToday && (
+                        <p className="text-xs text-muted-foreground">
+                            Estás viendo otro día. Las acciones de inicio, fin y
+                            rechazo solo están disponibles para los servicios de
+                            hoy.
                         </p>
                     )}
                 </div>
@@ -134,7 +200,7 @@ export default function DriverDashboard({
                     <Card>
                         <CardContent className="py-8 text-center">
                             <p className="text-muted-foreground">
-                                No tiene servicios asignados para hoy.
+                                {emptyStateMessage}
                             </p>
                         </CardContent>
                     </Card>
@@ -147,6 +213,7 @@ export default function DriverDashboard({
                         const isDeclined = !!service.driver_declined_at;
                         const incidentCount =
                             service.service_incidents_count ?? 0;
+                        const stateKey = classifyServiceState(service, isToday);
 
                         return (
                             <Card key={service.id}>
@@ -155,8 +222,7 @@ export default function DriverDashboard({
                                         <CardTitle className="text-base">
                                             <div className="flex items-center gap-2">
                                                 <Truck className="size-4" />
-                                                {service.vehicle?.plate ??
-                                                    '\u2014'}
+                                                {service.vehicle?.plate ?? '—'}
                                             </div>
                                         </CardTitle>
                                         <div className="flex items-center gap-2">
@@ -259,49 +325,67 @@ export default function DriverDashboard({
                                         </div>
                                     )}
 
-                                    {/* Action buttons */}
+                                    {/* Action buttons / state pill */}
                                     <div className="flex flex-wrap gap-2 pt-2">
-                                        {!hasStarted && !isDeclined && (
-                                            <Button
-                                                className="flex-1"
-                                                onClick={() =>
-                                                    confirmStart(service.id)
-                                                }
-                                            >
-                                                <Play className="mr-1 size-4" />
-                                                Confirmar Inicio
-                                            </Button>
-                                        )}
-                                        {hasStarted && !hasEnded && (
-                                            <Button
-                                                className="flex-1"
-                                                variant="secondary"
-                                                onClick={() =>
-                                                    confirmEnd(service.id)
-                                                }
-                                            >
-                                                <Flag className="mr-1 size-4" />
-                                                Confirmar Fin
-                                            </Button>
-                                        )}
-                                        {hasStarted && hasEnded && (
-                                            <p className="flex-1 py-2 text-center text-sm text-muted-foreground">
-                                                Servicio completado
-                                            </p>
-                                        )}
-                                        {!hasStarted && !isDeclined && (
-                                            <Button
-                                                variant="destructive"
-                                                className="flex-1"
-                                                onClick={() =>
-                                                    setDeclineServiceId(
-                                                        service.id,
-                                                    )
-                                                }
-                                            >
-                                                <Ban className="mr-1 size-4" />
-                                                Declinar servicio
-                                            </Button>
+                                        {isToday ? (
+                                            <>
+                                                {!hasStarted && !isDeclined && (
+                                                    <Button
+                                                        className="flex-1"
+                                                        onClick={() =>
+                                                            confirmStart(
+                                                                service.id,
+                                                            )
+                                                        }
+                                                    >
+                                                        <Play className="mr-1 size-4" />
+                                                        Confirmar Inicio
+                                                    </Button>
+                                                )}
+                                                {hasStarted && !hasEnded && (
+                                                    <Button
+                                                        className="flex-1"
+                                                        variant="secondary"
+                                                        onClick={() =>
+                                                            confirmEnd(
+                                                                service.id,
+                                                            )
+                                                        }
+                                                    >
+                                                        <Flag className="mr-1 size-4" />
+                                                        Confirmar Fin
+                                                    </Button>
+                                                )}
+                                                {hasStarted && hasEnded && (
+                                                    <p className="flex-1 py-2 text-center text-sm text-muted-foreground">
+                                                        Servicio completado
+                                                    </p>
+                                                )}
+                                                {!hasStarted && !isDeclined && (
+                                                    <Button
+                                                        variant="destructive"
+                                                        className="flex-1"
+                                                        onClick={() =>
+                                                            setDeclineServiceId(
+                                                                service.id,
+                                                            )
+                                                        }
+                                                    >
+                                                        <Ban className="mr-1 size-4" />
+                                                        Declinar servicio
+                                                    </Button>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <div className="flex flex-1 items-center">
+                                                <Badge
+                                                    variant={
+                                                        STATE_VARIANT[stateKey]
+                                                    }
+                                                >
+                                                    {STATE_LABEL[stateKey]}
+                                                </Badge>
+                                            </div>
                                         )}
                                         <Button
                                             variant="outline"

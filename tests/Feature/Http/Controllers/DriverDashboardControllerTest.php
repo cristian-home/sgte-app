@@ -358,3 +358,110 @@ test('driver creating an incident is flagged as driver report and redirected to 
     expect($service->serviceIncidents()->count())->toBe(1);
     expect($service->serviceIncidents()->first()->is_driver_report)->toBeTrue();
 });
+
+test('index respects the ?date= query param', function (): void {
+    $driver = Driver::factory()->create(['user_id' => $this->user->id]);
+    $tz = \App\Support\Tz::operation();
+    $today = \Illuminate\Support\Carbon::now($tz)->toDateString();
+    $yesterday = \Illuminate\Support\Carbon::now($tz)->subDay()->toDateString();
+
+    Service::factory()->create([
+        'driver_id' => $driver->id,
+        'service_date' => $today,
+    ]);
+    Service::factory()->create([
+        'driver_id' => $driver->id,
+        'service_date' => $yesterday,
+    ]);
+
+    $response = get(route('driver.dashboard', ['date' => $yesterday]));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->where('selectedDate', $yesterday)
+            ->where('isToday', false)
+            ->has('services', 1)
+    );
+});
+
+test('index falls back to today when ?date= is missing', function (): void {
+    $driver = Driver::factory()->create(['user_id' => $this->user->id]);
+    $today = \Illuminate\Support\Carbon::now(\App\Support\Tz::operation())->toDateString();
+
+    $response = get(route('driver.dashboard'));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->where('selectedDate', $today)
+            ->where('isToday', true)
+    );
+});
+
+test('index ignores invalid date and falls back to today', function (): void {
+    Driver::factory()->create(['user_id' => $this->user->id]);
+    $today = \Illuminate\Support\Carbon::now(\App\Support\Tz::operation())->toDateString();
+
+    $response = get(route('driver.dashboard', ['date' => 'banana']));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->where('selectedDate', $today)
+            ->where('isToday', true)
+    );
+});
+
+test('confirm start is rejected when service is not today', function (): void {
+    $driver = Driver::factory()->create(['user_id' => $this->user->id]);
+    $tz = \App\Support\Tz::operation();
+    $yesterday = \Illuminate\Support\Carbon::now($tz)->subDay()->toDateString();
+    $service = Service::factory()->create([
+        'driver_id' => $driver->id,
+        'service_date' => $yesterday,
+        'actual_start_time' => null,
+    ]);
+
+    $response = post(route('driver.confirm-start', $service));
+
+    $response->assertStatus(422);
+    expect($service->fresh()->actual_start_at)->toBeNull();
+});
+
+test('confirm end is rejected when service is not today', function (): void {
+    $driver = Driver::factory()->create(['user_id' => $this->user->id]);
+    $tz = \App\Support\Tz::operation();
+    $yesterday = \Illuminate\Support\Carbon::now($tz)->subDay()->toDateString();
+    $service = Service::factory()->create([
+        'driver_id' => $driver->id,
+        'service_date' => $yesterday,
+        'actual_start_time' => '08:00:00',
+        'actual_end_time' => null,
+    ]);
+
+    $response = post(route('driver.confirm-end', $service));
+
+    $response->assertStatus(422);
+    expect($service->fresh()->actual_end_at)->toBeNull();
+});
+
+test('decline is rejected when service is not today', function (): void {
+    $driver = Driver::factory()->create(['user_id' => $this->user->id]);
+    $tz = \App\Support\Tz::operation();
+    $tomorrow = \Illuminate\Support\Carbon::now($tz)->addDay()->toDateString();
+    $service = Service::factory()->create([
+        'driver_id' => $driver->id,
+        'service_date' => $tomorrow,
+        'actual_start_time' => null,
+        'driver_declined_at' => null,
+    ]);
+    IncidentType::firstOrCreate(['code' => 'PREDECL'], IncidentType::factory()->raw(['code' => 'PREDECL']));
+
+    $response = post(route('driver.decline', $service), [
+        'reason_text' => 'Falla mecánica reportada hoy',
+    ]);
+
+    $response->assertStatus(422);
+    expect($service->fresh()->driver_declined_at)->toBeNull();
+});

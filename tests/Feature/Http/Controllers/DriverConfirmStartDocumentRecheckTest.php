@@ -9,6 +9,8 @@ use App\Models\Driver;
 use App\Models\Service;
 use App\Models\User;
 use App\Models\Vehicle;
+use App\Support\Tz;
+use Illuminate\Support\Carbon;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\post;
@@ -17,13 +19,20 @@ use function Pest\Laravel\post;
  * REQ-004 / REQ-005 execution-time regression for
  * document-expiry-service-date-recheck. Each branch confirms that
  * confirmStart 422s with a Spanish message naming the expired doc when
- * paperwork has expired as-of service.service_date — even if the service
- * was created while everything was valid.
+ * paperwork has expired as-of service.service_date.
+ *
+ * Note: post-2026-05-08 the driver dashboard rejects any action on a
+ * service whose `service_date_local` is not today (see
+ * `assertActionAllowedToday`). All scenarios below therefore fix
+ * `service_date` to today_op and craft document-expiry conditions
+ * relative to today_op as well.
  */
 beforeEach(function (): void {
     $driverUser = User::factory()->create();
     $driverUser->assignRole(Role::DRIVER->value);
     $this->driverUser = $driverUser;
+    $this->todayOp = Carbon::now(Tz::operation())->toDateString();
+    $this->yesterdayOp = Carbon::now(Tz::operation())->subDay()->toDateString();
 });
 
 function buildValidFleet(array $vehicleOverrides = [], array $driverOverrides = []): array
@@ -54,7 +63,7 @@ test('confirmStart succeeds when all documents are valid as-of service_date', fu
     $service = Service::factory()->create([
         'vehicle_id' => $vehicle->id,
         'driver_id' => $driver->id,
-        'service_date' => '2026-03-10',
+        'service_date' => $this->todayOp,
         'actual_start_time' => null,
     ]);
 
@@ -65,13 +74,13 @@ test('confirmStart succeeds when all documents are valid as-of service_date', fu
 });
 
 test('confirmStart 422s when SOAT expired before service_date (REQ-004 branch)', function (): void {
-    [$vehicle, $driver] = buildValidFleet(['soat_due_date' => '2026-03-05']);
+    [$vehicle, $driver] = buildValidFleet(['soat_due_date' => $this->yesterdayOp]);
     $driver->user_id = $this->driverUser->id;
     $driver->save();
     $service = Service::factory()->create([
         'vehicle_id' => $vehicle->id,
         'driver_id' => $driver->id,
-        'service_date' => '2026-03-10',
+        'service_date' => $this->todayOp,
         'actual_start_time' => null,
     ]);
 
@@ -83,13 +92,13 @@ test('confirmStart 422s when SOAT expired before service_date (REQ-004 branch)',
 });
 
 test('confirmStart 422s when RTM expired before service_date (REQ-004 branch)', function (): void {
-    [$vehicle, $driver] = buildValidFleet(['rtm_due_date' => '2026-03-05']);
+    [$vehicle, $driver] = buildValidFleet(['rtm_due_date' => $this->yesterdayOp]);
     $driver->user_id = $this->driverUser->id;
     $driver->save();
     $service = Service::factory()->create([
         'vehicle_id' => $vehicle->id,
         'driver_id' => $driver->id,
-        'service_date' => '2026-03-10',
+        'service_date' => $this->todayOp,
         'actual_start_time' => null,
     ]);
 
@@ -101,13 +110,13 @@ test('confirmStart 422s when RTM expired before service_date (REQ-004 branch)', 
 });
 
 test('confirmStart 422s when operation card expired before service_date (REQ-004 branch)', function (): void {
-    [$vehicle, $driver] = buildValidFleet(['operation_card_due_date' => '2026-03-05']);
+    [$vehicle, $driver] = buildValidFleet(['operation_card_due_date' => $this->yesterdayOp]);
     $driver->user_id = $this->driverUser->id;
     $driver->save();
     $service = Service::factory()->create([
         'vehicle_id' => $vehicle->id,
         'driver_id' => $driver->id,
-        'service_date' => '2026-03-10',
+        'service_date' => $this->todayOp,
         'actual_start_time' => null,
     ]);
 
@@ -119,13 +128,13 @@ test('confirmStart 422s when operation card expired before service_date (REQ-004
 });
 
 test('confirmStart 422s when driver license expired before service_date (REQ-005 branch)', function (): void {
-    [$vehicle, $driver] = buildValidFleet([], ['license_due_date' => '2026-03-05']);
+    [$vehicle, $driver] = buildValidFleet([], ['license_due_date' => $this->yesterdayOp]);
     $driver->user_id = $this->driverUser->id;
     $driver->save();
     $service = Service::factory()->create([
         'vehicle_id' => $vehicle->id,
         'driver_id' => $driver->id,
-        'service_date' => '2026-03-10',
+        'service_date' => $this->todayOp,
         'actual_start_time' => null,
     ]);
 
@@ -147,7 +156,7 @@ test('confirmStart 422s when driver license category is incompatible with vehicl
     $service = Service::factory()->create([
         'vehicle_id' => $vehicle->id,
         'driver_id' => $driver->id,
-        'service_date' => '2026-03-10',
+        'service_date' => $this->todayOp,
         'actual_start_time' => null,
     ]);
 
@@ -165,7 +174,7 @@ test('confirmStart 422s when driver social security is inactive (REQ-005 branch)
     $service = Service::factory()->create([
         'vehicle_id' => $vehicle->id,
         'driver_id' => $driver->id,
-        'service_date' => '2026-03-10',
+        'service_date' => $this->todayOp,
         'actual_start_time' => null,
     ]);
 
@@ -174,29 +183,4 @@ test('confirmStart 422s when driver social security is inactive (REQ-005 branch)
     $response = post(route('driver.confirm-start', $service));
     $response->assertStatus(422);
     expect($response->exception?->getMessage() ?? '')->toContain('seguridad social');
-});
-
-test('confirmStart re-check is evaluated against service_date not today', function (): void {
-    // License is valid TODAY but expires before a future service_date.
-    // Checking against "today" would pass; checking against service_date
-    // must fail. This proves the re-check keys off service.service_date.
-    $validToday = now()->addDays(10)->toDateString();
-    $futureServiceDate = now()->addDays(30)->toDateString();
-
-    [$vehicle, $driver] = buildValidFleet([], ['license_due_date' => $validToday]);
-    $driver->user_id = $this->driverUser->id;
-    $driver->save();
-
-    $service = Service::factory()->create([
-        'vehicle_id' => $vehicle->id,
-        'driver_id' => $driver->id,
-        'service_date' => $futureServiceDate,
-        'actual_start_time' => null,
-    ]);
-
-    actingAs($this->driverUser);
-
-    $response = post(route('driver.confirm-start', $service));
-    $response->assertStatus(422);
-    expect($response->exception?->getMessage() ?? '')->toContain('licencia');
 });
