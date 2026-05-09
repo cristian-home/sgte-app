@@ -1,5 +1,5 @@
 import { ChevronDown } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -34,15 +34,25 @@ export function PermissionMatrix({
 }: Props) {
     const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
-    useMemo(() => {
-        if (expandSignal === true) setCollapsed({});
-        if (expandSignal === false) {
+    // React-docs "adjust state from a prop change" pattern: track the
+    // last seen `expandSignal` and reset `collapsed` during render when
+    // it differs. Avoids the setState-in-useEffect / useMemo anti-pattern
+    // (the React Compiler flags both) and runs at exactly the right
+    // moment — before children render — so children never observe a
+    // stale collapsed map. Cheap, no extra renders.
+    const [prevExpandSignal, setPrevExpandSignal] = useState<
+        boolean | null | undefined
+    >(expandSignal);
+    if (prevExpandSignal !== expandSignal) {
+        setPrevExpandSignal(expandSignal);
+        if (expandSignal === true) {
+            setCollapsed({});
+        } else if (expandSignal === false) {
             const next: Record<string, boolean> = {};
             for (const g of groups) next[g.id] = true;
             setCollapsed(next);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [expandSignal]);
+    }
 
     function toggleCollapse(id: string) {
         setCollapsed((prev) => ({ ...prev, [id]: !prev[id] }));
