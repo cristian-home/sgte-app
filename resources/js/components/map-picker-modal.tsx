@@ -21,6 +21,8 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { dlog } from '@/lib/debug-log';
 import { MAPBOX_ATTRIBUTION, mapboxTileUrl } from '@/lib/mapbox';
 import { reverseGeocode } from '@/lib/mapbox-geocoding';
@@ -51,9 +53,21 @@ interface MapPickerModalProps {
     onOpenChange: (open: boolean) => void;
     initialCenter: LatLng | null;
     initialPin: LatLng | null;
+    /**
+     * Pre-populates the editable address field inside the modal — the
+     * operator's existing draft, which they can refine before confirm.
+     * Whatever they leave in the field at confirm time becomes the
+     * persisted address text for the form.
+     */
     addressHint: string;
     municipalityHint: string | null;
-    onConfirm: (coords: LatLng) => void;
+    /**
+     * Returns BOTH the chosen coordinates AND the address text the
+     * operator typed inside the modal. The form uses these to set its
+     * `*_address` and `*_coordinates` together as a single intentional
+     * commit.
+     */
+    onConfirm: (data: { coords: LatLng; address: string }) => void;
     /** Used as a debug-log channel suffix to distinguish origin vs destination. */
     instanceLabel?: string;
 }
@@ -106,11 +120,9 @@ export default function MapPickerModal({
                             dlog(channel, 'cancel');
                             onOpenChange(false);
                         }}
-                        onConfirm={(coords) => {
-                            dlog(channel, 'confirm', {
-                                coords,
-                            });
-                            onConfirm(coords);
+                        onConfirm={(data) => {
+                            dlog(channel, 'confirm', data);
+                            onConfirm(data);
                         }}
                     />
                 ) : null}
@@ -126,7 +138,7 @@ interface BodyProps {
     addressHint: string;
     municipalityHint: string | null;
     onCancel: () => void;
-    onConfirm: (coords: LatLng) => void;
+    onConfirm: (data: { coords: LatLng; address: string }) => void;
 }
 
 function MapPickerBody({
@@ -141,6 +153,10 @@ function MapPickerBody({
     const [pin, setPin] = useState<LatLng | null>(initialPin);
     const [hint, setHint] = useState<string>('—');
     const [hintLoading, setHintLoading] = useState(false);
+    // Editable mirror of the form's address input. Pre-populated with
+    // whatever the operator already had typed; confirming the modal
+    // pushes this value back as the canonical address text.
+    const [addressDraft, setAddressDraft] = useState<string>(addressHint);
 
     const reverseAbortRef = useRef<AbortController | null>(null);
     const reverseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -226,18 +242,42 @@ function MapPickerBody({
         <>
             <DialogHeader className="px-6 pt-6">
                 <DialogTitle>Marcar ubicación en el mapa</DialogTitle>
-                <DialogDescription className="space-y-0.5">
-                    <span className="block">
-                        <strong>Dirección:</strong>{' '}
-                        {addressHint || '(sin dirección escrita)'}
-                    </span>
+                <DialogDescription>
+                    Coloca el pin donde el conductor debe parar y escribe abajo
+                    la dirección que verá en su panel.
                     {municipalityHint && (
-                        <span className="block">
+                        <span className="mt-1 block">
                             <strong>Municipio:</strong> {municipalityHint}
                         </span>
                     )}
                 </DialogDescription>
             </DialogHeader>
+
+            <div className="space-y-1 px-6">
+                <Label htmlFor="map-picker-address">
+                    Dirección visible para el conductor
+                </Label>
+                <div className="flex items-stretch gap-2">
+                    <Input
+                        id="map-picker-address"
+                        value={addressDraft}
+                        onChange={(e) => setAddressDraft(e.target.value)}
+                        placeholder="Ej: Calle 41A Sur #83-17, Casa de don Pepe…"
+                        autoComplete="street-address"
+                    />
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={!hint || hint === '—'}
+                        onClick={() => setAddressDraft(hint)}
+                        title="Usar la dirección que sugiere el mapa como texto"
+                        className="shrink-0"
+                    >
+                        Usar sugerencia
+                    </Button>
+                </div>
+            </div>
 
             <div className="relative flex-1 px-6">
                 <div className="h-full overflow-hidden rounded-md border">
@@ -305,7 +345,12 @@ function MapPickerBody({
                     type="button"
                     disabled={confirmDisabled}
                     onClick={() => {
-                        if (pin) onConfirm(pin);
+                        if (pin) {
+                            onConfirm({
+                                coords: pin,
+                                address: addressDraft.trim(),
+                            });
+                        }
                     }}
                 >
                     Confirmar
