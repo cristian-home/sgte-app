@@ -488,7 +488,12 @@ export default function AddressAutocomplete({
                         disabled={disabled || committing}
                         aria-invalid={invalid}
                         placeholder={placeholder}
-                        className="pr-9"
+                        // `rounded-r-none` is the seam with the map
+                        // button — the parent ButtonGroup styles only
+                        // reach direct children, and the Input is
+                        // wrapped here for absolute-positioning of the
+                        // X clear icon and the suggest dropdown.
+                        className="rounded-r-none pr-9"
                     />
                     {committing && (
                         <Loader2 className="absolute top-1/2 right-2 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
