@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    'mapbox' => [
+        // Public access token (pk....) shared with the Vite bundle as
+        // VITE_MAPBOX_TOKEN via .env interpolation. Used by the Address
+        // Autofill component on the service form and by the Mapbox tile
+        // layer on /gps/map. Restrict by URL in account.mapbox.com.
+        'token' => env('MAPBOX_TOKEN'),
+    ],
+
 ];

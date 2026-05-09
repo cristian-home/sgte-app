@@ -1,5 +1,6 @@
 import { usePage } from '@inertiajs/react';
-import { AlertTriangle, Info, Lock, ShieldAlert } from 'lucide-react';
+import { AddressAutofill } from '@mapbox/search-js-react';
+import { AlertTriangle, Info, Lock, MapPin, ShieldAlert } from 'lucide-react';
 import { useMemo } from 'react';
 import InputError from '@/components/input-error';
 import MunicipalityCombobox, {
@@ -25,6 +26,7 @@ import {
 import { PaymentMethod, PaymentMethodLabel } from '@/enums/PaymentMethod';
 import { ServiceStatus, ServiceStatusLabel } from '@/enums/ServiceStatus';
 import { viewerToday } from '@/lib/datetime';
+import { MAPBOX_TOKEN } from '@/lib/mapbox';
 import type { DayStatus } from '@/types/models';
 
 export interface VehicleOption {
@@ -78,8 +80,12 @@ export interface ServiceFormData {
     service_date: string;
     origin_municipality_id: string;
     origin_address: string;
+    /** "lat,lng" pair captured when the operator picks a Mapbox suggestion. Empty when the address was typed manually. */
+    origin_coordinates: string;
     destination_municipality_id: string;
     destination_address: string;
+    /** "lat,lng" pair captured when the operator picks a Mapbox suggestion. */
+    destination_coordinates: string;
     planned_start_time: string;
     planned_duration: string;
     actual_start_time: string;
@@ -618,15 +624,49 @@ export default function ServiceForm({
                     data-error={invalid('origin_address')}
                 >
                     <Label htmlFor="origin_address">Dirección Origen</Label>
-                    <Input
-                        id="origin_address"
-                        value={data.origin_address}
-                        aria-invalid={invalid('origin_address')}
-                        disabled={isFieldDisabled('origin_address')}
-                        onChange={(e) =>
-                            setData('origin_address', e.target.value)
-                        }
-                    />
+                    <AddressAutofill
+                        accessToken={MAPBOX_TOKEN}
+                        options={{ country: 'co', language: 'es' }}
+                        onRetrieve={(res) => {
+                            const f = res?.features?.[0];
+                            const coords = f?.geometry?.coordinates as
+                                | [number, number]
+                                | undefined;
+                            if (coords) {
+                                const [lng, lat] = coords;
+                                setData(
+                                    'origin_coordinates',
+                                    `${lat.toFixed(7)},${lng.toFixed(7)}`,
+                                );
+                            }
+                        }}
+                    >
+                        <Input
+                            id="origin_address"
+                            name="origin_address"
+                            autoComplete="street-address"
+                            value={data.origin_address}
+                            aria-invalid={invalid('origin_address')}
+                            disabled={isFieldDisabled('origin_address')}
+                            onChange={(e) => {
+                                setData('origin_address', e.target.value);
+                                // Editing after a pick invalidates the
+                                // captured coords — clear them.
+                                if (data.origin_coordinates) {
+                                    setData('origin_coordinates', '');
+                                }
+                            }}
+                        />
+                    </AddressAutofill>
+                    {data.origin_coordinates && (
+                        <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <MapPin className="size-3" />
+                            <span>
+                                Coordenadas:{' '}
+                                <code>{data.origin_coordinates}</code>
+                            </span>
+                        </p>
+                    )}
                     <InputError message={errors.origin_address} />
                 </div>
             </div>
@@ -660,15 +700,47 @@ export default function ServiceForm({
                     <Label htmlFor="destination_address">
                         Dirección Destino
                     </Label>
-                    <Input
-                        id="destination_address"
-                        value={data.destination_address}
-                        aria-invalid={invalid('destination_address')}
-                        disabled={isFieldDisabled('destination_address')}
-                        onChange={(e) =>
-                            setData('destination_address', e.target.value)
-                        }
-                    />
+                    <AddressAutofill
+                        accessToken={MAPBOX_TOKEN}
+                        options={{ country: 'co', language: 'es' }}
+                        onRetrieve={(res) => {
+                            const f = res?.features?.[0];
+                            const coords = f?.geometry?.coordinates as
+                                | [number, number]
+                                | undefined;
+                            if (coords) {
+                                const [lng, lat] = coords;
+                                setData(
+                                    'destination_coordinates',
+                                    `${lat.toFixed(7)},${lng.toFixed(7)}`,
+                                );
+                            }
+                        }}
+                    >
+                        <Input
+                            id="destination_address"
+                            name="destination_address"
+                            autoComplete="street-address"
+                            value={data.destination_address}
+                            aria-invalid={invalid('destination_address')}
+                            disabled={isFieldDisabled('destination_address')}
+                            onChange={(e) => {
+                                setData('destination_address', e.target.value);
+                                if (data.destination_coordinates) {
+                                    setData('destination_coordinates', '');
+                                }
+                            }}
+                        />
+                    </AddressAutofill>
+                    {data.destination_coordinates && (
+                        <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <MapPin className="size-3" />
+                            <span>
+                                Coordenadas:{' '}
+                                <code>{data.destination_coordinates}</code>
+                            </span>
+                        </p>
+                    )}
                     <InputError message={errors.destination_address} />
                 </div>
             </div>
