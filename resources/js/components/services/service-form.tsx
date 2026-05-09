@@ -108,11 +108,7 @@ function thirdPartyLabel(tp: ThirdPartyOption): string {
 function useMunicipalityProximity(
     municipalities: MunicipalityOption[],
     selectedId: string,
-): {
-    latitude: number;
-    longitude: number;
-    cityName: string | null;
-} | null {
+): { latitude: number; longitude: number } | null {
     return useMemo(() => {
         if (!selectedId) return null;
         const m = municipalities.find(
@@ -124,7 +120,7 @@ function useMunicipalityProximity(
         if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
             return null;
         }
-        return { latitude, longitude, cityName: m.name ?? null };
+        return { latitude, longitude };
     }, [municipalities, selectedId]);
 }
 

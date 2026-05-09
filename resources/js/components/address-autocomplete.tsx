@@ -12,7 +12,10 @@ import {
     useState,
 } from 'react';
 import { Input } from '@/components/ui/input';
-import { normalizeCityName, normalizeForMapbox } from '@/lib/colombian-address';
+import {
+    formatColombianAddress,
+    normalizeForMapbox,
+} from '@/lib/colombian-address';
 import { MAPBOX_TOKEN } from '@/lib/mapbox';
 import { cn } from '@/lib/utils';
 import type {
@@ -28,11 +31,7 @@ interface AddressAutocompleteProps {
     onChange: (text: string) => void;
     coordinates: string;
     onCoordinatesChange: (coords: string) => void;
-    proximity?: {
-        latitude: number;
-        longitude: number;
-        cityName?: string | null;
-    } | null;
+    proximity?: { latitude: number; longitude: number } | null;
     disabled?: boolean;
     invalid?: boolean;
     autoComplete?: string;
@@ -58,11 +57,9 @@ export default function AddressAutocomplete({
         accessToken: MAPBOX_TOKEN,
         country: 'co',
         language: 'es',
-        limit: 10,
+        limit: 6,
     });
     const session = useSearchSession(autofill);
-
-    const targetCity = normalizeCityName(proximity?.cityName);
 
     const [suggestions, setSuggestions] = useState<AddressAutofillSuggestion[]>(
         [],
@@ -78,31 +75,11 @@ export default function AddressAutocomplete({
         if (!session) return;
 
         const onSuggest = (res: AddressAutofillSuggestionResponse) => {
-            const all = res?.suggestions ?? [];
-            // When the user has a municipality selected, prefer suggestions
-            // whose Mapbox `address_level2` matches the chosen city. Fall
-            // back to the full list when no suggestion matches — better to
-            // show something than an empty dropdown.
-            let filtered = all;
-            if (targetCity) {
-                const matched = all.filter(
-                    (s) => normalizeCityName(s.address_level2) === targetCity,
-                );
-                if (matched.length > 0) {
-                    filtered = matched;
-                }
-            }
-            setSuggestions(filtered);
+            setSuggestions(res?.suggestions ?? []);
             setActiveIndex(-1);
             setLoading(false);
         };
         const onRetrieve = (res: AddressAutofillRetrieveResponse) => {
-            // Only capture coordinates. The visible address text is the
-            // user's source of truth — Mapbox returns addresses in anglo
-            // order ("83 17 Calle 41A Sur") and any auto-translation we
-            // attempt to Colombian nomenclature is heuristic and breaks
-            // on transversales, avenidas con nombre, direcciones rurales,
-            // etc. Keep the user in control of what gets saved.
             const feature = res?.features?.[0];
             const coords = feature?.geometry?.coordinates as
                 | [number, number]
@@ -110,6 +87,12 @@ export default function AddressAutocomplete({
             if (coords) {
                 const [lng, lat] = coords;
                 onCoordinatesChange(`${lat.toFixed(7)},${lng.toFixed(7)}`);
+            }
+            const props = feature?.properties as
+                | AddressAutofillSuggestion
+                | undefined;
+            if (props) {
+                onChange(formatColombianAddress(props));
             }
             setOpen(false);
             setSuggestions([]);
@@ -127,7 +110,7 @@ export default function AddressAutocomplete({
             session.removeEventListener('retrieve', onRetrieve);
             session.removeEventListener('suggesterror', onError);
         };
-    }, [session, onCoordinatesChange, targetCity]);
+    }, [session, onChange, onCoordinatesChange]);
 
     const proximityParam = useMemo<string>(() => {
         if (
