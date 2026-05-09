@@ -21,6 +21,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { dlog } from '@/lib/debug-log';
 import { MAPBOX_ATTRIBUTION, mapboxTileUrl } from '@/lib/mapbox';
 import { reverseGeocode } from '@/lib/mapbox-geocoding';
 import { cn } from '@/lib/utils';
@@ -53,6 +54,8 @@ interface MapPickerModalProps {
     addressHint: string;
     municipalityHint: string | null;
     onConfirm: (coords: LatLng) => void;
+    /** Used as a debug-log channel suffix to distinguish origin vs destination. */
+    instanceLabel?: string;
 }
 
 /**
@@ -69,9 +72,22 @@ export default function MapPickerModal({
     addressHint,
     municipalityHint,
     onConfirm,
+    instanceLabel,
 }: MapPickerModalProps) {
+    const channel = `map-picker:${instanceLabel ?? 'default'}`;
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog
+            open={open}
+            onOpenChange={(next) => {
+                dlog(channel, next ? 'open' : 'close', {
+                    addressHint,
+                    municipalityHint,
+                    initialCenter,
+                    initialPin,
+                });
+                onOpenChange(next);
+            }}
+        >
             <DialogContent
                 className={cn(
                     'sm:max-w-3xl',
@@ -81,12 +97,21 @@ export default function MapPickerModal({
             >
                 {open ? (
                     <MapPickerBody
+                        channel={channel}
                         initialCenter={initialCenter}
                         initialPin={initialPin}
                         addressHint={addressHint}
                         municipalityHint={municipalityHint}
-                        onCancel={() => onOpenChange(false)}
-                        onConfirm={onConfirm}
+                        onCancel={() => {
+                            dlog(channel, 'cancel');
+                            onOpenChange(false);
+                        }}
+                        onConfirm={(coords) => {
+                            dlog(channel, 'confirm', {
+                                coords,
+                            });
+                            onConfirm(coords);
+                        }}
                     />
                 ) : null}
             </DialogContent>
@@ -95,6 +120,7 @@ export default function MapPickerModal({
 }
 
 interface BodyProps {
+    channel: string;
     initialCenter: LatLng | null;
     initialPin: LatLng | null;
     addressHint: string;
@@ -104,6 +130,7 @@ interface BodyProps {
 }
 
 function MapPickerBody({
+    channel,
     initialCenter,
     initialPin,
     addressHint,
@@ -143,6 +170,11 @@ function MapPickerBody({
             reverseAbortRef.current = null;
         }
         setHintLoading(true);
+        dlog(channel, 'reverse scheduled', {
+            lat: next.lat,
+            lng: next.lng,
+            debounce_ms: REVERSE_DEBOUNCE_MS,
+        });
         reverseTimerRef.current = setTimeout(() => {
             const ac = new AbortController();
             reverseAbortRef.current = ac;
@@ -166,19 +198,24 @@ function MapPickerBody({
                         f?.properties.place_formatted ??
                         f?.properties.name ??
                         '—';
+                    dlog(channel, 'reverse hint', { text });
                     setHint(text);
                     setHintLoading(false);
                 })
                 .catch((err) => {
                     if ((err as { name?: string }).name === 'AbortError')
                         return;
+                    dlog(channel, 'reverse error', {
+                        error: (err as Error).message,
+                    });
                     setHint('—');
                     setHintLoading(false);
                 });
         }, REVERSE_DEBOUNCE_MS);
     };
 
-    const handlePinChange = (next: LatLng) => {
+    const handlePinChange = (next: LatLng, source: 'click' | 'drag') => {
+        dlog(channel, `pin ${source}`, { lat: next.lat, lng: next.lng });
         setPin(next);
         scheduleReverse(next);
     };
@@ -215,7 +252,9 @@ function MapPickerBody({
                             tileSize={512}
                             zoomOffset={-1}
                         />
-                        <ClickToDropPin onPinChange={handlePinChange} />
+                        <ClickToDropPin
+                            onPinChange={(ll) => handlePinChange(ll, 'click')}
+                        />
                         {pin && (
                             <Marker
                                 position={[pin.lat, pin.lng]}
@@ -224,10 +263,10 @@ function MapPickerBody({
                                     dragend: (e) => {
                                         const m = e.target as L.Marker;
                                         const ll = m.getLatLng();
-                                        handlePinChange({
-                                            lat: ll.lat,
-                                            lng: ll.lng,
-                                        });
+                                        handlePinChange(
+                                            { lat: ll.lat, lng: ll.lng },
+                                            'drag',
+                                        );
                                     },
                                 }}
                             />

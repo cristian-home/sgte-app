@@ -254,7 +254,13 @@ interface ServiceFormProps {
     dayStatus?: DayStatus | null;
     canEditExecuted?: boolean;
     isAdmin?: boolean;
-    /** Bubble up the address-commit-in-flight signal so the page can disable Submit. */
+    /**
+     * Bubble up a "should block submit" signal so the page can disable
+     * the Save button. True when:
+     *  - any address has a permanent-commit fetch in flight, OR
+     *  - any address has text but no captured coordinates (operator
+     *    must pick a Mapbox suggestion or drop a manual pin first).
+     */
     onAddressCommitInFlight?: (inFlight: boolean) => void;
 }
 
@@ -327,9 +333,20 @@ export default function ServiceForm({
         setCommitCount((n) => Math.max(0, n + (inFlight ? 1 : -1)));
     }, []);
 
+    // An address that has text but no captured coordinates is invalid:
+    // the operator typed something but never picked a Mapbox suggestion
+    // or placed a manual pin, so we cannot persist a usable location.
+    // Backend mirrors this with `required_with` rules on coordinates and
+    // coordinates_source — frontend just blocks the Save button to give
+    // immediate feedback.
+    const addressNeedsConfirmation =
+        (data.origin_address.trim().length > 0 && !data.origin_coordinates) ||
+        (data.destination_address.trim().length > 0 &&
+            !data.destination_coordinates);
+
     useEffect(() => {
-        onAddressCommitInFlight?.(commitCount > 0);
-    }, [commitCount, onAddressCommitInFlight]);
+        onAddressCommitInFlight?.(commitCount > 0 || addressNeedsConfirmation);
+    }, [commitCount, addressNeedsConfirmation, onAddressCommitInFlight]);
 
     const filteredContracts = useMemo(() => {
         if (!data.service_date) return contracts;
@@ -731,6 +748,7 @@ export default function ServiceForm({
                     />
                     <InputError message={errors.origin_address} />
                     <MapPickerModal
+                        instanceLabel="origin"
                         open={originPickerOpen}
                         onOpenChange={setOriginPickerOpen}
                         initialCenter={
@@ -817,6 +835,7 @@ export default function ServiceForm({
                         invalid={invalid('destination_address')}
                     />
                     <MapPickerModal
+                        instanceLabel="destination"
                         open={destinationPickerOpen}
                         onOpenChange={setDestinationPickerOpen}
                         initialCenter={

@@ -1,3 +1,4 @@
+import { dperf, dwarn } from '@/lib/debug-log';
 import { MAPBOX_TOKEN } from '@/lib/mapbox';
 
 /**
@@ -150,11 +151,45 @@ export async function forwardGeocode(
         extra.autocomplete = String(opts.autocomplete);
     }
     const url = `${ENDPOINT_FORWARD}?${buildParams(opts, extra)}`;
-    const res = await fetch(url, { signal });
-    if (!res.ok) {
-        throw new Error(`Mapbox forward geocode failed: ${res.status}`);
+    const done = dperf('mapbox-geocoding', 'forward', {
+        query,
+        permanent: opts.permanent,
+        country: opts.country,
+        language: opts.language,
+        proximity: opts.proximity,
+        types: opts.types,
+        limit: opts.limit,
+        autocomplete: opts.autocomplete,
+    });
+    try {
+        const res = await fetch(url, { signal });
+        if (!res.ok) {
+            done({ status: res.status, ok: false });
+            throw new Error(`Mapbox forward geocode failed: ${res.status}`);
+        }
+        const json = (await res.json()) as GeocodingResponse;
+        done({
+            status: res.status,
+            features: json.features?.length ?? 0,
+            firstName: json.features?.[0]?.properties.name ?? null,
+            firstAccuracy:
+                json.features?.[0]?.properties.coordinates.accuracy ?? null,
+            firstHasRoutable:
+                !!json.features?.[0]?.properties.coordinates.routable_points
+                    ?.length,
+        });
+        return json;
+    } catch (err) {
+        if ((err as { name?: string }).name === 'AbortError') {
+            done({ aborted: true });
+        } else {
+            dwarn('mapbox-geocoding', 'forward error', {
+                query,
+                error: (err as Error).message,
+            });
+        }
+        throw err;
     }
-    return (await res.json()) as GeocodingResponse;
 }
 
 /**
@@ -173,11 +208,40 @@ export async function reverseGeocode(
         latitude: String(lat),
     };
     const url = `${ENDPOINT_REVERSE}?${buildParams(opts, extra)}`;
-    const res = await fetch(url, { signal });
-    if (!res.ok) {
-        throw new Error(`Mapbox reverse geocode failed: ${res.status}`);
+    const done = dperf('mapbox-geocoding', 'reverse', {
+        lat,
+        lng,
+        permanent: opts.permanent,
+        types: opts.types,
+        limit: opts.limit,
+    });
+    try {
+        const res = await fetch(url, { signal });
+        if (!res.ok) {
+            done({ status: res.status, ok: false });
+            throw new Error(`Mapbox reverse geocode failed: ${res.status}`);
+        }
+        const json = (await res.json()) as GeocodingResponse;
+        done({
+            status: res.status,
+            features: json.features?.length ?? 0,
+            firstName: json.features?.[0]?.properties.name ?? null,
+            firstFormatted:
+                json.features?.[0]?.properties.place_formatted ?? null,
+        });
+        return json;
+    } catch (err) {
+        if ((err as { name?: string }).name === 'AbortError') {
+            done({ aborted: true });
+        } else {
+            dwarn('mapbox-geocoding', 'reverse error', {
+                lat,
+                lng,
+                error: (err as Error).message,
+            });
+        }
+        throw err;
     }
-    return (await res.json()) as GeocodingResponse;
 }
 
 /**
