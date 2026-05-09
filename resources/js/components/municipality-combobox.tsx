@@ -21,7 +21,7 @@ import type { Department, Municipality } from '@/types/models';
 
 export type MunicipalityOption = Pick<
     Municipality,
-    'id' | 'name' | 'code' | 'department_id'
+    'id' | 'name' | 'code' | 'department_id' | 'latitude' | 'longitude'
 > & {
     department?: Pick<Department, 'id' | 'name'>;
 };
