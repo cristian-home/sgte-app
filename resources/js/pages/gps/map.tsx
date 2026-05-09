@@ -8,8 +8,8 @@ import { useEffect, useMemo } from 'react';
 import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
 import { Badge } from '@/components/ui/badge';
 import AppLayout from '@/layouts/app-layout';
-import { MAPBOX_ATTRIBUTION, mapboxTileUrl } from '@/lib/mapbox';
 import { formatTimestampInViewerTz } from '@/lib/datetime';
+import { MAPBOX_ATTRIBUTION, mapboxTileUrl } from '@/lib/mapbox';
 
 import type { BreadcrumbItem } from '@/types';
 
