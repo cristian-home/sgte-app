@@ -8,7 +8,14 @@ import {
     useState,
 } from 'react';
 import { Button } from '@/components/ui/button';
+import { ButtonGroup } from '@/components/ui/button-group';
 import { Input } from '@/components/ui/input';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { dlog, dperf } from '@/lib/debug-log';
 import {
     type GeocodingAccuracy,
@@ -451,7 +458,7 @@ export default function AddressAutocomplete({
 
     return (
         <div ref={containerRef} className="space-y-1">
-            <div className="relative flex items-stretch gap-2">
+            <ButtonGroup className="w-full">
                 <div className="relative flex-1">
                     <Input
                         id={id}
@@ -564,27 +571,34 @@ export default function AddressAutocomplete({
                         </div>
                     )}
                 </div>
-                <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                        dlog(channel, 'map picker open requested', {
-                            currentValue: value,
-                            currentCoords: coordinates || null,
-                            currentSource: coordinatesSource || null,
-                        });
-                        cancelPendingSuggest();
-                        setOpen(false);
-                        onOpenMapPicker();
-                    }}
-                    disabled={disabled || committing}
-                    className="shrink-0"
-                >
-                    <MapPin className="size-4" />
-                    <span className="hidden sm:inline">Marcar en mapa</span>
-                </Button>
-            </div>
+                <TooltipProvider delayDuration={300}>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => {
+                                    dlog(channel, 'map picker open requested', {
+                                        currentValue: value,
+                                        currentCoords: coordinates || null,
+                                        currentSource:
+                                            coordinatesSource || null,
+                                    });
+                                    cancelPendingSuggest();
+                                    setOpen(false);
+                                    onOpenMapPicker();
+                                }}
+                                disabled={disabled || committing}
+                                aria-label="Marcar en mapa"
+                                className="shrink-0"
+                            >
+                                <MapPin className="size-4" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Marcar en mapa</TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+            </ButtonGroup>
 
             {commitError && (
                 <p className="flex items-start gap-1 text-xs text-red-600 dark:text-red-400">
