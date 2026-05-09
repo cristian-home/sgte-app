@@ -323,7 +323,7 @@ class ServiceController extends Controller
             'municipalities' => Municipality::query()
                 ->with('department:id,name')
                 ->orderBy('name')
-                ->get(['id', 'name', 'code', 'department_id', 'latitude', 'longitude']),
+                ->get(['id', 'name', 'code', 'department_id']),
         ];
     }
 }
