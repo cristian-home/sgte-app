@@ -29,9 +29,19 @@ return new class extends Migration
             $table->foreignId('origin_municipality_id')->nullable()->constrained('municipalities');
             $table->string('origin_address', 255)->nullable();
             $table->string('origin_coordinates', 50)->nullable();
+            // 'mapbox' (pickeada del autocomplete con permanent=true) o
+            // 'manual' (pin colocado en el mapa por el operador). NULL para
+            // coords legacy sin trazabilidad.
+            $table->string('origin_coordinates_source', 10)->nullable();
+            // Cuando source='mapbox', accuracy de Geocoding v6:
+            // rooftop/parcel/point/interpolated/approximate/intersection.
+            // NULL para 'manual' o legacy.
+            $table->string('origin_coordinates_accuracy', 20)->nullable();
             $table->foreignId('destination_municipality_id')->nullable()->constrained('municipalities');
             $table->string('destination_address', 255)->nullable();
             $table->string('destination_coordinates', 50)->nullable();
+            $table->string('destination_coordinates_source', 10)->nullable();
+            $table->string('destination_coordinates_accuracy', 20)->nullable();
             // UTC instants (TIMESTAMPTZ). Source of truth for ordering and
             // queries. Wall-clock projection is derived from these + the
             // `timezone` column via accessors on the Service model.
