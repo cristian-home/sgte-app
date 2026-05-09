@@ -13,7 +13,6 @@ export const MAPBOX_TOKEN: string =
     (import.meta.env.VITE_MAPBOX_TOKEN as string | undefined) ?? '';
 
 if (import.meta.env.PROD && !MAPBOX_TOKEN) {
-    // eslint-disable-next-line no-console
     console.warn(
         'VITE_MAPBOX_TOKEN is empty — Address Autofill and Mapbox tiles will fail.',
     );
