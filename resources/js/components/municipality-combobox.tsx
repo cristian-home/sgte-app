@@ -80,7 +80,13 @@ export default function MunicipalityCombobox({
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
-            <div className={cn('relative', className)}>
+            {/* `self-start` keeps this wrapper at its natural button height
+                even when the parent grid cell stretches (e.g. service form
+                aligns the municipality column with the address column, and
+                the address column grows when the coords badge is rendered).
+                Without it, the absolutely-positioned X drifts vertically
+                with the wrapper. */}
+            <div className={cn('relative self-start', className)}>
                 <PopoverTrigger asChild>
                     <Button
                         id={id}
