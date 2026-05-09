@@ -1,7 +1,7 @@
 import { usePage } from '@inertiajs/react';
-import { AddressAutofill } from '@mapbox/search-js-react';
 import { AlertTriangle, Info, Lock, MapPin, ShieldAlert } from 'lucide-react';
 import { useMemo } from 'react';
+import AddressAutocomplete from '@/components/address-autocomplete';
 import InputError from '@/components/input-error';
 import MunicipalityCombobox, {
     type MunicipalityOption,
@@ -26,7 +26,6 @@ import {
 import { PaymentMethod, PaymentMethodLabel } from '@/enums/PaymentMethod';
 import { ServiceStatus, ServiceStatusLabel } from '@/enums/ServiceStatus';
 import { viewerToday } from '@/lib/datetime';
-import { MAPBOX_TOKEN } from '@/lib/mapbox';
 import type { DayStatus } from '@/types/models';
 
 export interface VehicleOption {
@@ -104,6 +103,25 @@ function thirdPartyLabel(tp: ThirdPartyOption): string {
         return `${tp.first_name} ${tp.first_lastname} (${tp.identification_number})`;
     }
     return `${tp.company_name} (${tp.identification_number})`;
+}
+
+function useMunicipalityProximity(
+    municipalities: MunicipalityOption[],
+    selectedId: string,
+): { latitude: number; longitude: number } | null {
+    return useMemo(() => {
+        if (!selectedId) return null;
+        const m = municipalities.find(
+            (x) => String(x.id) === String(selectedId),
+        );
+        if (!m || m.latitude == null || m.longitude == null) return null;
+        const latitude = Number(m.latitude);
+        const longitude = Number(m.longitude);
+        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+            return null;
+        }
+        return { latitude, longitude };
+    }, [municipalities, selectedId]);
 }
 
 function computeActualDuration(start: string, end: string): string | null {
@@ -252,6 +270,15 @@ export default function ServiceForm({
     const selectedDriver = useMemo(
         () => drivers.find((d) => d.id === Number(data.driver_id)) ?? null,
         [drivers, data.driver_id],
+    );
+
+    const originMunicipalityProximity = useMunicipalityProximity(
+        municipalities,
+        data.origin_municipality_id,
+    );
+    const destinationMunicipalityProximity = useMunicipalityProximity(
+        municipalities,
+        data.destination_municipality_id,
     );
 
     const filteredContracts = useMemo(() => {
@@ -624,40 +651,20 @@ export default function ServiceForm({
                     data-error={invalid('origin_address')}
                 >
                     <Label htmlFor="origin_address">Dirección Origen</Label>
-                    <AddressAutofill
-                        accessToken={MAPBOX_TOKEN}
-                        options={{ country: 'co', language: 'es' }}
-                        onRetrieve={(res) => {
-                            const f = res?.features?.[0];
-                            const coords = f?.geometry?.coordinates as
-                                | [number, number]
-                                | undefined;
-                            if (coords) {
-                                const [lng, lat] = coords;
-                                setData(
-                                    'origin_coordinates',
-                                    `${lat.toFixed(7)},${lng.toFixed(7)}`,
-                                );
-                            }
-                        }}
-                    >
-                        <Input
-                            id="origin_address"
-                            name="origin_address"
-                            autoComplete="street-address"
-                            value={data.origin_address}
-                            aria-invalid={invalid('origin_address')}
-                            disabled={isFieldDisabled('origin_address')}
-                            onChange={(e) => {
-                                setData('origin_address', e.target.value);
-                                // Editing after a pick invalidates the
-                                // captured coords — clear them.
-                                if (data.origin_coordinates) {
-                                    setData('origin_coordinates', '');
-                                }
-                            }}
-                        />
-                    </AddressAutofill>
+                    <AddressAutocomplete
+                        id="origin_address"
+                        name="origin_address"
+                        autoComplete="street-address"
+                        value={data.origin_address}
+                        onChange={(v) => setData('origin_address', v)}
+                        coordinates={data.origin_coordinates}
+                        onCoordinatesChange={(c) =>
+                            setData('origin_coordinates', c)
+                        }
+                        proximity={originMunicipalityProximity}
+                        disabled={isFieldDisabled('origin_address')}
+                        invalid={invalid('origin_address')}
+                    />
                     {data.origin_coordinates && (
                         <p className="flex items-center gap-1 text-xs text-muted-foreground">
                             <MapPin className="size-3" />
@@ -700,38 +707,20 @@ export default function ServiceForm({
                     <Label htmlFor="destination_address">
                         Dirección Destino
                     </Label>
-                    <AddressAutofill
-                        accessToken={MAPBOX_TOKEN}
-                        options={{ country: 'co', language: 'es' }}
-                        onRetrieve={(res) => {
-                            const f = res?.features?.[0];
-                            const coords = f?.geometry?.coordinates as
-                                | [number, number]
-                                | undefined;
-                            if (coords) {
-                                const [lng, lat] = coords;
-                                setData(
-                                    'destination_coordinates',
-                                    `${lat.toFixed(7)},${lng.toFixed(7)}`,
-                                );
-                            }
-                        }}
-                    >
-                        <Input
-                            id="destination_address"
-                            name="destination_address"
-                            autoComplete="street-address"
-                            value={data.destination_address}
-                            aria-invalid={invalid('destination_address')}
-                            disabled={isFieldDisabled('destination_address')}
-                            onChange={(e) => {
-                                setData('destination_address', e.target.value);
-                                if (data.destination_coordinates) {
-                                    setData('destination_coordinates', '');
-                                }
-                            }}
-                        />
-                    </AddressAutofill>
+                    <AddressAutocomplete
+                        id="destination_address"
+                        name="destination_address"
+                        autoComplete="street-address"
+                        value={data.destination_address}
+                        onChange={(v) => setData('destination_address', v)}
+                        coordinates={data.destination_coordinates}
+                        onCoordinatesChange={(c) =>
+                            setData('destination_coordinates', c)
+                        }
+                        proximity={destinationMunicipalityProximity}
+                        disabled={isFieldDisabled('destination_address')}
+                        invalid={invalid('destination_address')}
+                    />
                     {data.destination_coordinates && (
                         <p className="flex items-center gap-1 text-xs text-muted-foreground">
                             <MapPin className="size-3" />
