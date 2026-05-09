@@ -1,4 +1,5 @@
 import { Head, Link, useForm } from '@inertiajs/react';
+import { useState } from 'react';
 import ServiceController from '@/actions/App/Http/Controllers/ServiceController';
 import { type MunicipalityOption } from '@/components/municipality-combobox';
 import ServiceForm, {
@@ -23,9 +24,13 @@ interface Service {
     origin_municipality_id: number | null;
     origin_address: string | null;
     origin_coordinates: string | null;
+    origin_coordinates_source: string | null;
+    origin_coordinates_accuracy: string | null;
     destination_municipality_id: number | null;
     destination_address: string | null;
     destination_coordinates: string | null;
+    destination_coordinates_source: string | null;
+    destination_coordinates_accuracy: string | null;
     planned_start_local: string;
     planned_duration: number;
     actual_start_local: string | null;
@@ -75,11 +80,17 @@ export default function ServicesEdit({
             : '',
         origin_address: service.origin_address ?? '',
         origin_coordinates: service.origin_coordinates ?? '',
+        origin_coordinates_source: service.origin_coordinates_source ?? '',
+        origin_coordinates_accuracy: service.origin_coordinates_accuracy ?? '',
         destination_municipality_id: service.destination_municipality_id
             ? String(service.destination_municipality_id)
             : '',
         destination_address: service.destination_address ?? '',
         destination_coordinates: service.destination_coordinates ?? '',
+        destination_coordinates_source:
+            service.destination_coordinates_source ?? '',
+        destination_coordinates_accuracy:
+            service.destination_coordinates_accuracy ?? '',
         planned_start_time: service.planned_start_local,
         planned_duration: String(service.planned_duration),
         actual_start_time: service.actual_start_local ?? '',
@@ -98,6 +109,8 @@ export default function ServicesEdit({
         e.preventDefault();
         put(ServiceController.update(service.id).url);
     }
+
+    const [addressCommitInFlight, setAddressCommitInFlight] = useState(false);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -122,11 +135,19 @@ export default function ServicesEdit({
                                 dayStatus={dayStatus}
                                 canEditExecuted={canEditExecuted}
                                 isAdmin={isAdmin}
+                                onAddressCommitInFlight={
+                                    setAddressCommitInFlight
+                                }
                             />
 
                             {!isFullyLocked && (
                                 <div className="flex items-center gap-4">
-                                    <Button type="submit" disabled={processing}>
+                                    <Button
+                                        type="submit"
+                                        disabled={
+                                            processing || addressCommitInFlight
+                                        }
+                                    >
                                         Actualizar
                                     </Button>
                                     <Link href={services.index().url}>
