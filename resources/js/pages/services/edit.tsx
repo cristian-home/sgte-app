@@ -22,8 +22,10 @@ interface Service {
     timezone: string;
     origin_municipality_id: number | null;
     origin_address: string | null;
+    origin_coordinates: string | null;
     destination_municipality_id: number | null;
     destination_address: string | null;
+    destination_coordinates: string | null;
     planned_start_local: string;
     planned_duration: number;
     actual_start_local: string | null;
@@ -72,10 +74,12 @@ export default function ServicesEdit({
             ? String(service.origin_municipality_id)
             : '',
         origin_address: service.origin_address ?? '',
+        origin_coordinates: service.origin_coordinates ?? '',
         destination_municipality_id: service.destination_municipality_id
             ? String(service.destination_municipality_id)
             : '',
         destination_address: service.destination_address ?? '',
+        destination_coordinates: service.destination_coordinates ?? '',
         planned_start_time: service.planned_start_local,
         planned_duration: String(service.planned_duration),
         actual_start_time: service.actual_start_local ?? '',
