@@ -61,6 +61,22 @@ export function UserDialog({
         send_welcome_email: false,
     });
 
+    // React-docs "adjust state from a prop change" pattern: reset the
+    // password-visibility toggle whenever the dialog identity changes
+    // (open flips, mode flips, or we're now editing a different user).
+    // Doing this during render with a tracked previous-key avoids the
+    // setState-in-useEffect anti-pattern that the React Compiler flags.
+    const dialogKey = `${open ? '1' : '0'}|${mode}|${user?.id ?? 'new'}`;
+    const [prevDialogKey, setPrevDialogKey] = useState(dialogKey);
+    if (prevDialogKey !== dialogKey) {
+        setPrevDialogKey(dialogKey);
+        setShowPassword(false);
+    }
+
+    // Form data setup is left in the effect — Inertia's `form.setData`
+    // and `form.clearErrors` aren't React useState setters and are not
+    // flagged by the React Compiler rule. Keeping them here preserves
+    // the existing identity-on-id reset behaviour.
     useEffect(() => {
         if (!open) return;
         if (mode === 'edit' && user) {
@@ -85,7 +101,6 @@ export function UserDialog({
             });
         }
         form.clearErrors();
-        setShowPassword(false);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open, mode, user?.id]);
 
