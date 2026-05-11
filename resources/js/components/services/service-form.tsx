@@ -9,6 +9,7 @@ import MapPickerModal from '@/components/map-picker-modal';
 import { type MunicipalityOption } from '@/components/municipality-combobox';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -514,582 +515,673 @@ export default function ServiceForm({
             )}
 
             {/* Datos del Servicio */}
-            <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-semibold">
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
                         Datos del Servicio
-                    </h3>
-                    {mode === 'edit' &&
-                        incidentCount !== undefined &&
-                        incidentCount > 0 && (
-                            <Badge variant="destructive">
-                                {incidentCount} novedad
-                                {incidentCount > 1 ? 'es' : ''}
-                            </Badge>
-                        )}
-                </div>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-3 md:grid-rows-[auto_1fr_auto]">
-                <div
-                    className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
-                    data-error={invalid('service_date')}
-                >
-                    <Label htmlFor="service_date">Fecha del Servicio *</Label>
-                    <Input
-                        id="service_date"
-                        type="date"
-                        value={data.service_date}
-                        aria-invalid={invalid('service_date')}
-                        disabled={isFieldDisabled('service_date')}
-                        onChange={(e) =>
-                            setData('service_date', e.target.value)
-                        }
-                    />
-                    <InputError message={errors.service_date} />
-                </div>
-                <div
-                    className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
-                    data-error={invalid('contract_id')}
-                >
-                    <Label htmlFor="contract_id">Contrato *</Label>
-                    <Select
-                        value={data.contract_id}
-                        onValueChange={(value) => setData('contract_id', value)}
-                        disabled={isFieldDisabled('contract_id')}
-                    >
-                        <SelectTrigger
-                            id="contract_id"
-                            aria-invalid={invalid('contract_id')}
-                        >
-                            <SelectValue placeholder="Seleccionar contrato..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {filteredContracts.map((c) => (
-                                <SelectItem key={c.id} value={String(c.id)}>
-                                    {c.contract_number}
-                                    {c.third_party
-                                        ? ` - ${c.third_party.company_name || `${c.third_party.first_name} ${c.third_party.first_lastname}`}`
-                                        : ''}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                    <InputError message={errors.contract_id} />
-                </div>
-                <div
-                    className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
-                    data-error={invalid('service_status')}
-                >
-                    <Label htmlFor="service_status">Estado *</Label>
-                    <Select
-                        value={data.service_status}
-                        onValueChange={(value) =>
-                            setData('service_status', value)
-                        }
-                        disabled={isFieldDisabled('service_status')}
-                    >
-                        <SelectTrigger
-                            id="service_status"
-                            aria-invalid={invalid('service_status')}
-                        >
-                            <SelectValue placeholder="Seleccionar..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {Object.entries(ServiceStatus).map(
-                                ([key, value]) => (
-                                    <SelectItem key={key} value={value}>
-                                        {ServiceStatusLabel[value]}
-                                    </SelectItem>
-                                ),
+                        {mode === 'edit' &&
+                            incidentCount !== undefined &&
+                            incidentCount > 0 && (
+                                <Badge variant="destructive">
+                                    {incidentCount} novedad
+                                    {incidentCount > 1 ? 'es' : ''}
+                                </Badge>
                             )}
-                        </SelectContent>
-                    </Select>
-                    <InputError message={errors.service_status} />
-                </div>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-3 md:grid-rows-[auto_1fr_auto]">
-                <div
-                    className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
-                    data-error={invalid('vehicle_id')}
-                >
-                    <Label htmlFor="vehicle_id">Vehículo *</Label>
-                    <Select
-                        value={data.vehicle_id}
-                        onValueChange={(value) => {
-                            setData('vehicle_id', value);
-                            const v = vehicles.find(
-                                (v) => v.id === Number(value),
-                            );
-                            if (v?.is_third_party) {
-                                setData('driver_id', '');
-                            }
-                        }}
-                        disabled={isFieldDisabled('vehicle_id')}
-                    >
-                        <SelectTrigger
-                            id="vehicle_id"
-                            aria-invalid={invalid('vehicle_id')}
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="grid gap-4 md:grid-cols-3 md:grid-rows-[auto_1fr_auto]">
+                        <div
+                            className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
+                            data-error={invalid('service_date')}
                         >
-                            <SelectValue placeholder="Seleccionar vehículo..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {vehicles.map((v) => (
-                                <SelectItem key={v.id} value={String(v.id)}>
-                                    {v.plate}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                    <InputError message={errors.vehicle_id} />
-                </div>
-
-                {selectedVehicle?.is_third_party ? (
-                    <div className="group/field grid gap-2 md:col-span-2 md:row-span-3 md:grid-rows-subgrid">
-                        <Label>Proveedor (Tercero)</Label>
-                        <div className="flex items-center rounded-md border bg-muted/50 px-3 py-2 text-sm">
-                            {selectedVehicle.third_party
-                                ? thirdPartyLabel(selectedVehicle.third_party)
-                                : 'Sin tercero asociado'}
+                            <Label htmlFor="service_date">
+                                Fecha del Servicio *
+                            </Label>
+                            <Input
+                                id="service_date"
+                                type="date"
+                                value={data.service_date}
+                                aria-invalid={invalid('service_date')}
+                                disabled={isFieldDisabled('service_date')}
+                                onChange={(e) =>
+                                    setData('service_date', e.target.value)
+                                }
+                            />
+                            <InputError message={errors.service_date} />
                         </div>
-                        <div />
-                    </div>
-                ) : (
-                    <div
-                        className="group/field grid gap-2 md:col-span-2 md:row-span-3 md:grid-rows-subgrid"
-                        data-error={invalid('driver_id')}
-                    >
-                        <div className="flex items-center gap-2">
-                            <Label htmlFor="driver_id">Conductor</Label>
-                            {driverMissingSocialSecurity && (
-                                <TooltipProvider>
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <AlertTriangle className="size-4 text-amber-500" />
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            El conductor no tiene seguridad
-                                            social completa
-                                        </TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
-                            )}
-                        </div>
-                        <Select
-                            value={data.driver_id}
-                            onValueChange={(value) =>
-                                setData('driver_id', value)
-                            }
-                            disabled={isFieldDisabled('driver_id')}
+                        <div
+                            className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
+                            data-error={invalid('contract_id')}
                         >
-                            <SelectTrigger
-                                id="driver_id"
-                                aria-invalid={invalid('driver_id')}
+                            <Label htmlFor="contract_id">Contrato *</Label>
+                            <Select
+                                value={data.contract_id}
+                                onValueChange={(value) =>
+                                    setData('contract_id', value)
+                                }
+                                disabled={isFieldDisabled('contract_id')}
                             >
-                                <SelectValue placeholder="Seleccionar conductor..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {drivers.map((d) => (
-                                    <SelectItem key={d.id} value={String(d.id)}>
-                                        {d.first_name} {d.first_lastname} (
-                                        {d.identification_number})
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <InputError message={errors.driver_id} />
+                                <SelectTrigger
+                                    id="contract_id"
+                                    aria-invalid={invalid('contract_id')}
+                                >
+                                    <SelectValue placeholder="Seleccionar contrato..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {filteredContracts.map((c) => (
+                                        <SelectItem
+                                            key={c.id}
+                                            value={String(c.id)}
+                                        >
+                                            {c.contract_number}
+                                            {c.third_party
+                                                ? ` - ${c.third_party.company_name || `${c.third_party.first_name} ${c.third_party.first_lastname}`}`
+                                                : ''}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <InputError message={errors.contract_id} />
+                        </div>
+                        <div
+                            className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
+                            data-error={invalid('service_status')}
+                        >
+                            <Label htmlFor="service_status">Estado *</Label>
+                            <Select
+                                value={data.service_status}
+                                onValueChange={(value) =>
+                                    setData('service_status', value)
+                                }
+                                disabled={isFieldDisabled('service_status')}
+                            >
+                                <SelectTrigger
+                                    id="service_status"
+                                    aria-invalid={invalid('service_status')}
+                                >
+                                    <SelectValue placeholder="Seleccionar..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {Object.entries(ServiceStatus).map(
+                                        ([key, value]) => (
+                                            <SelectItem key={key} value={value}>
+                                                {ServiceStatusLabel[value]}
+                                            </SelectItem>
+                                        ),
+                                    )}
+                                </SelectContent>
+                            </Select>
+                            <InputError message={errors.service_status} />
+                        </div>
                     </div>
-                )}
-            </div>
+
+                    <div className="grid gap-4 md:grid-cols-3 md:grid-rows-[auto_1fr_auto]">
+                        <div
+                            className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
+                            data-error={invalid('vehicle_id')}
+                        >
+                            <Label htmlFor="vehicle_id">Vehículo *</Label>
+                            <Select
+                                value={data.vehicle_id}
+                                onValueChange={(value) => {
+                                    setData('vehicle_id', value);
+                                    const v = vehicles.find(
+                                        (v) => v.id === Number(value),
+                                    );
+                                    if (v?.is_third_party) {
+                                        setData('driver_id', '');
+                                    }
+                                }}
+                                disabled={isFieldDisabled('vehicle_id')}
+                            >
+                                <SelectTrigger
+                                    id="vehicle_id"
+                                    aria-invalid={invalid('vehicle_id')}
+                                >
+                                    <SelectValue placeholder="Seleccionar vehículo..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {vehicles.map((v) => (
+                                        <SelectItem
+                                            key={v.id}
+                                            value={String(v.id)}
+                                        >
+                                            {v.plate}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <InputError message={errors.vehicle_id} />
+                        </div>
+
+                        {selectedVehicle?.is_third_party ? (
+                            <div className="group/field grid gap-2 md:col-span-2 md:row-span-3 md:grid-rows-subgrid">
+                                <Label>Proveedor (Tercero)</Label>
+                                <div className="flex items-center rounded-md border bg-muted/50 px-3 py-2 text-sm">
+                                    {selectedVehicle.third_party
+                                        ? thirdPartyLabel(
+                                              selectedVehicle.third_party,
+                                          )
+                                        : 'Sin tercero asociado'}
+                                </div>
+                                <div />
+                            </div>
+                        ) : (
+                            <div
+                                className="group/field grid gap-2 md:col-span-2 md:row-span-3 md:grid-rows-subgrid"
+                                data-error={invalid('driver_id')}
+                            >
+                                <div className="flex items-center gap-2">
+                                    <Label htmlFor="driver_id">Conductor</Label>
+                                    {driverMissingSocialSecurity && (
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <AlertTriangle className="size-4 text-amber-500" />
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    El conductor no tiene
+                                                    seguridad social completa
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    )}
+                                </div>
+                                <Select
+                                    value={data.driver_id}
+                                    onValueChange={(value) =>
+                                        setData('driver_id', value)
+                                    }
+                                    disabled={isFieldDisabled('driver_id')}
+                                >
+                                    <SelectTrigger
+                                        id="driver_id"
+                                        aria-invalid={invalid('driver_id')}
+                                    >
+                                        <SelectValue placeholder="Seleccionar conductor..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {drivers.map((d) => (
+                                            <SelectItem
+                                                key={d.id}
+                                                value={String(d.id)}
+                                            >
+                                                {d.first_name}{' '}
+                                                {d.first_lastname} (
+                                                {d.identification_number})
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <InputError message={errors.driver_id} />
+                            </div>
+                        )}
+                    </div>
+                </CardContent>
+            </Card>
 
             {/* Origen y Destino */}
-            <h3 className="text-lg font-semibold">Origen y Destino</h3>
-
-            <div className="grid gap-6 md:grid-cols-2">
-                <div
-                    className="grid gap-2"
-                    data-error={
-                        invalid('origin_municipality_id') ||
-                        invalid('origin_address')
-                    }
-                >
-                    <Label htmlFor="origin_address">Origen</Label>
-                    <LocationField
-                        id="origin_address"
-                        name="origin_address"
-                        municipalities={municipalities}
-                        municipalityId={data.origin_municipality_id}
-                        address={data.origin_address}
-                        coordinates={data.origin_coordinates}
-                        coordinatesSource={
-                            data.origin_coordinates_source as CoordinatesSource
-                        }
-                        coordinatesAccuracy={data.origin_coordinates_accuracy}
-                        onMunicipalityChange={(val) => {
-                            setData('origin_municipality_id', val);
-                            setOriginPickerNoMatch(false);
-                        }}
-                        onAddressChange={(v) => setData('origin_address', v)}
-                        onCoordinatesChange={(coords, source, accuracy) => {
-                            setData('origin_coordinates', coords);
-                            setData(
-                                'origin_coordinates_source',
-                                coords ? source : '',
-                            );
-                            setData(
-                                'origin_coordinates_accuracy',
-                                accuracy ?? '',
-                            );
-                        }}
-                        onCommitInFlight={handleOriginCommit}
-                        onOpenMapPicker={() => setOriginPickerOpen(true)}
-                        pickerNoCityMatch={originPickerNoMatch}
-                        invalidMunicipality={!!errors.origin_municipality_id}
-                        invalidAddress={!!errors.origin_address}
-                        disabled={
-                            isFieldDisabled('origin_address') ||
-                            isFieldDisabled('origin_municipality_id')
-                        }
-                    />
-                    <InputError
-                        message={
-                            errors.origin_municipality_id ||
-                            errors.origin_address ||
-                            errors.origin_coordinates
-                        }
-                    />
-                    <MapPickerModal
-                        instanceLabel="origin"
-                        open={originPickerOpen}
-                        onOpenChange={setOriginPickerOpen}
-                        initialCenter={
-                            originCenter
-                                ? {
-                                      lat: originCenter.latitude,
-                                      lng: originCenter.longitude,
-                                  }
-                                : null
-                        }
-                        initialPin={parseCoordsString(data.origin_coordinates)}
-                        addressHint={data.origin_address}
-                        municipalityHint={originCenter?.cityName ?? null}
-                        onConfirm={({ coords, address, placeName }) => {
-                            setData('origin_address', address);
-                            setData(
-                                'origin_coordinates',
-                                `${coords.lat.toFixed(7)},${coords.lng.toFixed(7)}`,
-                            );
-                            setData('origin_coordinates_source', 'manual');
-                            setData('origin_coordinates_accuracy', '');
-                            if (!data.origin_municipality_id && placeName) {
-                                const target = normalizeCity(placeName);
-                                const match = municipalities.find(
-                                    (m) => normalizeCity(m.name) === target,
-                                );
-                                if (match) {
-                                    setData(
-                                        'origin_municipality_id',
-                                        String(match.id),
-                                    );
+            <Card>
+                <CardHeader>
+                    <CardTitle>Origen y Destino</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="grid gap-6 md:grid-cols-2">
+                        <div
+                            className="grid gap-2"
+                            data-error={
+                                invalid('origin_municipality_id') ||
+                                invalid('origin_address')
+                            }
+                        >
+                            <Label htmlFor="origin_address">Origen</Label>
+                            <LocationField
+                                id="origin_address"
+                                name="origin_address"
+                                municipalities={municipalities}
+                                municipalityId={data.origin_municipality_id}
+                                address={data.origin_address}
+                                coordinates={data.origin_coordinates}
+                                coordinatesSource={
+                                    data.origin_coordinates_source as CoordinatesSource
+                                }
+                                coordinatesAccuracy={
+                                    data.origin_coordinates_accuracy
+                                }
+                                onMunicipalityChange={(val) => {
+                                    setData('origin_municipality_id', val);
                                     setOriginPickerNoMatch(false);
-                                } else {
-                                    setOriginPickerNoMatch(true);
+                                }}
+                                onAddressChange={(v) =>
+                                    setData('origin_address', v)
                                 }
-                            }
-                            setOriginPickerOpen(false);
-                        }}
-                    />
-                </div>
-                <div
-                    className="grid gap-2"
-                    data-error={
-                        invalid('destination_municipality_id') ||
-                        invalid('destination_address')
-                    }
-                >
-                    <Label htmlFor="destination_address">Destino</Label>
-                    <LocationField
-                        id="destination_address"
-                        name="destination_address"
-                        municipalities={municipalities}
-                        municipalityId={data.destination_municipality_id}
-                        address={data.destination_address}
-                        coordinates={data.destination_coordinates}
-                        coordinatesSource={
-                            data.destination_coordinates_source as CoordinatesSource
-                        }
-                        coordinatesAccuracy={
-                            data.destination_coordinates_accuracy
-                        }
-                        onMunicipalityChange={(val) => {
-                            setData('destination_municipality_id', val);
-                            setDestinationPickerNoMatch(false);
-                        }}
-                        onAddressChange={(v) =>
-                            setData('destination_address', v)
-                        }
-                        onCoordinatesChange={(coords, source, accuracy) => {
-                            setData('destination_coordinates', coords);
-                            setData(
-                                'destination_coordinates_source',
-                                coords ? source : '',
-                            );
-                            setData(
-                                'destination_coordinates_accuracy',
-                                accuracy ?? '',
-                            );
-                        }}
-                        onCommitInFlight={handleDestinationCommit}
-                        onOpenMapPicker={() => setDestinationPickerOpen(true)}
-                        pickerNoCityMatch={destinationPickerNoMatch}
-                        invalidMunicipality={
-                            !!errors.destination_municipality_id
-                        }
-                        invalidAddress={!!errors.destination_address}
-                        disabled={
-                            isFieldDisabled('destination_address') ||
-                            isFieldDisabled('destination_municipality_id')
-                        }
-                    />
-                    <InputError
-                        message={
-                            errors.destination_municipality_id ||
-                            errors.destination_address ||
-                            errors.destination_coordinates
-                        }
-                    />
-                    <MapPickerModal
-                        instanceLabel="destination"
-                        open={destinationPickerOpen}
-                        onOpenChange={setDestinationPickerOpen}
-                        initialCenter={
-                            destinationCenter
-                                ? {
-                                      lat: destinationCenter.latitude,
-                                      lng: destinationCenter.longitude,
-                                  }
-                                : null
-                        }
-                        initialPin={parseCoordsString(
-                            data.destination_coordinates,
-                        )}
-                        addressHint={data.destination_address}
-                        municipalityHint={destinationCenter?.cityName ?? null}
-                        onConfirm={({ coords, address, placeName }) => {
-                            setData('destination_address', address);
-                            setData(
-                                'destination_coordinates',
-                                `${coords.lat.toFixed(7)},${coords.lng.toFixed(7)}`,
-                            );
-                            setData('destination_coordinates_source', 'manual');
-                            setData('destination_coordinates_accuracy', '');
-                            if (
-                                !data.destination_municipality_id &&
-                                placeName
-                            ) {
-                                const target = normalizeCity(placeName);
-                                const match = municipalities.find(
-                                    (m) => normalizeCity(m.name) === target,
-                                );
-                                if (match) {
+                                onCoordinatesChange={(
+                                    coords,
+                                    source,
+                                    accuracy,
+                                ) => {
+                                    setData('origin_coordinates', coords);
                                     setData(
-                                        'destination_municipality_id',
-                                        String(match.id),
+                                        'origin_coordinates_source',
+                                        coords ? source : '',
                                     );
-                                    setDestinationPickerNoMatch(false);
-                                } else {
-                                    setDestinationPickerNoMatch(true);
+                                    setData(
+                                        'origin_coordinates_accuracy',
+                                        accuracy ?? '',
+                                    );
+                                }}
+                                onCommitInFlight={handleOriginCommit}
+                                onOpenMapPicker={() =>
+                                    setOriginPickerOpen(true)
                                 }
+                                pickerNoCityMatch={originPickerNoMatch}
+                                invalidMunicipality={
+                                    !!errors.origin_municipality_id
+                                }
+                                invalidAddress={!!errors.origin_address}
+                                disabled={
+                                    isFieldDisabled('origin_address') ||
+                                    isFieldDisabled('origin_municipality_id')
+                                }
+                            />
+                            <InputError
+                                message={
+                                    errors.origin_municipality_id ||
+                                    errors.origin_address ||
+                                    errors.origin_coordinates
+                                }
+                            />
+                            <MapPickerModal
+                                instanceLabel="origin"
+                                open={originPickerOpen}
+                                onOpenChange={setOriginPickerOpen}
+                                initialCenter={
+                                    originCenter
+                                        ? {
+                                              lat: originCenter.latitude,
+                                              lng: originCenter.longitude,
+                                          }
+                                        : null
+                                }
+                                initialPin={parseCoordsString(
+                                    data.origin_coordinates,
+                                )}
+                                addressHint={data.origin_address}
+                                municipalityHint={
+                                    originCenter?.cityName ?? null
+                                }
+                                onConfirm={({ coords, address, placeName }) => {
+                                    setData('origin_address', address);
+                                    setData(
+                                        'origin_coordinates',
+                                        `${coords.lat.toFixed(7)},${coords.lng.toFixed(7)}`,
+                                    );
+                                    setData(
+                                        'origin_coordinates_source',
+                                        'manual',
+                                    );
+                                    setData('origin_coordinates_accuracy', '');
+                                    if (
+                                        !data.origin_municipality_id &&
+                                        placeName
+                                    ) {
+                                        const target = normalizeCity(placeName);
+                                        const match = municipalities.find(
+                                            (m) =>
+                                                normalizeCity(m.name) ===
+                                                target,
+                                        );
+                                        if (match) {
+                                            setData(
+                                                'origin_municipality_id',
+                                                String(match.id),
+                                            );
+                                            setOriginPickerNoMatch(false);
+                                        } else {
+                                            setOriginPickerNoMatch(true);
+                                        }
+                                    }
+                                    setOriginPickerOpen(false);
+                                }}
+                            />
+                        </div>
+                        <div
+                            className="grid gap-2"
+                            data-error={
+                                invalid('destination_municipality_id') ||
+                                invalid('destination_address')
                             }
-                            setDestinationPickerOpen(false);
-                        }}
-                    />
-                </div>
-            </div>
+                        >
+                            <Label htmlFor="destination_address">Destino</Label>
+                            <LocationField
+                                id="destination_address"
+                                name="destination_address"
+                                municipalities={municipalities}
+                                municipalityId={
+                                    data.destination_municipality_id
+                                }
+                                address={data.destination_address}
+                                coordinates={data.destination_coordinates}
+                                coordinatesSource={
+                                    data.destination_coordinates_source as CoordinatesSource
+                                }
+                                coordinatesAccuracy={
+                                    data.destination_coordinates_accuracy
+                                }
+                                onMunicipalityChange={(val) => {
+                                    setData('destination_municipality_id', val);
+                                    setDestinationPickerNoMatch(false);
+                                }}
+                                onAddressChange={(v) =>
+                                    setData('destination_address', v)
+                                }
+                                onCoordinatesChange={(
+                                    coords,
+                                    source,
+                                    accuracy,
+                                ) => {
+                                    setData('destination_coordinates', coords);
+                                    setData(
+                                        'destination_coordinates_source',
+                                        coords ? source : '',
+                                    );
+                                    setData(
+                                        'destination_coordinates_accuracy',
+                                        accuracy ?? '',
+                                    );
+                                }}
+                                onCommitInFlight={handleDestinationCommit}
+                                onOpenMapPicker={() =>
+                                    setDestinationPickerOpen(true)
+                                }
+                                pickerNoCityMatch={destinationPickerNoMatch}
+                                invalidMunicipality={
+                                    !!errors.destination_municipality_id
+                                }
+                                invalidAddress={!!errors.destination_address}
+                                disabled={
+                                    isFieldDisabled('destination_address') ||
+                                    isFieldDisabled(
+                                        'destination_municipality_id',
+                                    )
+                                }
+                            />
+                            <InputError
+                                message={
+                                    errors.destination_municipality_id ||
+                                    errors.destination_address ||
+                                    errors.destination_coordinates
+                                }
+                            />
+                            <MapPickerModal
+                                instanceLabel="destination"
+                                open={destinationPickerOpen}
+                                onOpenChange={setDestinationPickerOpen}
+                                initialCenter={
+                                    destinationCenter
+                                        ? {
+                                              lat: destinationCenter.latitude,
+                                              lng: destinationCenter.longitude,
+                                          }
+                                        : null
+                                }
+                                initialPin={parseCoordsString(
+                                    data.destination_coordinates,
+                                )}
+                                addressHint={data.destination_address}
+                                municipalityHint={
+                                    destinationCenter?.cityName ?? null
+                                }
+                                onConfirm={({ coords, address, placeName }) => {
+                                    setData('destination_address', address);
+                                    setData(
+                                        'destination_coordinates',
+                                        `${coords.lat.toFixed(7)},${coords.lng.toFixed(7)}`,
+                                    );
+                                    setData(
+                                        'destination_coordinates_source',
+                                        'manual',
+                                    );
+                                    setData(
+                                        'destination_coordinates_accuracy',
+                                        '',
+                                    );
+                                    if (
+                                        !data.destination_municipality_id &&
+                                        placeName
+                                    ) {
+                                        const target = normalizeCity(placeName);
+                                        const match = municipalities.find(
+                                            (m) =>
+                                                normalizeCity(m.name) ===
+                                                target,
+                                        );
+                                        if (match) {
+                                            setData(
+                                                'destination_municipality_id',
+                                                String(match.id),
+                                            );
+                                            setDestinationPickerNoMatch(false);
+                                        } else {
+                                            setDestinationPickerNoMatch(true);
+                                        }
+                                    }
+                                    setDestinationPickerOpen(false);
+                                }}
+                            />
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
 
             {/* Horarios */}
-            <h3 className="text-lg font-semibold">Horarios</h3>
-
-            <div className="grid gap-4 md:grid-cols-2 md:grid-rows-[auto_1fr_auto]">
-                <div
-                    className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
-                    data-error={invalid('planned_start_time')}
-                >
-                    <Label htmlFor="planned_start_time">
-                        Hora Inicio Planificada *
-                    </Label>
-                    <Input
-                        id="planned_start_time"
-                        type="time"
-                        value={data.planned_start_time}
-                        aria-invalid={invalid('planned_start_time')}
-                        disabled={isFieldDisabled('planned_start_time')}
-                        onChange={(e) =>
-                            setData('planned_start_time', e.target.value)
-                        }
-                    />
-                    <InputError message={errors.planned_start_time} />
-                    <ScheduleTimezoneHint
-                        date={data.service_date}
-                        time={data.planned_start_time}
-                        timezone={resolvedTimezone}
-                    />
-                </div>
-                <div
-                    className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
-                    data-error={invalid('planned_duration')}
-                >
-                    <Label htmlFor="planned_duration">
-                        Duración Planificada (min) *
-                    </Label>
-                    <Input
-                        id="planned_duration"
-                        type="number"
-                        value={data.planned_duration}
-                        aria-invalid={invalid('planned_duration')}
-                        disabled={isFieldDisabled('planned_duration')}
-                        onChange={(e) =>
-                            setData('planned_duration', e.target.value)
-                        }
-                    />
-                    <InputError message={errors.planned_duration} />
-                </div>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-3 md:grid-rows-[auto_1fr_auto]">
-                <div
-                    className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
-                    data-error={invalid('actual_start_time')}
-                >
-                    <Label htmlFor="actual_start_time">
-                        Hora Inicio Real{isClosed && ' *'}
-                    </Label>
-                    <Input
-                        id="actual_start_time"
-                        type="time"
-                        value={data.actual_start_time}
-                        aria-invalid={invalid('actual_start_time')}
-                        disabled={isFieldDisabled('actual_start_time')}
-                        onChange={(e) =>
-                            setData('actual_start_time', e.target.value)
-                        }
-                    />
-                    <InputError message={errors.actual_start_time} />
-                </div>
-                <div
-                    className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
-                    data-error={invalid('actual_end_time')}
-                >
-                    <Label htmlFor="actual_end_time">
-                        Hora Fin Real{isClosed && ' *'}
-                    </Label>
-                    <Input
-                        id="actual_end_time"
-                        type="time"
-                        value={data.actual_end_time}
-                        aria-invalid={invalid('actual_end_time')}
-                        disabled={isFieldDisabled('actual_end_time')}
-                        onChange={(e) =>
-                            setData('actual_end_time', e.target.value)
-                        }
-                    />
-                    <InputError message={errors.actual_end_time} />
-                </div>
-                <div className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid">
-                    <Label>Duración Real</Label>
-                    <div className="flex items-center rounded-md border bg-muted/50 px-3 py-2 text-sm">
-                        {actualDuration ?? '—'}
+            <Card>
+                <CardHeader>
+                    <CardTitle>Horarios</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="grid gap-4 md:grid-cols-2 md:grid-rows-[auto_1fr_auto]">
+                        <div
+                            className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
+                            data-error={invalid('planned_start_time')}
+                        >
+                            <Label htmlFor="planned_start_time">
+                                Hora Inicio Planificada *
+                            </Label>
+                            <Input
+                                id="planned_start_time"
+                                type="time"
+                                value={data.planned_start_time}
+                                aria-invalid={invalid('planned_start_time')}
+                                disabled={isFieldDisabled('planned_start_time')}
+                                onChange={(e) =>
+                                    setData(
+                                        'planned_start_time',
+                                        e.target.value,
+                                    )
+                                }
+                            />
+                            <InputError message={errors.planned_start_time} />
+                            <ScheduleTimezoneHint
+                                date={data.service_date}
+                                time={data.planned_start_time}
+                                timezone={resolvedTimezone}
+                            />
+                        </div>
+                        <div
+                            className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
+                            data-error={invalid('planned_duration')}
+                        >
+                            <Label htmlFor="planned_duration">
+                                Duración Planificada (min) *
+                            </Label>
+                            <Input
+                                id="planned_duration"
+                                type="number"
+                                value={data.planned_duration}
+                                aria-invalid={invalid('planned_duration')}
+                                disabled={isFieldDisabled('planned_duration')}
+                                onChange={(e) =>
+                                    setData('planned_duration', e.target.value)
+                                }
+                            />
+                            <InputError message={errors.planned_duration} />
+                        </div>
                     </div>
-                    <div />
-                </div>
-            </div>
+
+                    <div className="grid gap-4 md:grid-cols-3 md:grid-rows-[auto_1fr_auto]">
+                        <div
+                            className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
+                            data-error={invalid('actual_start_time')}
+                        >
+                            <Label htmlFor="actual_start_time">
+                                Hora Inicio Real{isClosed && ' *'}
+                            </Label>
+                            <Input
+                                id="actual_start_time"
+                                type="time"
+                                value={data.actual_start_time}
+                                aria-invalid={invalid('actual_start_time')}
+                                disabled={isFieldDisabled('actual_start_time')}
+                                onChange={(e) =>
+                                    setData('actual_start_time', e.target.value)
+                                }
+                            />
+                            <InputError message={errors.actual_start_time} />
+                        </div>
+                        <div
+                            className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
+                            data-error={invalid('actual_end_time')}
+                        >
+                            <Label htmlFor="actual_end_time">
+                                Hora Fin Real{isClosed && ' *'}
+                            </Label>
+                            <Input
+                                id="actual_end_time"
+                                type="time"
+                                value={data.actual_end_time}
+                                aria-invalid={invalid('actual_end_time')}
+                                disabled={isFieldDisabled('actual_end_time')}
+                                onChange={(e) =>
+                                    setData('actual_end_time', e.target.value)
+                                }
+                            />
+                            <InputError message={errors.actual_end_time} />
+                        </div>
+                        <div className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid">
+                            <Label>Duración Real</Label>
+                            <div className="flex items-center rounded-md border bg-muted/50 px-3 py-2 text-sm">
+                                {actualDuration ?? '—'}
+                            </div>
+                            <div />
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
 
             {/* Facturación */}
-            <h3 className="text-lg font-semibold">Facturación</h3>
-
-            <div className="grid gap-4 md:grid-cols-4 md:grid-rows-[auto_1fr_auto]">
-                <div
-                    className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
-                    data-error={invalid('billing_group')}
-                >
-                    <Label htmlFor="billing_group">Grupo de Facturación</Label>
-                    <Input
-                        id="billing_group"
-                        value={data.billing_group}
-                        aria-invalid={invalid('billing_group')}
-                        disabled={isFieldDisabled('billing_group')}
-                        onChange={(e) =>
-                            setData('billing_group', e.target.value)
-                        }
-                    />
-                    <InputError message={errors.billing_group} />
-                </div>
-                <div
-                    className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
-                    data-error={invalid('unit_value')}
-                >
-                    <Label htmlFor="unit_value">Valor Unitario (COP) *</Label>
-                    <Input
-                        id="unit_value"
-                        type="number"
-                        step="0.01"
-                        value={data.unit_value}
-                        aria-invalid={invalid('unit_value')}
-                        disabled={isFieldDisabled('unit_value')}
-                        onChange={(e) => setData('unit_value', e.target.value)}
-                    />
-                    <InputError message={errors.unit_value} />
-                </div>
-                <div
-                    className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
-                    data-error={invalid('quantity')}
-                >
-                    <Label htmlFor="quantity">{billingUnitLabel} *</Label>
-                    <Input
-                        id="quantity"
-                        type="number"
-                        value={data.quantity}
-                        aria-invalid={invalid('quantity')}
-                        disabled={isFieldDisabled('quantity')}
-                        onChange={(e) => setData('quantity', e.target.value)}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                        {billingUnitHint}
-                    </p>
-                    <InputError message={errors.quantity} />
-                </div>
-                <div
-                    className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
-                    data-error={invalid('payment_method')}
-                >
-                    <Label htmlFor="payment_method">Método de Pago *</Label>
-                    <Select
-                        value={data.payment_method}
-                        onValueChange={(value) =>
-                            setData('payment_method', value)
-                        }
-                        disabled={isFieldDisabled('payment_method')}
-                    >
-                        <SelectTrigger
-                            id="payment_method"
-                            aria-invalid={invalid('payment_method')}
+            <Card>
+                <CardHeader>
+                    <CardTitle>Facturación</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="grid gap-4 md:grid-cols-4 md:grid-rows-[auto_1fr_auto]">
+                        <div
+                            className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
+                            data-error={invalid('billing_group')}
                         >
-                            <SelectValue placeholder="Seleccionar..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {Object.entries(PaymentMethod).map(
-                                ([key, value]) => (
-                                    <SelectItem key={key} value={value}>
-                                        {PaymentMethodLabel[value]}
-                                    </SelectItem>
-                                ),
-                            )}
-                        </SelectContent>
-                    </Select>
-                    <InputError message={errors.payment_method} />
-                </div>
-            </div>
+                            <Label htmlFor="billing_group">
+                                Grupo de Facturación
+                            </Label>
+                            <Input
+                                id="billing_group"
+                                value={data.billing_group}
+                                aria-invalid={invalid('billing_group')}
+                                disabled={isFieldDisabled('billing_group')}
+                                onChange={(e) =>
+                                    setData('billing_group', e.target.value)
+                                }
+                            />
+                            <InputError message={errors.billing_group} />
+                        </div>
+                        <div
+                            className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
+                            data-error={invalid('unit_value')}
+                        >
+                            <Label htmlFor="unit_value">
+                                Valor Unitario (COP) *
+                            </Label>
+                            <Input
+                                id="unit_value"
+                                type="number"
+                                step="0.01"
+                                value={data.unit_value}
+                                aria-invalid={invalid('unit_value')}
+                                disabled={isFieldDisabled('unit_value')}
+                                onChange={(e) =>
+                                    setData('unit_value', e.target.value)
+                                }
+                            />
+                            <InputError message={errors.unit_value} />
+                        </div>
+                        <div
+                            className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
+                            data-error={invalid('quantity')}
+                        >
+                            <Label htmlFor="quantity">
+                                {billingUnitLabel} *
+                            </Label>
+                            <Input
+                                id="quantity"
+                                type="number"
+                                value={data.quantity}
+                                aria-invalid={invalid('quantity')}
+                                disabled={isFieldDisabled('quantity')}
+                                onChange={(e) =>
+                                    setData('quantity', e.target.value)
+                                }
+                            />
+                            <p className="text-xs text-muted-foreground">
+                                {billingUnitHint}
+                            </p>
+                            <InputError message={errors.quantity} />
+                        </div>
+                        <div
+                            className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
+                            data-error={invalid('payment_method')}
+                        >
+                            <Label htmlFor="payment_method">
+                                Método de Pago *
+                            </Label>
+                            <Select
+                                value={data.payment_method}
+                                onValueChange={(value) =>
+                                    setData('payment_method', value)
+                                }
+                                disabled={isFieldDisabled('payment_method')}
+                            >
+                                <SelectTrigger
+                                    id="payment_method"
+                                    aria-invalid={invalid('payment_method')}
+                                >
+                                    <SelectValue placeholder="Seleccionar..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {Object.entries(PaymentMethod).map(
+                                        ([key, value]) => (
+                                            <SelectItem key={key} value={value}>
+                                                {PaymentMethodLabel[value]}
+                                            </SelectItem>
+                                        ),
+                                    )}
+                                </SelectContent>
+                            </Select>
+                            <InputError message={errors.payment_method} />
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
 
             {requiresRetroactiveJustification && (
                 <div
@@ -1129,27 +1221,31 @@ export default function ServiceForm({
                             quedará registrada en la auditoría.
                         </AlertDescription>
                     </Alert>
-                    <h3 className="text-lg font-semibold">
-                        Justificación del cambio
-                    </h3>
-                    <div
-                        className="group/field grid gap-2"
-                        data-error={invalid('justification')}
-                    >
-                        <Label htmlFor="justification">
-                            Justificación del cambio *
-                        </Label>
-                        <textarea
-                            id="justification"
-                            className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-                            value={data.justification}
-                            placeholder="Explique el motivo de la modificación..."
-                            onChange={(e) =>
-                                setData('justification', e.target.value)
-                            }
-                        />
-                        <InputError message={errors.justification} />
-                    </div>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Justificación del cambio</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div
+                                className="group/field grid gap-2"
+                                data-error={invalid('justification')}
+                            >
+                                <Label htmlFor="justification">
+                                    Justificación del cambio *
+                                </Label>
+                                <textarea
+                                    id="justification"
+                                    className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                                    value={data.justification}
+                                    placeholder="Explique el motivo de la modificación..."
+                                    onChange={(e) =>
+                                        setData('justification', e.target.value)
+                                    }
+                                />
+                                <InputError message={errors.justification} />
+                            </div>
+                        </CardContent>
+                    </Card>
                 </>
             )}
         </>
