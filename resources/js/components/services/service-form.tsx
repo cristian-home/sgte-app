@@ -51,6 +51,7 @@ import {
 } from '@/components/ui/tooltip';
 import { PaymentMethod, PaymentMethodLabel } from '@/enums/PaymentMethod';
 import { ServiceStatus, ServiceStatusLabel } from '@/enums/ServiceStatus';
+import { type VehicleType, VehicleTypeLabel } from '@/enums/VehicleType';
 import { viewerToday } from '@/lib/datetime';
 import { normalizeCity } from '@/lib/normalize-city';
 import { cn } from '@/lib/utils';
@@ -59,6 +60,8 @@ import type { DayStatus } from '@/types/models';
 export interface VehicleOption {
     id: number;
     plate: string;
+    /** Serialized VehicleType enum value ('bus' | 'buseta' | 'van' | 'automobile'). Null for legacy rows without a type. */
+    type: VehicleType | null;
     is_third_party: boolean;
     third_party_id: number | null;
     third_party?: ThirdPartyOption | null;
@@ -787,13 +790,18 @@ export default function ServiceForm({
                                 }}
                                 getKey={(v) => String(v.id)}
                                 getSearchText={(v) =>
-                                    `${v.plate} ${v.third_party ? thirdPartyLabel(v.third_party) : ''}`
+                                    `${v.plate} ${v.type ? VehicleTypeLabel[v.type] : ''} ${v.third_party ? thirdPartyLabel(v.third_party) : ''}`
                                 }
                                 renderTrigger={(v) => (
                                     <span className="flex min-w-0 items-center gap-2">
                                         <span className="font-mono">
                                             {v.plate}
                                         </span>
+                                        {v.type && (
+                                            <span className="truncate text-xs text-muted-foreground">
+                                                · {VehicleTypeLabel[v.type]}
+                                            </span>
+                                        )}
                                         {v.is_third_party && (
                                             <Badge
                                                 variant="secondary"
@@ -810,6 +818,14 @@ export default function ServiceForm({
                                             <span className="font-mono">
                                                 {v.plate}
                                             </span>
+                                            {v.type && (
+                                                <Badge
+                                                    variant="outline"
+                                                    className="font-normal"
+                                                >
+                                                    {VehicleTypeLabel[v.type]}
+                                                </Badge>
+                                            )}
                                             {v.is_third_party && (
                                                 <Badge
                                                     variant="secondary"
@@ -827,7 +843,7 @@ export default function ServiceForm({
                                     </div>
                                 )}
                                 placeholder="Seleccionar vehículo..."
-                                searchPlaceholder="Buscar por placa o tercero…"
+                                searchPlaceholder="Buscar por placa, tipo o tercero…"
                                 emptyText="Sin vehículos."
                                 disabled={isFieldDisabled('vehicle_id')}
                                 invalid={invalid('vehicle_id')}
