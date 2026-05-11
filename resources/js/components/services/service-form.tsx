@@ -1,14 +1,12 @@
 import { usePage } from '@inertiajs/react';
 import { AlertTriangle, Info, Lock, ShieldAlert } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import AddressAutocomplete, {
-    type CoordinatesSource,
-} from '@/components/address-autocomplete';
 import InputError from '@/components/input-error';
+import LocationField, {
+    type CoordinatesSource,
+} from '@/components/location-field';
 import MapPickerModal from '@/components/map-picker-modal';
-import MunicipalityCombobox, {
-    type MunicipalityOption,
-} from '@/components/municipality-combobox';
+import { type MunicipalityOption } from '@/components/municipality-combobox';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -29,6 +27,7 @@ import {
 import { PaymentMethod, PaymentMethodLabel } from '@/enums/PaymentMethod';
 import { ServiceStatus, ServiceStatusLabel } from '@/enums/ServiceStatus';
 import { viewerToday } from '@/lib/datetime';
+import { normalizeCity } from '@/lib/normalize-city';
 import type { DayStatus } from '@/types/models';
 
 export interface VehicleOption {
@@ -122,7 +121,14 @@ function parseCoordsString(value: string): { lat: number; lng: number } | null {
     return { lat, lng };
 }
 
-function useMunicipalityProximity(
+/**
+ * Resolve the picked municipality's centroid (lat/lng + display name) for
+ * use as the map picker's `initialCenter` and `municipalityHint`. Returns
+ * null if no municipality is selected or its coords are missing. The
+ * LocationField derives its own Mapbox proximity internally — this helper
+ * exists solely for the map-picker modal.
+ */
+function useMunicipalityCenter(
     municipalities: MunicipalityOption[],
     selectedId: string,
 ): {
@@ -309,17 +315,24 @@ export default function ServiceForm({
         [drivers, data.driver_id],
     );
 
-    const originProximity = useMunicipalityProximity(
+    const originCenter = useMunicipalityCenter(
         municipalities,
         data.origin_municipality_id,
     );
-    const destinationProximity = useMunicipalityProximity(
+    const destinationCenter = useMunicipalityCenter(
         municipalities,
         data.destination_municipality_id,
     );
 
     const [originPickerOpen, setOriginPickerOpen] = useState(false);
     const [destinationPickerOpen, setDestinationPickerOpen] = useState(false);
+    // Set when the map picker auto-match step (reverse-geocoded
+    // place.name) fails to find a row in the DANE catalog. The
+    // LocationField surfaces an amber warning so the operator picks
+    // the city manually. Cleared on the next municipality change.
+    const [originPickerNoMatch, setOriginPickerNoMatch] = useState(false);
+    const [destinationPickerNoMatch, setDestinationPickerNoMatch] =
+        useState(false);
 
     // Counter — multiple commits could be in flight (origin + destination).
     // The form's submit button stays disabled while any are pending. Counter
@@ -693,42 +706,31 @@ export default function ServiceForm({
             {/* Origen y Destino */}
             <h3 className="text-lg font-semibold">Origen y Destino</h3>
 
-            <div className="grid gap-4 md:grid-cols-2 md:grid-rows-[auto_1fr_auto]">
+            <div className="grid gap-6 md:grid-cols-2">
                 <div
-                    className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
-                    data-error={invalid('origin_municipality_id')}
+                    className="grid gap-2"
+                    data-error={
+                        invalid('origin_municipality_id') ||
+                        invalid('origin_address')
+                    }
                 >
-                    <Label htmlFor="origin_municipality_id">
-                        Municipio Origen
-                    </Label>
-                    <MunicipalityCombobox
-                        id="origin_municipality_id"
-                        municipalities={municipalities}
-                        value={data.origin_municipality_id}
-                        onChange={(val) =>
-                            setData('origin_municipality_id', val)
-                        }
-                        invalid={!!errors.origin_municipality_id}
-                        disabled={isFieldDisabled('origin_municipality_id')}
-                    />
-                    <InputError message={errors.origin_municipality_id} />
-                </div>
-                <div
-                    className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
-                    data-error={invalid('origin_address')}
-                >
-                    <Label htmlFor="origin_address">Dirección Origen</Label>
-                    <AddressAutocomplete
+                    <Label htmlFor="origin_address">Origen</Label>
+                    <LocationField
                         id="origin_address"
                         name="origin_address"
-                        autoComplete="off"
-                        value={data.origin_address}
-                        onChange={(v) => setData('origin_address', v)}
+                        municipalities={municipalities}
+                        municipalityId={data.origin_municipality_id}
+                        address={data.origin_address}
                         coordinates={data.origin_coordinates}
                         coordinatesSource={
                             data.origin_coordinates_source as CoordinatesSource
                         }
                         coordinatesAccuracy={data.origin_coordinates_accuracy}
+                        onMunicipalityChange={(val) => {
+                            setData('origin_municipality_id', val);
+                            setOriginPickerNoMatch(false);
+                        }}
+                        onAddressChange={(v) => setData('origin_address', v)}
                         onCoordinatesChange={(coords, source, accuracy) => {
                             setData('origin_coordinates', coords);
                             setData(
@@ -742,27 +744,37 @@ export default function ServiceForm({
                         }}
                         onCommitInFlight={handleOriginCommit}
                         onOpenMapPicker={() => setOriginPickerOpen(true)}
-                        proximity={originProximity}
-                        disabled={isFieldDisabled('origin_address')}
-                        invalid={invalid('origin_address')}
+                        pickerNoCityMatch={originPickerNoMatch}
+                        invalidMunicipality={!!errors.origin_municipality_id}
+                        invalidAddress={!!errors.origin_address}
+                        disabled={
+                            isFieldDisabled('origin_address') ||
+                            isFieldDisabled('origin_municipality_id')
+                        }
                     />
-                    <InputError message={errors.origin_address} />
+                    <InputError
+                        message={
+                            errors.origin_municipality_id ||
+                            errors.origin_address ||
+                            errors.origin_coordinates
+                        }
+                    />
                     <MapPickerModal
                         instanceLabel="origin"
                         open={originPickerOpen}
                         onOpenChange={setOriginPickerOpen}
                         initialCenter={
-                            originProximity
+                            originCenter
                                 ? {
-                                      lat: originProximity.latitude,
-                                      lng: originProximity.longitude,
+                                      lat: originCenter.latitude,
+                                      lng: originCenter.longitude,
                                   }
                                 : null
                         }
                         initialPin={parseCoordsString(data.origin_coordinates)}
                         addressHint={data.origin_address}
-                        municipalityHint={originProximity?.cityName ?? null}
-                        onConfirm={({ coords, address }) => {
+                        municipalityHint={originCenter?.cityName ?? null}
+                        onConfirm={({ coords, address, placeName }) => {
                             setData('origin_address', address);
                             setData(
                                 'origin_coordinates',
@@ -770,53 +782,52 @@ export default function ServiceForm({
                             );
                             setData('origin_coordinates_source', 'manual');
                             setData('origin_coordinates_accuracy', '');
+                            if (!data.origin_municipality_id && placeName) {
+                                const target = normalizeCity(placeName);
+                                const match = municipalities.find(
+                                    (m) => normalizeCity(m.name) === target,
+                                );
+                                if (match) {
+                                    setData(
+                                        'origin_municipality_id',
+                                        String(match.id),
+                                    );
+                                    setOriginPickerNoMatch(false);
+                                } else {
+                                    setOriginPickerNoMatch(true);
+                                }
+                            }
                             setOriginPickerOpen(false);
                         }}
                     />
                 </div>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2 md:grid-rows-[auto_1fr_auto]">
                 <div
-                    className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
-                    data-error={invalid('destination_municipality_id')}
+                    className="grid gap-2"
+                    data-error={
+                        invalid('destination_municipality_id') ||
+                        invalid('destination_address')
+                    }
                 >
-                    <Label htmlFor="destination_municipality_id">
-                        Municipio Destino
-                    </Label>
-                    <MunicipalityCombobox
-                        id="destination_municipality_id"
-                        municipalities={municipalities}
-                        value={data.destination_municipality_id}
-                        onChange={(val) =>
-                            setData('destination_municipality_id', val)
-                        }
-                        invalid={!!errors.destination_municipality_id}
-                        disabled={isFieldDisabled(
-                            'destination_municipality_id',
-                        )}
-                    />
-                    <InputError message={errors.destination_municipality_id} />
-                </div>
-                <div
-                    className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
-                    data-error={invalid('destination_address')}
-                >
-                    <Label htmlFor="destination_address">
-                        Dirección Destino
-                    </Label>
-                    <AddressAutocomplete
+                    <Label htmlFor="destination_address">Destino</Label>
+                    <LocationField
                         id="destination_address"
                         name="destination_address"
-                        autoComplete="off"
-                        value={data.destination_address}
-                        onChange={(v) => setData('destination_address', v)}
+                        municipalities={municipalities}
+                        municipalityId={data.destination_municipality_id}
+                        address={data.destination_address}
                         coordinates={data.destination_coordinates}
                         coordinatesSource={
                             data.destination_coordinates_source as CoordinatesSource
                         }
                         coordinatesAccuracy={
                             data.destination_coordinates_accuracy
+                        }
+                        onMunicipalityChange={(val) => {
+                            setData('destination_municipality_id', val);
+                            setDestinationPickerNoMatch(false);
+                        }}
+                        onAddressChange={(v) =>
+                            setData('destination_address', v)
                         }
                         onCoordinatesChange={(coords, source, accuracy) => {
                             setData('destination_coordinates', coords);
@@ -831,19 +842,32 @@ export default function ServiceForm({
                         }}
                         onCommitInFlight={handleDestinationCommit}
                         onOpenMapPicker={() => setDestinationPickerOpen(true)}
-                        proximity={destinationProximity}
-                        disabled={isFieldDisabled('destination_address')}
-                        invalid={invalid('destination_address')}
+                        pickerNoCityMatch={destinationPickerNoMatch}
+                        invalidMunicipality={
+                            !!errors.destination_municipality_id
+                        }
+                        invalidAddress={!!errors.destination_address}
+                        disabled={
+                            isFieldDisabled('destination_address') ||
+                            isFieldDisabled('destination_municipality_id')
+                        }
+                    />
+                    <InputError
+                        message={
+                            errors.destination_municipality_id ||
+                            errors.destination_address ||
+                            errors.destination_coordinates
+                        }
                     />
                     <MapPickerModal
                         instanceLabel="destination"
                         open={destinationPickerOpen}
                         onOpenChange={setDestinationPickerOpen}
                         initialCenter={
-                            destinationProximity
+                            destinationCenter
                                 ? {
-                                      lat: destinationProximity.latitude,
-                                      lng: destinationProximity.longitude,
+                                      lat: destinationCenter.latitude,
+                                      lng: destinationCenter.longitude,
                                   }
                                 : null
                         }
@@ -851,10 +875,8 @@ export default function ServiceForm({
                             data.destination_coordinates,
                         )}
                         addressHint={data.destination_address}
-                        municipalityHint={
-                            destinationProximity?.cityName ?? null
-                        }
-                        onConfirm={({ coords, address }) => {
+                        municipalityHint={destinationCenter?.cityName ?? null}
+                        onConfirm={({ coords, address, placeName }) => {
                             setData('destination_address', address);
                             setData(
                                 'destination_coordinates',
@@ -862,10 +884,27 @@ export default function ServiceForm({
                             );
                             setData('destination_coordinates_source', 'manual');
                             setData('destination_coordinates_accuracy', '');
+                            if (
+                                !data.destination_municipality_id &&
+                                placeName
+                            ) {
+                                const target = normalizeCity(placeName);
+                                const match = municipalities.find(
+                                    (m) => normalizeCity(m.name) === target,
+                                );
+                                if (match) {
+                                    setData(
+                                        'destination_municipality_id',
+                                        String(match.id),
+                                    );
+                                    setDestinationPickerNoMatch(false);
+                                } else {
+                                    setDestinationPickerNoMatch(true);
+                                }
+                            }
                             setDestinationPickerOpen(false);
                         }}
                     />
-                    <InputError message={errors.destination_address} />
                 </div>
             </div>
 

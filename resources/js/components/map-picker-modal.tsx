@@ -25,7 +25,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { dlog } from '@/lib/debug-log';
 import { MAPBOX_ATTRIBUTION, mapboxTileUrl } from '@/lib/mapbox';
-import { reverseGeocode } from '@/lib/mapbox-geocoding';
+import { type GeocodingFeature, reverseGeocode } from '@/lib/mapbox-geocoding';
 import { cn } from '@/lib/utils';
 
 // Vite quirk: rebind Leaflet's default icons to the Vite-resolved URLs.
@@ -62,12 +62,19 @@ interface MapPickerModalProps {
     addressHint: string;
     municipalityHint: string | null;
     /**
-     * Returns BOTH the chosen coordinates AND the address text the
-     * operator typed inside the modal. The form uses these to set its
-     * `*_address` and `*_coordinates` together as a single intentional
-     * commit.
+     * Returns the chosen coordinates, the address text the operator
+     * typed inside the modal, and — when Mapbox could reverse-geocode
+     * the pin — the city name detected via the `place` context. The
+     * form uses `coords` + `address` together as a single intentional
+     * commit, and `placeName` to fuzzy-match against the DANE catalog
+     * so the LocationField chip can auto-populate when the operator
+     * dropped a pin without selecting a municipality first.
      */
-    onConfirm: (data: { coords: LatLng; address: string }) => void;
+    onConfirm: (data: {
+        coords: LatLng;
+        address: string;
+        placeName: string | null;
+    }) => void;
     /** Used as a debug-log channel suffix to distinguish origin vs destination. */
     instanceLabel?: string;
 }
@@ -138,7 +145,11 @@ interface BodyProps {
     addressHint: string;
     municipalityHint: string | null;
     onCancel: () => void;
-    onConfirm: (data: { coords: LatLng; address: string }) => void;
+    onConfirm: (data: {
+        coords: LatLng;
+        address: string;
+        placeName: string | null;
+    }) => void;
 }
 
 function MapPickerBody({
@@ -157,6 +168,11 @@ function MapPickerBody({
     // whatever the operator already had typed; confirming the modal
     // pushes this value back as the canonical address text.
     const [addressDraft, setAddressDraft] = useState<string>(addressHint);
+    // Last reverse-geocode feature, kept so we can extract
+    // `properties.context.place.name` on confirm — the form uses it to
+    // auto-populate the city chip when the operator hasn't selected one.
+    const [lastReverseFeature, setLastReverseFeature] =
+        useState<GeocodingFeature | null>(null);
 
     const reverseAbortRef = useRef<AbortController | null>(null);
     const reverseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -201,21 +217,28 @@ function MapPickerBody({
                     permanent: false,
                     country: 'co',
                     language: 'es',
-                    types: 'address,street',
+                    // Include `place` so the response context exposes
+                    // the city name (`properties.context.place.name`),
+                    // used on confirm to auto-populate the form chip.
+                    types: 'address,street,place',
                     limit: 1,
                 },
                 ac.signal,
             )
                 .then((res) => {
                     if (ac.signal.aborted) return;
-                    const f = res.features?.[0];
+                    const f = res.features?.[0] ?? null;
                     const text =
                         f?.properties.full_address ??
                         f?.properties.place_formatted ??
                         f?.properties.name ??
                         '—';
-                    dlog(channel, 'reverse hint', { text });
+                    dlog(channel, 'reverse hint', {
+                        text,
+                        placeName: f?.properties.context?.place?.name ?? null,
+                    });
                     setHint(text);
+                    setLastReverseFeature(f);
                     setHintLoading(false);
                 })
                 .catch((err) => {
@@ -225,6 +248,7 @@ function MapPickerBody({
                         error: (err as Error).message,
                     });
                     setHint('—');
+                    setLastReverseFeature(null);
                     setHintLoading(false);
                 });
         }, REVERSE_DEBOUNCE_MS);
@@ -350,6 +374,9 @@ function MapPickerBody({
                             onConfirm({
                                 coords: pin,
                                 address: addressDraft.trim(),
+                                placeName:
+                                    lastReverseFeature?.properties.context
+                                        ?.place?.name ?? null,
                             });
                         }
                     }}
