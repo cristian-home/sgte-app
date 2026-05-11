@@ -1,7 +1,22 @@
 import { usePage } from '@inertiajs/react';
-import { AlertTriangle, Info, Lock, ShieldAlert } from 'lucide-react';
+import {
+    AlertTriangle,
+    ArrowRightLeft,
+    Banknote,
+    CreditCard,
+    Info,
+    Lock,
+    ShieldAlert,
+} from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import InputError from '@/components/input-error';
+import {
+    Choicebox,
+    ChoiceboxIndicator,
+    ChoiceboxItem,
+    ChoiceboxItemHeader,
+    ChoiceboxItemTitle,
+} from '@/components/kibo-ui/choicebox';
 import LocationField, {
     type CoordinatesSource,
 } from '@/components/location-field';
@@ -152,6 +167,21 @@ function useMunicipalityCenter(
         return { latitude, longitude, cityName: m.name ?? null };
     }, [municipalities, selectedId]);
 }
+
+/**
+ * Map each PaymentMethod value to its representative lucide icon. Kept
+ * next to the form so the icon choice stays close to the Choicebox
+ * rendering, but it could move to PaymentMethod.ts if other surfaces
+ * end up needing the same visual cue (e.g. invoice listings).
+ */
+const PaymentMethodIcon: Record<
+    PaymentMethod,
+    React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>
+> = {
+    [PaymentMethod.Credit]: CreditCard,
+    [PaymentMethod.Cash]: Banknote,
+    [PaymentMethod.Transfer]: ArrowRightLeft,
+};
 
 function thirdPartyLabel(tp: ThirdPartyOption): string {
     if (tp.is_natural_person) {
@@ -1094,8 +1124,8 @@ export default function ServiceForm({
                 <CardHeader>
                     <CardTitle>Facturación</CardTitle>
                 </CardHeader>
-                <CardContent>
-                    <div className="grid gap-4 md:grid-cols-4 md:grid-rows-[auto_1fr_auto]">
+                <CardContent className="space-y-4">
+                    <div className="grid gap-4 md:grid-cols-3 md:grid-rows-[auto_1fr_auto]">
                         <div
                             className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
                             data-error={invalid('billing_group')}
@@ -1156,38 +1186,50 @@ export default function ServiceForm({
                             </p>
                             <InputError message={errors.quantity} />
                         </div>
-                        <div
-                            className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
-                            data-error={invalid('payment_method')}
+                    </div>
+                    <div
+                        className="group/field grid gap-2"
+                        data-error={invalid('payment_method')}
+                    >
+                        <Label htmlFor="payment_method">Método de Pago *</Label>
+                        <Choicebox
+                            id="payment_method"
+                            value={data.payment_method}
+                            onValueChange={(value) =>
+                                setData('payment_method', value)
+                            }
+                            disabled={isFieldDisabled('payment_method')}
+                            aria-invalid={invalid('payment_method')}
+                            className="grid grid-cols-1 gap-2 sm:grid-cols-3"
                         >
-                            <Label htmlFor="payment_method">
-                                Método de Pago *
-                            </Label>
-                            <Select
-                                value={data.payment_method}
-                                onValueChange={(value) =>
-                                    setData('payment_method', value)
-                                }
-                                disabled={isFieldDisabled('payment_method')}
-                            >
-                                <SelectTrigger
-                                    id="payment_method"
-                                    aria-invalid={invalid('payment_method')}
-                                >
-                                    <SelectValue placeholder="Seleccionar..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {Object.entries(PaymentMethod).map(
-                                        ([key, value]) => (
-                                            <SelectItem key={key} value={value}>
-                                                {PaymentMethodLabel[value]}
-                                            </SelectItem>
-                                        ),
-                                    )}
-                                </SelectContent>
-                            </Select>
-                            <InputError message={errors.payment_method} />
-                        </div>
+                            {Object.entries(PaymentMethod).map(
+                                ([key, value]) => {
+                                    const Icon =
+                                        PaymentMethodIcon[value] ?? null;
+                                    return (
+                                        <ChoiceboxItem
+                                            key={key}
+                                            id={`payment_method-${value}`}
+                                            value={value}
+                                        >
+                                            <ChoiceboxItemHeader>
+                                                <ChoiceboxItemTitle className="flex items-center gap-2">
+                                                    {Icon && (
+                                                        <Icon
+                                                            aria-hidden
+                                                            className="size-4"
+                                                        />
+                                                    )}
+                                                    {PaymentMethodLabel[value]}
+                                                </ChoiceboxItemTitle>
+                                            </ChoiceboxItemHeader>
+                                            <ChoiceboxIndicator />
+                                        </ChoiceboxItem>
+                                    );
+                                },
+                            )}
+                        </Choicebox>
+                        <InputError message={errors.payment_method} />
                     </div>
                 </CardContent>
             </Card>
