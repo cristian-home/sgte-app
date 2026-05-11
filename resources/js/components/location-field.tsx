@@ -778,8 +778,8 @@ function CityChip({
     return (
         <span
             className={cn(
-                'inline-flex shrink-0 items-center gap-1 rounded-sm bg-accent px-1.5 py-0.5 text-xs font-medium text-accent-foreground',
-                disabled && 'pointer-events-none',
+                'inline-flex shrink-0 items-center gap-1 rounded-md bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground shadow-sm',
+                disabled && 'pointer-events-none opacity-60',
             )}
         >
             <button
@@ -802,7 +802,7 @@ function CityChip({
                 }}
                 aria-label={`Quitar ciudad ${label}`}
                 disabled={disabled}
-                className="inline-flex size-3.5 items-center justify-center rounded-sm hover:bg-background/60 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed"
+                className="inline-flex size-4 items-center justify-center rounded-sm text-primary-foreground/70 hover:bg-primary-foreground/20 hover:text-primary-foreground focus-visible:ring-2 focus-visible:ring-primary-foreground/50 focus-visible:outline-none disabled:cursor-not-allowed"
             >
                 <X className="size-3" />
             </button>
