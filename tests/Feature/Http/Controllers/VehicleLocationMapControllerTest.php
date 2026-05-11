@@ -99,6 +99,66 @@ test('service without any location emits null location in payload', function ():
     );
 });
 
+test('payload exposes origin and destination coord pairs when set on the service', function (): void {
+    $admin = User::factory()->create();
+    $admin->assignRole(Role::ADMIN->value);
+    actingAs($admin);
+
+    $service = Service::factory()->create([
+        'service_status' => ServiceStatus::Open,
+        'service_date' => Carbon::today()->toDateString(),
+        'origin_coordinates' => '6.2518,-75.5636',
+        'destination_coordinates' => '4.6097,-74.0817',
+    ]);
+
+    $response = get(route('gps.map'))->assertOk();
+
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->where('activeServices.0.service_id', $service->id)
+            ->where('activeServices.0.origin.latitude', 6.2518)
+            ->where('activeServices.0.origin.longitude', -75.5636)
+            ->where('activeServices.0.destination.latitude', 4.6097)
+            ->where('activeServices.0.destination.longitude', -74.0817)
+    );
+});
+
+test('payload exposes route geometry as latitude/longitude pairs when cached', function (): void {
+    $admin = User::factory()->create();
+    $admin->assignRole(Role::ADMIN->value);
+    actingAs($admin);
+
+    $service = Service::factory()->create([
+        'service_status' => ServiceStatus::Open,
+        'service_date' => Carbon::today()->toDateString(),
+        'origin_coordinates' => '6.2518,-75.5636',
+        'destination_coordinates' => '4.6097,-74.0817',
+    ]);
+    Service::query()->whereKey($service->id)->update([
+        'route_geometry' => json_encode([
+            [-75.5636, 6.2518],
+            [-74.5, 5.5],
+            [-74.0817, 4.6097],
+        ]),
+        'route_distance_m' => 350000,
+        'route_duration_s' => 18000,
+        'route_fetched_at' => now(),
+        'route_source' => 'mapbox',
+    ]);
+
+    $response = get(route('gps.map'))->assertOk();
+
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->where('activeServices.0.service_id', $service->id)
+            ->where('activeServices.0.route_distance_m', 350000)
+            ->where('activeServices.0.route_duration_s', 18000)
+            ->where('activeServices.0.route.0.latitude', 6.2518)
+            ->where('activeServices.0.route.0.longitude', -75.5636)
+            ->where('activeServices.0.route.2.latitude', 4.6097)
+    );
+});
+
 test('vehicle-scoped 24h fallback works when no service-scoped location exists', function (): void {
     $admin = User::factory()->create();
     $admin->assignRole(Role::ADMIN->value);
