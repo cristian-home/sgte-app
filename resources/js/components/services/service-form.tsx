@@ -631,8 +631,18 @@ export default function ServiceForm({
                                     // clicking it again. Keep the current value
                                     // in that case — Estado must always have a
                                     // selection (the form posts a required field).
-                                    if (value) {
-                                        setData('service_status', value);
+                                    if (!value) return;
+                                    setData('service_status', value);
+                                    // Leaving 'closed' hides the Reales block; clear
+                                    // any captured actual times so we don't persist
+                                    // execution data for a non-executed service.
+                                    if (value !== 'closed') {
+                                        if (data.actual_start_time) {
+                                            setData('actual_start_time', '');
+                                        }
+                                        if (data.actual_end_time) {
+                                            setData('actual_end_time', '');
+                                        }
                                     }
                                 }}
                                 disabled={isFieldDisabled('service_status')}
@@ -1069,53 +1079,67 @@ export default function ServiceForm({
                         </div>
                     </div>
 
-                    <div className="grid gap-4 md:grid-cols-3 md:grid-rows-[auto_1fr_auto]">
-                        <div
-                            className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
-                            data-error={invalid('actual_start_time')}
-                        >
-                            <Label htmlFor="actual_start_time">
-                                Hora Inicio Real{isClosed && ' *'}
-                            </Label>
-                            <Input
-                                id="actual_start_time"
-                                type="time"
-                                value={data.actual_start_time}
-                                aria-invalid={invalid('actual_start_time')}
-                                disabled={isFieldDisabled('actual_start_time')}
-                                onChange={(e) =>
-                                    setData('actual_start_time', e.target.value)
-                                }
-                            />
-                            <InputError message={errors.actual_start_time} />
-                        </div>
-                        <div
-                            className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
-                            data-error={invalid('actual_end_time')}
-                        >
-                            <Label htmlFor="actual_end_time">
-                                Hora Fin Real{isClosed && ' *'}
-                            </Label>
-                            <Input
-                                id="actual_end_time"
-                                type="time"
-                                value={data.actual_end_time}
-                                aria-invalid={invalid('actual_end_time')}
-                                disabled={isFieldDisabled('actual_end_time')}
-                                onChange={(e) =>
-                                    setData('actual_end_time', e.target.value)
-                                }
-                            />
-                            <InputError message={errors.actual_end_time} />
-                        </div>
-                        <div className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid">
-                            <Label>Duración Real</Label>
-                            <div className="flex items-center rounded-md border bg-muted/50 px-3 py-2 text-sm">
-                                {actualDuration ?? '—'}
+                    {isClosed && (
+                        <div className="grid gap-4 md:grid-cols-3 md:grid-rows-[auto_1fr_auto]">
+                            <div
+                                className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
+                                data-error={invalid('actual_start_time')}
+                            >
+                                <Label htmlFor="actual_start_time">
+                                    Hora Inicio Real *
+                                </Label>
+                                <Input
+                                    id="actual_start_time"
+                                    type="time"
+                                    value={data.actual_start_time}
+                                    aria-invalid={invalid('actual_start_time')}
+                                    disabled={isFieldDisabled(
+                                        'actual_start_time',
+                                    )}
+                                    onChange={(e) =>
+                                        setData(
+                                            'actual_start_time',
+                                            e.target.value,
+                                        )
+                                    }
+                                />
+                                <InputError
+                                    message={errors.actual_start_time}
+                                />
                             </div>
-                            <div />
+                            <div
+                                className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
+                                data-error={invalid('actual_end_time')}
+                            >
+                                <Label htmlFor="actual_end_time">
+                                    Hora Fin Real *
+                                </Label>
+                                <Input
+                                    id="actual_end_time"
+                                    type="time"
+                                    value={data.actual_end_time}
+                                    aria-invalid={invalid('actual_end_time')}
+                                    disabled={isFieldDisabled(
+                                        'actual_end_time',
+                                    )}
+                                    onChange={(e) =>
+                                        setData(
+                                            'actual_end_time',
+                                            e.target.value,
+                                        )
+                                    }
+                                />
+                                <InputError message={errors.actual_end_time} />
+                            </div>
+                            <div className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid">
+                                <Label>Duración Real</Label>
+                                <div className="flex items-center rounded-md border bg-muted/50 px-3 py-2 text-sm">
+                                    {actualDuration ?? '—'}
+                                </div>
+                                <div />
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </CardContent>
             </Card>
 
