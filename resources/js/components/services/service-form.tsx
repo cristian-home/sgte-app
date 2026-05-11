@@ -27,6 +27,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import MoneyInput from '@/components/ui/money-input';
 import SearchableCombobox from '@/components/ui/searchable-combobox';
 import {
     Select,
@@ -1363,16 +1364,15 @@ export default function ServiceForm({
                             <Label htmlFor="unit_value">
                                 Valor Unitario (COP) *
                             </Label>
-                            <Input
+                            <MoneyInput
                                 id="unit_value"
-                                type="number"
-                                step="0.01"
+                                name="unit_value"
                                 value={data.unit_value}
-                                aria-invalid={invalid('unit_value')}
-                                disabled={isFieldDisabled('unit_value')}
-                                onChange={(e) =>
-                                    setData('unit_value', e.target.value)
+                                onValueChange={(raw) =>
+                                    setData('unit_value', raw)
                                 }
+                                invalid={invalid('unit_value')}
+                                disabled={isFieldDisabled('unit_value')}
                             />
                             <InputError message={errors.unit_value} />
                         </div>
