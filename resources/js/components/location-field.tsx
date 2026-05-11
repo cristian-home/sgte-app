@@ -1,4 +1,11 @@
-import { AlertTriangle, Loader2, MapPin, X } from 'lucide-react';
+import {
+    AlertTriangle,
+    Loader2,
+    LocateFixed,
+    MapPin,
+    MapPlus,
+    X,
+} from 'lucide-react';
 import {
     useCallback,
     useEffect,
@@ -667,6 +674,13 @@ export default function LocationField({
                             <X className="size-3.5" />
                         </button>
                     )}
+                    {coordinates && !committing && (
+                        <CoordsIndicator
+                            coordinates={coordinates}
+                            source={coordinatesSource}
+                            accuracy={coordinatesAccuracy}
+                        />
+                    )}
                     {showDropdown && (
                         <div
                             className={cn(
@@ -715,7 +729,7 @@ export default function LocationField({
                                 aria-label="Marcar en mapa"
                                 className="shrink-0"
                             >
-                                <MapPin className="size-4" />
+                                <MapPlus className="size-4" />
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>Marcar en mapa</TooltipContent>
@@ -747,14 +761,6 @@ export default function LocationField({
                         No reconocí la ciudad del pin, selecciónala manualmente.
                     </span>
                 </p>
-            )}
-
-            {coordinates && (
-                <CoordinatesBadge
-                    coordinates={coordinates}
-                    source={coordinatesSource}
-                    accuracy={coordinatesAccuracy}
-                />
             )}
         </div>
     );
@@ -966,7 +972,17 @@ function AddressDropdown({
     );
 }
 
-function CoordinatesBadge({
+/**
+ * Inline coords indicator. Lives inside the input shell, right after the
+ * X clear button, so confirmed coordinates communicate themselves
+ * without adding vertical height under the control (which would
+ * desalign the Origen/Destino grid when only one side has coords).
+ *
+ * The icon color encodes confidence (`badgeTone`); the tooltip carries
+ * the full text "Coordenadas: lat,lng · source · accuracy" for anyone
+ * who hovers or focuses it.
+ */
+function CoordsIndicator({
     coordinates,
     source,
     accuracy,
@@ -976,24 +992,49 @@ function CoordinatesBadge({
     accuracy: string;
 }) {
     const tone = badgeTone(source, accuracy as GeocodingAccuracy | '');
+    const toneClass =
+        tone === 'green'
+            ? 'text-emerald-600 dark:text-emerald-400'
+            : tone === 'yellow'
+              ? 'text-amber-600 dark:text-amber-400'
+              : 'text-muted-foreground';
+    const sourceText = sourceLabel(source);
+    const detail = [
+        sourceText || null,
+        accuracy && source === 'mapbox' ? accuracy : null,
+    ]
+        .filter(Boolean)
+        .join(' · ');
+    const ariaLabel = `Ubicación confirmada: ${coordinates}${detail ? `, ${detail}` : ''}`;
     return (
-        <p
-            className={cn(
-                'flex items-center gap-1 text-xs',
-                tone === 'green'
-                    ? 'text-emerald-700 dark:text-emerald-400'
-                    : tone === 'yellow'
-                      ? 'text-amber-700 dark:text-amber-400'
-                      : 'text-muted-foreground',
-            )}
-        >
-            <MapPin className="size-3" />
-            <span>
-                Coordenadas: <code>{coordinates}</code>
-                {source && ` · ${sourceLabel(source)}`}
-                {accuracy && source === 'mapbox' && ` · ${accuracy}`}
-            </span>
-        </p>
+        <TooltipProvider delayDuration={200}>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <span
+                        role="img"
+                        aria-label={ariaLabel}
+                        className={cn(
+                            'inline-flex size-5 shrink-0 items-center justify-center',
+                            toneClass,
+                        )}
+                    >
+                        <LocateFixed className="size-4" />
+                    </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                    <div className="text-xs">
+                        <div>
+                            Coordenadas: <code>{coordinates}</code>
+                        </div>
+                        {detail && (
+                            <div className="text-muted-foreground">
+                                {detail}
+                            </div>
+                        )}
+                    </div>
+                </TooltipContent>
+            </Tooltip>
+        </TooltipProvider>
     );
 }
 
