@@ -101,7 +101,18 @@ export default function GpsMap({
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Mapa GPS" />
-            <div className="flex h-[calc(100vh-6rem)] flex-1 flex-col gap-2 rounded-xl p-4">
+            <div
+                className="flex flex-1 flex-col gap-2 rounded-xl p-4"
+                // The map needs a non-collapsing height for Leaflet to
+                // render. The parent <div className="flex-1 …"> is a
+                // block element, so `flex-1` here doesn't take an actual
+                // height from it; tailwind also failed to generate a
+                // rule for the previous arbitrary `h-[calc(100vh-6rem)]`.
+                // Fall back to an inline calc(viewport - header) so the
+                // map always gets a real pixel height regardless of
+                // tailwind's arbitrary-value parser.
+                style={{ height: 'calc(100vh - 6rem)' }}
+            >
                 <div className="text-xs text-muted-foreground">
                     {markerServices.length} de {activeServices.length} servicios
                     activos con ubicación conocida. Actualización automática
