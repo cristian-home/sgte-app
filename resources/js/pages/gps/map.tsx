@@ -41,7 +41,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const MEDELLIN_CENTER: [number, number] = [6.2518, -75.5636];
 const MEDELLIN_ZOOM = 11;
-const REFRESH_INTERVAL_MS = 30_000;
+const REFRESH_INTERVAL_MS = 300_000;
 
 interface CoordPair {
     latitude: number;
@@ -248,7 +248,7 @@ export default function GpsMap({
                 <div className="text-xs text-muted-foreground">
                     {markerServices.length} de {activeServices.length} servicios
                     activos con ubicación conocida. Actualización automática
-                    cada {REFRESH_INTERVAL_MS / 1000}s.
+                    cada {REFRESH_INTERVAL_MS / 60_000} min.
                 </div>
                 <div className="relative flex-1 overflow-hidden rounded-md border">
                     <MapLegend />
