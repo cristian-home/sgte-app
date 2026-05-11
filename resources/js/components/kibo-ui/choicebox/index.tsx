@@ -106,5 +106,10 @@ export type ChoiceboxIndicatorProps = Partial<
 export const ChoiceboxIndicator = (props: ChoiceboxIndicatorProps) => {
     const context = useChoiceboxItemContext();
 
-    return <RadioGroupItem {...props} value={context.value} />;
+    // Propagate the id so the FieldLabel (rendered with htmlFor={context.id}
+    // inside ChoiceboxItem) actually targets this RadioGroupItem. Without
+    // it the browser's native label-activation never fires and only the
+    // radio circle itself is clickable — clicking the rest of the card
+    // does nothing.
+    return <RadioGroupItem {...props} id={context.id} value={context.value} />;
 };
