@@ -27,6 +27,8 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import MoneyInput from '@/components/ui/money-input';
+import SearchableCombobox from '@/components/ui/searchable-combobox';
 import {
     Select,
     SelectContent,
@@ -45,6 +47,7 @@ import { PaymentMethod, PaymentMethodLabel } from '@/enums/PaymentMethod';
 import { ServiceStatus, ServiceStatusLabel } from '@/enums/ServiceStatus';
 import { viewerToday } from '@/lib/datetime';
 import { normalizeCity } from '@/lib/normalize-city';
+import { cn } from '@/lib/utils';
 import type { DayStatus } from '@/types/models';
 
 export interface VehicleOption {
@@ -188,6 +191,65 @@ function thirdPartyLabel(tp: ThirdPartyOption): string {
         return `${tp.first_name} ${tp.first_lastname} (${tp.identification_number})`;
     }
     return `${tp.company_name} (${tp.identification_number})`;
+}
+
+/**
+ * Short display label for a contract's client — company name when
+ * available, full natural-person name otherwise, or empty string when
+ * the contract has no associated tercero.
+ */
+function contractClientLabel(c: ContractOption): string {
+    if (!c.third_party) return '';
+    if (c.third_party.is_natural_person) {
+        return `${c.third_party.first_name ?? ''} ${c.third_party.first_lastname ?? ''}`.trim();
+    }
+    return c.third_party.company_name ?? '';
+}
+
+/**
+ * Format a UTC instant ISO string as Y-m-d in the contract's timezone.
+ * Used to display the contract's vigencia/end date in the combobox row.
+ */
+function formatContractDate(isoUtc: string, timezone: string): string {
+    try {
+        return new Intl.DateTimeFormat('en-CA', {
+            timeZone: timezone,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+        }).format(new Date(isoUtc));
+    } catch {
+        return isoUtc.slice(0, 10);
+    }
+}
+
+/**
+ * Bucket a driver's license expiry date into a UI severity. Returns
+ * null when the license is valid for more than 30 days (no badge shown),
+ * `soon` when within 30 days, `expired` when on or before today. Dates
+ * are compared as Y-m-d strings in the given timezone (the operator's
+ * operation TZ by default — see callsite).
+ */
+function driverLicenseStatus(
+    licenseDueDate: string | null,
+    timezone: string,
+): { severity: 'soon' | 'expired'; label: string } | null {
+    if (!licenseDueDate) return null;
+    const today = viewerToday(timezone);
+    if (licenseDueDate <= today) {
+        return { severity: 'expired', label: 'Licencia vencida' };
+    }
+    // 30-day window
+    const d = new Date(`${licenseDueDate}T00:00:00Z`);
+    const t = new Date(`${today}T00:00:00Z`);
+    const diffDays = Math.round((d.getTime() - t.getTime()) / 86_400_000);
+    if (diffDays <= 30) {
+        return {
+            severity: 'soon',
+            label: `Licencia vence en ${diffDays} día${diffDays === 1 ? '' : 's'}`,
+        };
+    }
+    return null;
 }
 
 function computeActualDuration(start: string, end: string): string | null {
@@ -586,33 +648,65 @@ export default function ServiceForm({
                             data-error={invalid('contract_id')}
                         >
                             <Label htmlFor="contract_id">Contrato *</Label>
-                            <Select
+                            <SearchableCombobox<ContractOption>
+                                id="contract_id"
+                                name="contract_id"
+                                items={filteredContracts}
                                 value={data.contract_id}
-                                onValueChange={(value) =>
+                                onChange={(value) =>
                                     setData('contract_id', value)
                                 }
-                                disabled={isFieldDisabled('contract_id')}
-                            >
-                                <SelectTrigger
-                                    id="contract_id"
-                                    aria-invalid={invalid('contract_id')}
-                                >
-                                    <SelectValue placeholder="Seleccionar contrato..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {filteredContracts.map((c) => (
-                                        <SelectItem
-                                            key={c.id}
-                                            value={String(c.id)}
-                                        >
+                                getKey={(c) => String(c.id)}
+                                getSearchText={(c) =>
+                                    `${c.contract_number} ${contractClientLabel(c)} ${c.contract_object ?? ''}`
+                                }
+                                renderTrigger={(c) => (
+                                    <span className="truncate">
+                                        <span className="font-medium">
                                             {c.contract_number}
-                                            {c.third_party
-                                                ? ` - ${c.third_party.company_name || `${c.third_party.first_name} ${c.third_party.first_lastname}`}`
-                                                : ''}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                                        </span>
+                                        {' — '}
+                                        {contractClientLabel(c)}
+                                    </span>
+                                )}
+                                renderItem={(c) => (
+                                    <div className="flex flex-col gap-0.5">
+                                        <div className="flex items-baseline gap-1">
+                                            <span className="font-medium">
+                                                {c.contract_number}
+                                            </span>
+                                            <span className="text-muted-foreground">
+                                                —
+                                            </span>
+                                            <span className="truncate">
+                                                {contractClientLabel(c)}
+                                            </span>
+                                        </div>
+                                        <div className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
+                                            {c.billing_unit_type && (
+                                                <Badge
+                                                    variant="secondary"
+                                                    className="font-normal"
+                                                >
+                                                    {c.billing_unit_type}
+                                                </Badge>
+                                            )}
+                                            <span>
+                                                vigente hasta{' '}
+                                                {formatContractDate(
+                                                    c.end_at,
+                                                    c.timezone,
+                                                )}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+                                placeholder="Seleccionar contrato..."
+                                searchPlaceholder="Buscar contrato…"
+                                emptyText="Sin contratos vigentes."
+                                disabled={isFieldDisabled('contract_id')}
+                                invalid={invalid('contract_id')}
+                            />
                             <InputError message={errors.contract_id} />
                         </div>
                         <div
@@ -671,9 +765,12 @@ export default function ServiceForm({
                             data-error={invalid('vehicle_id')}
                         >
                             <Label htmlFor="vehicle_id">Vehículo *</Label>
-                            <Select
+                            <SearchableCombobox<VehicleOption>
+                                id="vehicle_id"
+                                name="vehicle_id"
+                                items={vehicles}
                                 value={data.vehicle_id}
-                                onValueChange={(value) => {
+                                onChange={(value) => {
                                     setData('vehicle_id', value);
                                     const v = vehicles.find(
                                         (v) => v.id === Number(value),
@@ -682,25 +779,53 @@ export default function ServiceForm({
                                         setData('driver_id', '');
                                     }
                                 }}
-                                disabled={isFieldDisabled('vehicle_id')}
-                            >
-                                <SelectTrigger
-                                    id="vehicle_id"
-                                    aria-invalid={invalid('vehicle_id')}
-                                >
-                                    <SelectValue placeholder="Seleccionar vehículo..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {vehicles.map((v) => (
-                                        <SelectItem
-                                            key={v.id}
-                                            value={String(v.id)}
-                                        >
+                                getKey={(v) => String(v.id)}
+                                getSearchText={(v) =>
+                                    `${v.plate} ${v.third_party ? thirdPartyLabel(v.third_party) : ''}`
+                                }
+                                renderTrigger={(v) => (
+                                    <span className="flex min-w-0 items-center gap-2">
+                                        <span className="font-mono">
                                             {v.plate}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                                        </span>
+                                        {v.is_third_party && (
+                                            <Badge
+                                                variant="secondary"
+                                                className="font-normal"
+                                            >
+                                                Tercero
+                                            </Badge>
+                                        )}
+                                    </span>
+                                )}
+                                renderItem={(v) => (
+                                    <div className="flex flex-col gap-0.5">
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-mono">
+                                                {v.plate}
+                                            </span>
+                                            {v.is_third_party && (
+                                                <Badge
+                                                    variant="secondary"
+                                                    className="font-normal"
+                                                >
+                                                    Tercero
+                                                </Badge>
+                                            )}
+                                        </div>
+                                        {v.third_party && (
+                                            <span className="truncate text-xs text-muted-foreground">
+                                                {thirdPartyLabel(v.third_party)}
+                                            </span>
+                                        )}
+                                    </div>
+                                )}
+                                placeholder="Seleccionar vehículo..."
+                                searchPlaceholder="Buscar por placa o tercero…"
+                                emptyText="Sin vehículos."
+                                disabled={isFieldDisabled('vehicle_id')}
+                                invalid={invalid('vehicle_id')}
+                            />
                             <InputError message={errors.vehicle_id} />
                         </div>
 
@@ -737,32 +862,96 @@ export default function ServiceForm({
                                         </TooltipProvider>
                                     )}
                                 </div>
-                                <Select
+                                <SearchableCombobox<DriverOption>
+                                    id="driver_id"
+                                    name="driver_id"
+                                    items={drivers}
                                     value={data.driver_id}
-                                    onValueChange={(value) =>
+                                    onChange={(value) =>
                                         setData('driver_id', value)
                                     }
+                                    getKey={(d) => String(d.id)}
+                                    getSearchText={(d) =>
+                                        `${d.first_name} ${d.first_lastname} ${d.identification_number}`
+                                    }
+                                    renderTrigger={(d) => (
+                                        <span className="truncate">
+                                            {d.first_name} {d.first_lastname}{' '}
+                                            <span className="text-muted-foreground">
+                                                ({d.identification_number})
+                                            </span>
+                                        </span>
+                                    )}
+                                    renderItem={(d) => {
+                                        const licenseStatus =
+                                            driverLicenseStatus(
+                                                d.license_due_date,
+                                                operationTz,
+                                            );
+                                        const missingSocial =
+                                            d.eps_id === null ||
+                                            d.pension_fund_id === null;
+                                        return (
+                                            <div className="flex flex-col gap-0.5">
+                                                <div className="flex items-baseline gap-1">
+                                                    <span className="font-medium">
+                                                        {d.first_name}{' '}
+                                                        {d.first_lastname}
+                                                    </span>
+                                                    <span className="text-xs text-muted-foreground">
+                                                        (
+                                                        {
+                                                            d.identification_number
+                                                        }
+                                                        )
+                                                    </span>
+                                                </div>
+                                                {(licenseStatus ||
+                                                    missingSocial) && (
+                                                    <div className="flex flex-wrap items-center gap-1 text-xs">
+                                                        {licenseStatus && (
+                                                            <Badge
+                                                                variant={
+                                                                    licenseStatus.severity ===
+                                                                    'expired'
+                                                                        ? 'destructive'
+                                                                        : 'secondary'
+                                                                }
+                                                                className={cn(
+                                                                    'font-normal',
+                                                                    licenseStatus.severity ===
+                                                                        'soon' &&
+                                                                        'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
+                                                                )}
+                                                            >
+                                                                {
+                                                                    licenseStatus.label
+                                                                }
+                                                            </Badge>
+                                                        )}
+                                                        {missingSocial && (
+                                                            <Badge
+                                                                variant="outline"
+                                                                className="font-normal text-muted-foreground"
+                                                            >
+                                                                Sin{' '}
+                                                                {d.eps_id ===
+                                                                null
+                                                                    ? 'EPS'
+                                                                    : 'Pensión'}
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    }}
+                                    placeholder="Seleccionar conductor..."
+                                    searchPlaceholder="Buscar por nombre o cédula…"
+                                    emptyText="Sin conductores."
                                     disabled={isFieldDisabled('driver_id')}
-                                >
-                                    <SelectTrigger
-                                        id="driver_id"
-                                        aria-invalid={invalid('driver_id')}
-                                    >
-                                        <SelectValue placeholder="Seleccionar conductor..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {drivers.map((d) => (
-                                            <SelectItem
-                                                key={d.id}
-                                                value={String(d.id)}
-                                            >
-                                                {d.first_name}{' '}
-                                                {d.first_lastname} (
-                                                {d.identification_number})
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                    invalid={invalid('driver_id')}
+                                />
                                 <InputError message={errors.driver_id} />
                             </div>
                         )}
@@ -1175,16 +1364,15 @@ export default function ServiceForm({
                             <Label htmlFor="unit_value">
                                 Valor Unitario (COP) *
                             </Label>
-                            <Input
+                            <MoneyInput
                                 id="unit_value"
-                                type="number"
-                                step="0.01"
+                                name="unit_value"
                                 value={data.unit_value}
-                                aria-invalid={invalid('unit_value')}
-                                disabled={isFieldDisabled('unit_value')}
-                                onChange={(e) =>
-                                    setData('unit_value', e.target.value)
+                                onValueChange={(raw) =>
+                                    setData('unit_value', raw)
                                 }
+                                invalid={invalid('unit_value')}
+                                disabled={isFieldDisabled('unit_value')}
                             />
                             <InputError message={errors.unit_value} />
                         </div>
