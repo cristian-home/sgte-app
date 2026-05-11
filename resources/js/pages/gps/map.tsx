@@ -244,10 +244,7 @@ export default function GpsMap({
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Mapa GPS" />
-            <div
-                className="flex flex-1 flex-col gap-2 rounded-xl p-4"
-                style={{ height: 'calc(100vh - 6rem)' }}
-            >
+            <div className="flex h-full min-h-0 flex-col gap-2 rounded-xl p-4">
                 <div className="text-xs text-muted-foreground">
                     {markerServices.length} de {activeServices.length} servicios
                     activos con ubicación conocida. Actualización automática
