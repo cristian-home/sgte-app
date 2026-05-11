@@ -24,7 +24,13 @@ import MapPickerModal from '@/components/map-picker-modal';
 import { type MunicipalityOption } from '@/components/municipality-combobox';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Card,
+    CardAction,
+    CardContent,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import MoneyInput from '@/components/ui/money-input';
@@ -1217,6 +1223,19 @@ export default function ServiceForm({
             <Card>
                 <CardHeader>
                     <CardTitle>Horarios</CardTitle>
+                    {/* Render the schedule-timezone hint top-right of the
+                        card header rather than under the input. Before this
+                        sat in the same subgrid row as the field's
+                        InputError, so when validation fired both overlapped
+                        visually. CardAction is shadcn's native top-right
+                        slot inside CardHeader. */}
+                    <CardAction className="text-right text-xs text-muted-foreground">
+                        <ScheduleTimezoneHint
+                            date={data.service_date}
+                            time={data.planned_start_time}
+                            timezone={resolvedTimezone}
+                        />
+                    </CardAction>
                 </CardHeader>
                 <CardContent>
                     <div className="grid gap-4 md:grid-cols-2 md:grid-rows-[auto_1fr_auto]">
@@ -1241,11 +1260,6 @@ export default function ServiceForm({
                                 }
                             />
                             <InputError message={errors.planned_start_time} />
-                            <ScheduleTimezoneHint
-                                date={data.service_date}
-                                time={data.planned_start_time}
-                                timezone={resolvedTimezone}
-                            />
                         </div>
                         <div
                             className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
