@@ -19,6 +19,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
     Tooltip,
     TooltipContent,
@@ -589,29 +590,37 @@ export default function ServiceForm({
                             data-error={invalid('service_status')}
                         >
                             <Label htmlFor="service_status">Estado *</Label>
-                            <Select
+                            <ToggleGroup
+                                id="service_status"
+                                type="single"
+                                variant="outline"
                                 value={data.service_status}
-                                onValueChange={(value) =>
-                                    setData('service_status', value)
-                                }
+                                onValueChange={(value) => {
+                                    // Radix ToggleGroup type=single fires '' when
+                                    // the user de-selects the active item by
+                                    // clicking it again. Keep the current value
+                                    // in that case — Estado must always have a
+                                    // selection (the form posts a required field).
+                                    if (value) {
+                                        setData('service_status', value);
+                                    }
+                                }}
                                 disabled={isFieldDisabled('service_status')}
+                                aria-invalid={invalid('service_status')}
+                                className="w-full justify-stretch"
                             >
-                                <SelectTrigger
-                                    id="service_status"
-                                    aria-invalid={invalid('service_status')}
-                                >
-                                    <SelectValue placeholder="Seleccionar..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {Object.entries(ServiceStatus).map(
-                                        ([key, value]) => (
-                                            <SelectItem key={key} value={value}>
-                                                {ServiceStatusLabel[value]}
-                                            </SelectItem>
-                                        ),
-                                    )}
-                                </SelectContent>
-                            </Select>
+                                {Object.entries(ServiceStatus).map(
+                                    ([key, value]) => (
+                                        <ToggleGroupItem
+                                            key={key}
+                                            value={value}
+                                            className="flex-1"
+                                        >
+                                            {ServiceStatusLabel[value]}
+                                        </ToggleGroupItem>
+                                    ),
+                                )}
+                            </ToggleGroup>
                             <InputError message={errors.service_status} />
                         </div>
                     </div>
