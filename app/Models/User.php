@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 
+use App\Enums\Role;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -89,6 +90,11 @@ class User extends Authenticatable implements MustVerifyEmail
     public function driver(): HasOne
     {
         return $this->hasOne(Driver::class);
+    }
+
+    public function isDriver(): bool
+    {
+        return $this->hasRole(Role::DRIVER->value);
     }
 
     public function getActivitylogOptions(): LogOptions
