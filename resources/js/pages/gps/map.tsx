@@ -246,6 +246,9 @@ export default function GpsMap({
             <Head title="Mapa GPS" />
             <div
                 className="flex flex-1 flex-col gap-2 rounded-xl p-4"
+                // Tailwind 4.3.0 silently drops `h-[calc(100vh-Xrem)]` for
+                // some values (notably 6rem), so go inline. 5rem matches
+                // the actual chrome: header h-16 (64px) + main m-2 (16px).
                 style={{ height: 'calc(100vh - 5rem)' }}
             >
                 <div className="text-xs text-muted-foreground">
