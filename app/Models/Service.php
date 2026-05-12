@@ -55,6 +55,11 @@ class Service extends Model
         'manual_entry_justification',
         'driver_declined_at',
         'driver_decline_reason',
+        'route_geometry',
+        'route_distance_m',
+        'route_duration_s',
+        'route_fetched_at',
+        'route_source',
     ];
 
     /**
@@ -100,12 +105,26 @@ class Service extends Model
             'payment_method' => PaymentMethod::class,
             'service_status' => ServiceStatus::class,
             'driver_declined_at' => 'immutable_datetime:Y-m-d H:i:sP',
+            'route_geometry' => 'array',
+            'route_distance_m' => 'integer',
+            'route_duration_s' => 'integer',
+            'route_fetched_at' => 'immutable_datetime:Y-m-d H:i:sP',
         ];
     }
 
     protected static function booted(): void
     {
         static::saving(function (Service $service): void {
+            // Cached route invalidation: if either coord pair changed,
+            // wipe the cache so the saved hook can re-queue a fetch.
+            if ($service->isDirty('origin_coordinates') || $service->isDirty('destination_coordinates')) {
+                $service->route_geometry = null;
+                $service->route_distance_m = null;
+                $service->route_duration_s = null;
+                $service->route_fetched_at = null;
+                $service->route_source = null;
+            }
+
             // Keep the denormalized day-bucket column in sync with the
             // wall-clock projection of `planned_start_at` in the service's
             // own timezone. Day-range queries (Gantt, Day Summary, Annual
@@ -122,6 +141,30 @@ class Service extends Model
             $service->service_date_local = Carbon::instance($service->planned_start_at)
                 ->setTimezone($tz)
                 ->toDateString();
+        });
+
+        // Cache refresh hooks split across created/updated because:
+        //   - wasRecentlyCreated stays true on the same PHP instance even
+        //     after a subsequent update, so saved() can't distinguish
+        //     insert from update via that flag alone.
+        //   - wasChanged() returns false on a fresh insert (no prior state
+        //     to compare against), so a coord-aware updated() needs its
+        //     own callback that's only fired during an UPDATE save.
+        static::created(function (Service $service): void {
+            if (empty($service->origin_coordinates) || empty($service->destination_coordinates)) {
+                return;
+            }
+            \App\Jobs\FetchServiceRoute::dispatch($service);
+        });
+
+        static::updated(function (Service $service): void {
+            if (! $service->wasChanged('origin_coordinates') && ! $service->wasChanged('destination_coordinates')) {
+                return;
+            }
+            if (empty($service->origin_coordinates) || empty($service->destination_coordinates)) {
+                return;
+            }
+            \App\Jobs\FetchServiceRoute::dispatch($service);
         });
     }
 

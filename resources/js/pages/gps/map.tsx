@@ -4,8 +4,16 @@ import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
 import iconUrl from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 import 'leaflet/dist/leaflet.css';
-import { useEffect, useMemo } from 'react';
-import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
+import { Fragment, useEffect, useMemo } from 'react';
+import {
+    CircleMarker,
+    MapContainer,
+    Marker,
+    Polyline,
+    Popup,
+    TileLayer,
+    useMap,
+} from 'react-leaflet';
 import { Badge } from '@/components/ui/badge';
 import AppLayout from '@/layouts/app-layout';
 import { formatTimestampInViewerTz } from '@/lib/datetime';
@@ -34,6 +42,11 @@ const MEDELLIN_CENTER: [number, number] = [6.2518, -75.5636];
 const MEDELLIN_ZOOM = 11;
 const REFRESH_INTERVAL_MS = 30_000;
 
+interface CoordPair {
+    latitude: number;
+    longitude: number;
+}
+
 interface ActiveService {
     service_id: number;
     vehicle_plate: string | null;
@@ -45,21 +58,69 @@ interface ActiveService {
         is_manual: boolean;
         recorded_at: string | null;
     } | null;
+    origin: CoordPair | null;
+    destination: CoordPair | null;
+    route: CoordPair[] | null;
+    route_distance_m: number | null;
+    route_duration_s: number | null;
+}
+
+// Stable per-service color via golden-angle hue stepping. Service IDs
+// that are close numerically still end up far apart visually so two
+// adjacent rows don't get near-identical lines on the map.
+function serviceColor(id: number): string {
+    const hue = (id * 137.508) % 360;
+    return `hsl(${hue.toFixed(0)}, 70%, 42%)`;
+}
+
+function toLatLng(p: CoordPair): [number, number] {
+    return [p.latitude, p.longitude];
+}
+
+function formatDistance(m: number | null): string | null {
+    if (m === null || m === undefined) return null;
+    if (m < 1000) return `${m} m`;
+    return `${(m / 1000).toFixed(1)} km`;
+}
+
+function formatDuration(s: number | null): string | null {
+    if (s === null || s === undefined) return null;
+    const minutes = Math.round(s / 60);
+    if (minutes < 60) return `${minutes} min`;
+    const h = Math.floor(minutes / 60);
+    const rem = minutes % 60;
+    return rem === 0 ? `${h} h` : `${h} h ${rem} min`;
 }
 
 function FitBoundsOnData({ services }: { services: ActiveService[] }) {
     const map = useMap();
 
     useEffect(() => {
-        const coords = services
-            .map((s) => s.location)
-            .filter(
-                (l): l is NonNullable<ActiveService['location']> => l !== null,
-            )
-            .map((l) => L.latLng(l.latitude, l.longitude));
+        const points: L.LatLng[] = [];
 
-        if (coords.length > 0) {
-            map.fitBounds(L.latLngBounds(coords).pad(0.15));
+        for (const s of services) {
+            if (s.location) {
+                points.push(
+                    L.latLng(s.location.latitude, s.location.longitude),
+                );
+            }
+            if (s.origin) {
+                points.push(L.latLng(s.origin.latitude, s.origin.longitude));
+            }
+            if (s.destination) {
+                points.push(
+                    L.latLng(s.destination.latitude, s.destination.longitude),
+                );
+            }
+            if (s.route) {
+                for (const p of s.route) {
+                    points.push(L.latLng(p.latitude, p.longitude));
+                }
+            }
+        }
+
+        if (points.length > 0) {
+            map.fitBounds(L.latLngBounds(points).pad(0.15));
         }
     }, [map, services]);
 
@@ -98,19 +159,24 @@ export default function GpsMap({
         [activeServices],
     );
 
+    const routableServices = useMemo(
+        () =>
+            activeServices.filter(
+                (
+                    s,
+                ): s is ActiveService & {
+                    origin: NonNullable<ActiveService['origin']>;
+                    destination: NonNullable<ActiveService['destination']>;
+                } => s.origin !== null && s.destination !== null,
+            ),
+        [activeServices],
+    );
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Mapa GPS" />
             <div
                 className="flex flex-1 flex-col gap-2 rounded-xl p-4"
-                // The map needs a non-collapsing height for Leaflet to
-                // render. The parent <div className="flex-1 …"> is a
-                // block element, so `flex-1` here doesn't take an actual
-                // height from it; tailwind also failed to generate a
-                // rule for the previous arbitrary `h-[calc(100vh-6rem)]`.
-                // Fall back to an inline calc(viewport - header) so the
-                // map always gets a real pixel height regardless of
-                // tailwind's arbitrary-value parser.
                 style={{ height: 'calc(100vh - 6rem)' }}
             >
                 <div className="text-xs text-muted-foreground">
@@ -130,45 +196,117 @@ export default function GpsMap({
                             tileSize={512}
                             zoomOffset={-1}
                         />
-                        <FitBoundsOnData services={markerServices} />
-                        {markerServices.map((service) => (
-                            <Marker
-                                key={service.service_id}
-                                position={[
-                                    service.location.latitude,
-                                    service.location.longitude,
-                                ]}
-                            >
-                                <Popup>
-                                    <div className="space-y-1 text-sm">
-                                        <div className="font-mono font-medium">
-                                            {service.vehicle_plate ?? '—'}
-                                        </div>
-                                        <div>{service.driver_name ?? '—'}</div>
-                                        <div className="text-xs text-muted-foreground">
-                                            {formatTimestampInViewerTz(
-                                                service.location.recorded_at,
-                                            ) || '—'}
-                                        </div>
-                                        <div>
-                                            {service.location.is_manual ? (
-                                                <Badge variant="outline">
-                                                    Manual
-                                                </Badge>
-                                            ) : (
-                                                <Badge>GPS</Badge>
+                        <FitBoundsOnData services={activeServices} />
+
+                        {routableServices.map((service) => {
+                            const color = serviceColor(service.service_id);
+                            const hasRealRoute =
+                                service.route !== null &&
+                                service.route.length >= 2;
+                            const polylinePositions: [number, number][] =
+                                hasRealRoute
+                                    ? service.route!.map(toLatLng)
+                                    : [
+                                          toLatLng(service.origin),
+                                          toLatLng(service.destination),
+                                      ];
+
+                            return (
+                                <Fragment key={`route-${service.service_id}`}>
+                                    <Polyline
+                                        positions={polylinePositions}
+                                        pathOptions={{
+                                            color,
+                                            weight: 4,
+                                            opacity: 0.75,
+                                            dashArray: hasRealRoute
+                                                ? undefined
+                                                : '6 8',
+                                        }}
+                                    />
+                                    <CircleMarker
+                                        center={toLatLng(service.origin)}
+                                        radius={6}
+                                        pathOptions={{
+                                            color,
+                                            fillColor: color,
+                                            fillOpacity: 1,
+                                            weight: 2,
+                                        }}
+                                    />
+                                    <CircleMarker
+                                        center={toLatLng(service.destination)}
+                                        radius={6}
+                                        pathOptions={{
+                                            color,
+                                            fillColor: '#ffffff',
+                                            fillOpacity: 1,
+                                            weight: 2,
+                                        }}
+                                    />
+                                </Fragment>
+                            );
+                        })}
+
+                        {markerServices.map((service) => {
+                            const distance = formatDistance(
+                                service.route_distance_m,
+                            );
+                            const duration = formatDuration(
+                                service.route_duration_s,
+                            );
+
+                            return (
+                                <Marker
+                                    key={service.service_id}
+                                    position={[
+                                        service.location.latitude,
+                                        service.location.longitude,
+                                    ]}
+                                >
+                                    <Popup>
+                                        <div className="space-y-1 text-sm">
+                                            <div className="font-mono font-medium">
+                                                {service.vehicle_plate ?? '—'}
+                                            </div>
+                                            <div>
+                                                {service.driver_name ?? '—'}
+                                            </div>
+                                            <div className="text-xs text-muted-foreground">
+                                                {formatTimestampInViewerTz(
+                                                    service.location
+                                                        .recorded_at,
+                                                ) || '—'}
+                                            </div>
+                                            <div>
+                                                {service.location.is_manual ? (
+                                                    <Badge variant="outline">
+                                                        Manual
+                                                    </Badge>
+                                                ) : (
+                                                    <Badge>GPS</Badge>
+                                                )}
+                                            </div>
+                                            {(distance || duration) && (
+                                                <div className="text-xs text-muted-foreground">
+                                                    Ruta:{' '}
+                                                    {[distance, duration]
+                                                        .filter(Boolean)
+                                                        .join(' · ')}
+                                                </div>
                                             )}
+                                            <Link
+                                                href={`/services/${service.service_id}`}
+                                                className="text-primary hover:underline"
+                                            >
+                                                Ver servicio #
+                                                {service.service_id}
+                                            </Link>
                                         </div>
-                                        <Link
-                                            href={`/services/${service.service_id}`}
-                                            className="text-primary hover:underline"
-                                        >
-                                            Ver servicio #{service.service_id}
-                                        </Link>
-                                    </div>
-                                </Popup>
-                            </Marker>
-                        ))}
+                                    </Popup>
+                                </Marker>
+                            );
+                        })}
                     </MapContainer>
                 </div>
             </div>
