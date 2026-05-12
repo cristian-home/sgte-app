@@ -3,6 +3,7 @@
 namespace Tests\Feature\Http\Controllers;
 
 use App\Enums\Role;
+use App\Models\Driver;
 use App\Models\User;
 use App\Notifications\WelcomeUserNotification;
 use Illuminate\Support\Facades\Notification;
@@ -32,7 +33,19 @@ test('admin can list users with paginated payload + filters', function (): void 
             ->component('users/index')
             ->has('users.data')
             ->has('users.current_page')
-            ->has('availableRoles', 4)
+            ->has('availableRoles', 3)
+            ->where('availableRoles', fn ($roles) => collect($roles)->pluck('value')->doesntContain(Role::DRIVER->value))
+    );
+});
+
+test('availableRoles payload does not include driver role', function (): void {
+    $response = get(route('users.index'));
+
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->where('availableRoles', fn ($roles) => collect($roles)
+                ->pluck('value')
+                ->doesntContain(Role::DRIVER->value))
     );
 });
 
@@ -156,16 +169,40 @@ test('admin can update user roles and one activity log row is written', function
 
 test('update without role change writes no roles_synced activity row', function (): void {
     $target = User::factory()->create();
-    $target->assignRole(Role::DRIVER->value);
+    $target->assignRole(Role::ACCOUNTING->value);
 
     put(route('users.update', $target), [
         'name' => 'Same Roles',
         'email' => $target->email,
-        'roles' => [Role::DRIVER->value],
+        'roles' => [Role::ACCOUNTING->value],
         'is_active' => true,
     ])->assertRedirect();
 
     expect(Activity::query()->where('event', 'roles_synced')->count())->toBe(0);
+});
+
+test('store rejects driver role in roles array', function (): void {
+    post(route('users.store'), [
+        'name' => 'Bad',
+        'email' => 'baddriver@sgte.app',
+        'password' => 'Password123!',
+        'roles' => [Role::DRIVER->value],
+        'is_active' => true,
+    ])->assertSessionHasErrors(['roles.0']);
+});
+
+test('update rejects driver role in roles array', function (): void {
+    $target = User::factory()->create();
+    $target->assignRole(Role::OPERATOR->value);
+
+    put(route('users.update', $target), [
+        'name' => $target->name,
+        'email' => $target->email,
+        'roles' => [Role::DRIVER->value],
+        'is_active' => true,
+    ])->assertSessionHasErrors(['roles.0']);
+
+    expect($target->fresh()->hasRole(Role::DRIVER->value))->toBeFalse();
 });
 
 test('admin cannot edit a super admin user', function (): void {
@@ -228,6 +265,32 @@ test('admin cannot delete their own account regardless', function (): void {
 
     delete(route('users.destroy', $this->admin))
         ->assertSessionHasErrors(['user']);
+});
+
+test('cannot delete a user linked to a driver', function (): void {
+    $target = User::factory()->create();
+    $target->assignRole(Role::DRIVER->value);
+    Driver::factory()->create(['user_id' => $target->id]);
+
+    delete(route('users.destroy', $target))
+        ->assertSessionHasErrors(['user']);
+
+    expect(User::find($target->id))->not->toBeNull();
+});
+
+test('cannot remove driver role from a user with a linked driver', function (): void {
+    $target = User::factory()->create();
+    $target->assignRole(Role::DRIVER->value);
+    Driver::factory()->create(['user_id' => $target->id]);
+
+    put(route('users.update', $target), [
+        'name' => $target->name,
+        'email' => $target->email,
+        'roles' => [Role::OPERATOR->value],
+        'is_active' => true,
+    ])->assertSessionHasErrors(['roles']);
+
+    expect($target->fresh()->hasRole(Role::DRIVER->value))->toBeTrue();
 });
 
 test('admin cannot delete a super admin', function (): void {

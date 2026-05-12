@@ -45,6 +45,29 @@ class DriverStoreRequest extends FormRequest
             'severance_fund_id' => ['required', 'integer', 'exists:severance_funds,id'],
             'has_social_security' => ['required', 'boolean'],
             'active' => ['required', 'boolean'],
+            // Cuenta de acceso: opcional. Cuando el operador la marca, se
+            // crea el User asociado y se envía el invite por correo. El
+            // account_email puede diferir del email del Driver (que es de
+            // contacto) — se pide explícito para evitar ambigüedad.
+            'create_account' => ['nullable', 'boolean'],
+            'account_email' => [
+                'nullable',
+                'required_if:create_account,true',
+                'email',
+                'max:255',
+                'unique:users,email',
+            ],
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'account_email.required_if' => 'Indica el correo para la cuenta de acceso del conductor.',
+            'account_email.unique' => 'Ya existe un usuario con ese correo.',
         ];
     }
 }

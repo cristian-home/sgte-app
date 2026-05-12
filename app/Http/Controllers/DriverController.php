@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Enums\Permission;
+use App\Enums\Role;
+use App\Http\Requests\DriverInviteAccountRequest;
 use App\Http\Requests\DriverStoreRequest;
 use App\Http\Requests\DriverUpdateRequest;
 use App\Models\DocumentType;
@@ -12,12 +14,18 @@ use App\Models\Municipality;
 use App\Models\PensionFund;
 use App\Models\Service;
 use App\Models\SeveranceFund;
+use App\Models\User;
+use App\Notifications\DriverAccountInvitationNotification;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\QueryBuilder\AllowedFilter;
@@ -137,9 +145,37 @@ class DriverController extends Controller
     public function store(DriverStoreRequest $request): RedirectResponse
     {
         Gate::authorize(Permission::CREATE_DRIVERS->value);
-        $driver = Driver::create($request->validated());
 
-        return redirect()->route('drivers.index');
+        $data = $request->validated();
+        $createAccount = (bool) ($data['create_account'] ?? false);
+        $accountEmail = $data['account_email'] ?? null;
+        unset($data['create_account'], $data['account_email']);
+
+        $driver = DB::transaction(function () use ($data, $createAccount, $accountEmail): Driver {
+            $driver = Driver::create($data);
+
+            if ($createAccount) {
+                $user = User::create([
+                    'name' => $driver->fullName(),
+                    'email' => $accountEmail,
+                    'password' => Hash::make(Str::password(32)),
+                    'email_verified_at' => now(),
+                    'is_active' => true,
+                    'must_change_password' => true,
+                ]);
+                $user->syncRoles([Role::DRIVER->value]);
+                $driver->forceFill(['user_id' => $user->id])->saveQuietly();
+                $user->notify(new DriverAccountInvitationNotification);
+            }
+
+            return $driver;
+        });
+
+        $message = $createAccount
+            ? 'Conductor creado. Se envió el enlace de configuración al correo.'
+            : 'Conductor creado.';
+
+        return redirect()->route('drivers.show', $driver)->with('success', $message);
     }
 
     public function show(Request $request, Driver $driver): Response
@@ -153,7 +189,7 @@ class DriverController extends Controller
             'eps:id,code,name',
             'pensionFund:id,code,name',
             'severanceFund:id,code,name',
-            'user:id,name,email',
+            'user:id,name,email,is_active',
         ]);
 
         $recentServices = Service::query()
@@ -202,5 +238,59 @@ class DriverController extends Controller
         $driver->delete();
 
         return redirect()->route('drivers.index');
+    }
+
+    /**
+     * Crea una cuenta de acceso para un Driver que se creó previamente sin
+     * cuenta. Asocia un User nuevo, asigna rol Driver y envía la invitación.
+     */
+    public function inviteAccount(DriverInviteAccountRequest $request, Driver $driver): RedirectResponse
+    {
+        if ($driver->user_id !== null) {
+            throw ValidationException::withMessages([
+                'account_email' => 'Este conductor ya tiene una cuenta de acceso.',
+            ]);
+        }
+
+        $accountEmail = $request->validated('account_email');
+
+        DB::transaction(function () use ($driver, $accountEmail): void {
+            $user = User::create([
+                'name' => $driver->fullName(),
+                'email' => $accountEmail,
+                'password' => Hash::make(Str::password(32)),
+                'email_verified_at' => now(),
+                'is_active' => true,
+                'must_change_password' => true,
+            ]);
+            $user->syncRoles([Role::DRIVER->value]);
+            $driver->forceFill(['user_id' => $user->id])->saveQuietly();
+            $user->notify(new DriverAccountInvitationNotification);
+        });
+
+        return redirect()
+            ->route('drivers.show', $driver)
+            ->with('success', 'Se envió el enlace de configuración al correo del conductor.');
+    }
+
+    /**
+     * Reenvía la invitación a un Driver que ya tiene cuenta — útil cuando el
+     * token original expira (60 min por defecto).
+     */
+    public function resendInvitation(Request $request, Driver $driver): RedirectResponse
+    {
+        Gate::authorize(Permission::UPDATE_DRIVERS->value);
+
+        if ($driver->user_id === null || ! $driver->user) {
+            throw ValidationException::withMessages([
+                'driver' => 'Este conductor no tiene cuenta de acceso. Crea una primero.',
+            ]);
+        }
+
+        $driver->user->notify(new DriverAccountInvitationNotification);
+
+        return redirect()
+            ->route('drivers.show', $driver)
+            ->with('success', 'Se reenvió el enlace de configuración al correo del conductor.');
     }
 }

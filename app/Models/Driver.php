@@ -115,6 +115,80 @@ class Driver extends Model
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * Nombre completo compuesto, usado para sincronizar al User asociado y
+     * para mostrar en el front cuando se prefiere la forma canónica.
+     */
+    public function fullName(): string
+    {
+        $parts = array_filter([
+            $this->first_name,
+            $this->second_name,
+            $this->first_lastname,
+            $this->second_lastname,
+        ], fn (?string $p) => $p !== null && $p !== '');
+
+        return trim(implode(' ', $parts));
+    }
+
+    public function hasAccount(): bool
+    {
+        return $this->user_id !== null;
+    }
+
+    protected static function booted(): void
+    {
+        // Driver es la fuente de verdad para name/email del User asociado.
+        // Al cambiar nombre o correo, propagamos al User con `saveQuietly`
+        // para no disparar eventos en cascada.
+        static::updated(function (Driver $driver): void {
+            if (! $driver->user_id) {
+                return;
+            }
+
+            $dirty = $driver->getDirty();
+            $nameKeys = ['first_name', 'second_name', 'first_lastname', 'second_lastname'];
+            $touchedName = array_intersect_key($dirty, array_flip($nameKeys)) !== [];
+
+            if (! $touchedName && ! array_key_exists('email', $dirty)) {
+                return;
+            }
+
+            $user = $driver->user()->first();
+            if (! $user) {
+                return;
+            }
+
+            $user->forceFill([
+                'name' => $driver->fullName(),
+                'email' => $driver->email,
+            ])->saveQuietly();
+        });
+
+        // Cuando se soft-deletea un Driver, el User asociado queda sin
+        // perfil de conductor — viola la regla "User con rol Driver requiere
+        // Driver". Revocamos el rol y desactivamos la cuenta para preservar
+        // coherencia. El force-delete deja la cascada al `nullOnDelete` y a
+        // las propias reglas del schema.
+        static::deleting(function (Driver $driver): void {
+            if ($driver->isForceDeleting()) {
+                return;
+            }
+
+            if (! $driver->user_id) {
+                return;
+            }
+
+            $user = $driver->user()->first();
+            if (! $user) {
+                return;
+            }
+
+            $user->syncRoles([]);
+            $user->forceFill(['is_active' => false])->saveQuietly();
+        });
+    }
+
     public function municipality(): BelongsTo
     {
         return $this->belongsTo(Municipality::class);

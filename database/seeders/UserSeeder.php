@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Enums\Role;
-use App\Models\Driver;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -11,11 +10,13 @@ use Illuminate\Support\Facades\Hash;
 class UserSeeder extends Seeder
 {
     /**
-     * Seed additional operator and driver users for local development testing.
+     * Seed additional operator users for local development testing.
      *
      * Reference users (super admin, admin, operator, driver, accounting) are
      * owned by the catalog and initialization migrations — this seeder only
-     * adds extra role-bound users to exercise multi-user scenarios locally.
+     * adds extra operators to exercise multi-user scenarios locally. Drivers
+     * con cuenta vienen del DriverSeeder vía el flag `_create_user`, así la
+     * relación 1-1 User ↔ Driver se mantiene coherente desde el inicio.
      */
     public function run(): void
     {
@@ -33,30 +34,6 @@ class UserSeeder extends Seeder
             if ($user->wasRecentlyCreated) {
                 $user->forceFill(['email_verified_at' => now()])->save();
                 $user->assignRole(Role::OPERATOR);
-            }
-        }
-
-        for ($i = 1; $i <= 3; $i++) {
-            $user = User::firstOrCreate(
-                ['email' => "driver{$i}@sgte.app"],
-                [
-                    'name' => "Driver User {$i}",
-                    'password' => $defaultPassword,
-                ],
-            );
-
-            if ($user->wasRecentlyCreated) {
-                $user->forceFill(['email_verified_at' => now()])->save();
-                $user->assignRole(Role::DRIVER);
-            }
-
-            // Link this user to the next unlinked Driver record so the
-            // DriverDashboardController can resolve $user->driver.
-            if (! Driver::where('user_id', $user->id)->exists()) {
-                $unlinked = Driver::whereNull('user_id')->orderBy('id')->first();
-                if ($unlinked) {
-                    $unlinked->update(['user_id' => $user->id]);
-                }
             }
         }
     }

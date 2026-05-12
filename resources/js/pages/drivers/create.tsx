@@ -36,6 +36,8 @@ const initialData: DriverFormData = {
     severance_fund_id: '',
     has_social_security: true,
     active: true,
+    create_account: false,
+    account_email: '',
 };
 
 export default function DriversCreate({
@@ -79,6 +81,7 @@ export default function DriversCreate({
                                 eps={eps}
                                 pensionFunds={pensionFunds}
                                 severanceFunds={severanceFunds}
+                                mode="create"
                             />
 
                             <div className="flex items-center gap-4">

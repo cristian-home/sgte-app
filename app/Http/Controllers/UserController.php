@@ -155,6 +155,12 @@ class UserController extends Controller
             ]);
         }
 
+        if ($user->driver !== null) {
+            throw ValidationException::withMessages([
+                'user' => 'Este usuario está vinculado a un conductor. Elimina el conductor desde el módulo Conductores.',
+            ]);
+        }
+
         $user->delete();
 
         return redirect()->route('users.index')->with('success', 'Usuario eliminado.');
@@ -191,7 +197,9 @@ class UserController extends Controller
     /**
      * Roles an admin can assign from this screen. Super admin is excluded
      * because it is bootstrapped via the SUPER_ADMIN_USER env + bypasses
-     * all gates — not something we expose through a form.
+     * all gates — not something we expose through a form. Driver is also
+     * excluded: el rol Driver requiere un registro Driver vinculado y se
+     * asigna exclusivamente desde el módulo Conductores.
      *
      * @return list<array{value: string, label: string}>
      */
@@ -200,7 +208,6 @@ class UserController extends Controller
         return [
             ['value' => RoleEnum::ADMIN->value, 'label' => RoleEnum::ADMIN->label()],
             ['value' => RoleEnum::OPERATOR->value, 'label' => RoleEnum::OPERATOR->label()],
-            ['value' => RoleEnum::DRIVER->value, 'label' => RoleEnum::DRIVER->label()],
             ['value' => RoleEnum::ACCOUNTING->value, 'label' => RoleEnum::ACCOUNTING->label()],
         ];
     }

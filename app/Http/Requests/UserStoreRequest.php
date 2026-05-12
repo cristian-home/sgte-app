@@ -45,6 +45,11 @@ class UserStoreRequest extends FormRequest
     }
 
     /**
+     * Roles asignables desde el formulario de Usuarios. El rol Driver se
+     * gestiona exclusivamente desde el módulo Conductores
+     * (DriverController::store + ::inviteAccount), porque requiere un
+     * registro Driver asociado.
+     *
      * @return list<string>
      */
     public static function assignableRoleValues(): array
@@ -52,7 +57,6 @@ class UserStoreRequest extends FormRequest
         return array_map(fn (Role $r) => $r->value, [
             Role::ADMIN,
             Role::OPERATOR,
-            Role::DRIVER,
             Role::ACCOUNTING,
         ]);
     }
