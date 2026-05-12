@@ -103,23 +103,24 @@ final class RealColombianAddresses
                 'accuracy' => null,
             ],
 
-            // Medellín — code 05001
+            // Medellín — code 5001 (Antioquia codes in the seed CSV are
+            // stripped of the leading zero, so we mirror that here).
             [
-                'municipality_code' => '05001',
+                'municipality_code' => '5001',
                 'address' => 'Carrera 70 #1-15',
                 'coordinates' => '6.2562000,-75.5905000',
                 'source' => 'mapbox',
                 'accuracy' => 'parcel',
             ],
             [
-                'municipality_code' => '05001',
+                'municipality_code' => '5001',
                 'address' => 'Carrera 36 #5-00',
                 'coordinates' => '6.2086000,-75.5680000',
                 'source' => 'mapbox',
                 'accuracy' => 'point',
             ],
             [
-                'municipality_code' => '05001',
+                'municipality_code' => '5001',
                 'address' => 'Avenida El Poblado #16A-09',
                 'coordinates' => '6.2103000,-75.5703000',
                 'source' => 'manual',
