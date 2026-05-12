@@ -1,7 +1,9 @@
+import { useEffect, useRef } from 'react';
 import InputError from '@/components/input-error';
 import MunicipalityCombobox, {
     type MunicipalityOption,
 } from '@/components/municipality-combobox';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -43,6 +45,10 @@ export interface DriverFormData {
     severance_fund_id: string;
     has_social_security: boolean;
     active: boolean;
+    // Solo aplica en modo create: si el operador marca "crear cuenta de
+    // acceso", el backend crea un User vinculado y envía el invite.
+    create_account?: boolean;
+    account_email?: string;
 }
 
 interface DriverFormProps {
@@ -63,6 +69,12 @@ interface DriverFormProps {
      * another instance of the form on the same page.
      */
     idPrefix?: string;
+    /**
+     * En modo 'create' se muestra la sección "Cuenta de acceso al sistema".
+     * En 'edit' (default) se oculta — la creación de cuenta a posteriori va
+     * por la pantalla de detalle del conductor.
+     */
+    mode?: 'create' | 'edit';
 }
 
 function RequiredMarker() {
@@ -79,10 +91,29 @@ export default function DriverForm({
     pensionFunds,
     severanceFunds,
     idPrefix = '',
+    mode = 'edit',
 }: DriverFormProps) {
     const id = (name: string) => (idPrefix ? `${idPrefix}_${name}` : name);
     const invalid = (field: keyof DriverFormData) =>
         errors[field] ? true : undefined;
+
+    // Pre-rellenar account_email con email del Driver mientras el operador
+    // escribe ese campo y aún no haya tocado manualmente account_email.
+    const accountEmailEditedRef = useRef(false);
+    useEffect(() => {
+        if (mode !== 'create' || !data.create_account) {
+            return;
+        }
+        if (!accountEmailEditedRef.current && data.email && !data.account_email) {
+            setData('account_email', data.email);
+        }
+    }, [
+        mode,
+        data.create_account,
+        data.email,
+        data.account_email,
+        setData,
+    ]);
 
     return (
         <div className="space-y-8">
@@ -440,6 +471,57 @@ export default function DriverForm({
                 </div>
                 <InputError message={errors.active} />
             </section>
+
+            {mode === 'create' && (
+                <section className="space-y-4">
+                    <h3 className="text-base font-semibold">
+                        Cuenta de acceso al sistema
+                    </h3>
+                    <div className="flex items-start gap-3">
+                        <Checkbox
+                            id={id('create_account')}
+                            checked={data.create_account ?? false}
+                            onCheckedChange={(checked) => {
+                                setData('create_account', checked === true);
+                                if (checked !== true) {
+                                    accountEmailEditedRef.current = false;
+                                    setData('account_email', '');
+                                }
+                            }}
+                        />
+                        <div className="grid gap-1">
+                            <Label htmlFor={id('create_account')} className="cursor-pointer">
+                                Crear cuenta de acceso para este conductor
+                            </Label>
+                            <p className="text-muted-foreground text-sm">
+                                Se enviará un enlace al correo para que el
+                                conductor configure su contraseña. El enlace
+                                expira en 60 minutos.
+                            </p>
+                        </div>
+                    </div>
+
+                    {data.create_account && (
+                        <div className="grid gap-2 md:max-w-md">
+                            <Label htmlFor={id('account_email')}>
+                                Correo de acceso
+                                <RequiredMarker />
+                            </Label>
+                            <Input
+                                id={id('account_email')}
+                                type="email"
+                                value={data.account_email ?? ''}
+                                aria-invalid={invalid('account_email')}
+                                onChange={(e) => {
+                                    accountEmailEditedRef.current = true;
+                                    setData('account_email', e.target.value);
+                                }}
+                            />
+                            <InputError message={errors.account_email} />
+                        </div>
+                    )}
+                </section>
+            )}
         </div>
     );
 }

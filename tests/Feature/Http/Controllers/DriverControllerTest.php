@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Http\Controllers;
 
+use App\Enums\Role;
 use App\Models\DocumentType;
 use App\Models\Driver;
 use App\Models\Eps;
@@ -10,13 +11,38 @@ use App\Models\PensionFund;
 use App\Models\Service;
 use App\Models\SeveranceFund;
 use App\Models\User;
+use App\Notifications\DriverAccountInvitationNotification;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Notification;
 
 use function Pest\Laravel\assertSoftDeleted;
 use function Pest\Laravel\delete;
 use function Pest\Laravel\get;
 use function Pest\Laravel\post;
 use function Pest\Laravel\put;
+
+function makeDriverPayload(array $overrides = []): array
+{
+    return array_merge([
+        'document_type_id' => DocumentType::factory()->create()->id,
+        'identification_number' => fake()->unique()->numerify('##########'),
+        'first_name' => 'Juan',
+        'second_name' => null,
+        'first_lastname' => 'Pérez',
+        'second_lastname' => null,
+        'municipality_id' => Municipality::factory()->create()->id,
+        'address' => fake()->streetAddress(),
+        'phone' => fake()->numerify('3#########'),
+        'email' => fake()->unique()->safeEmail(),
+        'license_category' => 'C1',
+        'license_due_date' => Carbon::now()->addYear()->toDateString(),
+        'eps_id' => Eps::factory()->create()->id,
+        'pension_fund_id' => PensionFund::factory()->create()->id,
+        'severance_fund_id' => SeveranceFund::factory()->create()->id,
+        'has_social_security' => true,
+        'active' => true,
+    ], $overrides);
+}
 
 beforeEach(function (): void {
     $user = User::factory()->create();
@@ -278,8 +304,9 @@ test('store saves and redirects', function (): void {
     expect($drivers)->toHaveCount(1);
     $driver = $drivers->first();
     expect($driver->license_due_date)->toBe($license_due_date->format('Y-m-d'));
+    expect($driver->user_id)->toBeNull();
 
-    $response->assertRedirect(route('drivers.index'));
+    $response->assertRedirect(route('drivers.show', $driver));
 });
 
 test('show behaves as expected', function (): void {
@@ -506,6 +533,105 @@ test('store fails with expired license date', function (): void {
     ]);
 
     $response->assertSessionHasErrors(['license_due_date']);
+});
+
+test('store creates driver without account when create_account is false', function (): void {
+    Notification::fake();
+
+    $response = post(route('drivers.store'), makeDriverPayload([
+        'create_account' => false,
+        'email' => 'sincuenta@sgte.app',
+    ]));
+
+    $driver = Driver::query()->where('email', 'sincuenta@sgte.app')->first();
+    expect($driver)->not->toBeNull();
+    expect($driver->user_id)->toBeNull();
+    expect(User::query()->where('email', 'sincuenta@sgte.app')->exists())->toBeFalse();
+
+    Notification::assertNothingSent();
+    $response->assertRedirect(route('drivers.show', $driver));
+});
+
+test('store creates driver with linked user and sends invitation when create_account is true', function (): void {
+    Notification::fake();
+
+    $response = post(route('drivers.store'), makeDriverPayload([
+        'first_name' => 'Carlos',
+        'second_name' => null,
+        'first_lastname' => 'Mejía',
+        'second_lastname' => null,
+        'email' => 'driver-contacto@sgte.app',
+        'create_account' => true,
+        'account_email' => 'driver-cuenta@sgte.app',
+    ]));
+
+    $driver = Driver::query()->where('email', 'driver-contacto@sgte.app')->first();
+    expect($driver)->not->toBeNull();
+    expect($driver->user_id)->not->toBeNull();
+
+    $user = $driver->user;
+    expect($user)->not->toBeNull();
+    expect($user->email)->toBe('driver-cuenta@sgte.app');
+    expect($user->name)->toBe('Carlos Mejía');
+    expect($user->must_change_password)->toBeTrue();
+    expect($user->is_active)->toBeTrue();
+    expect($user->hasRole(Role::DRIVER->value))->toBeTrue();
+
+    Notification::assertSentTo($user, DriverAccountInvitationNotification::class);
+    $response->assertRedirect(route('drivers.show', $driver));
+});
+
+test('store rejects when account_email is missing and create_account is true', function (): void {
+    $response = post(route('drivers.store'), makeDriverPayload([
+        'create_account' => true,
+        // account_email omitido
+    ]));
+
+    $response->assertSessionHasErrors(['account_email']);
+    expect(Driver::query()->count())->toBe(0);
+});
+
+test('store rejects when account_email already exists in users', function (): void {
+    User::factory()->create(['email' => 'taken@sgte.app']);
+
+    $response = post(route('drivers.store'), makeDriverPayload([
+        'create_account' => true,
+        'account_email' => 'taken@sgte.app',
+    ]));
+
+    $response->assertSessionHasErrors(['account_email']);
+    expect(Driver::query()->count())->toBe(0);
+});
+
+test('update rejects new email when it collides with an unrelated user', function (): void {
+    $linkedUser = User::factory()->create(['email' => 'linked@sgte.app']);
+    $driver = Driver::factory()->create([
+        'user_id' => $linkedUser->id,
+        'email' => 'linked@sgte.app',
+    ]);
+
+    // Otro user que no es el del driver
+    User::factory()->create(['email' => 'someone-else@sgte.app']);
+
+    $response = put(route('drivers.update', $driver), [
+        'document_type_id' => $driver->document_type_id,
+        'identification_number' => $driver->identification_number,
+        'first_name' => $driver->first_name,
+        'first_lastname' => $driver->first_lastname,
+        'municipality_id' => $driver->municipality_id,
+        'address' => $driver->address,
+        'phone' => $driver->phone,
+        'email' => 'someone-else@sgte.app',
+        'license_category' => 'C1',
+        'license_due_date' => Carbon::now()->addYear()->toDateString(),
+        'eps_id' => $driver->eps_id,
+        'pension_fund_id' => $driver->pension_fund_id,
+        'severance_fund_id' => $driver->severance_fund_id,
+        'has_social_security' => true,
+        'active' => true,
+    ]);
+
+    $response->assertSessionHasErrors(['email']);
 });
 
 test('update allows past license date for existing drivers', function (): void {

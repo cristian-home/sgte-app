@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\Permission;
+use App\Enums\Role;
 use App\Http\Requests\DriverStoreRequest;
 use App\Http\Requests\DriverUpdateRequest;
 use App\Models\DocumentType;
@@ -12,12 +13,17 @@ use App\Models\Municipality;
 use App\Models\PensionFund;
 use App\Models\Service;
 use App\Models\SeveranceFund;
+use App\Models\User;
+use App\Notifications\DriverAccountInvitationNotification;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\QueryBuilder\AllowedFilter;
@@ -137,9 +143,37 @@ class DriverController extends Controller
     public function store(DriverStoreRequest $request): RedirectResponse
     {
         Gate::authorize(Permission::CREATE_DRIVERS->value);
-        $driver = Driver::create($request->validated());
 
-        return redirect()->route('drivers.index');
+        $data = $request->validated();
+        $createAccount = (bool) ($data['create_account'] ?? false);
+        $accountEmail = $data['account_email'] ?? null;
+        unset($data['create_account'], $data['account_email']);
+
+        $driver = DB::transaction(function () use ($data, $createAccount, $accountEmail): Driver {
+            $driver = Driver::create($data);
+
+            if ($createAccount) {
+                $user = User::create([
+                    'name' => $driver->fullName(),
+                    'email' => $accountEmail,
+                    'password' => Hash::make(Str::password(32)),
+                    'email_verified_at' => now(),
+                    'is_active' => true,
+                    'must_change_password' => true,
+                ]);
+                $user->syncRoles([Role::DRIVER->value]);
+                $driver->forceFill(['user_id' => $user->id])->saveQuietly();
+                $user->notify(new DriverAccountInvitationNotification);
+            }
+
+            return $driver;
+        });
+
+        $message = $createAccount
+            ? 'Conductor creado. Se envió el enlace de configuración al correo.'
+            : 'Conductor creado.';
+
+        return redirect()->route('drivers.show', $driver)->with('success', $message);
     }
 
     public function show(Request $request, Driver $driver): Response

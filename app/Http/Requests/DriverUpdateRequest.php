@@ -4,6 +4,9 @@ namespace App\Http\Requests;
 
 use App\Enums\LicenseCategory;
 use App\Enums\Permission;
+use App\Models\Driver;
+use App\Models\User;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -43,5 +46,42 @@ class DriverUpdateRequest extends FormRequest
             'has_social_security' => ['required', 'boolean'],
             'active' => ['required', 'boolean'],
         ];
+    }
+
+    public function after(): array
+    {
+        return [
+            function (Validator $validator): void {
+                $this->ensureEmailDoesNotCollideWithLinkedUser($validator);
+            },
+        ];
+    }
+
+    /**
+     * Cuando el Driver tiene un User asociado, el hook `Driver::updated`
+     * propagará el email al User. Validamos aquí que el nuevo email no
+     * choque con otro usuario distinto.
+     */
+    private function ensureEmailDoesNotCollideWithLinkedUser(Validator $validator): void
+    {
+        /** @var Driver|null $driver */
+        $driver = $this->route('driver');
+        if (! $driver || ! $driver->user_id) {
+            return;
+        }
+
+        $newEmail = (string) $this->input('email', '');
+        if ($newEmail === '' || $newEmail === (string) $driver->email) {
+            return;
+        }
+
+        $exists = User::query()
+            ->where('email', $newEmail)
+            ->where('id', '!=', $driver->user_id)
+            ->exists();
+
+        if ($exists) {
+            $validator->errors()->add('email', 'Ya existe un usuario con ese correo.');
+        }
     }
 }
