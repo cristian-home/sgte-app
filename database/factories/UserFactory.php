@@ -2,6 +2,9 @@
 
 namespace Database\Factories;
 
+use App\Enums\Role;
+use App\Models\Driver;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -63,5 +66,20 @@ class UserFactory extends Factory
             'two_factor_recovery_codes' => encrypt(json_encode(['recovery-code-1'])),
             'two_factor_confirmed_at' => now(),
         ]);
+    }
+
+    /**
+     * Crea el User con rol Driver y un Driver vinculado. Mantiene la
+     * regla "User con rol Driver requiere Driver".
+     */
+    public function driver(): self
+    {
+        return $this->afterCreating(function (User $user): void {
+            $user->syncRoles([Role::DRIVER->value]);
+            Driver::factory()->create([
+                'user_id' => $user->id,
+                'email' => $user->email,
+            ]);
+        });
     }
 }

@@ -224,6 +224,8 @@ return [
         'roles' => 'roles',
         'is_active' => 'estado',
         'send_welcome_email' => 'envío de correo de bienvenida',
+        'create_account' => 'creación de cuenta de acceso',
+        'account_email' => 'correo de acceso',
         'permissions' => 'permisos',
         'first_name' => 'nombre',
         'last_name' => 'apellido',

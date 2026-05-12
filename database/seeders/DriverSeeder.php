@@ -3,13 +3,16 @@
 namespace Database\Seeders;
 
 use App\Enums\LicenseCategory;
+use App\Enums\Role;
 use App\Models\DocumentType;
 use App\Models\Driver;
 use App\Models\Eps;
 use App\Models\Municipality;
 use App\Models\PensionFund;
 use App\Models\SeveranceFund;
+use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class DriverSeeder extends Seeder
 {
@@ -37,6 +40,9 @@ class DriverSeeder extends Seeder
         $medellin = Municipality::where('code', '5001')->first();
         $bucaramanga = Municipality::where('code', '68001')->first();
 
+        // `_create_user` (truthy) signals que el conductor también tendrá
+        // una cuenta de acceso (User con rol Driver). Mantiene la regla:
+        // todo User-rol-Driver tiene su Driver vinculado.
         $drivers = [
             [
                 'document_type_id' => $cc->id,
@@ -56,6 +62,7 @@ class DriverSeeder extends Seeder
                 'severance_fund_id' => $sfPorvenir->id,
                 'has_social_security' => true,
                 'active' => true,
+                '_create_user' => true,
             ],
             [
                 'document_type_id' => $cc->id,
@@ -75,6 +82,7 @@ class DriverSeeder extends Seeder
                 'severance_fund_id' => $sfProteccion->id,
                 'has_social_security' => true,
                 'active' => true,
+                '_create_user' => true,
             ],
             [
                 'document_type_id' => $cc->id,
@@ -94,6 +102,7 @@ class DriverSeeder extends Seeder
                 'severance_fund_id' => $sfFna->id,
                 'has_social_security' => true,
                 'active' => true,
+                '_create_user' => true,
             ],
             [
                 'document_type_id' => $cc->id,
@@ -135,11 +144,32 @@ class DriverSeeder extends Seeder
             ],
         ];
 
-        foreach ($drivers as $driver) {
-            Driver::firstOrCreate(
-                ['identification_number' => $driver['identification_number']],
-                $driver,
+        $defaultPassword = Hash::make('password');
+
+        foreach ($drivers as $payload) {
+            $createUser = (bool) ($payload['_create_user'] ?? false);
+            unset($payload['_create_user']);
+
+            $driver = Driver::firstOrCreate(
+                ['identification_number' => $payload['identification_number']],
+                $payload,
             );
+
+            if (! $createUser || $driver->user_id !== null) {
+                continue;
+            }
+
+            $user = User::firstOrCreate(
+                ['email' => $driver->email],
+                [
+                    'name' => $driver->fullName(),
+                    'password' => $defaultPassword,
+                    'email_verified_at' => now(),
+                    'is_active' => true,
+                ],
+            );
+            $user->syncRoles([Role::DRIVER->value]);
+            $driver->forceFill(['user_id' => $user->id])->saveQuietly();
         }
     }
 }

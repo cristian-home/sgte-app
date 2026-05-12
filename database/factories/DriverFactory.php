@@ -3,11 +3,14 @@
 namespace Database\Factories;
 
 use App\Enums\LicenseCategory;
+use App\Enums\Role;
 use App\Models\DocumentType;
+use App\Models\Driver;
 use App\Models\Eps;
 use App\Models\Municipality;
 use App\Models\PensionFund;
 use App\Models\SeveranceFund;
+use App\Models\User;
 use App\Support\Tz;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -41,5 +44,21 @@ class DriverFactory extends Factory
             'has_social_security' => true,
             'active' => true,
         ];
+    }
+
+    /**
+     * Crea un User vinculado con rol Driver para este Driver. Útil para
+     * tests que necesitan ejercitar la regla "User-driver requiere Driver".
+     */
+    public function withUser(?User $user = null): self
+    {
+        return $this->afterCreating(function (Driver $driver) use ($user): void {
+            $user ??= User::factory()->create([
+                'name' => $driver->fullName(),
+                'email' => $driver->email,
+            ]);
+            $user->syncRoles([Role::DRIVER->value]);
+            $driver->forceFill(['user_id' => $user->id])->saveQuietly();
+        });
     }
 }
