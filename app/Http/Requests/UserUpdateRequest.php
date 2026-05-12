@@ -66,7 +66,34 @@ class UserUpdateRequest extends FormRequest
             function (Validator $validator): void {
                 $this->ensureLastAdminKeepsAdminRole($validator);
             },
+            function (Validator $validator): void {
+                $this->ensureDriverRoleCoherence($validator);
+            },
         ];
+    }
+
+    /**
+     * El rol Driver requiere un registro Driver vinculado y es exclusivo.
+     * No se permite quitarle el rol Driver a un usuario que sigue vinculado
+     * a un Driver — primero debe desvincularse desde el módulo Conductores.
+     */
+    private function ensureDriverRoleCoherence(Validator $validator): void
+    {
+        /** @var User|null $target */
+        $target = $this->route('user');
+        if (! $target) {
+            return;
+        }
+
+        if ($target->hasRole(Role::DRIVER->value) && $target->driver !== null) {
+            $newRoles = (array) $this->input('roles', []);
+            if (! in_array(Role::DRIVER->value, $newRoles, true)) {
+                $validator->errors()->add(
+                    'roles',
+                    'Este usuario está vinculado a un conductor. Para cambiarle el rol, primero desvincula o elimina el conductor desde el módulo Conductores.',
+                );
+            }
+        }
     }
 
     private function ensureLastAdminKeepsAdminRole(Validator $validator): void
