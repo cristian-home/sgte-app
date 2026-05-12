@@ -1,5 +1,8 @@
-import { Head, Link } from '@inertiajs/react';
-import { Pencil, User as UserIcon, UserCircle2 } from 'lucide-react';
+import { Head, Link, router } from '@inertiajs/react';
+import { Pencil, Send, User as UserIcon, UserCircle2, UserPlus } from 'lucide-react';
+import { useState } from 'react';
+import DriverController from '@/actions/App/Http/Controllers/DriverController';
+import { DriverInviteDialog } from '@/components/drivers/driver-invite-dialog';
 import { DriverLicensePill } from '@/components/drivers/driver-license-pill';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -52,7 +55,7 @@ type ShowDriver = Pick<
     eps?: { id: number; code: string; name: string } | null;
     pension_fund?: { id: number; code: string; name: string } | null;
     severance_fund?: { id: number; code: string; name: string } | null;
-    user?: { id: number; name: string; email: string } | null;
+    user?: { id: number; name: string; email: string; is_active: boolean } | null;
 };
 
 interface RecentServiceRow {
@@ -133,10 +136,23 @@ export default function DriversShow({
     driver: ShowDriver;
     recentServices: RecentServiceRow[];
 }) {
+    const [inviteOpen, setInviteOpen] = useState(false);
+
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Conductores', href: drivers.index().url },
         { title: fullName(driver) || '#', href: '#' },
     ];
+
+    function handleResend() {
+        if (!window.confirm('¿Reenviar la invitación al correo del conductor?')) {
+            return;
+        }
+        router.post(
+            DriverController.resendInvitation(driver.id).url,
+            {},
+            { preserveScroll: true },
+        );
+    }
 
     const docLabel = driver.document_type
         ? `${driver.document_type.code} ${driver.identification_number}`
@@ -179,23 +195,61 @@ export default function DriversShow({
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="flex items-center gap-2 text-sm">
+                        <div className="flex flex-wrap items-center gap-3 text-sm">
                             <UserIcon className="size-4 text-muted-foreground" />
                             <span className="text-muted-foreground">
-                                Cuenta Vinculada:
+                                Cuenta de acceso:
                             </span>
                             {driver.user ? (
-                                <span className="font-medium">
-                                    {driver.user.email}
-                                </span>
+                                <>
+                                    <span className="font-medium">
+                                        {driver.user.email}
+                                    </span>
+                                    <Badge
+                                        variant={
+                                            driver.user.is_active
+                                                ? 'default'
+                                                : 'outline'
+                                        }
+                                    >
+                                        {driver.user.is_active
+                                            ? 'Cuenta activa'
+                                            : 'Cuenta inactiva'}
+                                    </Badge>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={handleResend}
+                                    >
+                                        <Send className="mr-1 size-4" />
+                                        Reenviar invitación
+                                    </Button>
+                                </>
                             ) : (
-                                <span className="text-muted-foreground italic">
-                                    Sin vínculo
-                                </span>
+                                <>
+                                    <Badge variant="outline">
+                                        Sin cuenta de acceso
+                                    </Badge>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => setInviteOpen(true)}
+                                    >
+                                        <UserPlus className="mr-1 size-4" />
+                                        Crear cuenta de acceso
+                                    </Button>
+                                </>
                             )}
                         </div>
                     </CardContent>
                 </Card>
+
+                <DriverInviteDialog
+                    driverId={driver.id}
+                    defaultEmail={driver.email ?? ''}
+                    open={inviteOpen}
+                    onOpenChange={setInviteOpen}
+                />
 
                 {/* Información Personal */}
                 <Card>

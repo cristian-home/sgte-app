@@ -634,6 +634,84 @@ test('update rejects new email when it collides with an unrelated user', functio
     $response->assertSessionHasErrors(['email']);
 });
 
+test('invite-account creates a user, links the driver and sends the invitation', function (): void {
+    Notification::fake();
+
+    $driver = Driver::factory()->create([
+        'user_id' => null,
+        'first_name' => 'Mario',
+        'first_lastname' => 'Castro',
+        'email' => 'mario-contacto@sgte.app',
+    ]);
+
+    $response = post(route('drivers.invite-account', $driver), [
+        'account_email' => 'mario-cuenta@sgte.app',
+    ]);
+
+    $driver->refresh();
+    expect($driver->user_id)->not->toBeNull();
+    expect($driver->user->email)->toBe('mario-cuenta@sgte.app');
+    expect($driver->user->hasRole(Role::DRIVER->value))->toBeTrue();
+
+    Notification::assertSentTo($driver->user, DriverAccountInvitationNotification::class);
+    $response->assertRedirect(route('drivers.show', $driver));
+});
+
+test('invite-account rejects when driver already has an account', function (): void {
+    $existing = User::factory()->create();
+    $driver = Driver::factory()->create(['user_id' => $existing->id]);
+
+    $response = post(route('drivers.invite-account', $driver), [
+        'account_email' => 'otro@sgte.app',
+    ]);
+
+    $response->assertSessionHasErrors(['account_email']);
+});
+
+test('invite-account rejects when email is taken by another user', function (): void {
+    $driver = Driver::factory()->create(['user_id' => null]);
+    User::factory()->create(['email' => 'taken-too@sgte.app']);
+
+    $response = post(route('drivers.invite-account', $driver), [
+        'account_email' => 'taken-too@sgte.app',
+    ]);
+
+    $response->assertSessionHasErrors(['account_email']);
+    expect($driver->fresh()->user_id)->toBeNull();
+});
+
+test('resend-invitation re-notifies an already-linked driver', function (): void {
+    Notification::fake();
+
+    $user = User::factory()->create();
+    $user->assignRole(Role::DRIVER->value);
+    $driver = Driver::factory()->create(['user_id' => $user->id]);
+
+    $response = post(route('drivers.resend-invitation', $driver));
+
+    Notification::assertSentTo($user, DriverAccountInvitationNotification::class);
+    $response->assertRedirect(route('drivers.show', $driver));
+});
+
+test('resend-invitation rejects when driver has no account', function (): void {
+    $driver = Driver::factory()->create(['user_id' => null]);
+
+    $response = post(route('drivers.resend-invitation', $driver));
+
+    $response->assertSessionHasErrors(['driver']);
+});
+
+test('show payload includes user is_active when account exists', function (): void {
+    $user = User::factory()->create(['is_active' => false]);
+    $driver = Driver::factory()->create(['user_id' => $user->id]);
+
+    get(route('drivers.show', $driver))->assertInertia(
+        fn ($page) => $page
+            ->where('driver.user.id', $user->id)
+            ->where('driver.user.is_active', false)
+    );
+});
+
 test('update allows past license date for existing drivers', function (): void {
     $driver = Driver::factory()->create();
 

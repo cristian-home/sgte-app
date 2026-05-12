@@ -52,6 +52,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // mutation traffic. See ADR-005 §Layer 2.
     Route::resource('third-parties', App\Http\Controllers\ThirdPartyController::class)
         ->middleware('can:'.App\Enums\Permission::VIEW_THIRD_PARTIES->value);
+    Route::post('drivers/{driver}/invite-account', [App\Http\Controllers\DriverController::class, 'inviteAccount'])
+        ->middleware('can:'.App\Enums\Permission::UPDATE_DRIVERS->value)
+        ->name('drivers.invite-account');
+    Route::post('drivers/{driver}/resend-invitation', [App\Http\Controllers\DriverController::class, 'resendInvitation'])
+        ->middleware('can:'.App\Enums\Permission::UPDATE_DRIVERS->value)
+        ->name('drivers.resend-invitation');
     Route::resource('drivers', App\Http\Controllers\DriverController::class)
         ->middleware('can:'.App\Enums\Permission::VIEW_DRIVERS->value);
     Route::resource('vehicles', App\Http\Controllers\VehicleController::class)
