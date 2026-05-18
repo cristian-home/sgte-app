@@ -72,6 +72,19 @@ return new class extends Migration
             // to surface services pending reassignment.
             $table->timestampTz('driver_declined_at')->nullable();
             $table->string('driver_decline_reason', 1000)->nullable();
+            // Cached driving route between origin and destination,
+            // populated by the FetchServiceRoute job whenever both
+            // coordinate pairs are set and cleared by the Service
+            // model's saving hook when either coord changes.
+            // `route_fetched_at` doubles as a "fetch attempted"
+            // sentinel — non-null with a null `route_geometry` means
+            // Mapbox returned no route (or failed) and the map should
+            // fall back to a straight line.
+            $table->json('route_geometry')->nullable();
+            $table->integer('route_distance_m')->nullable();
+            $table->integer('route_duration_s')->nullable();
+            $table->timestampTz('route_fetched_at')->nullable();
+            $table->string('route_source', 32)->nullable();
             $table->timestampsTz();
             $table->softDeletesTz();
 
