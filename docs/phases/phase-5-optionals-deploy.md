@@ -1,6 +1,6 @@
 # Phase 5: Optional Modules and Deploy
 
-> **Status: ✅ COMPLETED** — Deployment completed; both optional modules shipped behind feature flags. FUEC (REQ-007) via `fuec-generation` merged; GPS (REQ-010) via `gps-tracking` merged.
+> **Status: 🟡 MOSTLY COMPLETED** — Optional modules shipped and staging deploy works; the §5.4 pre-production checklist still has open items (load test, security review, rate limiting, production logs, scheduler entry for expiration alerts). See §5.4 below.
 
 ## Objective
 
@@ -67,11 +67,11 @@ Deferred to a follow-up requirement:
 ### 5.4 Pre-production checklist
 
 - [x] Initial data seeders (roles, permissions, document types, incident types)
-- [ ] Load testing with representative data (100 vehicles, 300 services/day)
-- [ ] Security review (CSRF, XSS, SQL injection, validations)
-- [ ] Configure rate limiting
-- [ ] Configure production logs
-- [ ] Document backup and restore process
+- [ ] Load testing with representative data (100 vehicles, 300 services/day) — **PENDING, no evidence in repo**
+- [ ] Security review (CSRF, XSS, SQL injection, validations) — **PENDING, no formal audit run; `/security-review` command is available**
+- [ ] Configure rate limiting — **PENDING, no `RateLimiter::for(...)` definitions beyond Laravel defaults**
+- [ ] Configure production logs — **PENDING, still on framework defaults; no centralized log shipping or rotation policy**
+- [x] Document backup and restore process — handled via Dokploy + custom `backup` / `restore` scripts in the `SGTE Services` compose stack
 
 ---
 
@@ -85,13 +85,13 @@ Deferred to a follow-up requirement:
 
 ## Completion criteria
 
-- [ ] FUEC module implemented and disabled (feature flag)
-- [ ] PDF generation with QR working
-- [ ] Public QR verification page
-- [ ] Working GPS location recording (automatic and manual)
+- [x] FUEC module implemented and gated by `SGTE_FUEC_ENABLED` (enabled by default in current envs)
+- [x] PDF generation with QR working (bacon/bacon-qr-code + barryvdh/laravel-dompdf)
+- [x] Public QR verification page (`/fuec/verify/{uuid}`)
+- [x] Working GPS location recording (automatic and manual via `DriverLocationController`)
 - [x] Working multi-stage Docker with FrankenPHP
 - [x] Staging compose with all infrastructure services
 - [x] CI/CD staging deploy configured (Dokploy)
 - [x] SSL/HTTPS configured (Dokploy/Caddy)
-- [ ] Automatic database backups configured
-- [ ] Laravel scheduler configured for expiration alerts
+- [x] Automatic database backups configured (Dokploy-managed)
+- [x] Laravel scheduler configured for expiration alerts (`Schedule::command('app:check-expirations')->dailyAt('07:00')` in `routes/console.php`)

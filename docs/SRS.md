@@ -8,6 +8,10 @@
 
 ---
 
+> ⚠️ **Schema drift notice (added 2026-05-18).** This SRS captures the original requirements as of v1.2 (Feb 2026) and is **not** kept in lock-step with the live schema. For the canonical, up-to-date data model — including the UTC + per-row `timezone` rollout, route caching, coordinates source/accuracy fields, and `contracts.billing_unit_type` — consult `docs/data-model.md` and `docs/adr/ADR-007-datetime-and-timezone-model.md`. In particular, business datetime fields shown here as `DATE` / `TIME` are stored as `TIMESTAMPTZ` (`*_at`) plus a sibling `timezone` column on the same row.
+
+---
+
 ## 1. Introduction
 
 ### 1.1 Purpose
@@ -859,8 +863,8 @@ entity "EstadoDia" as estado_dia {
   --
   * fecha : DATE <<UNIQUE>>
   * estado : ENUM (projected|executed)
-  executed_by : BIGINT <<FK>>
-  executed_at : TIMESTAMP
+  executor_id : BIGINT <<FK>>
+  executed_at : TIMESTAMPTZ
 }
 
 entity "Factura" as factura {
@@ -938,7 +942,7 @@ The following tables are created and managed automatically by the framework and 
 | `activity_log` | spatie/laravel-activitylog | Audit log (REQ-009) |
 | `notifications` | Laravel Notifications (database channel) | In-app and email notifications (REQ-013) |
 
-> **Note:** `NovedadServicio.registrado_por` and `EstadoDia.ejecutado_por` are FKs to Laravel's `users` table.
+> **Note:** The Spanish conceptual names `NovedadServicio.registrado_por` and `EstadoDia.ejecutado_por` map to the actual DB columns `service_incidents.registrar_id` and `day_statuses.executor_id` — both are FKs to Laravel's `users` table.
 
 ---
 

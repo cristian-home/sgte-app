@@ -55,7 +55,7 @@ Unifies clients, providers, and any natural or legal person (except drivers).
 | address               | VARCHAR | Main address                               |
 | phone                 | VARCHAR | Contact phone                              |
 | email                 | VARCHAR | Email address                              |
-| is_client             | BOOLEAN | Whether it is a client                     |
+| is_customer           | BOOLEAN | Whether it is a customer                   |
 | is_provider           | BOOLEAN | Whether it is a provider (outsourced veh.) |
 | active                | BOOLEAN | Active/inactive status                     |
 
@@ -300,11 +300,11 @@ Records service incidents or events.
 
 | Field        | Type      | Description                   |
 | ------------ | --------- | ----------------------------- |
-| id           | BIGINT    | Primary Key                   |
-| date         | DATE      | Day date (UNIQUE)             |
-| status       | ENUM      | `projected` / `executed`      |
-| executed_by  | BIGINT    | Foreign Key → users (nullable)|
-| executed_at  | TIMESTAMP | Execution date (nullable)     |
+| id           | BIGINT       | Primary Key                                  |
+| date         | DATE         | Day date (UNIQUE)                            |
+| status       | ENUM         | `projected` / `executed`                     |
+| executor_id  | BIGINT       | Foreign Key → users (nullable)               |
+| executed_at  | TIMESTAMPTZ  | Execution instant (nullable, UTC + offset)   |
 
 ---
 
@@ -380,7 +380,7 @@ The following tables are created and managed automatically by the framework and 
 | `activity_log` | spatie/laravel-activitylog | Audit log |
 | `notifications` | Laravel Notifications (database channel) | In-app and email notifications |
 
-> **Note:** `NovedadServicio.registrado_por` and `EstadoDia.ejecutado_por` are FKs to Laravel's `users` table.
+> **Note:** `NovedadServicio.registrar_id` (column `registrar_id` in `service_incidents`) and `EstadoDia.executor_id` (column `executor_id` in `day_statuses`) are FKs to Laravel's `users` table.
 
 ---
 

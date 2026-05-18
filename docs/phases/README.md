@@ -10,7 +10,7 @@ Technical documentation of the development phases of SGTE (Special Transport Man
 | 2 | [Operational Core](phase-2-operations.md) | ✅ Completed | REQ-001, REQ-002, REQ-003, REQ-008, REQ-009 |
 | 3 | [Driver and Incidents](phase-3-driver-incidents.md) | ✅ Completed | REQ-012, REQ-013 |
 | 4 | [Billing and Audit](phase-4-billing-reports.md) | ✅ Completed | REQ-011, REQ-009 |
-| 5 | [Optional Modules and Deploy](phase-5-optionals-deploy.md) | ✅ Completed | REQ-007, REQ-010 |
+| 5 | [Optional Modules and Deploy](phase-5-optionals-deploy.md) | 🟡 Mostly completed | REQ-007, REQ-010 |
 
 ## Dependencies between phases
 
@@ -23,7 +23,7 @@ Phase 1 ✅ ──► Phase 2 ✅ ──► Phase 3 ✅
 - **Phase 2** requires the migrations and CRUDs from Phase 1
 - **Phase 3** requires the service form from Phase 2
 - **Phase 4** requires the day states from Phase 2; Phase 3 recommended. Invoice CRUD, the service-invoice billing workflow, the informational PDF, and REQ-009 accounting-immutability justification UX have all merged to `develop`.
-- **Phase 5** has no hard blockers; deploy already completed. FUEC and GPS are scaffolded CRUD stubs only — no PDF/QR/feature-flag (FUEC) and no map/driver capture (GPS).
+- **Phase 5** — FUEC and GPS modules are fully shipped (PDF/QR/feature flag for FUEC, map + driver capture + route polylines for GPS) and the staging deploy works. The §5.4 pre-production checklist still has open items: load test, formal security review, rate limiting, production logs/observability.
 
 ## Technology stack
 

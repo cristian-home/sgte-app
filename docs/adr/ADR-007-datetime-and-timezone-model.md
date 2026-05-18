@@ -15,7 +15,12 @@ The audit at `docs/audits/2026-05-08-datetime-timezone-discovery.md` documents t
 
 Every business datetime field is a `TIMESTAMPTZ` column named `*_at`, alongside a sibling `timezone` (`VARCHAR(64)`, NOT NULL, default `config('app.operation_tz')`) on the same row. There are no business `DATE` or `TIME` columns left except `services.service_date_local`, which is a denormalized day-bucket projected from `planned_start_at` in the row's TZ for BTree-indexed Gantt / Day Summary / Calendar queries.
 
-Models with their own TZ today: `Service`, `Contract`, `Driver`, `Vehicle`, `Invoice`, `Fuec`, `ServiceIncident`, `DayStatus`, `DataImport`. Each uses `App\Concerns\HasTimezone`.
+Models with their own `timezone` column (and using `App\Concerns\HasTimezone`): `Service`, `Contract`, `Driver`, `Vehicle`, `Invoice`, `DataImport`.
+
+Models that **do not** carry their own `timezone` column and instead derive one from context:
+
+- `Fuec`, `ServiceIncident`: inherit the TZ of their parent `Service` for wall-clock rendering (`$incident->service->resolveTimezone()`). The `*_at` instants on these rows are still TIMESTAMPTZ.
+- `DayStatus`: represents the operational calendar globally; always projects against `Tz::operation()`. The `date` column is a plain `DATE` because a day-status row is conceptually anchored to the operation day, not to a user-selectable TZ.
 
 ### 2. Half-open intervals for calendar-day periods
 
