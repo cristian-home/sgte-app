@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Concerns\HasTimezone;
 use App\Enums\PaymentMethod;
 use App\Enums\ServiceStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -18,7 +19,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
 class Service extends Model
 {
     use Concerns\SearchesDatabase;
-    use HasFactory, SoftDeletes;
+    use HasFactory, HasTimezone, SoftDeletes;
     use LogsActivity;
 
     /**
@@ -202,13 +203,6 @@ class Service extends Model
     public function getActualEndLocalAttribute(): ?string
     {
         return $this->actual_end_at?->setTimezone($this->resolveTimezone())->format('H:i');
-    }
-
-    protected function resolveTimezone(): string
-    {
-        $tz = Str::of((string) $this->timezone)->trim()->toString();
-
-        return $tz === '' ? (string) config('app.operation_tz') : $tz;
     }
 
     /**
