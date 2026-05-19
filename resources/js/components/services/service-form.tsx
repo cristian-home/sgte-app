@@ -660,11 +660,16 @@ export default function ServiceForm({
                             data-error={invalid('contract_id')}
                         >
                             <Label htmlFor="contract_id">Contrato *</Label>
-                            <div className="flex gap-2">
-                                {/* min-w-0 lets the combobox's internal
-                                  * truncate kick in instead of letting a
-                                  * long contract label push the "+" button
-                                  * into the adjacent Estado field. */}
+                            {/* The flex row is a grid item; grid items
+                              * default to `min-width: auto`, which refuses
+                              * to shrink below content. Without `min-w-0`
+                              * here, a long contract label widens the
+                              * trigger, pushes the "+" button out of the
+                              * grid column, and overlaps the next field
+                              * (Estado). Companion `min-w-0` on the
+                              * flex-1 child lets the combobox's own
+                              * truncate take effect. */}
+                            <div className="flex min-w-0 gap-2">
                                 <div className="min-w-0 flex-1">
                                     <SearchableCombobox<ContractOption>
                                         id="contract_id"
