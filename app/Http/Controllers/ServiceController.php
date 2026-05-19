@@ -140,11 +140,12 @@ class ServiceController extends Controller
             $serviceData['contract_id'] = $contractId;
         }
 
-        // Strip request-only fields that don't map to columns.
+        // Strip request-only fields that don't map to a Service column.
+        // `manual_entry_justification` IS persisted on the row (see
+        // create_services_table migration) so it stays in $serviceData.
         unset(
             $serviceData['justification'],
             $serviceData['create_generic_contract'],
-            $serviceData['manual_entry_justification'],
         );
 
         $service = Service::create($serviceData);
