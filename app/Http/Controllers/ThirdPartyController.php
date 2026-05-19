@@ -87,6 +87,14 @@ class ThirdPartyController extends Controller
         Gate::authorize(Permission::CREATE_THIRD_PARTIES->value);
         $thirdParty = ThirdParty::create($request->validated());
 
+        // Cascade-create flow (service → contract → tercero modal stack):
+        // when the caller is a parent modal that needs to auto-select the
+        // newly-created row, stay on the current page and surface the new
+        // id via flash data instead of redirecting to /third-parties.
+        if ($request->boolean('_cascade')) {
+            return back()->with('created_third_party_id', $thirdParty->id);
+        }
+
         return redirect()->route('third-parties.index');
     }
 

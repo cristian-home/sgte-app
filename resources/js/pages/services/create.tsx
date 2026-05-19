@@ -1,6 +1,7 @@
-import { Head, Link, useForm } from '@inertiajs/react';
-import { useMemo, useState } from 'react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import ServiceController from '@/actions/App/Http/Controllers/ServiceController';
+import ContractCreateDialog from '@/components/contracts/contract-create-dialog';
 import InputError from '@/components/input-error';
 import { type MunicipalityOption } from '@/components/municipality-combobox';
 import ServiceForm, {
@@ -8,6 +9,8 @@ import ServiceForm, {
     type DriverOption,
     type VehicleOption,
 } from '@/components/services/service-form';
+import { type ThirdPartyOption } from '@/components/third-parties/third-party-combobox';
+import { type DocumentTypeOption } from '@/components/third-parties/third-party-form';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,6 +32,8 @@ export default function ServicesCreate({
     prefill,
     executedDates = [],
     canBypassExecutedDay = false,
+    thirdParties = [],
+    documentTypes = [],
 }: {
     vehicles: VehicleOption[];
     drivers: DriverOption[];
@@ -41,6 +46,8 @@ export default function ServicesCreate({
     } | null;
     executedDates?: string[];
     canBypassExecutedDay?: boolean;
+    thirdParties?: ThirdPartyOption[];
+    documentTypes?: DocumentTypeOption[];
 }) {
     const { data, setData, post, processing, errors } = useForm({
         contract_id: '',
@@ -88,6 +95,23 @@ export default function ServicesCreate({
         ? executedDateSet.has(data.service_date)
         : false;
 
+    // Cascade: contract create dialog launched from the "+" button next to
+    // the Contrato picker. On successful save, ContractController flashes
+    // `created_contract_id`; we watch the flash and auto-select the new id.
+    const canCascadeContract = thirdParties.length >= 0; // always true on this page; the page receives the props
+    const [contractDialogOpen, setContractDialogOpen] = useState(false);
+    const page = usePage();
+    const flash = page.props.flash as
+        | { created_contract_id?: number }
+        | undefined;
+    const consumedContractFlashRef = useRef<number | null>(null);
+    useEffect(() => {
+        const id = flash?.created_contract_id;
+        if (!id || consumedContractFlashRef.current === id) return;
+        consumedContractFlashRef.current = id;
+        setData('contract_id', String(id));
+    }, [flash?.created_contract_id, setData]);
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Crear Servicio" />
@@ -110,6 +134,19 @@ export default function ServicesCreate({
                                 onAddressCommitInFlight={
                                     setAddressCommitInFlight
                                 }
+                                onCreateContractClick={
+                                    canCascadeContract
+                                        ? () => setContractDialogOpen(true)
+                                        : undefined
+                                }
+                            />
+
+                            <ContractCreateDialog
+                                open={contractDialogOpen}
+                                onOpenChange={setContractDialogOpen}
+                                thirdParties={thirdParties}
+                                documentTypes={documentTypes}
+                                municipalities={municipalities}
                             />
 
                             {isExecutedDay && (

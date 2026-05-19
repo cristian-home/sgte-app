@@ -4,9 +4,11 @@ import { useState } from 'react';
 import ContractCreateDialog from '@/components/contracts/contract-create-dialog';
 import { contractRowTint } from '@/components/contracts/contract-period-pill';
 import { DataTable } from '@/components/data-table';
+import { type MunicipalityOption } from '@/components/municipality-combobox';
 import ThirdPartyCombobox, {
     type ThirdPartyOption,
 } from '@/components/third-parties/third-party-combobox';
+import { type DocumentTypeOption } from '@/components/third-parties/third-party-form';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useServerTable } from '@/hooks/use-server-table';
@@ -68,9 +70,13 @@ function rowTintFor(row: Row<ContractRow>): string | undefined {
 export default function ContractsIndex({
     contracts: paginatedContracts,
     thirdParties,
+    documentTypes = [],
+    municipalities = [],
 }: {
     contracts: PaginatedData<ContractRow>;
     thirdParties: ThirdPartyOption[];
+    documentTypes?: DocumentTypeOption[];
+    municipalities?: MunicipalityOption[];
 }) {
     const [createOpen, setCreateOpen] = useState(false);
 
@@ -148,6 +154,8 @@ export default function ContractsIndex({
                 open={createOpen}
                 onOpenChange={setCreateOpen}
                 thirdParties={thirdParties}
+                documentTypes={documentTypes}
+                municipalities={municipalities}
             />
         </AppLayout>
     );

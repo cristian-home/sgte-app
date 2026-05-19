@@ -6,6 +6,8 @@ use App\Enums\Permission;
 use App\Http\Requests\ContractStoreRequest;
 use App\Http\Requests\ContractUpdateRequest;
 use App\Models\Contract;
+use App\Models\DocumentType;
+use App\Models\Municipality;
 use App\Models\Service;
 use App\Models\ThirdParty;
 use App\Support\Tz;
@@ -62,6 +64,13 @@ class ContractController extends Controller
         return Inertia::render('contracts/index', [
             'contracts' => $contracts,
             'thirdParties' => $this->customerOptions(),
+            // Forwarded to the nested ThirdPartyCreateDialog reached via the
+            // "+" affordance on the Cliente combobox in ContractCreateDialog.
+            'documentTypes' => DocumentType::orderBy('code')->get(['id', 'code', 'name']),
+            'municipalities' => Municipality::query()
+                ->with('department:id,name')
+                ->orderBy('name')
+                ->get(['id', 'name', 'code', 'department_id']),
         ]);
     }
 
@@ -152,7 +161,14 @@ class ContractController extends Controller
             $data['contract_number'] = sprintf('GEN-%04d-%d', $sequence, $year);
         }
 
-        Contract::create($data);
+        $contract = Contract::create($data);
+
+        // Cascade-create flow: parent modal (e.g. service form opens this
+        // dialog) needs to auto-select the new contract. Stay on the
+        // current page; surface the id via flash data.
+        if ($request->boolean('_cascade')) {
+            return back()->with('created_contract_id', $contract->id);
+        }
 
         return redirect()->route('contracts.index');
     }

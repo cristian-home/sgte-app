@@ -13,6 +13,7 @@ use App\Models\DayStatus;
 use App\Models\Driver;
 use App\Models\Municipality;
 use App\Models\Service;
+use App\Models\ThirdParty;
 use App\Models\Vehicle;
 use App\Notifications\ServiceAssignedNotification;
 use Illuminate\Database\Eloquent\Builder;
@@ -120,6 +121,29 @@ class ServiceController extends Controller
             'prefill' => ! empty($prefill) ? $prefill : null,
             'executedDates' => $executedDates,
             'canBypassExecutedDay' => auth()->user()->hasAnyRole([Role::ADMIN, Role::SUPER_ADMIN]),
+            // Forwarded into the cascade of dialogs reachable from this
+            // page: ContractCreateDialog (uses thirdParties) and the
+            // nested ThirdPartyCreateDialog (uses documentTypes +
+            // municipalities). Loaded eagerly because the cascade is the
+            // expected path for new corporate clients; lazy-loading would
+            // require an extra round-trip on first open.
+            'thirdParties' => ThirdParty::query()
+                ->where('is_customer', true)
+                ->with('documentType:id,code,name')
+                ->orderBy('company_name')
+                ->orderBy('first_lastname')
+                ->get([
+                    'id',
+                    'document_type_id',
+                    'identification_number',
+                    'is_natural_person',
+                    'first_name',
+                    'first_lastname',
+                    'company_name',
+                    'is_customer',
+                    'is_provider',
+                ]),
+            'documentTypes' => \App\Models\DocumentType::orderBy('code')->get(['id', 'code', 'name']),
         ]);
     }
 
