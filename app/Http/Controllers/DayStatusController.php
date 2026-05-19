@@ -126,7 +126,35 @@ class DayStatusController extends Controller
     {
         Gate::authorize(Permission::EXECUTE_DAY->value);
 
-        $dayStatus->update($request->validated());
+        $previousStatus = $dayStatus->status instanceof DayStatusEnum
+            ? $dayStatus->status
+            : DayStatusEnum::tryFrom((string) $dayStatus->status);
+        $data = $request->validated();
+        $isSaReversal = $previousStatus === DayStatusEnum::Executed
+            && ($data['status'] ?? null) === DayStatusEnum::Projected->value;
+
+        if ($isSaReversal) {
+            // Q3 / bug-log:BUG-05 — clear the executor metadata on reversal
+            // so the row's state is consistent with its new projected status.
+            $data['executor_id'] = null;
+            $data['executed_at'] = null;
+        }
+
+        $justification = $data['justification'] ?? null;
+        unset($data['justification']);
+
+        $dayStatus->update($data);
+
+        if ($isSaReversal) {
+            activity()
+                ->performedOn($dayStatus)
+                ->causedBy($request->user())
+                ->withProperties([
+                    'reverted_from_executed' => true,
+                    'justification' => $justification,
+                ])
+                ->log('Día revertido a proyectado');
+        }
 
         return redirect()->route('day-statuses.index');
     }

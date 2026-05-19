@@ -1,5 +1,11 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Pencil, Send, User as UserIcon, UserCircle2, UserPlus } from 'lucide-react';
+import {
+    Pencil,
+    Send,
+    User as UserIcon,
+    UserCircle2,
+    UserPlus,
+} from 'lucide-react';
 import { useState } from 'react';
 import DriverController from '@/actions/App/Http/Controllers/DriverController';
 import { DriverInviteDialog } from '@/components/drivers/driver-invite-dialog';
@@ -55,7 +61,12 @@ type ShowDriver = Pick<
     eps?: { id: number; code: string; name: string } | null;
     pension_fund?: { id: number; code: string; name: string } | null;
     severance_fund?: { id: number; code: string; name: string } | null;
-    user?: { id: number; name: string; email: string; is_active: boolean } | null;
+    user?: {
+        id: number;
+        name: string;
+        email: string;
+        is_active: boolean;
+    } | null;
 };
 
 interface RecentServiceRow {
@@ -144,7 +155,9 @@ export default function DriversShow({
     ];
 
     function handleResend() {
-        if (!window.confirm('¿Reenviar la invitación al correo del conductor?')) {
+        if (
+            !window.confirm('¿Reenviar la invitación al correo del conductor?')
+        ) {
             return;
         }
         router.post(

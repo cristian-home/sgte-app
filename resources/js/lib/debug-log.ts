@@ -35,8 +35,7 @@
 type LogPayload = Record<string, unknown> | undefined;
 
 const debugEnabled =
-    import.meta.env.DEV ||
-    isTruthy(import.meta.env.VITE_APP_DEBUG as unknown);
+    import.meta.env.DEV || isTruthy(import.meta.env.VITE_APP_DEBUG as unknown);
 
 function isTruthy(value: unknown): boolean {
     if (typeof value === 'boolean') return value;

@@ -99,16 +99,55 @@ class ServiceController extends Controller
 
         $prefill = array_filter($request->only(['vehicle_id', 'planned_start_time', 'service_date']));
 
+        // BUG-10 — surface the executed days so the create form can:
+        //   1. Block (or warn) non-Admin roles from picking an EJECUTADO day.
+        //   2. Reveal the `justification` field for Admin / Super Admin per
+        //      the BUG-03 backend exception path.
+        // Limited to the rolling [-180d, +30d] window relative to operation
+        // TZ today to keep the payload tight.
+        $operationTz = (string) config('app.operation_tz', 'America/Bogota');
+        $today = Carbon::now($operationTz);
+        $executedDates = DayStatus::query()
+            ->where('status', DayStatusEnum::Executed)
+            ->whereDate('date', '>=', $today->copy()->subDays(180))
+            ->whereDate('date', '<=', $today->copy()->addDays(30))
+            ->pluck('date')
+            ->map(fn ($d) => $d instanceof \DateTimeInterface ? $d->format('Y-m-d') : (string) $d)
+            ->values();
+
         return Inertia::render('services/create', [
             ...$this->formReferenceData(),
             'prefill' => ! empty($prefill) ? $prefill : null,
+            'executedDates' => $executedDates,
+            'canBypassExecutedDay' => auth()->user()->hasAnyRole([Role::ADMIN, Role::SUPER_ADMIN]),
         ]);
     }
 
     public function store(ServiceStoreRequest $request): RedirectResponse
     {
         Gate::authorize(Permission::CREATE_SERVICES->value);
-        $service = Service::create($request->validated());
+
+        // Q5 / bug-log:BUG-01 — if the chosen contract does not cover the
+        // service date AND the operator opted into auto-generic creation
+        // (via the `create_generic_contract` flag), bridge by creating a
+        // GEN-NNNN-YYYY contract for the original contract's tercero and
+        // substituting it. Otherwise fall through to standard creation —
+        // ServiceStoreRequest's validateContractCoversDate already rejects
+        // the out-of-window case for callers that didn't opt in.
+        $serviceData = $request->validated();
+        $contractId = $this->maybeBridgeToGenericContract($request, $serviceData);
+        if ($contractId !== null) {
+            $serviceData['contract_id'] = $contractId;
+        }
+
+        // Strip request-only fields that don't map to columns.
+        unset(
+            $serviceData['justification'],
+            $serviceData['create_generic_contract'],
+            $serviceData['manual_entry_justification'],
+        );
+
+        $service = Service::create($serviceData);
 
         // REQ-009: tag retroactive closed entries so /audit-log can
         // filter them apart from services closed via the driver
@@ -129,6 +168,24 @@ class ServiceController extends Controller
                     'timezone' => (string) $service->timezone,
                 ])
                 ->log('Registro retroactivo de servicio cerrado');
+        }
+
+        // Q4 / bug-log:BUG-03 — Admin / Super Admin can late-add to an
+        // EJECUTADO day with a justification. Tag the activity log so the
+        // audit trail surfaces this as distinct from normal entries.
+        $lateAddJustification = trim((string) $request->input('justification'));
+        if ($lateAddJustification !== '') {
+            $dayStatus = DayStatus::whereDate('date', $service->service_date_local)->first();
+            if ($dayStatus?->status === DayStatusEnum::Executed) {
+                activity()
+                    ->performedOn($service)
+                    ->causedBy($request->user())
+                    ->withProperties([
+                        'late_added_on_executed_day' => true,
+                        'justification' => $lateAddJustification,
+                    ])
+                    ->log('Servicio agregado a día ejecutado');
+            }
         }
 
         if ($service->driver_id) {
@@ -325,5 +382,71 @@ class ServiceController extends Controller
                 ->orderBy('name')
                 ->get(['id', 'name', 'code', 'department_id', 'latitude', 'longitude']),
         ];
+    }
+
+    /**
+     * Q5 / bug-log:BUG-01 — when the picked contract does not cover the
+     * service date and the request carries `create_generic_contract=true`,
+     * create a GEN-NNNN-YYYY generic contract for the original contract's
+     * tercero (sized to cover the service date) and return its id so the
+     * caller can substitute it. Returns null when no bridging is required.
+     */
+    private function maybeBridgeToGenericContract(\App\Http\Requests\ServiceStoreRequest $request, array $data): ?int
+    {
+        if (! $request->boolean('create_generic_contract')) {
+            return null;
+        }
+
+        $contract = Contract::find($data['contract_id'] ?? null);
+        if (! $contract) {
+            return null;
+        }
+
+        $instant = isset($data['planned_start_at'])
+            ? \Carbon\CarbonImmutable::parse($data['planned_start_at'])->utc()
+            : null;
+        if ($instant === null) {
+            return null;
+        }
+
+        // Already covers — no bridge needed.
+        if ($contract->start_at && $contract->end_at
+            && $instant->gte($contract->start_at)
+            && $instant->lt($contract->end_at)) {
+            return null;
+        }
+
+        $year = $instant->copy()->setTimezone((string) ($data['timezone'] ?? 'America/Bogota'))->year;
+        $sequence = Contract::query()
+            ->where('contract_number', 'like', "GEN-%-{$year}")
+            ->count() + 1;
+
+        $tz = (string) ($data['timezone'] ?? 'America/Bogota');
+        $startAt = \Carbon\CarbonImmutable::parse($data['service_date_local'].' 00:00:00', $tz)->utc();
+        $endAt = $startAt->addDay();
+
+        $generic = Contract::create([
+            'contract_number' => sprintf('GEN-%04d-%d', $sequence, $year),
+            'is_generic' => true,
+            'active' => true,
+            'third_party_id' => $contract->third_party_id,
+            'start_at' => $startAt,
+            'end_at' => $endAt,
+            'timezone' => $tz,
+            'contract_object' => $contract->contract_object,
+            'billing_unit_type' => $contract->billing_unit_type,
+            'route_description' => 'Contrato genérico auto-creado para servicio fuera de ventana',
+        ]);
+
+        activity()
+            ->performedOn($generic)
+            ->causedBy($request->user())
+            ->withProperties([
+                'auto_generated_from_service' => true,
+                'original_contract_id' => $contract->id,
+            ])
+            ->log('Contrato genérico auto-creado');
+
+        return $generic->id;
     }
 }

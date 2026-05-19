@@ -57,6 +57,30 @@ class FuecGenerator
                 throw FuecRangeExhaustedException::for($range);
             }
 
+            // Auto-supersede (Q7 / bug-log:BUG-06): cancel any active FUEC
+            // for this service before issuing the new one. Standardized
+            // reason so the audit trail tells the right story.
+            $previousActive = Fuec::query()
+                ->where('service_id', $service->id)
+                ->where('status', FuecStatus::Active)
+                ->lockForUpdate()
+                ->get();
+            foreach ($previousActive as $previous) {
+                $previous->update([
+                    'status' => FuecStatus::Cancelled,
+                    'cancellation_reason' => 'Superseded by new FUEC generation',
+                ]);
+
+                activity()
+                    ->performedOn($previous)
+                    ->causedBy($causer)
+                    ->withProperties([
+                        'consecutive_number' => $previous->consecutive_number,
+                        'superseded' => true,
+                    ])
+                    ->log('FUEC superseded');
+            }
+
             $uuid = (string) Str::uuid();
 
             $pdfBytes = $this->renderPdf($service, $range, $consecutive, $uuid);

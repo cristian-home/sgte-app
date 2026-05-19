@@ -277,6 +277,7 @@ return [
         'license_number' => 'número de licencia',
         'license_plate' => 'placa',
         'plate' => 'placa',
+        'line' => 'línea',
         'vehicle' => 'vehículo',
         'driver' => 'conductor',
         'client' => 'cliente',
