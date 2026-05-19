@@ -268,6 +268,7 @@ export default function GpsMap({
                             attribution={MAPBOX_ATTRIBUTION}
                             tileSize={512}
                             zoomOffset={-1}
+                            detectRetina
                         />
                         <FitBoundsOnData services={activeServices} />
 
