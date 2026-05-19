@@ -367,7 +367,7 @@ The most invariant-rich module. Logical-conflict section is the heart of the cat
 |---|---|---|---|
 | `SVC-RBAC-01` | OP PUTs EJECUTADO service (any field) | 403 from `ServiceUpdateRequest::authorize`. | 🟡 |
 | `SVC-RBAC-02` | AC PUTs EJECUTADO service with operational field (e.g., driver_id) | 422 / 403 — only accounting fields whitelisted. | 🟡 |
-| `SVC-RBAC-03` | AC PUTs EJECUTADO service with accounting fields only (unit_value, quantity, billing_group, payment_method, invoice_id) | Allowed; saved. | 🟡 |
+| `SVC-RBAC-03` | AC PUTs EJECUTADO service with accounting fields only (unit_value, quantity, billing_groups, payment_method, invoice_id) | Allowed; saved. | 🟡 |
 | `SVC-RBAC-04` | DR GET `/services/{id}` | 403. | 🟡 |
 | `SVC-RBAC-05` | AC POSTs `/services` | 403 (no `services.create`). | 🟡 |
 

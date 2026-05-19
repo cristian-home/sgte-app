@@ -205,7 +205,7 @@ export type Service = {
     timezone: string;
     unit_value: string;
     quantity: number;
-    billing_group: string | null;
+    billing_groups: string[] | null;
     payment_method: string;
     service_status: string;
     manual_entry_justification: string | null;

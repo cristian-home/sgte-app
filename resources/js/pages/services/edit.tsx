@@ -37,7 +37,7 @@ interface Service {
     actual_end_local: string | null;
     unit_value: string;
     quantity: number;
-    billing_group: string | null;
+    billing_groups: string[] | null;
     payment_method: string;
     service_status: string;
     service_incidents_count?: number;
@@ -98,7 +98,7 @@ export default function ServicesEdit({
         timezone: service.timezone,
         unit_value: service.unit_value,
         quantity: String(service.quantity),
-        billing_group: service.billing_group ?? '',
+        billing_groups: service.billing_groups ?? [],
         payment_method: service.payment_method,
         service_status: service.service_status,
         justification: '',

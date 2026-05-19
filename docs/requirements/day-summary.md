@@ -132,7 +132,9 @@ No new permissions. Uses existing:
                 $service->unit_value,
                 $service->quantity,
                 $service->payment_method->value,
-                $service->billing_group ?? '',
+                collect($service->billing_groups ?? [])
+                    ->map(fn ($group) => $group->label())
+                    ->implode(', '),
             ]);
         }
         fclose($handle);

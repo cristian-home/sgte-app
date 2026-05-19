@@ -23,6 +23,7 @@ import LocationField, {
 } from '@/components/location-field';
 import MapPickerModal from '@/components/map-picker-modal';
 import { type MunicipalityOption } from '@/components/municipality-combobox';
+import BillingGroupsTags from '@/components/services/billing-groups-tags';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -123,7 +124,7 @@ export interface ServiceFormData {
     actual_end_time: string;
     unit_value: string;
     quantity: string;
-    billing_group: string;
+    billing_groups: string[];
     payment_method: string;
     service_status: string;
     justification: string;
@@ -400,7 +401,7 @@ export default function ServiceForm({
     const isAdminEdit = isExecutedDay && isAdmin;
 
     const billingFields = new Set([
-        'billing_group',
+        'billing_groups',
         'unit_value',
         'quantity',
         'payment_method',
@@ -661,14 +662,14 @@ export default function ServiceForm({
                         >
                             <Label htmlFor="contract_id">Contrato *</Label>
                             {/* The flex row is a grid item; grid items
-                              * default to `min-width: auto`, which refuses
-                              * to shrink below content. Without `min-w-0`
-                              * here, a long contract label widens the
-                              * trigger, pushes the "+" button out of the
-                              * grid column, and overlaps the next field
-                              * (Estado). Companion `min-w-0` on the
-                              * flex-1 child lets the combobox's own
-                              * truncate take effect. */}
+                             * default to `min-width: auto`, which refuses
+                             * to shrink below content. Without `min-w-0`
+                             * here, a long contract label widens the
+                             * trigger, pushes the "+" button out of the
+                             * grid column, and overlaps the next field
+                             * (Estado). Companion `min-w-0` on the
+                             * flex-1 child lets the combobox's own
+                             * truncate take effect. */}
                             <div className="flex min-w-0 gap-2">
                                 <div className="min-w-0 flex-1">
                                     <SearchableCombobox<ContractOption>
@@ -1407,21 +1408,21 @@ export default function ServiceForm({
                     <div className="grid gap-4 md:grid-cols-3 md:grid-rows-[auto_1fr_auto]">
                         <div
                             className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
-                            data-error={invalid('billing_group')}
+                            data-error={invalid('billing_groups')}
                         >
-                            <Label htmlFor="billing_group">
-                                Grupo de Facturación
+                            <Label htmlFor="billing_groups">
+                                Grupos de Facturación
                             </Label>
-                            <Input
-                                id="billing_group"
-                                value={data.billing_group}
-                                aria-invalid={invalid('billing_group')}
-                                disabled={isFieldDisabled('billing_group')}
-                                onChange={(e) =>
-                                    setData('billing_group', e.target.value)
+                            <BillingGroupsTags
+                                id="billing_groups"
+                                value={data.billing_groups}
+                                onChange={(next) =>
+                                    setData('billing_groups', next)
                                 }
+                                invalid={invalid('billing_groups')}
+                                disabled={isFieldDisabled('billing_groups')}
                             />
-                            <InputError message={errors.billing_group} />
+                            <InputError message={errors.billing_groups} />
                         </div>
                         <div
                             className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"

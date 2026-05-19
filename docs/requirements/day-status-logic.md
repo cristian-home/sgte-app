@@ -23,11 +23,11 @@ Implement the day status state machine and service immutability control for exec
 - [x] AC-3: WHEN the "Execute Day" action is triggered AND all services for that date have `service_status = closed` THEN the `DayStatus` MUST transition to `status = executed`, `executor_id` MUST be set to the authenticated user's ID, and `executed_at` MUST be set to the current timestamp.
 - [x] AC-4: WHEN the "Execute Day" action is triggered AND at least one service for that date has `service_status = open` THEN the action MUST fail with an error message: "No se puede ejecutar el día. Existen servicios abiertos."
 - [x] AC-5: WHEN a user with the `operator` role attempts to update a service on an executed day THEN the request MUST be rejected with a 403 response.
-- [x] AC-6: WHEN a user with the `accounting` role updates a service on an executed day THEN ONLY the fields `billing_group`, `unit_value`, `quantity`, `payment_method`, and `invoice_id` MUST be modifiable. All other fields MUST be ignored/rejected.
+- [x] AC-6: WHEN a user with the `accounting` role updates a service on an executed day THEN ONLY the fields `billing_groups`, `unit_value`, `quantity`, `payment_method`, and `invoice_id` MUST be modifiable. All other fields MUST be ignored/rejected.
 - [x] AC-7: WHEN a user with the `admin` or `super_admin` role updates a service on an executed day THEN a `justification` text field MUST be required. The update MUST fail if justification is empty.
 - [x] AC-8: WHEN an admin edits a service on an executed day with justification THEN the activity log entry MUST include the justification in the `properties` JSON column alongside the old/new field values.
 - [x] AC-9: WHEN the service form is rendered for a service on an executed day by an operator THEN all fields MUST be displayed as read-only with no submit button.
-- [x] AC-10: WHEN the service form is rendered for a service on an executed day by accounting THEN only billing fields (`billing_group`, `unit_value`, `quantity`, `payment_method`) MUST be editable. All other fields MUST be read-only.
+- [x] AC-10: WHEN the service form is rendered for a service on an executed day by accounting THEN only billing fields (`billing_groups`, `unit_value`, `quantity`, `payment_method`) MUST be editable. All other fields MUST be read-only.
 
 ## Technical Specification
 
@@ -118,7 +118,7 @@ No new pages. Changes are to existing service form behavior (read-only states, j
     - Look up the DayStatus for the service's date: `$dayStatus = DayStatus::where('date', $service->service_date)->first()`
     - If `$dayStatus?->status === DayStatusEnum::Executed`:
       - If user has role `operator` (and NOT admin/super_admin): return `false` from `authorize()` (403 forbidden)
-      - If user has role `accounting` with `UPDATE_EXECUTED_SERVICES` permission: restrict allowed fields to ONLY `['billing_group', 'unit_value', 'quantity', 'payment_method', 'invoice_id']`. Override the validated data by filtering out non-billing fields. Add these restricted rules to `rules()` method.
+      - If user has role `accounting` with `UPDATE_EXECUTED_SERVICES` permission: restrict allowed fields to ONLY `['billing_groups', 'unit_value', 'quantity', 'payment_method', 'invoice_id']`. Override the validated data by filtering out non-billing fields. Add these restricted rules to `rules()` method.
       - If user has role `admin` or `super_admin`: require `justification` field — add rule `'justification' => ['required', 'string', 'min:10', 'max:500']` to validation rules when day is executed
     - If `$dayStatus?->status !== DayStatusEnum::Executed` or no DayStatus exists: standard validation (no locking)
   - Follow `VehicleUpdateRequest` as convention reference for conditional rules using `Rule::when()`
@@ -164,7 +164,7 @@ No new pages. Changes are to existing service form behavior (read-only states, j
     - Display an alert banner: "Este día está ejecutado. No se pueden modificar los servicios."
   - When `isBillingOnly`:
     - Non-billing fields MUST have `disabled={true}` (contract, vehicle, driver, date, times, municipalities, addresses, service_status)
-    - Billing fields MUST remain editable: `billing_group`, `unit_value`, `quantity`, `payment_method`
+    - Billing fields MUST remain editable: `billing_groups`, `unit_value`, `quantity`, `payment_method`
     - Display an info banner: "Día ejecutado. Solo puede modificar los campos de facturación."
   - When `isAdminEdit`:
     - All fields remain editable
@@ -215,7 +215,7 @@ No new pages. Changes are to existing service form behavior (read-only states, j
   - Use factories, create users with specific roles, and set up executed DayStatus records
 
 - [x] Task 15: Create `tests/Feature/Http/Controllers/ServiceLockingBillingFieldsTest.php` using `php artisan make:test --pest`
-  - Test: accounting user updates `billing_group` on executed day — succeeds
+  - Test: accounting user updates `billing_groups` on executed day — succeeds
   - Test: accounting user updates `unit_value` on executed day — succeeds
   - Test: accounting user updates `quantity` on executed day — succeeds
   - Test: accounting user updates `payment_method` on executed day — succeeds
@@ -246,7 +246,7 @@ No Dusk or curl verification is needed — all behavior is exercised through the
 
 - **Service-DayStatus relationship is by date, not FK.** A DayStatus record represents the state of all services on that calendar date. The query pattern is: `DayStatus::where('date', $service->service_date)->first()`. This is intentional — the SRS defines days as aggregate containers, not individual service attributes.
 - **Justification is stored in Spatie activity log's `properties` JSON column.** No new database columns or tables are needed. The `activity()` helper creates an additional log entry with `{'justification': '...', 'edited_on_executed_day': true}` alongside the automatic field-change log from the `LogsActivity` trait.
-- **Accounting's UPDATE_EXECUTED_SERVICES permission** allows editing ONLY billing fields: `billing_group`, `unit_value`, `quantity`, `payment_method`, `invoice_id`. This is enforced both server-side (form request strips non-billing fields) and client-side (non-billing fields disabled in form).
+- **Accounting's UPDATE_EXECUTED_SERVICES permission** allows editing ONLY billing fields: `billing_groups`, `unit_value`, `quantity`, `payment_method`, `invoice_id`. This is enforced both server-side (form request strips non-billing fields) and client-side (non-billing fields disabled in form).
 - **The ServiceObserver** handles auto-creating DayStatus on service creation and cleanup on last service deletion. It does NOT handle the transition from projected → executed (that's the explicit "Execute Day" action).
 - **Reversing an executed day** (un-executing) is NOT in scope for this requirement. Once executed, the day stays executed. If this is needed in the future, it would be a separate admin action with its own justification requirements.
 - **The `execute` route** uses POST (not PUT/PATCH) because it's a state transition action, not a general update. This follows REST conventions for custom actions.

@@ -158,7 +158,7 @@ No new permissions. Existing permissions used:
     - `actual_end_time` — time input (required when status = closed)
     - Display calculated actual duration as read-only when both actual times are provided: `actual_end_time - actual_start_time` formatted as "{N} min"
   - **Section: Facturación**
-    - `billing_group` — text input
+    - `billing_groups` — multi-select tag picker over the `BillingGroup` enum (`salud`, `escolar`, `turismo`, `empresarial`, `ocasional`); stored as JSONB array, nullable
     - `unit_value` — number input (decimal, COP formatting hint)
     - `quantity` — number input (integer, default 1)
     - `payment_method` — select with PaymentMethod enum options
