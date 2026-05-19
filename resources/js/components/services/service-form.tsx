@@ -661,7 +661,11 @@ export default function ServiceForm({
                         >
                             <Label htmlFor="contract_id">Contrato *</Label>
                             <div className="flex gap-2">
-                                <div className="flex-1">
+                                {/* min-w-0 lets the combobox's internal
+                                  * truncate kick in instead of letting a
+                                  * long contract label push the "+" button
+                                  * into the adjacent Estado field. */}
+                                <div className="min-w-0 flex-1">
                                     <SearchableCombobox<ContractOption>
                                         id="contract_id"
                                         name="contract_id"

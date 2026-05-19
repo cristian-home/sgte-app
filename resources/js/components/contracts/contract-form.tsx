@@ -154,7 +154,10 @@ export default function ContractForm({
                         <RequiredMarker />
                     </Label>
                     <div className="flex gap-2">
-                        <div className="flex-1">
+                        {/* min-w-0 lets the combobox truncate long client
+                          * names instead of pushing the "+" button out of
+                          * the row. */}
+                        <div className="min-w-0 flex-1">
                             <ThirdPartyCombobox
                                 id={id('third_party_id')}
                                 thirdParties={thirdParties}
