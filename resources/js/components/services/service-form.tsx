@@ -35,13 +35,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import MoneyInput from '@/components/ui/money-input';
 import SearchableCombobox from '@/components/ui/searchable-combobox';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import {
     Tooltip,

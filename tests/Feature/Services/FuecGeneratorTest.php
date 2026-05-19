@@ -184,11 +184,20 @@ test('range exhausted throws FuecRangeExhaustedException', function (): void {
         ->toThrow(ValidationException::class);
 });
 
-test('duplicate active FUEC on the same service is rejected', function (): void {
-    app(FuecGenerator::class)->generateFor($this->service, $this->admin);
+test('generating a second FUEC for the same service auto-cancels the previous one (bug-log:BUG-06)', function (): void {
+    $first = app(FuecGenerator::class)->generateFor($this->service, $this->admin);
 
-    expect(fn () => app(FuecGenerator::class)->generateFor($this->service, $this->admin))
-        ->toThrow(ValidationException::class);
+    $second = app(FuecGenerator::class)->generateFor($this->service, $this->admin);
+
+    expect($first->refresh()->status)->toBe(FuecStatus::Cancelled)
+        ->and($first->cancellation_reason)->toBe('Superseded by new FUEC generation')
+        ->and($second->status)->toBe(FuecStatus::Active);
+
+    // Only one active FUEC remains for the service.
+    expect(\App\Models\Fuec::query()
+        ->where('service_id', $this->service->id)
+        ->where('status', FuecStatus::Active)
+        ->count())->toBe(1);
 });
 
 test('cancelling an active FUEC allows a new one to be generated for the same service', function (): void {

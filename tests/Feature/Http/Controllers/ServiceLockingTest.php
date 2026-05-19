@@ -214,9 +214,14 @@ test('admin update on executed day with justification writes exactly one justifi
     expect($activity->properties['edited_on_executed_day'])->toBeTrue();
 });
 
-test('creating a service on an executed day is rejected', function (): void {
+test('creating a service on an executed day is rejected for non-admin roles', function (): void {
+    // Post-BUG-03 (bug-log:BUG-03): Admin / Super Admin can late-add on an
+    // EJECUTADO day when supplying a 10–500 char justification. Non-admin
+    // roles remain hard-blocked with a service_date error — that's what
+    // this test pins. Admin + justification path is covered by
+    // tests/Browser/E2eHardCasesTest.php::SVC-LC-17.
     $user = User::factory()->create();
-    $user->assignRole('admin');
+    $user->assignRole('operator');
     $this->actingAs($user);
 
     DayStatus::whereDate('date', $this->serviceDate)->update([

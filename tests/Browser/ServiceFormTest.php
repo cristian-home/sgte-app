@@ -36,16 +36,17 @@ test('service create page loads with form sections and fields', function (): voi
             ->assertSee('Vehículo')
             ->assertSee('Estado')
             ->assertSee('Origen y Destino')
-            ->assertSee('Municipio Origen')
-            ->assertSee('Dirección Origen')
-            ->assertSee('Municipio Destino')
-            ->assertSee('Dirección Destino')
+            // Per the LocationField refactor the form has single labels
+            // "Origen" / "Destino" instead of separate Municipio + Dirección.
+            ->assertSee('Origen')
+            ->assertSee('Destino')
             ->assertSee('Horarios')
             ->assertSee('Hora Inicio Planificada')
             ->assertSee('Duración Planificada (min)')
-            ->assertSee('Hora Inicio Real')
-            ->assertSee('Hora Fin Real')
-            ->assertSee('Duración Real')
+            // Hora Inicio Real / Hora Fin Real / Duración Real are now
+            // conditionally rendered when service_status === 'closed'.
+            // Their visibility-on-close behavior is covered by the
+            // retroactive-justification + same-day-closed tests below.
             ->assertSee('Facturación')
             ->assertSee('Grupo de Facturación')
             ->assertSee('Valor Unitario (COP)')
@@ -210,9 +211,10 @@ test('service form surfaces retroactive justification block on past-date + close
             })();
         JS);
 
-        $browser->click('#service_status')
-            ->waitFor('[role="listbox"]')
-            ->clickAtXPath("//*[@role='option'][normalize-space(.)='Cerrado']")
+        // service_status is a Radix ToggleGroup (not a Select) — click the
+        // "Cerrado" toggle item directly. Refactor circa post-Q5: the field
+        // was changed from a Select dropdown to inline toggle buttons.
+        $browser->clickAtXPath("//button[@role='radio' and normalize-space(.)='Cerrado']")
             ->waitForText('Registro retroactivo')
             ->assertSee('Registro retroactivo')
             ->assertSee('Justificación de registro retroactivo')
@@ -242,9 +244,7 @@ test('service form blocks same-day + closed with a destructive alert (REQ-009 re
             })();
         JS);
 
-        $browser->click('#service_status')
-            ->waitFor('[role="listbox"]')
-            ->clickAtXPath("//*[@role='option'][normalize-space(.)='Cerrado']")
+        $browser->clickAtXPath("//button[@role='radio' and normalize-space(.)='Cerrado']")
             ->waitForText('No se permite crear un servicio Cerrado')
             ->assertSee('No se permite crear un servicio Cerrado')
             ->assertDontSee('Registro retroactivo')

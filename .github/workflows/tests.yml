@@ -51,61 +51,67 @@ jobs:
       - name: Tests
         run: ./vendor/bin/pest
 
+  # Dusk runs locally via `./vendor/bin/sail dusk`. It does not run in GitHub
+  # Actions due to environment limitations around the chrome/chromedriver
+  # bundling and APP_URL routing through the runner. Keep the scaffold here
+  # as a reference if/when CI Dusk becomes viable again — but leaving the
+  # job commented is the intended state.
+  #
   # dusk:
   #   runs-on: ubuntu-latest
-
+  #
   #   steps:
   #     - name: Checkout code
   #       uses: actions/checkout@v6
-
+  #
   #     - name: Setup PHP
   #       uses: shivammathur/setup-php@v2
   #       with:
   #         php-version: '8.5'
   #         tools: composer:v2
-
+  #
   #     - name: Setup Node
   #       uses: actions/setup-node@v4
   #       with:
   #         node-version: '22'
-
+  #
   #     - name: Setup Chrome
   #       uses: browser-actions/setup-chrome@v1
   #       with:
   #         chrome-version: stable
-
+  #
   #     - name: Install Node Dependencies
   #       run: npm i
-
+  #
   #     - name: Install Dependencies
   #       run: composer install --no-interaction --prefer-dist --optimize-autoloader
-
+  #
   #     - name: Copy Environment File
   #       run: cp .env.example .env
-
+  #
   #     - name: Generate Application Key
   #       run: php artisan key:generate
-
+  #
   #     - name: Build Assets
   #       run: npm run build
-
+  #
   #     - name: Install ChromeDriver
   #       run: php artisan dusk:chrome-driver --detect
-
+  #
   #     - name: Start ChromeDriver
   #       run: ./vendor/laravel/dusk/bin/chromedriver-linux --port=9515 &
-
+  #
   #     - name: Start Web Server
   #       run: php artisan serve --no-reload &
   #       env:
   #         APP_URL: http://127.0.0.1:8000
-
+  #
   #     - name: Run Dusk Tests
   #       run: php artisan dusk
   #       env:
   #         APP_URL: http://127.0.0.1:8000
   #         DUSK_DRIVER_URL: http://localhost:9515
-
+  #
   #     - name: Upload Dusk Artifacts
   #       if: failure()
   #       uses: actions/upload-artifact@v4

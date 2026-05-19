@@ -278,6 +278,7 @@ return [
         'license_plate' => 'placa',
         'plate' => 'placa',
         'line' => 'línea',
+        'create_generic_contract' => 'crear contrato genérico',
         'vehicle' => 'vehículo',
         'driver' => 'conductor',
         'client' => 'cliente',
