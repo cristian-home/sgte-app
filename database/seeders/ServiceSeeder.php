@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\BillingGroup;
 use App\Enums\PaymentMethod;
 use App\Enums\ServiceStatus;
 use App\Enums\VehicleStatus;
@@ -77,7 +78,7 @@ class ServiceSeeder extends Seeder
                 'actual_end_time' => '07:00',
                 'unit_value' => 150000.00,
                 'quantity' => 1,
-                'billing_group' => 'Salud',
+                'billing_groups' => [BillingGroup::Salud->value],
                 'payment_method' => PaymentMethod::Credit->value,
                 'service_status' => ServiceStatus::Closed->value,
             ],
@@ -95,7 +96,7 @@ class ServiceSeeder extends Seeder
                 'actual_end_time' => '07:00',
                 'unit_value' => 200000.00,
                 'quantity' => 1,
-                'billing_group' => 'Escolar',
+                'billing_groups' => [BillingGroup::Escolar->value],
                 'payment_method' => PaymentMethod::Credit->value,
                 'service_status' => ServiceStatus::Closed->value,
             ],
@@ -113,7 +114,7 @@ class ServiceSeeder extends Seeder
                 'actual_end_time' => '12:15',
                 'unit_value' => 450000.00,
                 'quantity' => 1,
-                'billing_group' => 'Turismo',
+                'billing_groups' => [BillingGroup::Turismo->value],
                 'payment_method' => PaymentMethod::Transfer->value,
                 'service_status' => ServiceStatus::Closed->value,
             ],
@@ -131,7 +132,7 @@ class ServiceSeeder extends Seeder
                 'actual_end_time' => null,
                 'unit_value' => 120000.00,
                 'quantity' => 1,
-                'billing_group' => null,
+                'billing_groups' => null,
                 'payment_method' => PaymentMethod::Cash->value,
                 'service_status' => ServiceStatus::Open->value,
             ],
@@ -149,7 +150,7 @@ class ServiceSeeder extends Seeder
                 'actual_end_time' => null,
                 'unit_value' => 160000.00,
                 'quantity' => 2,
-                'billing_group' => 'Salud',
+                'billing_groups' => [BillingGroup::Salud->value, BillingGroup::Empresarial->value],
                 'payment_method' => PaymentMethod::Credit->value,
                 'service_status' => ServiceStatus::Open->value,
             ],
@@ -194,7 +195,7 @@ class ServiceSeeder extends Seeder
                 'timezone' => $tz,
                 'unit_value' => $s['unit_value'],
                 'quantity' => $s['quantity'],
-                'billing_group' => $s['billing_group'],
+                'billing_groups' => $s['billing_groups'],
                 'payment_method' => $s['payment_method'],
                 'service_status' => $s['service_status'],
             ]);

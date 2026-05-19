@@ -819,7 +819,7 @@ entity "Servicio" as servicio {
   actual_end_time : TIME
   * unit_value : DECIMAL
   * quantity : INT
-  billing_group : VARCHAR
+  billing_groups : JSONB (BillingGroup[])
   * payment_method : ENUM
   * service_status : ENUM (open|closed)
 }

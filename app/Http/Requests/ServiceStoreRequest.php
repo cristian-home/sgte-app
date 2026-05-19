@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\BillingGroup;
 use App\Enums\DayStatusEnum;
 use App\Enums\LicenseCategory;
 use App\Enums\PaymentMethod;
@@ -85,7 +86,8 @@ class ServiceStoreRequest extends FormRequest
             'actual_end_at' => ['nullable', 'date', 'after:actual_start_at'],
             'unit_value' => ['required', 'numeric', 'between:-9999999999.99,9999999999.99'],
             'quantity' => ['required', 'integer'],
-            'billing_group' => ['nullable', 'string', 'max:50'],
+            'billing_groups' => ['nullable', 'array'],
+            'billing_groups.*' => ['string', Rule::enum(BillingGroup::class)],
             'payment_method' => ['required', Rule::enum(PaymentMethod::class)],
             'service_status' => ['required', Rule::enum(ServiceStatus::class)],
             'manual_entry_justification' => ['nullable', 'string', 'min:10', 'max:500'],

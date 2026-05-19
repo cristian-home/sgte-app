@@ -159,7 +159,7 @@ _(Populated during Phase 3 exploration. Empty entries mean nothing logged yet fo
 - ✅ **EJECUTADO service edit gating works correctly** — `ServiceUpdateRequest::authorize/rules/after()` properly:
   - 403s Operator on EJECUTADO day.
   - Requires `justification` (10–500 chars) for Admin / Super Admin on EJECUTADO day.
-  - Whitelists `unit_value`, `quantity`, `billing_group`, `payment_method`, `invoice_id` only for Accounting on EJECUTADO day.
+  - Whitelists `unit_value`, `quantity`, `billing_groups`, `payment_method`, `invoice_id` only for Accounting on EJECUTADO day.
 - ✅ **`NoScheduleConflict` uses correct half-open semantics** — comparison is `$existingStart < $newEnd && $newStart < $existingEnd`. A service ending at 11:00 + new service starting at 11:00 do NOT conflict (boundary touch is OK). Confirms catalog scenario `SVC-LC-02`.
 - ✅ **Retroactive entry detection** — `validateRetroactiveEntry` rejects future/today-closed (correct), and requires `manual_entry_justification` for past-day closed (correct, but the catalog should add `SVC-VAL-11` to test this).
 - ✅ **FUEC active-range exclusivity** — `FuecNumberRangeController:151` rejects activating a second range with `'Ya existe un rango activo. Desactive el rango vigente antes de activar uno nuevo.'` (FRG-LC-01 — works but requires manual deactivation, not atomic activation).

@@ -24,6 +24,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { BillingGroupLabel } from '@/enums/BillingGroup';
 import { PaymentMethodLabel } from '@/enums/PaymentMethod';
 import { Permission } from '@/enums/Permission';
 import { ServiceStatusLabel } from '@/enums/ServiceStatus';
@@ -31,6 +32,7 @@ import AppLayout from '@/layouts/app-layout';
 import { formatEventTime } from '@/lib/datetime';
 import services from '@/routes/services';
 import { type BreadcrumbItem } from '@/types';
+import type { BillingGroup } from '@/enums/BillingGroup';
 import type { Service } from '@/types/models';
 
 interface DayStatusWithExecutor {
@@ -418,8 +420,24 @@ export default function ServicesShow({
                             </div>
                             {/* Billing fields */}
                             <dl className="grid grid-cols-4 gap-3 text-center">
-                                <Field label="Grupo de Facturación">
-                                    {service.billing_group ?? '\u2014'}
+                                <Field label="Grupos de Facturación">
+                                    {service.billing_groups &&
+                                    service.billing_groups.length > 0 ? (
+                                        <div className="flex flex-wrap justify-center gap-1">
+                                            {service.billing_groups.map((g) => (
+                                                <Badge
+                                                    key={g}
+                                                    variant="secondary"
+                                                >
+                                                    {BillingGroupLabel[
+                                                        g as BillingGroup
+                                                    ] ?? g}
+                                                </Badge>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        '\u2014'
+                                    )}
                                 </Field>
                                 <Field label="Valor Unitario">
                                     {formatCurrency(service.unit_value)}

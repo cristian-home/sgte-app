@@ -70,7 +70,7 @@ export default function ServicesCreate({
         actual_end_time: '',
         unit_value: '',
         quantity: '1',
-        billing_group: '',
+        billing_groups: [] as string[],
         payment_method: 'credit',
         service_status: 'open',
         justification: '',

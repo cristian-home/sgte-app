@@ -225,7 +225,7 @@ Catalog of Colombian Severance Funds.
 | driver_decline_reason      | VARCHAR | Free-text decline reason (nullable)                      |
 | unit_value                 | DECIMAL | Unit value of the service                                |
 | quantity                   | INT     | Quantity                                                 |
-| billing_group              | VARCHAR | Billing category (nullable)                              |
+| billing_groups             | JSONB   | Multi-select billing categories — array of `BillingGroup` enum values (`salud`, `escolar`, `turismo`, `empresarial`, `ocasional`); nullable |
 | payment_method             | ENUM    | Payment method                                           |
 | service_status             | ENUM    | `open` / `closed`                                        |
 | manual_entry_justification | VARCHAR | REQ-009 retroactive-entry provenance (nullable)          |

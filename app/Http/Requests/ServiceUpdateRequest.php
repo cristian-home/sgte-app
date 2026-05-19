@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\BillingGroup;
 use App\Enums\DayStatusEnum;
 use App\Enums\PaymentMethod;
 use App\Enums\Permission;
@@ -101,7 +102,8 @@ class ServiceUpdateRequest extends ServiceStoreRequest
 
         // Accounting: billing fields only
         return [
-            'billing_group' => ['nullable', 'string', 'max:50'],
+            'billing_groups' => ['nullable', 'array'],
+            'billing_groups.*' => ['string', Rule::enum(BillingGroup::class)],
             'unit_value' => ['required', 'numeric', 'between:-9999999999.99,9999999999.99'],
             'quantity' => ['required', 'integer'],
             'payment_method' => ['required', Rule::enum(PaymentMethod::class)],

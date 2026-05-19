@@ -154,11 +154,11 @@ export default function ContractForm({
                         <RequiredMarker />
                     </Label>
                     {/* min-w-0 on the flex row itself is required because
-                      * the row is a grid item (grid items default to
-                      * `min-width: auto` and refuse to shrink below
-                      * content). Without it, a long client label widens
-                      * the trigger and pushes the "+" button into the
-                      * next grid column. */}
+                     * the row is a grid item (grid items default to
+                     * `min-width: auto` and refuse to shrink below
+                     * content). Without it, a long client label widens
+                     * the trigger and pushes the "+" button into the
+                     * next grid column. */}
                     <div className="flex min-w-0 gap-2">
                         <div className="min-w-0 flex-1">
                             <ThirdPartyCombobox

@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\BillingGroup;
 use App\Jobs\FetchServiceRoute;
 use App\Models\Service;
 use Illuminate\Support\Facades\Bus;
@@ -71,7 +72,7 @@ test('updating an unrelated field does not dispatch the job', function (): void 
 
     Bus::assertDispatchedTimes(FetchServiceRoute::class, 1);
 
-    $service->update(['billing_group' => 'Grupo Z']);
+    $service->update(['billing_groups' => [BillingGroup::Turismo->value]]);
 
     Bus::assertDispatchedTimes(FetchServiceRoute::class, 1);
 });

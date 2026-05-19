@@ -85,7 +85,7 @@
 
 **What they do.** Billing & accounting. Builds invoices from executed-day services; manages payment status; can edit accounting fields of EJECUTADO services.
 
-**Full CRUD on:** Invoices · Service accounting fields (`unit_value`, `quantity`, `billing_group`, `payment_method`, `invoice_id`) on EJECUTADO day only.
+**Full CRUD on:** Invoices · Service accounting fields (`unit_value`, `quantity`, `billing_groups`, `payment_method`, `invoice_id`) on EJECUTADO day only.
 
 **Read-only on:** Services (operational fields), Calendar, Resumen del Día, Vehicles, Drivers, Third Parties, Contracts, billing-affecting Incidents.
 
