@@ -86,21 +86,22 @@ class ServiceFactory extends Factory
     /**
      * Look up a municipality id by DANE code, falling back to a random
      * municipality (or factory-created) when the test environment hasn't
-     * seeded the catalog. Cached statically across the factory run to
-     * avoid hitting the DB once per generated row.
+     * seeded the catalog.
+     *
+     * No static cache: it survives across `RefreshDatabase` rollbacks and
+     * returns ids of rows that have already been undone by the trait's
+     * per-test transaction. The result is a sporadic FK violation on the
+     * subsequent `services` INSERT — surfaces under CI's test ordering and
+     * not consistently on developer machines (file-discovery order differs
+     * by filesystem). The lookup is a single indexed SELECT; the cache was
+     * a premature optimization.
      */
     private static function resolveMunicipalityId(string $code): int
     {
-        static $cache = [];
-        if (isset($cache[$code])) {
-            return $cache[$code];
-        }
-        $id = Municipality::where('code', $code)->value('id');
-        if ($id === null) {
-            $id = Municipality::inRandomOrder()->value('id')
-                ?? Municipality::factory()->create()->id;
-        }
-
-        return $cache[$code] = (int) $id;
+        return (int) (
+            Municipality::where('code', $code)->value('id')
+            ?? Municipality::inRandomOrder()->value('id')
+            ?? Municipality::factory()->create()->id
+        );
     }
 }
