@@ -29,9 +29,15 @@ export const MAPBOX_DEFAULT_STYLE = 'mapbox/streets-v12';
  * Build a `<TileLayer url={...} />` URL for react-leaflet pointing at a
  * Mapbox raster style. Use `tileSize={512} zoomOffset={-1}` on the
  * `<TileLayer>` to match Mapbox's tile sizing.
+ *
+ * The `{r}` placeholder is substituted by Leaflet with `@2x` on
+ * Retina/HiDPI displays (when `detectRetina` is set on the `<TileLayer>`)
+ * and with an empty string otherwise. Mapbox's raster endpoint accepts
+ * the `@2x` suffix between `{y}` and the query string — without it the
+ * 512×512 tile would be browser-scaled on HiDPI and look pixelated.
  */
 export function mapboxTileUrl(style: string = MAPBOX_DEFAULT_STYLE): string {
-    return `https://api.mapbox.com/styles/v1/${style}/tiles/{z}/{x}/{y}?access_token=${MAPBOX_TOKEN}`;
+    return `https://api.mapbox.com/styles/v1/${style}/tiles/{z}/{x}/{y}{r}?access_token=${MAPBOX_TOKEN}`;
 }
 
 /**
