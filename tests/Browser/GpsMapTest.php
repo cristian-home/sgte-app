@@ -73,8 +73,9 @@ test('admin sees the /gps/map page with the Leaflet container + OpenStreetMap at
             ->visit('/gps/map')
             ->waitForText('Mapa')
             ->assertSee('GPS')
-            // 30s refresh text anchor — pins the interval copy on the page.
-            ->assertSee('30s')
+            // Refresh interval text anchor — pins the interval copy on the
+            // page. REFRESH_INTERVAL_MS = 300_000 → "5 min".
+            ->assertSee('5 min')
             ->assertSee('servicios activos')
             // Leaflet always renders OSM attribution inside the map.
             ->waitForText('OpenStreetMap', 10)
