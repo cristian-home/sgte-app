@@ -1328,6 +1328,7 @@ export default function ServiceForm({
                                 onChange={(e) =>
                                     setData('planned_duration', e.target.value)
                                 }
+                                className="text-right tabular-nums"
                             />
                             <InputError message={errors.planned_duration} />
                         </div>
@@ -1438,6 +1439,7 @@ export default function ServiceForm({
                                 }
                                 invalid={invalid('unit_value')}
                                 disabled={isFieldDisabled('unit_value')}
+                                className="text-right tabular-nums"
                             />
                             <InputError message={errors.unit_value} />
                         </div>
@@ -1457,6 +1459,7 @@ export default function ServiceForm({
                                 onChange={(e) =>
                                     setData('quantity', e.target.value)
                                 }
+                                className="text-right tabular-nums"
                             />
                             <p className="text-xs text-muted-foreground">
                                 {billingUnitHint}
