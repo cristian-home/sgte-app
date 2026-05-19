@@ -2,9 +2,7 @@
 
 namespace App\Rules;
 
-use App\Enums\FuecStatus;
 use App\Enums\ServiceStatus;
-use App\Models\Fuec;
 use App\Models\FuecNumberRange;
 use App\Models\Service;
 use App\Support\ServiceDocumentChecks;
@@ -83,7 +81,10 @@ class FuecPreGenerationChecks
         }
 
         $this->checkRangeAvailable($validator);
-        $this->checkNoActiveFuec($validator, $service);
+        // Auto-supersede policy (Q7): a service may accumulate FUECs over
+        // time but only one is active at any moment. Generating a new one
+        // automatically cancels the previous active row inside FuecGenerator's
+        // transaction; no pre-check rejection here. See bug-log:BUG-06.
     }
 
     protected function checkRangeAvailable(Validator $validator): void
@@ -103,21 +104,6 @@ class FuecPreGenerationChecks
             $validator->errors()->add(
                 'fuec_pre_generation.range',
                 'El rango MinTransporte activo se agotó. Registre un nuevo rango.',
-            );
-        }
-    }
-
-    protected function checkNoActiveFuec(Validator $validator, Service $service): void
-    {
-        $exists = Fuec::query()
-            ->where('service_id', $service->id)
-            ->where('status', FuecStatus::Active)
-            ->exists();
-
-        if ($exists) {
-            $validator->errors()->add(
-                'fuec_pre_generation.duplicate',
-                'Este servicio ya tiene un FUEC vigente. Anule el actual antes de generar uno nuevo.',
             );
         }
     }

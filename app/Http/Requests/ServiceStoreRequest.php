@@ -6,6 +6,7 @@ use App\Enums\DayStatusEnum;
 use App\Enums\LicenseCategory;
 use App\Enums\PaymentMethod;
 use App\Enums\Permission;
+use App\Enums\Role;
 use App\Enums\ServiceStatus;
 use App\Enums\VehicleType;
 use App\Models\Contract;
@@ -88,6 +89,12 @@ class ServiceStoreRequest extends FormRequest
             'payment_method' => ['required', Rule::enum(PaymentMethod::class)],
             'service_status' => ['required', Rule::enum(ServiceStatus::class)],
             'manual_entry_justification' => ['nullable', 'string', 'min:10', 'max:500'],
+            // Q4 / bug-log:BUG-03 — admin late-add justification on EJECUTADO day.
+            'justification' => ['nullable', 'string', 'min:10', 'max:500'],
+            // Q5 / bug-log:BUG-01 — caller opts into auto-creation of a
+            // GEN-NNNN-YYYY generic contract when the picked contract does
+            // not cover the service date. Boolean flag, not persisted.
+            'create_generic_contract' => ['nullable', 'boolean'],
         ];
 
         if ($this->filled('vehicle_id') && $this->filled('planned_start_at') && $this->filled('planned_duration')) {
@@ -187,6 +194,12 @@ class ServiceStoreRequest extends FormRequest
         }
     }
 
+    /**
+     * Q4 / bug-log:BUG-03 — Admin and Super Admin may late-add a service
+     * on an EJECUTADO day when they supply a `justification` (10–500 chars).
+     * Other roles are rejected. The day's status remains EJECUTADO; the
+     * controller is responsible for tagging the activity log.
+     */
     protected function validateExecutedDayRestriction($validator): void
     {
         if (! $this->filled('service_date_local')) {
@@ -195,11 +208,37 @@ class ServiceStoreRequest extends FormRequest
 
         $dayStatus = DayStatus::whereDate('date', $this->input('service_date_local'))->first();
 
-        if ($dayStatus?->status === DayStatusEnum::Executed) {
+        if ($dayStatus?->status !== DayStatusEnum::Executed) {
+            return;
+        }
+
+        $user = $this->user();
+
+        if (! $user || ! $user->hasAnyRole([Role::ADMIN->value, Role::SUPER_ADMIN->value])) {
             $validator->errors()->add('service_date', 'No se pueden crear servicios en un día ejecutado.');
+
+            return;
+        }
+
+        $justification = trim((string) $this->input('justification'));
+        if ($justification === '') {
+            $validator->errors()->add('justification', 'La justificación es obligatoria para agregar un servicio a un día ejecutado.');
+
+            return;
+        }
+
+        if (mb_strlen($justification) < 10 || mb_strlen($justification) > 500) {
+            $validator->errors()->add('justification', 'La justificación debe tener entre 10 y 500 caracteres.');
         }
     }
 
+    /**
+     * Q5 / bug-log:BUG-01 — the controller may auto-create a GEN-NNNN-YYYY
+     * generic contract when the caller opts in via `create_generic_contract`.
+     * In that mode we skip the out-of-window rejection here so the controller
+     * has a chance to substitute. Without the opt-in, the strict rejection
+     * stays in place to keep operators from silently mis-assigning contracts.
+     */
     protected function validateContractCoversDate($validator): void
     {
         if (! $this->filled('contract_id') || ! $this->filled('service_date_local')) {
@@ -236,6 +275,11 @@ class ServiceStoreRequest extends FormRequest
         }
 
         if ($instant->lt($contract->start_at) || $instant->gte($contract->end_at)) {
+            if ($this->boolean('create_generic_contract')) {
+                // Controller will auto-bridge to a generic contract.
+                return;
+            }
+
             $validator->errors()->add('contract_id', 'La fecha del servicio no esta dentro del rango del contrato.');
         }
     }
