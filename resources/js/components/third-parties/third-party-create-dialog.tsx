@@ -23,7 +23,7 @@ interface ThirdPartyCreateDialogProps {
     municipalities: MunicipalityOption[];
 }
 
-const initialData: ThirdPartyFormData = {
+const initialData = {
     document_type_id: '',
     identification_number: '',
     is_natural_person: true,
@@ -40,6 +40,10 @@ const initialData: ThirdPartyFormData = {
     is_customer: true,
     is_provider: false,
     active: true,
+    // Cascade flag — read by ThirdPartyController::store. Tells the
+    // backend to flash `created_third_party_id` and `back()` instead of
+    // redirecting to /third-parties/index.
+    _cascade: true as boolean,
 };
 
 export default function ThirdPartyCreateDialog({
@@ -48,8 +52,9 @@ export default function ThirdPartyCreateDialog({
     documentTypes,
     municipalities,
 }: ThirdPartyCreateDialogProps) {
-    const { data, setData, post, processing, errors, reset } =
-        useForm<ThirdPartyFormData>({ ...initialData });
+    const { data, setData, post, processing, errors, reset } = useForm<
+        ThirdPartyFormData & { _cascade: boolean }
+    >({ ...initialData });
 
     function submit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();

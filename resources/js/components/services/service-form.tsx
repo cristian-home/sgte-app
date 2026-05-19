@@ -6,6 +6,7 @@ import {
     CreditCard,
     Info,
     Lock,
+    Plus,
     ShieldAlert,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -24,6 +25,7 @@ import MapPickerModal from '@/components/map-picker-modal';
 import { type MunicipalityOption } from '@/components/municipality-combobox';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
     Card,
     CardAction,
@@ -364,6 +366,13 @@ interface ServiceFormProps {
      *    must pick a Mapbox suggestion or drop a manual pin first).
      */
     onAddressCommitInFlight?: (inFlight: boolean) => void;
+    /**
+     * When provided, render a "+" button next to the Contrato picker that
+     * the parent uses to open a ContractCreateDialog. Parent owns the
+     * dialog state and the flash-data watcher that auto-selects after
+     * create. See ServicesCreate for the wiring.
+     */
+    onCreateContractClick?: () => void;
 }
 
 export default function ServiceForm({
@@ -380,6 +389,7 @@ export default function ServiceForm({
     canEditExecuted,
     isAdmin,
     onAddressCommitInFlight,
+    onCreateContractClick,
 }: ServiceFormProps) {
     const invalid = (field: keyof ServiceFormData) =>
         errors[field] ? true : undefined;
@@ -650,65 +660,88 @@ export default function ServiceForm({
                             data-error={invalid('contract_id')}
                         >
                             <Label htmlFor="contract_id">Contrato *</Label>
-                            <SearchableCombobox<ContractOption>
-                                id="contract_id"
-                                name="contract_id"
-                                items={filteredContracts}
-                                value={data.contract_id}
-                                onChange={(value) =>
-                                    setData('contract_id', value)
-                                }
-                                getKey={(c) => String(c.id)}
-                                getSearchText={(c) =>
-                                    `${c.contract_number} ${contractClientLabel(c)} ${c.contract_object ?? ''}`
-                                }
-                                renderTrigger={(c) => (
-                                    <span className="truncate">
-                                        <span className="font-medium">
-                                            {c.contract_number}
-                                        </span>
-                                        {' — '}
-                                        {contractClientLabel(c)}
-                                    </span>
-                                )}
-                                renderItem={(c) => (
-                                    <div className="flex flex-col gap-0.5">
-                                        <div className="flex items-baseline gap-1">
-                                            <span className="font-medium">
-                                                {c.contract_number}
-                                            </span>
-                                            <span className="text-muted-foreground">
-                                                —
-                                            </span>
+                            <div className="flex gap-2">
+                                <div className="flex-1">
+                                    <SearchableCombobox<ContractOption>
+                                        id="contract_id"
+                                        name="contract_id"
+                                        items={filteredContracts}
+                                        value={data.contract_id}
+                                        onChange={(value) =>
+                                            setData('contract_id', value)
+                                        }
+                                        getKey={(c) => String(c.id)}
+                                        getSearchText={(c) =>
+                                            `${c.contract_number} ${contractClientLabel(c)} ${c.contract_object ?? ''}`
+                                        }
+                                        renderTrigger={(c) => (
                                             <span className="truncate">
+                                                <span className="font-medium">
+                                                    {c.contract_number}
+                                                </span>
+                                                {' — '}
                                                 {contractClientLabel(c)}
                                             </span>
-                                        </div>
-                                        <div className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
-                                            {c.billing_unit_type && (
-                                                <Badge
-                                                    variant="secondary"
-                                                    className="font-normal"
-                                                >
-                                                    {c.billing_unit_type}
-                                                </Badge>
-                                            )}
-                                            <span>
-                                                vigente hasta{' '}
-                                                {formatContractDate(
-                                                    c.end_at,
-                                                    c.timezone,
-                                                )}
-                                            </span>
-                                        </div>
-                                    </div>
+                                        )}
+                                        renderItem={(c) => (
+                                            <div className="flex flex-col gap-0.5">
+                                                <div className="flex items-baseline gap-1">
+                                                    <span className="font-medium">
+                                                        {c.contract_number}
+                                                    </span>
+                                                    <span className="text-muted-foreground">
+                                                        —
+                                                    </span>
+                                                    <span className="truncate">
+                                                        {contractClientLabel(c)}
+                                                    </span>
+                                                </div>
+                                                <div className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
+                                                    {c.billing_unit_type && (
+                                                        <Badge
+                                                            variant="secondary"
+                                                            className="font-normal"
+                                                        >
+                                                            {
+                                                                c.billing_unit_type
+                                                            }
+                                                        </Badge>
+                                                    )}
+                                                    <span>
+                                                        vigente hasta{' '}
+                                                        {formatContractDate(
+                                                            c.end_at,
+                                                            c.timezone,
+                                                        )}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        )}
+                                        placeholder="Seleccionar contrato..."
+                                        searchPlaceholder="Buscar contrato…"
+                                        emptyText="Sin contratos vigentes."
+                                        disabled={isFieldDisabled(
+                                            'contract_id',
+                                        )}
+                                        invalid={invalid('contract_id')}
+                                    />
+                                </div>
+                                {onCreateContractClick && (
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="icon"
+                                        onClick={onCreateContractClick}
+                                        disabled={isFieldDisabled(
+                                            'contract_id',
+                                        )}
+                                        aria-label="Crear nuevo contrato"
+                                        title="Crear nuevo contrato"
+                                    >
+                                        <Plus className="h-4 w-4" />
+                                    </Button>
                                 )}
-                                placeholder="Seleccionar contrato..."
-                                searchPlaceholder="Buscar contrato…"
-                                emptyText="Sin contratos vigentes."
-                                disabled={isFieldDisabled('contract_id')}
-                                invalid={invalid('contract_id')}
-                            />
+                            </div>
                             <InputError message={errors.contract_id} />
                         </div>
                         <div

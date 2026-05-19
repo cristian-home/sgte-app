@@ -55,6 +55,14 @@ class HandleInertiaRequests extends Middleware
                 'operation_tz' => Tz::operation(),
                 'viewer_tz' => Tz::viewer($request),
             ],
+            // Surface controller-set flash keys to the frontend. Used by
+            // the cascade-create dialogs (service ← contract ← tercero)
+            // so the parent picker can auto-select the newly-created
+            // entity after a `back()->with('created_*_id', $id)`.
+            'flash' => [
+                'created_contract_id' => fn () => $request->session()->get('created_contract_id'),
+                'created_third_party_id' => fn () => $request->session()->get('created_third_party_id'),
+            ],
         ];
     }
 }

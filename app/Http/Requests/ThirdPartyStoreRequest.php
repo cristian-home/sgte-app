@@ -39,6 +39,8 @@ class ThirdPartyStoreRequest extends FormRequest
             'is_customer' => ['required', 'boolean'],
             'is_provider' => ['required', 'boolean'],
             'active' => ['required', 'boolean'],
+            // Cascade flag — see ThirdPartyController::store.
+            '_cascade' => ['nullable', 'boolean'],
         ];
     }
 }

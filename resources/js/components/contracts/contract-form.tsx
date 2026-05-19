@@ -1,8 +1,13 @@
 import { usePage } from '@inertiajs/react';
+import { Plus } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import InputError from '@/components/input-error';
+import { type MunicipalityOption } from '@/components/municipality-combobox';
 import ThirdPartyCombobox, {
     type ThirdPartyOption,
 } from '@/components/third-parties/third-party-combobox';
+import ThirdPartyCreateDialog from '@/components/third-parties/third-party-create-dialog';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -14,6 +19,7 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { BillingUnitType } from '@/enums/BillingUnitType';
+import type { DocumentTypeOption } from '@/components/third-parties/third-party-form';
 
 export interface ContractFormData {
     contract_number: string;
@@ -44,6 +50,16 @@ interface ContractFormProps {
      */
     forceIncludeCustomer?: ThirdPartyOption[];
     idPrefix?: string;
+    /**
+     * When true, render a "+" button next to the Cliente combobox that
+     * launches a nested ThirdPartyCreateDialog. After successful creation
+     * the new tercero is auto-selected via flash data. Requires
+     * `documentTypes` + `municipalities` to be passed so the nested dialog
+     * can render its form.
+     */
+    allowCreateThirdParty?: boolean;
+    documentTypes?: DocumentTypeOption[];
+    municipalities?: MunicipalityOption[];
 }
 
 function RequiredMarker() {
@@ -77,10 +93,28 @@ export default function ContractForm({
     thirdParties,
     forceIncludeCustomer,
     idPrefix = '',
+    allowCreateThirdParty = false,
+    documentTypes,
+    municipalities,
 }: ContractFormProps) {
     const id = (name: string) => (idPrefix ? `${idPrefix}_${name}` : name);
     const invalid = (field: keyof ContractFormData) =>
         errors[field] ? true : undefined;
+
+    const [createTpOpen, setCreateTpOpen] = useState(false);
+    const page = usePage();
+    const flash = page.props.flash as
+        | { created_third_party_id?: number }
+        | undefined;
+    // Track the last id we've consumed so a stale flash on the next render
+    // doesn't re-fire the auto-select.
+    const consumedTpFlashRef = useRef<number | null>(null);
+    useEffect(() => {
+        const id = flash?.created_third_party_id;
+        if (!id || consumedTpFlashRef.current === id) return;
+        consumedTpFlashRef.current = id;
+        setData('third_party_id', String(id));
+    }, [flash?.created_third_party_id, setData]);
 
     const sharedConfig = usePage().props.config as
         | { operation_tz?: string }
@@ -119,19 +153,48 @@ export default function ContractForm({
                         Cliente
                         <RequiredMarker />
                     </Label>
-                    <ThirdPartyCombobox
-                        id={id('third_party_id')}
-                        thirdParties={thirdParties}
-                        role="customer"
-                        forceInclude={forceIncludeCustomer}
-                        value={data.third_party_id || null}
-                        onChange={(value) => setData('third_party_id', value)}
-                        invalid={invalid('third_party_id')}
-                        placeholder="Selecciona un cliente"
-                    />
+                    <div className="flex gap-2">
+                        <div className="flex-1">
+                            <ThirdPartyCombobox
+                                id={id('third_party_id')}
+                                thirdParties={thirdParties}
+                                role="customer"
+                                forceInclude={forceIncludeCustomer}
+                                value={data.third_party_id || null}
+                                onChange={(value) =>
+                                    setData('third_party_id', value)
+                                }
+                                invalid={invalid('third_party_id')}
+                                placeholder="Selecciona un cliente"
+                            />
+                        </div>
+                        {allowCreateThirdParty &&
+                            documentTypes &&
+                            municipalities && (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => setCreateTpOpen(true)}
+                                    aria-label="Crear nuevo cliente"
+                                    title="Crear nuevo cliente"
+                                >
+                                    <Plus className="h-4 w-4" />
+                                </Button>
+                            )}
+                    </div>
                     <InputError message={errors.third_party_id} />
                 </div>
             </div>
+
+            {allowCreateThirdParty && documentTypes && municipalities && (
+                <ThirdPartyCreateDialog
+                    open={createTpOpen}
+                    onOpenChange={setCreateTpOpen}
+                    documentTypes={documentTypes}
+                    municipalities={municipalities}
+                />
+            )}
 
             <div className="grid gap-4 md:grid-cols-3">
                 <div className="grid gap-2">

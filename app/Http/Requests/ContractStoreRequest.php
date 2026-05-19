@@ -35,6 +35,11 @@ class ContractStoreRequest extends FormRequest
             'is_generic' => ['required', 'boolean'],
             'active' => ['required', 'boolean'],
             'billing_unit_type' => ['nullable', Rule::enum(BillingUnitType::class)],
+            // Cascade flag (read by the controller, not persisted). Marks
+            // the request as coming from a parent modal that wants to
+            // auto-select the new contract instead of redirecting to
+            // /contracts. See ContractController::store.
+            '_cascade' => ['nullable', 'boolean'],
         ];
     }
 

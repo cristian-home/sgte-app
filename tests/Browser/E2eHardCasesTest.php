@@ -803,3 +803,110 @@ test('TP-HP-03 tercero may be both customer and provider simultaneously (Q8)', f
     expect($tp->is_customer)->toBeTrue();
     expect($tp->is_provider)->toBeTrue();
 });
+
+// ===========================================================================
+// CASCADE-* — service → contract → tercero create-on-the-fly UX
+// ===========================================================================
+
+test('CASCADE-01 contract POST with _cascade=1 flashes created_contract_id and stays on previous page', function (): void {
+    $admin = hcUserWithRole(RoleEnum::ADMIN->value);
+
+    $customer = ThirdParty::factory()->create([
+        'is_customer' => true,
+        'is_provider' => false,
+    ]);
+
+    // Visit /services/create first so the back() target is meaningful.
+    $this->actingAs($admin)->get('/services/create')->assertSuccessful();
+
+    $response = $this->actingAs($admin)
+        ->from('/services/create')
+        ->post('/contracts', [
+            'contract_number' => 'CASCADE-TEST-001',
+            'third_party_id' => $customer->id,
+            'contract_object' => 'business',
+            'timezone' => 'America/Bogota',
+            'start_date' => '2026-01-01',
+            'end_date' => '2027-01-01',
+            'route_description' => 'Test route via cascade',
+            'is_generic' => false,
+            'active' => true,
+            '_cascade' => true,
+        ]);
+
+    $response->assertRedirect('/services/create');
+    $contract = \App\Models\Contract::where('contract_number', 'CASCADE-TEST-001')->first();
+    expect($contract)->not->toBeNull();
+    expect(session('created_contract_id'))->toBe($contract->id);
+});
+
+test('CASCADE-02 contract POST without _cascade still redirects to /contracts/index', function (): void {
+    $admin = hcUserWithRole(RoleEnum::ADMIN->value);
+
+    $customer = ThirdParty::factory()->create([
+        'is_customer' => true,
+        'is_provider' => false,
+    ]);
+
+    $response = $this->actingAs($admin)->post('/contracts', [
+        'contract_number' => 'STANDALONE-TEST-001',
+        'third_party_id' => $customer->id,
+        'contract_object' => 'business',
+        'timezone' => 'America/Bogota',
+        'start_date' => '2026-01-01',
+        'end_date' => '2027-01-01',
+        'route_description' => 'Test route standalone',
+        'is_generic' => false,
+        'active' => true,
+    ]);
+
+    $response->assertRedirect('/contracts');
+    expect(session('created_contract_id'))->toBeNull();
+});
+
+test('CASCADE-03 third-party POST with _cascade=1 flashes created_third_party_id and stays on previous page', function (): void {
+    $admin = hcUserWithRole(RoleEnum::ADMIN->value);
+    $docType = \App\Models\DocumentType::query()->first() ?? \App\Models\DocumentType::factory()->create();
+    $muni = \App\Models\Municipality::query()->first() ?? \App\Models\Municipality::factory()->create();
+
+    // Visit /contracts first so the back() target is meaningful.
+    $this->actingAs($admin)->get('/contracts')->assertSuccessful();
+
+    $response = $this->actingAs($admin)
+        ->from('/contracts')
+        ->post('/third-parties', [
+            'document_type_id' => $docType->id,
+            'identification_number' => '987654321',
+            'is_natural_person' => false,
+            'company_name' => 'Cascade TP SAS',
+            'trade_name' => 'CascadeTP',
+            'is_customer' => true,
+            'is_provider' => false,
+            'active' => true,
+            'municipality_id' => $muni->id,
+            'address' => 'Cra 1 #1-1',
+            'phone' => '3001112233',
+            'email' => 'cascade@example.test',
+            '_cascade' => true,
+        ]);
+
+    $response->assertRedirect('/contracts');
+    $tp = ThirdParty::where('identification_number', '987654321')->first();
+    expect($tp)->not->toBeNull();
+    expect(session('created_third_party_id'))->toBe($tp->id);
+});
+
+test('CASCADE-04 services/create payload exposes thirdParties + documentTypes for nested dialogs', function (): void {
+    $admin = hcUserWithRole(RoleEnum::ADMIN->value);
+    ThirdParty::factory()->create(['is_customer' => true]);
+    \App\Models\DocumentType::query()->first() ?? \App\Models\DocumentType::factory()->create();
+
+    $response = $this->actingAs($admin)->get('/services/create');
+
+    $response->assertSuccessful();
+    $page = $response->viewData('page');
+    expect($page['props'])
+        ->toHaveKey('thirdParties')
+        ->toHaveKey('documentTypes')
+        ->toHaveKey('municipalities');
+});
