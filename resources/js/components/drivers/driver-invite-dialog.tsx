@@ -72,7 +72,9 @@ export function DriverInviteDialog({
                             onChange={(e) =>
                                 setData('account_email', e.target.value)
                             }
-                            aria-invalid={errors.account_email ? true : undefined}
+                            aria-invalid={
+                                errors.account_email ? true : undefined
+                            }
                             autoFocus
                             required
                         />

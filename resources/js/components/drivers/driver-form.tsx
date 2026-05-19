@@ -104,16 +104,14 @@ export default function DriverForm({
         if (mode !== 'create' || !data.create_account) {
             return;
         }
-        if (!accountEmailEditedRef.current && data.email && !data.account_email) {
+        if (
+            !accountEmailEditedRef.current &&
+            data.email &&
+            !data.account_email
+        ) {
             setData('account_email', data.email);
         }
-    }, [
-        mode,
-        data.create_account,
-        data.email,
-        data.account_email,
-        setData,
-    ]);
+    }, [mode, data.create_account, data.email, data.account_email, setData]);
 
     return (
         <div className="space-y-8">
@@ -490,10 +488,13 @@ export default function DriverForm({
                             }}
                         />
                         <div className="grid gap-1">
-                            <Label htmlFor={id('create_account')} className="cursor-pointer">
+                            <Label
+                                htmlFor={id('create_account')}
+                                className="cursor-pointer"
+                            >
                                 Crear cuenta de acceso para este conductor
                             </Label>
-                            <p className="text-muted-foreground text-sm">
+                            <p className="text-sm text-muted-foreground">
                                 Se enviará un enlace al correo para que el
                                 conductor configure su contraseña. El enlace
                                 expira en 60 minutos.

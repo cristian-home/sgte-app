@@ -4,6 +4,7 @@ import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
 import iconUrl from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 import 'leaflet/dist/leaflet.css';
+import { MapPin } from 'lucide-react';
 import { Fragment, useEffect, useMemo } from 'react';
 import {
     CircleMarker,
@@ -14,7 +15,6 @@ import {
     TileLayer,
     useMap,
 } from 'react-leaflet';
-import { MapPin } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import AppLayout from '@/layouts/app-layout';
 import { formatTimestampInViewerTz } from '@/lib/datetime';
