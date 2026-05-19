@@ -1,14 +1,17 @@
 import { Head, Link, useForm } from '@inertiajs/react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import ServiceController from '@/actions/App/Http/Controllers/ServiceController';
+import InputError from '@/components/input-error';
 import { type MunicipalityOption } from '@/components/municipality-combobox';
 import ServiceForm, {
     type ContractOption,
     type DriverOption,
     type VehicleOption,
 } from '@/components/services/service-form';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import services from '@/routes/services';
 import { type BreadcrumbItem } from '@/types';
@@ -24,6 +27,8 @@ export default function ServicesCreate({
     contracts,
     municipalities,
     prefill,
+    executedDates = [],
+    canBypassExecutedDay = false,
 }: {
     vehicles: VehicleOption[];
     drivers: DriverOption[];
@@ -34,6 +39,8 @@ export default function ServicesCreate({
         planned_start_time?: string;
         service_date?: string;
     } | null;
+    executedDates?: string[];
+    canBypassExecutedDay?: boolean;
 }) {
     const { data, setData, post, processing, errors } = useForm({
         contract_id: '',
@@ -70,6 +77,17 @@ export default function ServicesCreate({
 
     const [addressCommitInFlight, setAddressCommitInFlight] = useState(false);
 
+    // BUG-10 — show warning + reveal justification when the picked service
+    // date is on an EJECUTADO day. Backend (BUG-03 fix) requires Admin or
+    // Super Admin role + 10–500-char justification to accept the create.
+    const executedDateSet = useMemo(
+        () => new Set(executedDates),
+        [executedDates],
+    );
+    const isExecutedDay = data.service_date
+        ? executedDateSet.has(data.service_date)
+        : false;
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Crear Servicio" />
@@ -94,11 +112,52 @@ export default function ServicesCreate({
                                 }
                             />
 
+                            {isExecutedDay && (
+                                <Alert variant="destructive">
+                                    <AlertTitle>Día ejecutado</AlertTitle>
+                                    <AlertDescription>
+                                        {canBypassExecutedDay
+                                            ? 'El día ya fue ejecutado. Agregar un servicio es una excepción y requiere justificación (10–500 caracteres). Quedará registrado en la auditoría.'
+                                            : 'No se pueden agregar servicios a un día ejecutado. Esta acción está reservada al administrador.'}
+                                    </AlertDescription>
+                                </Alert>
+                            )}
+
+                            {isExecutedDay && canBypassExecutedDay && (
+                                <div className="grid gap-2">
+                                    <Label htmlFor="justification">
+                                        Justificación
+                                        <span className="text-destructive">
+                                            {' *'}
+                                        </span>
+                                    </Label>
+                                    <textarea
+                                        id="justification"
+                                        className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                                        value={data.justification}
+                                        onChange={(e) =>
+                                            setData(
+                                                'justification',
+                                                e.target.value,
+                                            )
+                                        }
+                                        maxLength={500}
+                                        minLength={10}
+                                        placeholder="Motivo del registro tardío en día ejecutado (mínimo 10 caracteres)."
+                                    />
+                                    <InputError
+                                        message={errors.justification}
+                                    />
+                                </div>
+                            )}
+
                             <div className="flex items-center gap-4">
                                 <Button
                                     type="submit"
                                     disabled={
-                                        processing || addressCommitInFlight
+                                        processing ||
+                                        addressCommitInFlight ||
+                                        (isExecutedDay && !canBypassExecutedDay)
                                     }
                                 >
                                     Guardar
