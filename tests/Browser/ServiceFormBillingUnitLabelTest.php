@@ -65,10 +65,13 @@ test('contract create form exposes Unidad de Facturación select', function (): 
 
     $this->browse(function (Browser $browser) use ($user): void {
         $browser->loginAs($user)
-            ->visit('/contracts/create')
+            ->visit('/contracts')
             ->waitForText('Crear Contrato')
+            ->press('Crear Contrato')
+            ->waitForText('Complete los campos para registrar un nuevo contrato.')
             ->assertSee('Unidad de Facturación')
-            ->assertPresent('#billing_unit_type')
+            // ContractForm runs with idPrefix="dlg" inside the modal.
+            ->assertPresent('#dlg_billing_unit_type')
             ->screenshot('contract-form-billing-unit-select');
     });
 });

@@ -1,8 +1,10 @@
 import { Head } from '@inertiajs/react';
 import { PlusIcon } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { DataTable } from '@/components/data-table';
-import DriverCreateDialog from '@/components/drivers/driver-create-dialog';
+import DriverDialog, {
+    type EditableDriver,
+} from '@/components/drivers/driver-dialog';
 import { driverLicenseStatus } from '@/components/drivers/driver-license-pill';
 import MunicipalityCombobox, {
     type MunicipalityOption,
@@ -13,7 +15,7 @@ import { useServerTable } from '@/hooks/use-server-table';
 import AppLayout from '@/layouts/app-layout';
 import drivers from '@/routes/drivers';
 
-import { columns } from './columns';
+import { columns, type DriverTableMeta } from './columns';
 
 import type { Row } from '@tanstack/react-table';
 import type {
@@ -90,7 +92,28 @@ export default function DriversIndex({
     pensionFunds: CatalogOption[];
     severanceFunds: CatalogOption[];
 }) {
-    const [createOpen, setCreateOpen] = useState(false);
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
+    const [selectedDriver, setSelectedDriver] = useState<EditableDriver | null>(
+        null,
+    );
+
+    function openCreate() {
+        setSelectedDriver(null);
+        setDialogMode('create');
+        setDialogOpen(true);
+    }
+
+    function openEdit(driver: EditableDriver) {
+        setSelectedDriver(driver);
+        setDialogMode('edit');
+        setDialogOpen(true);
+    }
+
+    const tableMeta: DriverTableMeta = useMemo(
+        () => ({ onEdit: openEdit }),
+        [],
+    );
 
     const {
         table,
@@ -106,6 +129,7 @@ export default function DriversIndex({
     } = useServerTable<Driver>({
         data: paginatedDrivers,
         columns,
+        meta: tableMeta,
     });
 
     const selectedMunicipalityId =
@@ -154,7 +178,7 @@ export default function DriversIndex({
                     onClearFilters={clearFilters}
                     getRowClassName={rowTintFor}
                     actions={
-                        <Button onClick={() => setCreateOpen(true)} size="sm">
+                        <Button onClick={openCreate} size="sm">
                             <PlusIcon className="mr-2 size-4" />
                             Crear Conductor
                         </Button>
@@ -162,9 +186,11 @@ export default function DriversIndex({
                 />
             </div>
 
-            <DriverCreateDialog
-                open={createOpen}
-                onOpenChange={setCreateOpen}
+            <DriverDialog
+                open={dialogOpen}
+                onOpenChange={setDialogOpen}
+                mode={dialogMode}
+                driver={selectedDriver}
                 municipalities={municipalities}
                 documentTypes={documentTypes}
                 eps={eps}

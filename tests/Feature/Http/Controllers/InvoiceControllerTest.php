@@ -34,12 +34,6 @@ test('index behaves as expected', function (): void {
     $response->assertOk();
 });
 
-test('create behaves as expected', function (): void {
-    $response = get(route('invoices.create'));
-
-    $response->assertOk();
-});
-
 test('store uses form request validation')
     ->assertActionUsesFormRequest(
         \App\Http\Controllers\InvoiceController::class,
@@ -74,7 +68,8 @@ test('store saves and redirects', function (): void {
     expect($invoices->first()->issue_date)->toBe($issue_date->format('Y-m-d'));
     $invoice = $invoices->first();
 
-    $response->assertRedirect(route('invoices.index'));
+    $response->assertRedirect();
+    $response->assertSessionHas('success');
 });
 
 test('show behaves as expected', function (): void {
@@ -85,12 +80,16 @@ test('show behaves as expected', function (): void {
     $response->assertOk();
 });
 
-test('edit behaves as expected', function (): void {
+test('show passes customer options needed by the edit modal', function (): void {
     $invoice = Invoice::factory()->create();
 
-    $response = get(route('invoices.edit', $invoice));
+    $response = get(route('invoices.show', $invoice));
 
     $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->has('thirdParties')
+    );
 });
 
 test('update uses form request validation')
@@ -119,7 +118,8 @@ test('update redirects', function (): void {
 
     $invoice->refresh();
 
-    $response->assertRedirect(route('invoices.index'));
+    $response->assertRedirect();
+    $response->assertSessionHas('success');
 
     expect($invoice_number)->toEqual($invoice->invoice_number);
     expect($total_value)->toEqual($invoice->total_value);
@@ -329,7 +329,7 @@ test('store accepts total_value of 0.01', function (): void {
         'payment_status' => 'pending',
     ]);
 
-    $response->assertRedirect(route('invoices.index'));
+    $response->assertRedirect();
     expect(Invoice::query()->where('invoice_number', 'FAC-MIN-VAL')->count())->toBe(1);
 });
 
@@ -357,7 +357,7 @@ test('update allows keeping the same invoice_number', function (): void {
         'payment_status' => 'paid',
     ]);
 
-    $response->assertRedirect(route('invoices.index'));
+    $response->assertRedirect();
     $invoice->refresh();
     expect((float) $invoice->total_value)->toBe(75000.0);
 });

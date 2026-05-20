@@ -4,11 +4,12 @@ import {
     DataTableColumnHeader,
     DataTableRowActions,
 } from '@/components/data-table';
+import { type EditableThirdParty } from '@/components/third-parties/third-party-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Permission } from '@/enums/Permission';
 import thirdParties from '@/routes/third-parties';
 
-import type { ColumnDef } from '@tanstack/react-table';
+import type { ColumnDef, Table } from '@tanstack/react-table';
 import type { DocumentType, Municipality, ThirdParty } from '@/types/models';
 
 // ThirdParty as it arrives from ThirdPartyController@index — the
@@ -21,6 +22,14 @@ type ThirdPartyRow = ThirdParty & {
         | (Municipality & { department?: { id: number; name: string } })
         | null;
 };
+
+export interface ThirdPartyTableMeta {
+    onEdit: (thirdParty: EditableThirdParty) => void;
+}
+
+function meta(table: Table<ThirdPartyRow>): ThirdPartyTableMeta {
+    return table.options.meta as ThirdPartyTableMeta;
+}
 
 function nameFor(tp: ThirdPartyRow): string {
     if (tp.is_natural_person) {
@@ -109,12 +118,12 @@ export const columns: ColumnDef<ThirdPartyRow, unknown>[] = [
     },
     {
         id: 'actions',
-        cell: ({ row }) => {
+        cell: ({ row, table }) => {
             const tp = row.original;
             return (
                 <Can permission={Permission.DELETE_THIRD_PARTIES}>
                     <DataTableRowActions
-                        editUrl={thirdParties.edit(tp.id).url}
+                        onEdit={() => meta(table).onEdit(tp)}
                         onDelete={() =>
                             router.delete(thirdParties.destroy(tp.id).url, {
                                 preserveScroll: true,

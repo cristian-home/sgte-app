@@ -21,6 +21,11 @@ import {
 
 interface DataTableRowActionsProps {
     editUrl?: string;
+    /**
+     * Opens an in-page edit dialog instead of navigating. When both
+     * `onEdit` and `editUrl` are provided, `onEdit` wins.
+     */
+    onEdit?: () => void;
     onDelete?: () => void;
     /**
      * Optional override for the delete confirmation dialog title.
@@ -36,6 +41,7 @@ interface DataTableRowActionsProps {
 
 export function DataTableRowActions({
     editUrl,
+    onEdit,
     onDelete,
     deleteConfirmTitle = '¿Eliminar registro?',
     deleteConfirmDescription = 'Esta acción no se puede deshacer. El registro será eliminado permanentemente.',
@@ -59,13 +65,28 @@ export function DataTableRowActions({
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                    {editUrl && (
-                        <DropdownMenuItem asChild>
-                            <Link href={editUrl}>
-                                <Pencil className="mr-2 size-4" />
-                                Editar
-                            </Link>
+                    {onEdit ? (
+                        <DropdownMenuItem
+                            onSelect={(event) => {
+                                // Prevent the dropdown from closing-then-
+                                // opening the dialog in the same tick,
+                                // which Radix can race on.
+                                event.preventDefault();
+                                onEdit();
+                            }}
+                        >
+                            <Pencil className="mr-2 size-4" />
+                            Editar
                         </DropdownMenuItem>
+                    ) : (
+                        editUrl && (
+                            <DropdownMenuItem asChild>
+                                <Link href={editUrl}>
+                                    <Pencil className="mr-2 size-4" />
+                                    Editar
+                                </Link>
+                            </DropdownMenuItem>
+                        )
                     )}
                     {onDelete && (
                         <DropdownMenuItem

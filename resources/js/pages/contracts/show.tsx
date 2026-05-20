@@ -1,6 +1,11 @@
 import { Head, Link } from '@inertiajs/react';
 import { FileText, Pencil } from 'lucide-react';
+import { useState } from 'react';
+import ContractDialog from '@/components/contracts/contract-dialog';
 import { ContractPeriodPill } from '@/components/contracts/contract-period-pill';
+import { type MunicipalityOption } from '@/components/municipality-combobox';
+import { type ThirdPartyOption } from '@/components/third-parties/third-party-combobox';
+import { type DocumentTypeOption } from '@/components/third-parties/third-party-form';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,7 +27,7 @@ import {
 } from '@/lib/document-status';
 import contracts from '@/routes/contracts';
 import services from '@/routes/services';
-import thirdParties from '@/routes/third-parties';
+import thirdPartyRoutes from '@/routes/third-parties';
 
 import type { BreadcrumbItem } from '@/types';
 import type { Contract, DocumentType, ThirdParty } from '@/types/models';
@@ -45,6 +50,7 @@ type ShowContract = Pick<
     | 'route_description'
     | 'is_generic'
     | 'active'
+    | 'billing_unit_type'
 > & {
     third_party?:
         | (Pick<
@@ -136,10 +142,18 @@ function Field({
 export default function ContractsShow({
     contract,
     recentServices,
+    thirdParties,
+    documentTypes,
+    municipalities,
 }: {
     contract: ShowContract;
     recentServices: RecentServiceRow[];
+    thirdParties: ThirdPartyOption[];
+    documentTypes: DocumentTypeOption[];
+    municipalities: MunicipalityOption[];
 }) {
+    const [editOpen, setEditOpen] = useState(false);
+
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Contratos', href: contracts.index().url },
         { title: contract.contract_number, href: '#' },
@@ -186,18 +200,28 @@ export default function ContractsShow({
                                 >
                                     {contract.active ? 'Activo' : 'Inactivo'}
                                 </Badge>
-                                <Button asChild size="sm" variant="outline">
-                                    <Link
-                                        href={contracts.edit(contract.id).url}
-                                    >
-                                        <Pencil className="mr-1 size-4" />
-                                        Editar
-                                    </Link>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setEditOpen(true)}
+                                >
+                                    <Pencil className="mr-1 size-4" />
+                                    Editar
                                 </Button>
                             </div>
                         </div>
                     </CardHeader>
                 </Card>
+
+                <ContractDialog
+                    open={editOpen}
+                    onOpenChange={setEditOpen}
+                    mode="edit"
+                    contract={contract}
+                    thirdParties={thirdParties}
+                    documentTypes={documentTypes}
+                    municipalities={municipalities}
+                />
 
                 {/* Datos del Contrato */}
                 <Card>
@@ -250,7 +274,9 @@ export default function ContractsShow({
                                     </p>
                                 </div>
                                 <Button asChild size="sm" variant="outline">
-                                    <Link href={thirdParties.show(tp.id).url}>
+                                    <Link
+                                        href={thirdPartyRoutes.show(tp.id).url}
+                                    >
                                         Ver tercero
                                     </Link>
                                 </Button>

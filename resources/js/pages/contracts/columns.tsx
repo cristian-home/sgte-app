@@ -1,5 +1,6 @@
 import { Link, router } from '@inertiajs/react';
 import { Can } from '@/components/can';
+import { type EditableContract } from '@/components/contracts/contract-dialog';
 import { ContractPeriodPill } from '@/components/contracts/contract-period-pill';
 import {
     DataTableColumnHeader,
@@ -10,7 +11,7 @@ import { dateFormatter, parseDueDate } from '@/lib/document-status';
 import contracts from '@/routes/contracts';
 import thirdParties from '@/routes/third-parties';
 
-import type { ColumnDef } from '@tanstack/react-table';
+import type { ColumnDef, Table } from '@tanstack/react-table';
 import type { Contract, DocumentType, ThirdParty } from '@/types/models';
 
 // Contract as it arrives from ContractController@index — the controller
@@ -25,6 +26,14 @@ export type ContractRow = Contract & {
           })
         | null;
 };
+
+export interface ContractTableMeta {
+    onEdit: (contract: EditableContract) => void;
+}
+
+function meta(table: Table<ContractRow>): ContractTableMeta {
+    return table.options.meta as ContractTableMeta;
+}
 
 const CONTRACT_OBJECT_LABELS: Record<string, string> = {
     business: 'Empresarial',
@@ -126,12 +135,12 @@ export const columns: ColumnDef<ContractRow, unknown>[] = [
     },
     {
         id: 'actions',
-        cell: ({ row }) => {
+        cell: ({ row, table }) => {
             const contract = row.original;
             return (
                 <Can permission={Permission.DELETE_CONTRACTS}>
                     <DataTableRowActions
-                        editUrl={contracts.edit(contract.id).url}
+                        onEdit={() => meta(table).onEdit(contract)}
                         onDelete={() =>
                             router.delete(contracts.destroy(contract.id).url, {
                                 preserveScroll: true,

@@ -1,5 +1,7 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
+import { useState } from 'react';
 import DocumentTypeController from '@/actions/App/Http/Controllers/DocumentTypeController';
+import DocumentTypeDialog from '@/components/document-types/document-type-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,6 +19,8 @@ export default function DocumentTypesShow({
 }: {
     documentType: DocumentType;
 }) {
+    const [editOpen, setEditOpen] = useState(false);
+
     const breadcrumbs: BreadcrumbItem[] = [
         {
             title: 'Tipos de Documento',
@@ -41,13 +45,12 @@ export default function DocumentTypesShow({
                                     Código: {documentType.code}
                                 </CardDescription>
                             </div>
-                            <Link
-                                href={DocumentTypeController.edit.url(
-                                    documentType.id,
-                                )}
+                            <Button
+                                variant="outline"
+                                onClick={() => setEditOpen(true)}
                             >
-                                <Button variant="outline">Editar</Button>
-                            </Link>
+                                Editar
+                            </Button>
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -86,6 +89,12 @@ export default function DocumentTypesShow({
                     </CardContent>
                 </Card>
             </div>
+            <DocumentTypeDialog
+                open={editOpen}
+                onOpenChange={setEditOpen}
+                mode="edit"
+                documentType={documentType}
+            />
         </AppLayout>
     );
 }

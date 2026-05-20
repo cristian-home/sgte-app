@@ -63,15 +63,27 @@ class ContractController extends Controller
 
         return Inertia::render('contracts/index', [
             'contracts' => $contracts,
+            ...$this->modalReferenceData(),
+        ]);
+    }
+
+    /**
+     * Reference data shared by the contract create/edit modal — customer
+     * third parties for the Cliente combobox, plus document types and
+     * municipalities for the nested "crear cliente" dialog.
+     *
+     * @return array{thirdParties: \Illuminate\Database\Eloquent\Collection<int, ThirdParty>, documentTypes: \Illuminate\Database\Eloquent\Collection<int, DocumentType>, municipalities: \Illuminate\Database\Eloquent\Collection<int, Municipality>}
+     */
+    private function modalReferenceData(): array
+    {
+        return [
             'thirdParties' => $this->customerOptions(),
-            // Forwarded to the nested ThirdPartyCreateDialog reached via the
-            // "+" affordance on the Cliente combobox in ContractCreateDialog.
             'documentTypes' => DocumentType::orderBy('code')->get(['id', 'code', 'name']),
             'municipalities' => Municipality::query()
                 ->with('department:id,name')
                 ->orderBy('name')
                 ->get(['id', 'name', 'code', 'department_id']),
-        ]);
+        ];
     }
 
     /**
@@ -113,10 +125,10 @@ class ContractController extends Controller
     }
 
     /**
-     * Build the customer option list used by the create modal, the
-     * above-the-table combobox filter, and the create/edit standalone
-     * pages. Returns only `is_customer = true` third parties with the
-     * minimum fields the `<ThirdPartyCombobox />` needs.
+     * Build the customer option list used by the create/edit modal and
+     * the above-the-table combobox filter. Returns only `is_customer =
+     * true` third parties with the minimum fields the
+     * `<ThirdPartyCombobox />` needs.
      */
     private function customerOptions(): \Illuminate\Database\Eloquent\Collection
     {
@@ -136,15 +148,6 @@ class ContractController extends Controller
                 'is_customer',
                 'is_provider',
             ]);
-    }
-
-    public function create(Request $request): Response
-    {
-        Gate::authorize(Permission::CREATE_CONTRACTS->value);
-
-        return Inertia::render('contracts/create', [
-            'thirdParties' => $this->customerOptions(),
-        ]);
     }
 
     public function store(ContractStoreRequest $request): RedirectResponse
@@ -170,7 +173,7 @@ class ContractController extends Controller
             return back()->with('created_contract_id', $contract->id);
         }
 
-        return redirect()->route('contracts.index');
+        return back()->with('success', 'Contrato creado.');
     }
 
     public function show(Request $request, Contract $contract): Response
@@ -196,18 +199,7 @@ class ContractController extends Controller
         return Inertia::render('contracts/show', [
             'contract' => $contract,
             'recentServices' => $recentServices,
-        ]);
-    }
-
-    public function edit(Request $request, Contract $contract): Response
-    {
-        Gate::authorize(Permission::UPDATE_CONTRACTS->value);
-
-        $contract->load('thirdParty.documentType');
-
-        return Inertia::render('contracts/edit', [
-            'contract' => $contract,
-            'thirdParties' => $this->customerOptions(),
+            ...$this->modalReferenceData(),
         ]);
     }
 
@@ -216,7 +208,7 @@ class ContractController extends Controller
         Gate::authorize(Permission::UPDATE_CONTRACTS->value);
         $contract->update($request->validated());
 
-        return redirect()->route('contracts.index');
+        return back()->with('success', 'Contrato actualizado.');
     }
 
     public function destroy(Request $request, Contract $contract): RedirectResponse

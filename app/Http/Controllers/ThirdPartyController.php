@@ -72,16 +72,6 @@ class ThirdPartyController extends Controller
             ->get(['id', 'name', 'code', 'department_id']);
     }
 
-    public function create(Request $request): Response
-    {
-        Gate::authorize(Permission::CREATE_THIRD_PARTIES->value);
-
-        return Inertia::render('third-parties/create', [
-            'documentTypes' => DocumentType::orderBy('code')->get(['id', 'code', 'name']),
-            'municipalities' => $this->municipalitiesPayload(),
-        ]);
-    }
-
     public function store(ThirdPartyStoreRequest $request): RedirectResponse
     {
         Gate::authorize(Permission::CREATE_THIRD_PARTIES->value);
@@ -95,7 +85,7 @@ class ThirdPartyController extends Controller
             return back()->with('created_third_party_id', $thirdParty->id);
         }
 
-        return redirect()->route('third-parties.index');
+        return back()->with('success', 'Tercero creado.');
     }
 
     public function show(Request $request, ThirdParty $thirdParty): Response
@@ -127,15 +117,6 @@ class ThirdPartyController extends Controller
             'thirdParty' => $thirdParty,
             'recentVehicles' => $recentVehicles,
             'recentContracts' => $recentContracts,
-        ]);
-    }
-
-    public function edit(Request $request, ThirdParty $thirdParty): Response
-    {
-        Gate::authorize(Permission::UPDATE_THIRD_PARTIES->value);
-
-        return Inertia::render('third-parties/edit', [
-            'thirdParty' => $thirdParty,
             'documentTypes' => DocumentType::orderBy('code')->get(['id', 'code', 'name']),
             'municipalities' => $this->municipalitiesPayload(),
         ]);
@@ -146,7 +127,7 @@ class ThirdPartyController extends Controller
         Gate::authorize(Permission::UPDATE_THIRD_PARTIES->value);
         $thirdParty->update($request->validated());
 
-        return redirect()->route('third-parties.index');
+        return back()->with('success', 'Tercero actualizado.');
     }
 
     public function destroy(Request $request, ThirdParty $thirdParty): RedirectResponse

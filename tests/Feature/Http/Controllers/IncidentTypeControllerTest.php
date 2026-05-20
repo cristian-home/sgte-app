@@ -38,12 +38,6 @@ test('index returns inertia page with incident types', function (): void {
     );
 });
 
-test('create behaves as expected', function (): void {
-    $response = get(route('incident-types.create'));
-
-    $response->assertOk();
-});
-
 test('store uses form request validation')
     ->assertActionUsesFormRequest(
         \App\Http\Controllers\IncidentTypeController::class,
@@ -72,7 +66,8 @@ test('store saves and redirects', function (): void {
     expect($incidentType->first()->severity)->toBe(IncidentSeverity::Minor);
     expect($incidentType->first()->affects_billing_default)->toBeTrue();
 
-    $response->assertRedirect(route('incident-types.index'));
+    $response->assertRedirect();
+    $response->assertSessionHas('success');
 });
 
 test('store validates required fields', function (): void {
@@ -111,14 +106,6 @@ test('show behaves as expected', function (): void {
     $response->assertOk();
 });
 
-test('edit behaves as expected', function (): void {
-    $incidentType = IncidentType::factory()->create();
-
-    $response = get(route('incident-types.edit', $incidentType));
-
-    $response->assertOk();
-});
-
 test('update uses form request validation')
     ->assertActionUsesFormRequest(
         \App\Http\Controllers\IncidentTypeController::class,
@@ -141,7 +128,8 @@ test('update saves and redirects', function (): void {
 
     $incidentType->refresh();
 
-    $response->assertRedirect(route('incident-types.index'));
+    $response->assertRedirect();
+    $response->assertSessionHas('success');
 
     expect($newCode)->toEqual($incidentType->code);
     expect($newName)->toEqual($incidentType->name);
@@ -158,7 +146,7 @@ test('update allows same code for same record', function (): void {
     ]);
 
     $response->assertSessionDoesntHaveErrors(['code']);
-    $response->assertRedirect(route('incident-types.index'));
+    $response->assertRedirect();
 });
 
 test('destroy deletes and redirects', function (): void {

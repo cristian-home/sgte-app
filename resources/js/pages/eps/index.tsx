@@ -1,12 +1,12 @@
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
 import EpsController from '@/actions/App/Http/Controllers/EpsController';
+import CatalogCodeNameDialog from '@/components/catalogs/catalog-code-name-dialog';
 import {
     DataTable,
     DataTableColumnHeader,
     DataTableRowActions,
 } from '@/components/data-table';
-import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { PageHeader } from '@/components/page-header';
 import AppLayout from '@/layouts/app-layout';
 import type { ColumnDef } from '@tanstack/react-table';
@@ -35,7 +35,21 @@ const columns: ColumnDef<Eps>[] = [
 ];
 
 export default function EpsIndex({ eps }: { eps: Eps[] }) {
-    const [deleteUrl, setDeleteUrl] = useState<string | null>(null);
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
+    const [selected, setSelected] = useState<Eps | null>(null);
+
+    function openCreate() {
+        setSelected(null);
+        setDialogMode('create');
+        setDialogOpen(true);
+    }
+
+    function openEdit(record: Eps) {
+        setSelected(record);
+        setDialogMode('edit');
+        setDialogOpen(true);
+    }
 
     const columnsWithActions: ColumnDef<Eps>[] = [
         ...columns,
@@ -43,9 +57,12 @@ export default function EpsIndex({ eps }: { eps: Eps[] }) {
             id: 'actions',
             cell: ({ row }) => (
                 <DataTableRowActions
-                    editUrl={EpsController.edit.url(row.original.id)}
+                    onEdit={() => openEdit(row.original)}
                     onDelete={() =>
-                        setDeleteUrl(EpsController.destroy.url(row.original.id))
+                        router.delete(
+                            EpsController.destroy.url(row.original.id),
+                            { preserveScroll: true },
+                        )
                     }
                 />
             ),
@@ -58,7 +75,7 @@ export default function EpsIndex({ eps }: { eps: Eps[] }) {
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
                 <PageHeader
                     title="EPS"
-                    createUrl={EpsController.create.url()}
+                    onCreate={openCreate}
                     createLabel="Nueva EPS"
                 />
                 <DataTable
@@ -68,10 +85,14 @@ export default function EpsIndex({ eps }: { eps: Eps[] }) {
                     searchPlaceholder="Buscar por nombre..."
                 />
             </div>
-            <DeleteConfirmationDialog
-                open={deleteUrl !== null}
-                onOpenChange={(open) => !open && setDeleteUrl(null)}
-                deleteUrl={deleteUrl ?? ''}
+            <CatalogCodeNameDialog
+                open={dialogOpen}
+                onOpenChange={setDialogOpen}
+                mode={dialogMode}
+                record={selected}
+                entityLabel="EPS"
+                storeUrl={EpsController.store.url()}
+                updateUrl={(id) => EpsController.update.url(id)}
             />
         </AppLayout>
     );

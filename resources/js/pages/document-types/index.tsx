@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { Check, X } from 'lucide-react';
 import { useState } from 'react';
 import DocumentTypeController from '@/actions/App/Http/Controllers/DocumentTypeController';
@@ -7,7 +7,7 @@ import {
     DataTableColumnHeader,
     DataTableRowActions,
 } from '@/components/data-table';
-import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
+import DocumentTypeDialog from '@/components/document-types/document-type-dialog';
 import { PageHeader } from '@/components/page-header';
 import AppLayout from '@/layouts/app-layout';
 import type { ColumnDef } from '@tanstack/react-table';
@@ -64,7 +64,21 @@ export default function DocumentTypesIndex({
 }: {
     documentTypes: DocumentType[];
 }) {
-    const [deleteUrl, setDeleteUrl] = useState<string | null>(null);
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
+    const [selected, setSelected] = useState<DocumentType | null>(null);
+
+    function openCreate() {
+        setSelected(null);
+        setDialogMode('create');
+        setDialogOpen(true);
+    }
+
+    function openEdit(record: DocumentType) {
+        setSelected(record);
+        setDialogMode('edit');
+        setDialogOpen(true);
+    }
 
     const columnsWithActions: ColumnDef<DocumentType>[] = [
         ...columns,
@@ -72,10 +86,13 @@ export default function DocumentTypesIndex({
             id: 'actions',
             cell: ({ row }) => (
                 <DataTableRowActions
-                    editUrl={DocumentTypeController.edit.url(row.original.id)}
+                    onEdit={() => openEdit(row.original)}
                     onDelete={() =>
-                        setDeleteUrl(
-                            DocumentTypeController.destroy.url(row.original.id),
+                        router.delete(
+                            DocumentTypeController.destroy.url(
+                                row.original.id,
+                            ),
+                            { preserveScroll: true },
                         )
                     }
                 />
@@ -89,7 +106,7 @@ export default function DocumentTypesIndex({
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
                 <PageHeader
                     title="Tipos de Documento"
-                    createUrl={DocumentTypeController.create.url()}
+                    onCreate={openCreate}
                     createLabel="Nuevo tipo"
                 />
                 <DataTable
@@ -99,10 +116,11 @@ export default function DocumentTypesIndex({
                     searchPlaceholder="Buscar por nombre..."
                 />
             </div>
-            <DeleteConfirmationDialog
-                open={deleteUrl !== null}
-                onOpenChange={(open) => !open && setDeleteUrl(null)}
-                deleteUrl={deleteUrl ?? ''}
+            <DocumentTypeDialog
+                open={dialogOpen}
+                onOpenChange={setDialogOpen}
+                mode={dialogMode}
+                documentType={selected}
             />
         </AppLayout>
     );

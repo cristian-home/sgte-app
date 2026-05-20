@@ -369,8 +369,8 @@ interface ServiceFormProps {
     onAddressCommitInFlight?: (inFlight: boolean) => void;
     /**
      * When provided, render a "+" button next to the Contrato picker that
-     * the parent uses to open a ContractCreateDialog. Parent owns the
-     * dialog state and the flash-data watcher that auto-selects after
+     * the parent uses to open a ContractDialog in create mode. Parent owns
+     * the dialog state and the flash-data watcher that auto-selects after
      * create. See ServicesCreate for the wiring.
      */
     onCreateContractClick?: () => void;

@@ -195,21 +195,16 @@ test('per-document filters compose with docs_status via AND', function (): void 
     );
 });
 
-test('create behaves as expected', function (): void {
-    $response = get(route('vehicles.create'));
-
-    $response->assertOk();
-});
-
-test('create page includes municipalities with department relation', function (): void {
+test('index passes catalog data needed by the create modal', function (): void {
     $municipality = Municipality::factory()->create();
 
-    $response = get(route('vehicles.create'));
+    $response = get(route('vehicles.index'));
 
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
         ->has('municipalities')
         ->where('municipalities.0.department.id', $municipality->department_id)
+        ->has('thirdParties')
     );
 });
 
@@ -281,7 +276,8 @@ test('store saves and redirects', function (): void {
     expect($vehicle->rtm_due_date)->toBe($rtm_due_date->format('Y-m-d'));
     expect($vehicle->operation_card_due_date)->toBe($operation_card_due_date->format('Y-m-d'));
 
-    $response->assertRedirect(route('vehicles.index'));
+    $response->assertRedirect();
+    $response->assertSessionHas('success');
 });
 
 test('show behaves as expected', function (): void {
@@ -340,23 +336,16 @@ test('show returns empty recentServices when none exist', function (): void {
     );
 });
 
-test('edit behaves as expected', function (): void {
+test('show passes catalog data needed by the edit modal', function (): void {
     $vehicle = Vehicle::factory()->create();
+    Municipality::factory()->create();
 
-    $response = get(route('vehicles.edit', $vehicle));
-
-    $response->assertOk();
-});
-
-test('edit page includes municipalities with department relation', function (): void {
-    $vehicle = Vehicle::factory()->create();
-    $municipality = Municipality::factory()->create();
-
-    $response = get(route('vehicles.edit', $vehicle));
+    $response = get(route('vehicles.show', $vehicle));
 
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
         ->has('municipalities')
+        ->has('thirdParties')
     );
 });
 
@@ -409,7 +398,8 @@ test('update redirects', function (): void {
 
     $vehicle->refresh();
 
-    $response->assertRedirect(route('vehicles.index'));
+    $response->assertRedirect();
+    $response->assertSessionHas('success');
 
     expect($internal_code)->toEqual($vehicle->internal_code);
     expect($plate)->toEqual($vehicle->plate);
@@ -483,5 +473,5 @@ test('store succeeds when is_third_party is false without third_party_id', funct
         'status' => 'active',
     ]);
 
-    $response->assertRedirect(route('vehicles.index'));
+    $response->assertRedirect();
 });

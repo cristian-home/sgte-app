@@ -4,12 +4,13 @@ import {
     DataTableColumnHeader,
     DataTableRowActions,
 } from '@/components/data-table';
+import { type EditableDriver } from '@/components/drivers/driver-dialog';
 import { DriverLicensePill } from '@/components/drivers/driver-license-pill';
 import { Badge } from '@/components/ui/badge';
 import { Permission } from '@/enums/Permission';
 import drivers from '@/routes/drivers';
 
-import type { ColumnDef } from '@tanstack/react-table';
+import type { ColumnDef, Table } from '@tanstack/react-table';
 import type { Driver } from '@/types/models';
 
 // Driver as it arrives from DriverController@index — the controller
@@ -19,6 +20,14 @@ import type { Driver } from '@/types/models';
 type DriverRow = Driver & {
     document_type?: { id: number; code: string; name: string } | null;
 };
+
+export interface DriverTableMeta {
+    onEdit: (driver: EditableDriver) => void;
+}
+
+function meta(table: Table<DriverRow>): DriverTableMeta {
+    return table.options.meta as DriverTableMeta;
+}
 
 function fullName(driver: DriverRow): string {
     return [driver.first_name, driver.first_lastname]
@@ -103,12 +112,12 @@ export const columns: ColumnDef<DriverRow, unknown>[] = [
     },
     {
         id: 'actions',
-        cell: ({ row }) => {
+        cell: ({ row, table }) => {
             const driver = row.original;
             return (
                 <Can permission={Permission.DELETE_DRIVERS}>
                     <DataTableRowActions
-                        editUrl={drivers.edit(driver.id).url}
+                        onEdit={() => meta(table).onEdit(driver)}
                         onDelete={() =>
                             router.delete(drivers.destroy(driver.id).url, {
                                 preserveScroll: true,

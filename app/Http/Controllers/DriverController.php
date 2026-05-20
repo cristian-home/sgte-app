@@ -129,19 +129,6 @@ class DriverController extends Controller
             ->get(['id', 'name', 'code', 'department_id']);
     }
 
-    public function create(Request $request): Response
-    {
-        Gate::authorize(Permission::CREATE_DRIVERS->value);
-
-        return Inertia::render('drivers/create', [
-            'municipalities' => $this->municipalitiesPayload(),
-            'documentTypes' => DocumentType::orderBy('code')->get(['id', 'code', 'name']),
-            'eps' => Eps::orderBy('name')->get(['id', 'code', 'name']),
-            'pensionFunds' => PensionFund::orderBy('name')->get(['id', 'code', 'name']),
-            'severanceFunds' => SeveranceFund::orderBy('name')->get(['id', 'code', 'name']),
-        ]);
-    }
-
     public function store(DriverStoreRequest $request): RedirectResponse
     {
         Gate::authorize(Permission::CREATE_DRIVERS->value);
@@ -175,7 +162,7 @@ class DriverController extends Controller
             ? 'Conductor creado. Se envió el enlace de configuración al correo.'
             : 'Conductor creado.';
 
-        return redirect()->route('drivers.show', $driver)->with('success', $message);
+        return back()->with('success', $message);
     }
 
     public function show(Request $request, Driver $driver): Response
@@ -207,15 +194,6 @@ class DriverController extends Controller
         return Inertia::render('drivers/show', [
             'driver' => $driver,
             'recentServices' => $recentServices,
-        ]);
-    }
-
-    public function edit(Request $request, Driver $driver): Response
-    {
-        Gate::authorize(Permission::UPDATE_DRIVERS->value);
-
-        return Inertia::render('drivers/edit', [
-            'driver' => $driver,
             'municipalities' => $this->municipalitiesPayload(),
             'documentTypes' => DocumentType::orderBy('code')->get(['id', 'code', 'name']),
             'eps' => Eps::orderBy('name')->get(['id', 'code', 'name']),
@@ -229,7 +207,7 @@ class DriverController extends Controller
         Gate::authorize(Permission::UPDATE_DRIVERS->value);
         $driver->update($request->validated());
 
-        return redirect()->route('drivers.index');
+        return back()->with('success', 'Conductor actualizado.');
     }
 
     public function destroy(Request $request, Driver $driver): RedirectResponse

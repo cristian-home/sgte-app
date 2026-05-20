@@ -29,20 +29,13 @@ class IncidentTypeController extends Controller
         ]);
     }
 
-    public function create(Request $request): Response
-    {
-        Gate::authorize(Permission::CREATE_INCIDENT_TYPES->value);
-
-        return Inertia::render('incident-types/create');
-    }
-
     public function store(IncidentTypeStoreRequest $request): RedirectResponse
     {
         Gate::authorize(Permission::CREATE_INCIDENT_TYPES->value);
 
         IncidentType::create($request->validated());
 
-        return redirect()->route('incident-types.index');
+        return back()->with('success', 'Tipo de novedad creado.');
     }
 
     public function show(Request $request, IncidentType $incidentType): Response
@@ -54,22 +47,13 @@ class IncidentTypeController extends Controller
         ]);
     }
 
-    public function edit(Request $request, IncidentType $incidentType): Response
-    {
-        Gate::authorize(Permission::UPDATE_INCIDENT_TYPES->value);
-
-        return Inertia::render('incident-types/edit', [
-            'incidentType' => $incidentType,
-        ]);
-    }
-
     public function update(IncidentTypeUpdateRequest $request, IncidentType $incidentType): RedirectResponse
     {
         Gate::authorize(Permission::UPDATE_INCIDENT_TYPES->value);
 
         $incidentType->update($request->validated());
 
-        return redirect()->route('incident-types.index');
+        return back()->with('success', 'Tipo de novedad actualizado.');
     }
 
     public function destroy(Request $request, IncidentType $incidentType): RedirectResponse

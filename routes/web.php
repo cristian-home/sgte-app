@@ -33,15 +33,37 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('day-summary', [App\Http\Controllers\DaySummaryController::class, 'index'])
         ->middleware('can:'.App\Enums\Permission::VIEW_DAY_SUMMARY->value)
         ->name('day-summary.index');
+
+    // Legacy create/edit URLs — the standalone create/edit pages were
+    // replaced by in-page modals. These literal routes MUST be registered
+    // before the Route::resource calls below so a single-segment path like
+    // `/{resource}/create` or `/{resource}/edit` resolves here instead of
+    // falling through to the resource `show` route — route-model binding
+    // on a non-numeric id would 500 on Postgres. A bookmarked legacy URL
+    // lands on the index, where the create/edit modal now lives.
+    foreach ([
+        'document-types', 'eps', 'pension-funds', 'severance-funds',
+        'third-parties', 'drivers', 'vehicles', 'contracts', 'invoices',
+        'incident-types',
+    ] as $modalResource) {
+        Route::get($modalResource.'/create', fn () => redirect()->route($modalResource.'.index'));
+        Route::get($modalResource.'/edit', fn () => redirect()->route($modalResource.'.index'));
+        Route::get($modalResource.'/{record}/edit', fn () => redirect()->route($modalResource.'.index'));
+    }
+
     // Static catalogs — single MANAGE_CATALOGS permission gates all four
     // resources end-to-end (view/create/update/delete).
     Route::resource('document-types', App\Http\Controllers\DocumentTypeController::class)
+        ->except(['create', 'edit'])
         ->middleware('can:'.App\Enums\Permission::MANAGE_CATALOGS->value);
     Route::resource('eps', App\Http\Controllers\EpsController::class)
+        ->except(['create', 'edit'])
         ->middleware('can:'.App\Enums\Permission::MANAGE_CATALOGS->value);
     Route::resource('pension-funds', App\Http\Controllers\PensionFundController::class)
+        ->except(['create', 'edit'])
         ->middleware('can:'.App\Enums\Permission::MANAGE_CATALOGS->value);
     Route::resource('severance-funds', App\Http\Controllers\SeveranceFundController::class)
+        ->except(['create', 'edit'])
         ->middleware('can:'.App\Enums\Permission::MANAGE_CATALOGS->value);
     // Master-data resources — route-level `can:*.view` is the cheap
     // baseline gate. Each CREATE/UPDATE/DELETE action re-checks its
@@ -51,6 +73,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // resource-wide `can:view` does not accidentally block legitimate
     // mutation traffic. See ADR-005 §Layer 2.
     Route::resource('third-parties', App\Http\Controllers\ThirdPartyController::class)
+        ->except(['create', 'edit'])
         ->middleware('can:'.App\Enums\Permission::VIEW_THIRD_PARTIES->value);
     Route::post('drivers/{driver}/invite-account', [App\Http\Controllers\DriverController::class, 'inviteAccount'])
         ->middleware('can:'.App\Enums\Permission::UPDATE_DRIVERS->value)
@@ -59,10 +82,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware('can:'.App\Enums\Permission::UPDATE_DRIVERS->value)
         ->name('drivers.resend-invitation');
     Route::resource('drivers', App\Http\Controllers\DriverController::class)
+        ->except(['create', 'edit'])
         ->middleware('can:'.App\Enums\Permission::VIEW_DRIVERS->value);
     Route::resource('vehicles', App\Http\Controllers\VehicleController::class)
+        ->except(['create', 'edit'])
         ->middleware('can:'.App\Enums\Permission::VIEW_VEHICLES->value);
     Route::resource('contracts', App\Http\Controllers\ContractController::class)
+        ->except(['create', 'edit'])
         ->middleware('can:'.App\Enums\Permission::VIEW_CONTRACTS->value);
     Route::post('invoices/{invoice}/mark-paid', [App\Http\Controllers\InvoiceController::class, 'markPaid'])
         ->middleware('can:'.App\Enums\Permission::UPDATE_INVOICES->value)
@@ -72,6 +98,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('invoices/{invoice}/services/{service}', [App\Http\Controllers\InvoiceController::class, 'detachService'])->middleware('can:'.App\Enums\Permission::ASSIGN_SERVICES_TO_INVOICES->value)->name('invoices.services.detach');
     Route::post('invoices/{invoice}/recompute-total', [App\Http\Controllers\InvoiceController::class, 'recomputeTotal'])->middleware('can:'.App\Enums\Permission::ASSIGN_SERVICES_TO_INVOICES->value)->name('invoices.recompute-total');
     Route::resource('invoices', App\Http\Controllers\InvoiceController::class)
+        ->except(['create', 'edit'])
         ->middleware('can:'.App\Enums\Permission::VIEW_INVOICES->value);
     Route::get('day-statuses/{year}/{month}', [App\Http\Controllers\DayStatusController::class, 'calendarMonth'])
         ->middleware('can:'.App\Enums\Permission::VIEW_DAY_SUMMARY->value)
@@ -89,6 +116,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('services', App\Http\Controllers\ServiceController::class)
         ->middleware('can:'.App\Enums\Permission::VIEW_SERVICES->value);
     Route::resource('incident-types', App\Http\Controllers\IncidentTypeController::class)
+        ->except(['create', 'edit'])
         ->middleware('can:'.App\Enums\Permission::VIEW_INCIDENT_TYPES->value);
     // Service incidents — intentionally NOT gated at the route level.
     // Drivers have CREATE_INCIDENTS but no VIEW_INCIDENTS (they file

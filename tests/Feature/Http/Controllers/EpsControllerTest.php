@@ -37,12 +37,6 @@ test('index returns inertia page with eps', function (): void {
     );
 });
 
-test('create behaves as expected', function (): void {
-    $response = get(route('eps.create'));
-
-    $response->assertOk();
-});
-
 test('store uses form request validation')
     ->assertActionUsesFormRequest(
         \App\Http\Controllers\EpsController::class,
@@ -65,21 +59,14 @@ test('store saves and redirects', function (): void {
         ->get();
     expect($eps)->toHaveCount(1);
 
-    $response->assertRedirect(route('eps.index'));
+    $response->assertRedirect();
+    $response->assertSessionHas('success');
 });
 
 test('show behaves as expected', function (): void {
     $eps = Eps::factory()->create();
 
     $response = get(route('eps.show', $eps));
-
-    $response->assertOk();
-});
-
-test('edit behaves as expected', function (): void {
-    $eps = Eps::factory()->create();
-
-    $response = get(route('eps.edit', $eps));
 
     $response->assertOk();
 });
@@ -103,7 +90,8 @@ test('update redirects', function (): void {
 
     $eps->refresh();
 
-    $response->assertRedirect(route('eps.index'));
+    $response->assertRedirect();
+    $response->assertSessionHas('success');
 
     expect($code)->toEqual($eps->code);
     expect($name)->toEqual($eps->name);

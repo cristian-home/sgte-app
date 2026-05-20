@@ -29,20 +29,13 @@ class EpsController extends Controller
         ]);
     }
 
-    public function create(Request $request): Response
-    {
-        Gate::authorize(Permission::MANAGE_CATALOGS->value);
-
-        return Inertia::render('eps/create');
-    }
-
     public function store(EpsStoreRequest $request): RedirectResponse
     {
         Gate::authorize(Permission::MANAGE_CATALOGS->value);
 
         Eps::create($request->validated());
 
-        return redirect()->route('eps.index');
+        return back()->with('success', 'EPS creada.');
     }
 
     public function show(Request $request, Eps $ep): Response
@@ -54,22 +47,13 @@ class EpsController extends Controller
         ]);
     }
 
-    public function edit(Request $request, Eps $ep): Response
-    {
-        Gate::authorize(Permission::MANAGE_CATALOGS->value);
-
-        return Inertia::render('eps/edit', [
-            'eps' => $ep,
-        ]);
-    }
-
     public function update(EpsUpdateRequest $request, Eps $ep): RedirectResponse
     {
         Gate::authorize(Permission::MANAGE_CATALOGS->value);
 
         $ep->update($request->validated());
 
-        return redirect()->route('eps.index');
+        return back()->with('success', 'EPS actualizada.');
     }
 
     public function destroy(Request $request, Eps $ep): RedirectResponse

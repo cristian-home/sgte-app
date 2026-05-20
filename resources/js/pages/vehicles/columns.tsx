@@ -5,12 +5,21 @@ import {
     DataTableRowActions,
 } from '@/components/data-table';
 import { Badge } from '@/components/ui/badge';
+import { type EditableVehicle } from '@/components/vehicles/vehicle-dialog';
 import { VehicleDocumentPills } from '@/components/vehicles/vehicle-document-pills';
 import { Permission } from '@/enums/Permission';
 import vehicles from '@/routes/vehicles';
 
-import type { ColumnDef } from '@tanstack/react-table';
+import type { ColumnDef, Table } from '@tanstack/react-table';
 import type { Vehicle } from '@/types/models';
+
+export interface VehicleTableMeta {
+    onEdit: (vehicle: EditableVehicle) => void;
+}
+
+function meta(table: Table<Vehicle>): VehicleTableMeta {
+    return table.options.meta as VehicleTableMeta;
+}
 
 const typeLabels: Record<string, string> = {
     bus: 'Bus',
@@ -115,12 +124,12 @@ export const columns: ColumnDef<Vehicle, unknown>[] = [
     },
     {
         id: 'actions',
-        cell: ({ row }) => {
+        cell: ({ row, table }) => {
             const vehicle = row.original;
             return (
                 <Can permission={Permission.DELETE_VEHICLES}>
                     <DataTableRowActions
-                        editUrl={vehicles.edit(vehicle.id).url}
+                        onEdit={() => meta(table).onEdit(vehicle)}
                         onDelete={() =>
                             router.delete(vehicles.destroy(vehicle.id).url, {
                                 preserveScroll: true,

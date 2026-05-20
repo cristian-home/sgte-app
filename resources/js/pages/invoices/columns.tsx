@@ -3,6 +3,7 @@ import {
     DataTableColumnHeader,
     DataTableRowActions,
 } from '@/components/data-table';
+import { type EditableInvoice } from '@/components/invoices/invoice-dialog';
 import { PaymentStatusPill } from '@/components/invoices/payment-status-pill';
 import { Permission } from '@/enums/Permission';
 import { usePermissions } from '@/hooks/use-permissions';
@@ -10,21 +11,30 @@ import { dateFormatter, parseDueDate } from '@/lib/document-status';
 import invoices from '@/routes/invoices';
 import thirdParties from '@/routes/third-parties';
 
-import type { ColumnDef } from '@tanstack/react-table';
+import type { ColumnDef, Table } from '@tanstack/react-table';
 import type { DocumentType, Invoice, ThirdParty } from '@/types/models';
 
 // Invoice as it arrives from InvoiceController@index — eager-loads
-// `thirdParty.documentType`; global Invoice type uses `relation?: T`
-// (undefined-only) while the payload returns `relation: T | null`.
-// Pick + & relations keeps both compatible (matches drivers/vehicles/
-// contracts).
+// `thirdParty.documentType` and `withCount('services')`; global Invoice
+// type uses `relation?: T` (undefined-only) while the payload returns
+// `relation: T | null`. Pick + & relations keeps both compatible
+// (matches drivers/vehicles/contracts).
 export type InvoiceRow = Invoice & {
+    services_count?: number;
     third_party?:
         | (ThirdParty & {
               document_type?: Pick<DocumentType, 'id' | 'code' | 'name'> | null;
           })
         | null;
 };
+
+export interface InvoiceTableMeta {
+    onEdit: (invoice: EditableInvoice) => void;
+}
+
+function meta(table: Table<InvoiceRow>): InvoiceTableMeta {
+    return table.options.meta as InvoiceTableMeta;
+}
 
 const currencyFormatter = new Intl.NumberFormat('es-CO', {
     style: 'currency',
@@ -123,7 +133,12 @@ export const columns: ColumnDef<InvoiceRow, unknown>[] = [
     },
     {
         id: 'actions',
-        cell: ({ row }) => <InvoiceRowActions invoice={row.original} />,
+        cell: ({ row, table }) => (
+            <InvoiceRowActions
+                invoice={row.original}
+                onEdit={meta(table).onEdit}
+            />
+        ),
     },
 ];
 
@@ -131,7 +146,13 @@ export const columns: ColumnDef<InvoiceRow, unknown>[] = [
 // Edit action is available to both admin and accounting (UPDATE_INVOICES),
 // but the Delete action is admin-only (DELETE_INVOICES). Accounting
 // must still see the menu with the Edit entry.
-function InvoiceRowActions({ invoice }: { invoice: InvoiceRow }) {
+function InvoiceRowActions({
+    invoice,
+    onEdit,
+}: {
+    invoice: InvoiceRow;
+    onEdit: (invoice: EditableInvoice) => void;
+}) {
     const { can } = usePermissions();
 
     const canUpdate = can(Permission.UPDATE_INVOICES);
@@ -143,7 +164,7 @@ function InvoiceRowActions({ invoice }: { invoice: InvoiceRow }) {
 
     return (
         <DataTableRowActions
-            editUrl={canUpdate ? invoices.edit(invoice.id).url : undefined}
+            onEdit={canUpdate ? () => onEdit(invoice) : undefined}
             onDelete={
                 canDelete
                     ? () =>

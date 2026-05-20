@@ -11,10 +11,12 @@ import {
 import { useState } from 'react';
 import InvoiceController from '@/actions/App/Http/Controllers/InvoiceController';
 import { Can } from '@/components/can';
+import InvoiceDialog from '@/components/invoices/invoice-dialog';
 import { PaymentStatusPill } from '@/components/invoices/payment-status-pill';
 import ServicePickerDialog, {
     type ServicePickerRow,
 } from '@/components/invoices/service-picker-dialog';
+import { type ThirdPartyOption } from '@/components/third-parties/third-party-combobox';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -42,7 +44,7 @@ import { dateFormatter, parseDueDate } from '@/lib/document-status';
 import contracts from '@/routes/contracts';
 import invoices from '@/routes/invoices';
 import services from '@/routes/services';
-import thirdParties from '@/routes/third-parties';
+import thirdPartyRoutes from '@/routes/third-parties';
 
 import type { BreadcrumbItem } from '@/types';
 import type { DocumentType, Invoice, ThirdParty } from '@/types/models';
@@ -150,13 +152,17 @@ export default function InvoicesShow({
     computedTotal,
     candidateServices,
     blockedCandidateServices,
+    thirdParties,
 }: {
     invoice: ShowInvoice;
     recentServices: RecentServiceRow[];
     computedTotal: string;
     candidateServices: ServicePickerRow[];
     blockedCandidateServices?: ServicePickerRow[];
+    thirdParties: ThirdPartyOption[];
 }) {
+    const [editOpen, setEditOpen] = useState(false);
+
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Facturas', href: invoices.index().url },
         { title: invoice.invoice_number, href: '#' },
@@ -257,16 +263,26 @@ export default function InvoicesShow({
                                         </a>
                                     </Button>
                                 </Can>
-                                <Button asChild size="sm" variant="outline">
-                                    <Link href={invoices.edit(invoice.id).url}>
-                                        <Pencil className="mr-1 size-4" />
-                                        Editar
-                                    </Link>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setEditOpen(true)}
+                                >
+                                    <Pencil className="mr-1 size-4" />
+                                    Editar
                                 </Button>
                             </div>
                         </div>
                     </CardHeader>
                 </Card>
+
+                <InvoiceDialog
+                    open={editOpen}
+                    onOpenChange={setEditOpen}
+                    mode="edit"
+                    invoice={invoice}
+                    thirdParties={thirdParties}
+                />
 
                 {/* Datos de la Factura */}
                 <Card>
@@ -367,7 +383,9 @@ export default function InvoicesShow({
                                     </p>
                                 </div>
                                 <Button asChild size="sm" variant="outline">
-                                    <Link href={thirdParties.show(tp.id).url}>
+                                    <Link
+                                        href={thirdPartyRoutes.show(tp.id).url}
+                                    >
                                         Ver tercero
                                     </Link>
                                 </Button>

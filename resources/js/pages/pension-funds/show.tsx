@@ -1,5 +1,7 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
+import { useState } from 'react';
 import PensionFundController from '@/actions/App/Http/Controllers/PensionFundController';
+import CatalogCodeNameDialog from '@/components/catalogs/catalog-code-name-dialog';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -16,6 +18,8 @@ export default function PensionFundsShow({
 }: {
     pensionFund: PensionFund;
 }) {
+    const [editOpen, setEditOpen] = useState(false);
+
     const breadcrumbs: BreadcrumbItem[] = [
         {
             title: 'Fondos de Pensiones',
@@ -40,18 +44,26 @@ export default function PensionFundsShow({
                                     Código: {pensionFund.code}
                                 </CardDescription>
                             </div>
-                            <Link
-                                href={PensionFundController.edit.url(
-                                    pensionFund.id,
-                                )}
+                            <Button
+                                variant="outline"
+                                onClick={() => setEditOpen(true)}
                             >
-                                <Button variant="outline">Editar</Button>
-                            </Link>
+                                Editar
+                            </Button>
                         </div>
                     </CardHeader>
                     <CardContent />
                 </Card>
             </div>
+            <CatalogCodeNameDialog
+                open={editOpen}
+                onOpenChange={setEditOpen}
+                mode="edit"
+                record={pensionFund}
+                entityLabel="Fondo de Pensiones"
+                storeUrl={PensionFundController.store.url()}
+                updateUrl={(id) => PensionFundController.update.url(id)}
+            />
         </AppLayout>
     );
 }

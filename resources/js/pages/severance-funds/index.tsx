@@ -1,12 +1,12 @@
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
 import SeveranceFundController from '@/actions/App/Http/Controllers/SeveranceFundController';
+import CatalogCodeNameDialog from '@/components/catalogs/catalog-code-name-dialog';
 import {
     DataTable,
     DataTableColumnHeader,
     DataTableRowActions,
 } from '@/components/data-table';
-import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { PageHeader } from '@/components/page-header';
 import AppLayout from '@/layouts/app-layout';
 import type { ColumnDef } from '@tanstack/react-table';
@@ -39,7 +39,21 @@ export default function SeveranceFundsIndex({
 }: {
     severanceFunds: SeveranceFund[];
 }) {
-    const [deleteUrl, setDeleteUrl] = useState<string | null>(null);
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
+    const [selected, setSelected] = useState<SeveranceFund | null>(null);
+
+    function openCreate() {
+        setSelected(null);
+        setDialogMode('create');
+        setDialogOpen(true);
+    }
+
+    function openEdit(record: SeveranceFund) {
+        setSelected(record);
+        setDialogMode('edit');
+        setDialogOpen(true);
+    }
 
     const columnsWithActions: ColumnDef<SeveranceFund>[] = [
         ...columns,
@@ -47,12 +61,13 @@ export default function SeveranceFundsIndex({
             id: 'actions',
             cell: ({ row }) => (
                 <DataTableRowActions
-                    editUrl={SeveranceFundController.edit.url(row.original.id)}
+                    onEdit={() => openEdit(row.original)}
                     onDelete={() =>
-                        setDeleteUrl(
+                        router.delete(
                             SeveranceFundController.destroy.url(
                                 row.original.id,
                             ),
+                            { preserveScroll: true },
                         )
                     }
                 />
@@ -66,7 +81,7 @@ export default function SeveranceFundsIndex({
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
                 <PageHeader
                     title="Fondos de Cesantias"
-                    createUrl={SeveranceFundController.create.url()}
+                    onCreate={openCreate}
                     createLabel="Nuevo fondo"
                 />
                 <DataTable
@@ -76,10 +91,14 @@ export default function SeveranceFundsIndex({
                     searchPlaceholder="Buscar por nombre..."
                 />
             </div>
-            <DeleteConfirmationDialog
-                open={deleteUrl !== null}
-                onOpenChange={(open) => !open && setDeleteUrl(null)}
-                deleteUrl={deleteUrl ?? ''}
+            <CatalogCodeNameDialog
+                open={dialogOpen}
+                onOpenChange={setDialogOpen}
+                mode={dialogMode}
+                record={selected}
+                entityLabel="Fondo de Cesantías"
+                storeUrl={SeveranceFundController.store.url()}
+                updateUrl={(id) => SeveranceFundController.update.url(id)}
             />
         </AppLayout>
     );

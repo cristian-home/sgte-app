@@ -37,12 +37,6 @@ test('index returns inertia page with pension funds', function (): void {
     );
 });
 
-test('create behaves as expected', function (): void {
-    $response = get(route('pension-funds.create'));
-
-    $response->assertOk();
-});
-
 test('store uses form request validation')
     ->assertActionUsesFormRequest(
         \App\Http\Controllers\PensionFundController::class,
@@ -65,21 +59,14 @@ test('store saves and redirects', function (): void {
         ->get();
     expect($pensionFunds)->toHaveCount(1);
 
-    $response->assertRedirect(route('pension-funds.index'));
+    $response->assertRedirect();
+    $response->assertSessionHas('success');
 });
 
 test('show behaves as expected', function (): void {
     $pensionFund = PensionFund::factory()->create();
 
     $response = get(route('pension-funds.show', $pensionFund));
-
-    $response->assertOk();
-});
-
-test('edit behaves as expected', function (): void {
-    $pensionFund = PensionFund::factory()->create();
-
-    $response = get(route('pension-funds.edit', $pensionFund));
 
     $response->assertOk();
 });
@@ -103,7 +90,8 @@ test('update redirects', function (): void {
 
     $pensionFund->refresh();
 
-    $response->assertRedirect(route('pension-funds.index'));
+    $response->assertRedirect();
+    $response->assertSessionHas('success');
 
     expect($code)->toEqual($pensionFund->code);
     expect($name)->toEqual($pensionFund->name);

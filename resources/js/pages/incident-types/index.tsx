@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { Check, X } from 'lucide-react';
 import { useState } from 'react';
 import IncidentTypeController from '@/actions/App/Http/Controllers/IncidentTypeController';
@@ -7,7 +7,7 @@ import {
     DataTableColumnHeader,
     DataTableRowActions,
 } from '@/components/data-table';
-import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
+import IncidentTypeDialog from '@/components/incident-types/incident-type-dialog';
 import { PageHeader } from '@/components/page-header';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -80,7 +80,21 @@ export default function IncidentTypesIndex({
 }: {
     incidentTypes: IncidentType[];
 }) {
-    const [deleteUrl, setDeleteUrl] = useState<string | null>(null);
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
+    const [selected, setSelected] = useState<IncidentType | null>(null);
+
+    function openCreate() {
+        setSelected(null);
+        setDialogMode('create');
+        setDialogOpen(true);
+    }
+
+    function openEdit(record: IncidentType) {
+        setSelected(record);
+        setDialogMode('edit');
+        setDialogOpen(true);
+    }
 
     const columnsWithActions: ColumnDef<IncidentType>[] = [
         ...columns,
@@ -88,10 +102,13 @@ export default function IncidentTypesIndex({
             id: 'actions',
             cell: ({ row }) => (
                 <DataTableRowActions
-                    editUrl={IncidentTypeController.edit.url(row.original.id)}
+                    onEdit={() => openEdit(row.original)}
                     onDelete={() =>
-                        setDeleteUrl(
-                            IncidentTypeController.destroy.url(row.original.id),
+                        router.delete(
+                            IncidentTypeController.destroy.url(
+                                row.original.id,
+                            ),
+                            { preserveScroll: true },
                         )
                     }
                 />
@@ -105,7 +122,7 @@ export default function IncidentTypesIndex({
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
                 <PageHeader
                     title="Tipos de Novedad"
-                    createUrl={IncidentTypeController.create.url()}
+                    onCreate={openCreate}
                     createLabel="Nuevo Tipo de Novedad"
                 />
                 <DataTable
@@ -115,10 +132,11 @@ export default function IncidentTypesIndex({
                     searchPlaceholder="Buscar por nombre..."
                 />
             </div>
-            <DeleteConfirmationDialog
-                open={deleteUrl !== null}
-                onOpenChange={(open) => !open && setDeleteUrl(null)}
-                deleteUrl={deleteUrl ?? ''}
+            <IncidentTypeDialog
+                open={dialogOpen}
+                onOpenChange={setDialogOpen}
+                mode={dialogMode}
+                incidentType={selected}
             />
         </AppLayout>
     );

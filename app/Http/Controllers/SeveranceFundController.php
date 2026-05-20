@@ -29,20 +29,13 @@ class SeveranceFundController extends Controller
         ]);
     }
 
-    public function create(Request $request): Response
-    {
-        Gate::authorize(Permission::MANAGE_CATALOGS->value);
-
-        return Inertia::render('severance-funds/create');
-    }
-
     public function store(SeveranceFundStoreRequest $request): RedirectResponse
     {
         Gate::authorize(Permission::MANAGE_CATALOGS->value);
 
         SeveranceFund::create($request->validated());
 
-        return redirect()->route('severance-funds.index');
+        return back()->with('success', 'Fondo de cesantías creado.');
     }
 
     public function show(Request $request, SeveranceFund $severanceFund): Response
@@ -54,22 +47,13 @@ class SeveranceFundController extends Controller
         ]);
     }
 
-    public function edit(Request $request, SeveranceFund $severanceFund): Response
-    {
-        Gate::authorize(Permission::MANAGE_CATALOGS->value);
-
-        return Inertia::render('severance-funds/edit', [
-            'severanceFund' => $severanceFund,
-        ]);
-    }
-
     public function update(SeveranceFundUpdateRequest $request, SeveranceFund $severanceFund): RedirectResponse
     {
         Gate::authorize(Permission::MANAGE_CATALOGS->value);
 
         $severanceFund->update($request->validated());
 
-        return redirect()->route('severance-funds.index');
+        return back()->with('success', 'Fondo de cesantías actualizado.');
     }
 
     public function destroy(Request $request, SeveranceFund $severanceFund): RedirectResponse
