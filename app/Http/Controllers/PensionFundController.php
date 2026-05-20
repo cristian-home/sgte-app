@@ -29,20 +29,13 @@ class PensionFundController extends Controller
         ]);
     }
 
-    public function create(Request $request): Response
-    {
-        Gate::authorize(Permission::MANAGE_CATALOGS->value);
-
-        return Inertia::render('pension-funds/create');
-    }
-
     public function store(PensionFundStoreRequest $request): RedirectResponse
     {
         Gate::authorize(Permission::MANAGE_CATALOGS->value);
 
         PensionFund::create($request->validated());
 
-        return redirect()->route('pension-funds.index');
+        return back()->with('success', 'Fondo de pensiones creado.');
     }
 
     public function show(Request $request, PensionFund $pensionFund): Response
@@ -54,22 +47,13 @@ class PensionFundController extends Controller
         ]);
     }
 
-    public function edit(Request $request, PensionFund $pensionFund): Response
-    {
-        Gate::authorize(Permission::MANAGE_CATALOGS->value);
-
-        return Inertia::render('pension-funds/edit', [
-            'pensionFund' => $pensionFund,
-        ]);
-    }
-
     public function update(PensionFundUpdateRequest $request, PensionFund $pensionFund): RedirectResponse
     {
         Gate::authorize(Permission::MANAGE_CATALOGS->value);
 
         $pensionFund->update($request->validated());
 
-        return redirect()->route('pension-funds.index');
+        return back()->with('success', 'Fondo de pensiones actualizado.');
     }
 
     public function destroy(Request $request, PensionFund $pensionFund): RedirectResponse

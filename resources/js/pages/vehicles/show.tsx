@@ -1,5 +1,7 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import { Building2, Pencil, Truck, User } from 'lucide-react';
+import { useState } from 'react';
+import { type MunicipalityOption } from '@/components/municipality-combobox';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,7 +13,9 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import VehicleDialog from '@/components/vehicles/vehicle-dialog';
 import { VehicleDocumentPills } from '@/components/vehicles/vehicle-document-pills';
+import { type ThirdPartyOption } from '@/components/vehicles/vehicle-form';
 import AppLayout from '@/layouts/app-layout';
 import services from '@/routes/services';
 import vehicles from '@/routes/vehicles';
@@ -36,7 +40,9 @@ type ShowVehicle = Pick<
     | 'engine_number'
     | 'chassis_number'
     | 'capacity'
+    | 'municipality_id'
     | 'is_third_party'
+    | 'third_party_id'
     | 'timezone'
     | 'soat_due_at'
     | 'rtm_due_at'
@@ -196,15 +202,20 @@ export default function VehiclesShow({
     vehicle,
     recentServices,
     recentLocations,
+    municipalities,
+    thirdParties,
 }: {
     vehicle: ShowVehicle;
     recentServices: RecentServiceRow[];
     recentLocations: RecentLocationRow[];
+    municipalities: MunicipalityOption[];
+    thirdParties: ThirdPartyOption[];
 }) {
     const page = usePage<{
         auth?: { featureFlags?: { fuec?: boolean; gps?: boolean } };
     }>();
     const gpsEnabled = page.props.auth?.featureFlags?.gps === true;
+    const [editOpen, setEditOpen] = useState(false);
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Vehículos', href: vehicles.index().url },
         { title: vehicle.plate, href: '#' },
@@ -234,16 +245,27 @@ export default function VehiclesShow({
                                     {statusLabels[vehicle.status] ??
                                         vehicle.status}
                                 </Badge>
-                                <Button asChild size="sm" variant="outline">
-                                    <Link href={vehicles.edit(vehicle.id).url}>
-                                        <Pencil className="mr-1 size-4" />
-                                        Editar
-                                    </Link>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setEditOpen(true)}
+                                >
+                                    <Pencil className="mr-1 size-4" />
+                                    Editar
                                 </Button>
                             </div>
                         </div>
                     </CardHeader>
                 </Card>
+
+                <VehicleDialog
+                    open={editOpen}
+                    onOpenChange={setEditOpen}
+                    mode="edit"
+                    vehicle={vehicle}
+                    municipalities={municipalities}
+                    thirdParties={thirdParties}
+                />
 
                 {/* Información General */}
                 <Card>

@@ -1,7 +1,9 @@
 import { Head } from '@inertiajs/react';
 import { PlusIcon } from 'lucide-react';
-import { useState } from 'react';
-import ContractCreateDialog from '@/components/contracts/contract-create-dialog';
+import { useMemo, useState } from 'react';
+import ContractDialog, {
+    type EditableContract,
+} from '@/components/contracts/contract-dialog';
 import { contractRowTint } from '@/components/contracts/contract-period-pill';
 import { DataTable } from '@/components/data-table';
 import { type MunicipalityOption } from '@/components/municipality-combobox';
@@ -15,7 +17,7 @@ import { useServerTable } from '@/hooks/use-server-table';
 import AppLayout from '@/layouts/app-layout';
 import contracts from '@/routes/contracts';
 
-import { columns, type ContractRow } from './columns';
+import { columns, type ContractRow, type ContractTableMeta } from './columns';
 
 import type { Row } from '@tanstack/react-table';
 import type { BreadcrumbItem, FilterDefinition, PaginatedData } from '@/types';
@@ -78,7 +80,27 @@ export default function ContractsIndex({
     documentTypes?: DocumentTypeOption[];
     municipalities?: MunicipalityOption[];
 }) {
-    const [createOpen, setCreateOpen] = useState(false);
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
+    const [selectedContract, setSelectedContract] =
+        useState<EditableContract | null>(null);
+
+    function openCreate() {
+        setSelectedContract(null);
+        setDialogMode('create');
+        setDialogOpen(true);
+    }
+
+    function openEdit(contract: EditableContract) {
+        setSelectedContract(contract);
+        setDialogMode('edit');
+        setDialogOpen(true);
+    }
+
+    const tableMeta: ContractTableMeta = useMemo(
+        () => ({ onEdit: openEdit }),
+        [],
+    );
 
     const {
         table,
@@ -94,6 +116,7 @@ export default function ContractsIndex({
     } = useServerTable<ContractRow>({
         data: paginatedContracts,
         columns,
+        meta: tableMeta,
     });
 
     const selectedThirdPartyId = activeFilters['third_party_id']?.[0] ?? null;
@@ -142,7 +165,7 @@ export default function ContractsIndex({
                     onClearFilters={clearFilters}
                     getRowClassName={rowTintFor}
                     actions={
-                        <Button onClick={() => setCreateOpen(true)} size="sm">
+                        <Button onClick={openCreate} size="sm">
                             <PlusIcon className="mr-2 size-4" />
                             Crear Contrato
                         </Button>
@@ -150,9 +173,11 @@ export default function ContractsIndex({
                 />
             </div>
 
-            <ContractCreateDialog
-                open={createOpen}
-                onOpenChange={setCreateOpen}
+            <ContractDialog
+                open={dialogOpen}
+                onOpenChange={setDialogOpen}
+                mode={dialogMode}
+                contract={selectedContract}
                 thirdParties={thirdParties}
                 documentTypes={documentTypes}
                 municipalities={municipalities}

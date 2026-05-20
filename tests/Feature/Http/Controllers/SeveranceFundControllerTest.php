@@ -37,12 +37,6 @@ test('index returns inertia page with severance funds', function (): void {
     );
 });
 
-test('create behaves as expected', function (): void {
-    $response = get(route('severance-funds.create'));
-
-    $response->assertOk();
-});
-
 test('store uses form request validation')
     ->assertActionUsesFormRequest(
         \App\Http\Controllers\SeveranceFundController::class,
@@ -65,21 +59,14 @@ test('store saves and redirects', function (): void {
         ->get();
     expect($severanceFunds)->toHaveCount(1);
 
-    $response->assertRedirect(route('severance-funds.index'));
+    $response->assertRedirect();
+    $response->assertSessionHas('success');
 });
 
 test('show behaves as expected', function (): void {
     $severanceFund = SeveranceFund::factory()->create();
 
     $response = get(route('severance-funds.show', $severanceFund));
-
-    $response->assertOk();
-});
-
-test('edit behaves as expected', function (): void {
-    $severanceFund = SeveranceFund::factory()->create();
-
-    $response = get(route('severance-funds.edit', $severanceFund));
 
     $response->assertOk();
 });
@@ -103,7 +90,8 @@ test('update redirects', function (): void {
 
     $severanceFund->refresh();
 
-    $response->assertRedirect(route('severance-funds.index'));
+    $response->assertRedirect();
+    $response->assertSessionHas('success');
 
     expect($code)->toEqual($severanceFund->code);
     expect($name)->toEqual($severanceFund->name);

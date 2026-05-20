@@ -1,8 +1,10 @@
 import { Head } from '@inertiajs/react';
 import { PlusIcon } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { DataTable } from '@/components/data-table';
-import InvoiceCreateDialog from '@/components/invoices/invoice-create-dialog';
+import InvoiceDialog, {
+    type EditableInvoice,
+} from '@/components/invoices/invoice-dialog';
 import { paymentStatusRowTint } from '@/components/invoices/payment-status-pill';
 import ThirdPartyCombobox, {
     type ThirdPartyOption,
@@ -13,7 +15,7 @@ import { useServerTable } from '@/hooks/use-server-table';
 import AppLayout from '@/layouts/app-layout';
 import invoices from '@/routes/invoices';
 
-import { columns, type InvoiceRow } from './columns';
+import { columns, type InvoiceRow, type InvoiceTableMeta } from './columns';
 
 import type { Row } from '@tanstack/react-table';
 import type { BreadcrumbItem, FilterDefinition, PaginatedData } from '@/types';
@@ -45,7 +47,27 @@ export default function InvoicesIndex({
     invoices: PaginatedData<InvoiceRow>;
     thirdParties: ThirdPartyOption[];
 }) {
-    const [createOpen, setCreateOpen] = useState(false);
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
+    const [selectedInvoice, setSelectedInvoice] =
+        useState<EditableInvoice | null>(null);
+
+    function openCreate() {
+        setSelectedInvoice(null);
+        setDialogMode('create');
+        setDialogOpen(true);
+    }
+
+    function openEdit(invoice: EditableInvoice) {
+        setSelectedInvoice(invoice);
+        setDialogMode('edit');
+        setDialogOpen(true);
+    }
+
+    const tableMeta: InvoiceTableMeta = useMemo(
+        () => ({ onEdit: openEdit }),
+        [],
+    );
 
     const {
         table,
@@ -61,6 +83,7 @@ export default function InvoicesIndex({
     } = useServerTable<InvoiceRow>({
         data: paginatedInvoices,
         columns,
+        meta: tableMeta,
     });
 
     const selectedThirdPartyId = activeFilters['third_party_id']?.[0] ?? null;
@@ -109,7 +132,7 @@ export default function InvoicesIndex({
                     onClearFilters={clearFilters}
                     getRowClassName={rowTintFor}
                     actions={
-                        <Button onClick={() => setCreateOpen(true)} size="sm">
+                        <Button onClick={openCreate} size="sm">
                             <PlusIcon className="mr-2 size-4" />
                             Crear Factura
                         </Button>
@@ -117,9 +140,11 @@ export default function InvoicesIndex({
                 />
             </div>
 
-            <InvoiceCreateDialog
-                open={createOpen}
-                onOpenChange={setCreateOpen}
+            <InvoiceDialog
+                open={dialogOpen}
+                onOpenChange={setDialogOpen}
+                mode={dialogMode}
+                invoice={selectedInvoice}
                 thirdParties={thirdParties}
             />
         </AppLayout>

@@ -8,8 +8,14 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import DriverController from '@/actions/App/Http/Controllers/DriverController';
+import DriverDialog from '@/components/drivers/driver-dialog';
+import {
+    type CatalogOption,
+    type DocumentTypeOption,
+} from '@/components/drivers/driver-form';
 import { DriverInviteDialog } from '@/components/drivers/driver-invite-dialog';
 import { DriverLicensePill } from '@/components/drivers/driver-license-pill';
+import { type MunicipalityOption } from '@/components/municipality-combobox';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,11 +42,13 @@ import type { Driver } from '@/types/models';
 type ShowDriver = Pick<
     Driver,
     | 'id'
+    | 'document_type_id'
     | 'identification_number'
     | 'first_name'
     | 'second_name'
     | 'first_lastname'
     | 'second_lastname'
+    | 'municipality_id'
     | 'address'
     | 'phone'
     | 'email'
@@ -48,6 +56,9 @@ type ShowDriver = Pick<
     | 'timezone'
     | 'license_due_at'
     | 'license_due_date'
+    | 'eps_id'
+    | 'pension_fund_id'
+    | 'severance_fund_id'
     | 'has_social_security'
     | 'active'
 > & {
@@ -143,11 +154,22 @@ function Field({
 export default function DriversShow({
     driver,
     recentServices,
+    municipalities,
+    documentTypes,
+    eps,
+    pensionFunds,
+    severanceFunds,
 }: {
     driver: ShowDriver;
     recentServices: RecentServiceRow[];
+    municipalities: MunicipalityOption[];
+    documentTypes: DocumentTypeOption[];
+    eps: CatalogOption[];
+    pensionFunds: CatalogOption[];
+    severanceFunds: CatalogOption[];
 }) {
     const [inviteOpen, setInviteOpen] = useState(false);
+    const [editOpen, setEditOpen] = useState(false);
 
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Conductores', href: drivers.index().url },
@@ -198,11 +220,13 @@ export default function DriversShow({
                                 >
                                     {driver.active ? 'Activo' : 'Inactivo'}
                                 </Badge>
-                                <Button asChild size="sm" variant="outline">
-                                    <Link href={drivers.edit(driver.id).url}>
-                                        <Pencil className="mr-1 size-4" />
-                                        Editar
-                                    </Link>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setEditOpen(true)}
+                                >
+                                    <Pencil className="mr-1 size-4" />
+                                    Editar
                                 </Button>
                             </div>
                         </div>
@@ -262,6 +286,18 @@ export default function DriversShow({
                     defaultEmail={driver.email ?? ''}
                     open={inviteOpen}
                     onOpenChange={setInviteOpen}
+                />
+
+                <DriverDialog
+                    open={editOpen}
+                    onOpenChange={setEditOpen}
+                    mode="edit"
+                    driver={driver}
+                    municipalities={municipalities}
+                    documentTypes={documentTypes}
+                    eps={eps}
+                    pensionFunds={pensionFunds}
+                    severanceFunds={severanceFunds}
                 />
 
                 {/* Información Personal */}

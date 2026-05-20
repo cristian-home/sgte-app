@@ -39,13 +39,18 @@ test('users payload excludes the driver role from availableRoles', function (): 
     });
 });
 
-test('drivers create form renders the account section with the checkbox', function (): void {
+test('drivers create modal renders the account section with the checkbox', function (): void {
     $admin = driverFlowLoginAsAdmin();
 
     $this->browse(function (Browser $browser) use ($admin): void {
         $browser->loginAs($admin)
-            ->visit('/drivers/create')
+            ->visit('/drivers')
             ->waitForText('Crear Conductor')
+            ->press('Crear Conductor')
+            ->waitForText('Complete los campos para registrar un nuevo conductor.')
+            // The "Cuenta de acceso al sistema" section only renders when
+            // DriverForm receives mode="create" — this guards the create
+            // modal against silently dropping the account-creation option.
             ->assertSee('Cuenta de acceso al sistema')
             ->assertSee('Crear cuenta de acceso para este conductor')
             ->assertSee('Se enviará un enlace al correo')

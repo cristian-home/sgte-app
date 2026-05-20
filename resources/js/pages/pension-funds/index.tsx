@@ -1,12 +1,12 @@
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
 import PensionFundController from '@/actions/App/Http/Controllers/PensionFundController';
+import CatalogCodeNameDialog from '@/components/catalogs/catalog-code-name-dialog';
 import {
     DataTable,
     DataTableColumnHeader,
     DataTableRowActions,
 } from '@/components/data-table';
-import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { PageHeader } from '@/components/page-header';
 import AppLayout from '@/layouts/app-layout';
 import type { ColumnDef } from '@tanstack/react-table';
@@ -39,7 +39,21 @@ export default function PensionFundsIndex({
 }: {
     pensionFunds: PensionFund[];
 }) {
-    const [deleteUrl, setDeleteUrl] = useState<string | null>(null);
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
+    const [selected, setSelected] = useState<PensionFund | null>(null);
+
+    function openCreate() {
+        setSelected(null);
+        setDialogMode('create');
+        setDialogOpen(true);
+    }
+
+    function openEdit(record: PensionFund) {
+        setSelected(record);
+        setDialogMode('edit');
+        setDialogOpen(true);
+    }
 
     const columnsWithActions: ColumnDef<PensionFund>[] = [
         ...columns,
@@ -47,10 +61,11 @@ export default function PensionFundsIndex({
             id: 'actions',
             cell: ({ row }) => (
                 <DataTableRowActions
-                    editUrl={PensionFundController.edit.url(row.original.id)}
+                    onEdit={() => openEdit(row.original)}
                     onDelete={() =>
-                        setDeleteUrl(
+                        router.delete(
                             PensionFundController.destroy.url(row.original.id),
+                            { preserveScroll: true },
                         )
                     }
                 />
@@ -64,7 +79,7 @@ export default function PensionFundsIndex({
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
                 <PageHeader
                     title="Fondos de Pensiones"
-                    createUrl={PensionFundController.create.url()}
+                    onCreate={openCreate}
                     createLabel="Nuevo fondo"
                 />
                 <DataTable
@@ -74,10 +89,14 @@ export default function PensionFundsIndex({
                     searchPlaceholder="Buscar por nombre..."
                 />
             </div>
-            <DeleteConfirmationDialog
-                open={deleteUrl !== null}
-                onOpenChange={(open) => !open && setDeleteUrl(null)}
-                deleteUrl={deleteUrl ?? ''}
+            <CatalogCodeNameDialog
+                open={dialogOpen}
+                onOpenChange={setDialogOpen}
+                mode={dialogMode}
+                record={selected}
+                entityLabel="Fondo de Pensiones"
+                storeUrl={PensionFundController.store.url()}
+                updateUrl={(id) => PensionFundController.update.url(id)}
             />
         </AppLayout>
     );

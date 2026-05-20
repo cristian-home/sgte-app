@@ -62,7 +62,6 @@ test('denied roles cannot create catalog entries', function (string $prefix, $mo
     $user->assignRole($role->value);
     actingAs($user);
 
-    get(route("$prefix.create"))->assertForbidden();
     post(route("$prefix.store"), $validData())->assertForbidden();
 })->with('catalogs')->with('denied_roles');
 
@@ -74,7 +73,6 @@ test('denied roles cannot edit or delete catalog entries', function (string $pre
     actingAs($user);
 
     get(route("$prefix.show", $entity))->assertForbidden();
-    get(route("$prefix.edit", $entity))->assertForbidden();
     put(route("$prefix.update", $entity), $validData())->assertForbidden();
     delete(route("$prefix.destroy", $entity))->assertForbidden();
 })->with('catalogs')->with('denied_roles');
@@ -84,8 +82,8 @@ test('admin role can access catalog modules', function (string $prefix, $modelFa
     $user->assignRole(Role::ADMIN->value);
     actingAs($user);
 
+    // The create/edit modals live on the index page.
     get(route("$prefix.index"))->assertOk();
-    get(route("$prefix.create"))->assertOk();
 })->with('catalogs');
 
 test('operator role can access catalog modules', function (string $prefix, $modelFactory, $validData): void {
@@ -93,6 +91,6 @@ test('operator role can access catalog modules', function (string $prefix, $mode
     $user->assignRole(Role::OPERATOR->value);
     actingAs($user);
 
+    // The create/edit modals live on the index page.
     get(route("$prefix.index"))->assertOk();
-    get(route("$prefix.create"))->assertOk();
 })->with('catalogs');

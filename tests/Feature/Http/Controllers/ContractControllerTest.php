@@ -27,12 +27,6 @@ test('index behaves as expected', function (): void {
     $response->assertOk();
 });
 
-test('create behaves as expected', function (): void {
-    $response = get(route('contracts.create'));
-
-    $response->assertOk();
-});
-
 test('store uses form request validation')
     ->assertActionUsesFormRequest(
         \App\Http\Controllers\ContractController::class,
@@ -56,7 +50,7 @@ test('store saves and redirects', function (): void {
         'active' => true,
     ]);
 
-    $response->assertRedirect(route('contracts.index'));
+    $response->assertRedirect();
     expect(Contract::query()->where('contract_number', 'CT-TEST-001')->count())->toBe(1);
 });
 
@@ -73,7 +67,7 @@ test('store persists billing_unit_type when provided (REQ-011)', function (): vo
         'is_generic' => false,
         'active' => true,
         'billing_unit_type' => 'pasajero',
-    ])->assertRedirect(route('contracts.index'));
+    ])->assertRedirect();
 
     $contract = Contract::query()->where('contract_number', 'CT-BILLING-001')->firstOrFail();
     expect($contract->billing_unit_type?->value)->toBe('pasajero');
@@ -109,7 +103,7 @@ test('store accepts a null billing_unit_type', function (): void {
         'route_description' => 'Ruta de prueba',
         'is_generic' => false,
         'active' => true,
-    ])->assertRedirect(route('contracts.index'));
+    ])->assertRedirect();
 
     $contract = Contract::query()->where('contract_number', 'CT-BILLING-NULL')->firstOrFail();
     expect($contract->billing_unit_type)->toBeNull();
@@ -123,12 +117,18 @@ test('show behaves as expected', function (): void {
     $response->assertOk();
 });
 
-test('edit behaves as expected', function (): void {
+test('show passes catalog data needed by the edit modal', function (): void {
     $contract = Contract::factory()->create();
 
-    $response = get(route('contracts.edit', $contract));
+    $response = get(route('contracts.show', $contract));
 
     $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->has('thirdParties')
+            ->has('documentTypes')
+            ->has('municipalities')
+    );
 });
 
 test('update uses form request validation')
@@ -157,7 +157,7 @@ test('update redirects', function (): void {
 
     $contract->refresh();
 
-    $response->assertRedirect(route('contracts.index'));
+    $response->assertRedirect();
     expect($newNumber)->toEqual($contract->contract_number);
 });
 
@@ -184,7 +184,7 @@ test('store auto-generates contract number for generic contracts', function (): 
         'active' => true,
     ]);
 
-    $response->assertRedirect(route('contracts.index'));
+    $response->assertRedirect();
     $contract = Contract::query()->latest('id')->first();
     expect($contract->contract_number)->toStartWith('GEN-');
     expect($contract->is_generic)->toBeTrue();
@@ -219,7 +219,7 @@ test('store preserves user-supplied contract_number even when is_generic is true
         'active' => true,
     ]);
 
-    $response->assertRedirect(route('contracts.index'));
+    $response->assertRedirect();
     $contract = Contract::query()->where('contract_number', 'SPECIAL-2026-001')->first();
     expect($contract)->not->toBeNull();
     expect($contract->is_generic)->toBeTrue();

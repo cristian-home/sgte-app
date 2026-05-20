@@ -1,7 +1,7 @@
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import ServiceController from '@/actions/App/Http/Controllers/ServiceController';
-import ContractCreateDialog from '@/components/contracts/contract-create-dialog';
+import ContractDialog from '@/components/contracts/contract-dialog';
 import InputError from '@/components/input-error';
 import { type MunicipalityOption } from '@/components/municipality-combobox';
 import ServiceForm, {
@@ -141,9 +141,11 @@ export default function ServicesCreate({
                                 }
                             />
 
-                            <ContractCreateDialog
+                            <ContractDialog
                                 open={contractDialogOpen}
                                 onOpenChange={setContractDialogOpen}
+                                mode="create"
+                                cascade
                                 thirdParties={thirdParties}
                                 documentTypes={documentTypes}
                                 municipalities={municipalities}

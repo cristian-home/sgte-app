@@ -1,5 +1,7 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
+import { useState } from 'react';
 import IncidentTypeController from '@/actions/App/Http/Controllers/IncidentTypeController';
+import IncidentTypeDialog from '@/components/incident-types/incident-type-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -30,6 +32,8 @@ export default function IncidentTypesShow({
 }: {
     incidentType: IncidentType;
 }) {
+    const [editOpen, setEditOpen] = useState(false);
+
     const breadcrumbs: BreadcrumbItem[] = [
         {
             title: 'Tipos de Novedad',
@@ -54,13 +58,12 @@ export default function IncidentTypesShow({
                                     Código: {incidentType.code}
                                 </CardDescription>
                             </div>
-                            <Link
-                                href={IncidentTypeController.edit.url(
-                                    incidentType.id,
-                                )}
+                            <Button
+                                variant="outline"
+                                onClick={() => setEditOpen(true)}
                             >
-                                <Button variant="outline">Editar</Button>
-                            </Link>
+                                Editar
+                            </Button>
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -105,6 +108,12 @@ export default function IncidentTypesShow({
                     </CardContent>
                 </Card>
             </div>
+            <IncidentTypeDialog
+                open={editOpen}
+                onOpenChange={setEditOpen}
+                mode="edit"
+                incidentType={incidentType}
+            />
         </AppLayout>
     );
 }

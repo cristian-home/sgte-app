@@ -79,7 +79,7 @@ test('index passes catalog data needed by the create modal', function (): void {
     Eps::factory()->create();
     PensionFund::factory()->create();
     SeveranceFund::factory()->create();
-    Municipality::factory()->create();
+    $municipality = Municipality::factory()->create();
 
     $response = get(route('drivers.index'));
 
@@ -87,6 +87,7 @@ test('index passes catalog data needed by the create modal', function (): void {
     $response->assertInertia(
         fn (\Inertia\Testing\AssertableInertia $page) => $page
             ->has('municipalities')
+            ->where('municipalities.0.department.id', $municipality->department_id)
             ->has('documentTypes')
             ->has('eps')
             ->has('pensionFunds')
@@ -219,24 +220,6 @@ test('license_status and has_social_security filters compose via AND', function 
     );
 });
 
-test('create behaves as expected', function (): void {
-    $response = get(route('drivers.create'));
-
-    $response->assertOk();
-});
-
-test('create page includes municipalities with department relation', function (): void {
-    $municipality = Municipality::factory()->create();
-
-    $response = get(route('drivers.create'));
-
-    $response->assertOk();
-    $response->assertInertia(fn ($page) => $page
-        ->has('municipalities')
-        ->where('municipalities.0.department.id', $municipality->department_id)
-    );
-});
-
 test('store uses form request validation')
     ->assertActionUsesFormRequest(
         \App\Http\Controllers\DriverController::class,
@@ -306,7 +289,8 @@ test('store saves and redirects', function (): void {
     expect($driver->license_due_date)->toBe($license_due_date->format('Y-m-d'));
     expect($driver->user_id)->toBeNull();
 
-    $response->assertRedirect(route('drivers.show', $driver));
+    $response->assertRedirect();
+    $response->assertSessionHas('success');
 });
 
 test('show behaves as expected', function (): void {
@@ -391,23 +375,24 @@ test('show renders no user link when user_id is null', function (): void {
     );
 });
 
-test('edit behaves as expected', function (): void {
+test('show passes catalog data needed by the edit modal', function (): void {
     $driver = Driver::factory()->create();
+    DocumentType::factory()->create();
+    Eps::factory()->create();
+    PensionFund::factory()->create();
+    SeveranceFund::factory()->create();
+    Municipality::factory()->create();
 
-    $response = get(route('drivers.edit', $driver));
+    $response = get(route('drivers.show', $driver));
 
     $response->assertOk();
-});
-
-test('edit page includes municipalities with department relation', function (): void {
-    $driver = Driver::factory()->create();
-    $municipality = Municipality::factory()->create();
-
-    $response = get(route('drivers.edit', $driver));
-
-    $response->assertOk();
-    $response->assertInertia(fn ($page) => $page
-        ->has('municipalities')
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->has('municipalities')
+            ->has('documentTypes')
+            ->has('eps')
+            ->has('pensionFunds')
+            ->has('severanceFunds')
     );
 });
 
@@ -460,7 +445,8 @@ test('update redirects', function (): void {
 
     $driver->refresh();
 
-    $response->assertRedirect(route('drivers.index'));
+    $response->assertRedirect();
+    $response->assertSessionHas('success');
 
     expect($document_type->id)->toEqual($driver->document_type_id);
     expect($identification_number)->toEqual($driver->identification_number);
@@ -549,7 +535,8 @@ test('store creates driver without account when create_account is false', functi
     expect(User::query()->where('email', 'sincuenta@sgte.app')->exists())->toBeFalse();
 
     Notification::assertNothingSent();
-    $response->assertRedirect(route('drivers.show', $driver));
+    $response->assertRedirect();
+    $response->assertSessionHas('success');
 });
 
 test('store creates driver with linked user and sends invitation when create_account is true', function (): void {
@@ -578,7 +565,8 @@ test('store creates driver with linked user and sends invitation when create_acc
     expect($user->hasRole(Role::DRIVER->value))->toBeTrue();
 
     Notification::assertSentTo($user, DriverAccountInvitationNotification::class);
-    $response->assertRedirect(route('drivers.show', $driver));
+    $response->assertRedirect();
+    $response->assertSessionHas('success');
 });
 
 test('store rejects when account_email is missing and create_account is true', function (): void {
@@ -733,5 +721,5 @@ test('update allows past license date for existing drivers', function (): void {
         'active' => true,
     ]);
 
-    $response->assertRedirect(route('drivers.index'));
+    $response->assertRedirect();
 });

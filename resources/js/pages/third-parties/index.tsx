@@ -1,11 +1,13 @@
 import { Head } from '@inertiajs/react';
 import { PlusIcon } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { DataTable } from '@/components/data-table';
 import MunicipalityCombobox, {
     type MunicipalityOption,
 } from '@/components/municipality-combobox';
-import ThirdPartyCreateDialog from '@/components/third-parties/third-party-create-dialog';
+import ThirdPartyDialog, {
+    type EditableThirdParty,
+} from '@/components/third-parties/third-party-dialog';
 import { type DocumentTypeOption } from '@/components/third-parties/third-party-form';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -13,7 +15,7 @@ import { useServerTable } from '@/hooks/use-server-table';
 import AppLayout from '@/layouts/app-layout';
 import thirdParties from '@/routes/third-parties';
 
-import { columns } from './columns';
+import { columns, type ThirdPartyTableMeta } from './columns';
 
 import type { BreadcrumbItem, FilterDefinition, PaginatedData } from '@/types';
 import type { ThirdParty } from '@/types/models';
@@ -73,7 +75,27 @@ export default function ThirdPartiesIndex({
     municipalities: MunicipalityOption[];
     documentTypes: DocumentTypeOption[];
 }) {
-    const [createOpen, setCreateOpen] = useState(false);
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
+    const [selectedThirdParty, setSelectedThirdParty] =
+        useState<EditableThirdParty | null>(null);
+
+    function openCreate() {
+        setSelectedThirdParty(null);
+        setDialogMode('create');
+        setDialogOpen(true);
+    }
+
+    function openEdit(thirdParty: EditableThirdParty) {
+        setSelectedThirdParty(thirdParty);
+        setDialogMode('edit');
+        setDialogOpen(true);
+    }
+
+    const tableMeta: ThirdPartyTableMeta = useMemo(
+        () => ({ onEdit: openEdit }),
+        [],
+    );
 
     const {
         table,
@@ -89,6 +111,7 @@ export default function ThirdPartiesIndex({
     } = useServerTable<ThirdParty>({
         data: paginatedThirdParties,
         columns,
+        meta: tableMeta,
     });
 
     const selectedMunicipalityId =
@@ -136,7 +159,7 @@ export default function ThirdPartiesIndex({
                     onFilterChange={setFilter}
                     onClearFilters={clearFilters}
                     actions={
-                        <Button onClick={() => setCreateOpen(true)} size="sm">
+                        <Button onClick={openCreate} size="sm">
                             <PlusIcon className="mr-2 size-4" />
                             Crear Tercero
                         </Button>
@@ -144,9 +167,11 @@ export default function ThirdPartiesIndex({
                 />
             </div>
 
-            <ThirdPartyCreateDialog
-                open={createOpen}
-                onOpenChange={setCreateOpen}
+            <ThirdPartyDialog
+                open={dialogOpen}
+                onOpenChange={setDialogOpen}
+                mode={dialogMode}
+                thirdParty={selectedThirdParty}
                 documentTypes={documentTypes}
                 municipalities={municipalities}
             />

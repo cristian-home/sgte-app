@@ -24,19 +24,22 @@ function requiredMarkersAuthenticateAsSuperAdmin(): User
 }
 
 /**
- * Smoke tests for required-markers-across-forms. Each test visits the
- * create page for a module and asserts the expected field labels carry
- * the `*` marker. Asserting label text via `assertSee('Foo *')` works
- * because the marker sits inline in the DOM right after the label copy
- * (regardless of whether it's a standalone `*` or wrapped in a span).
+ * Smoke tests for required-markers-across-forms. Each test opens the
+ * create modal for a module from its index page and asserts the expected
+ * field labels carry the `*` marker. Asserting label text via
+ * `assertSee('Foo *')` works because the marker sits inline in the DOM
+ * right after the label copy (regardless of whether it's a standalone
+ * `*` or wrapped in a span).
  */
 test('vehicles create form shows required markers on all required labels', function (): void {
     $user = requiredMarkersAuthenticateAsSuperAdmin();
 
     $this->browse(function (Browser $browser) use ($user): void {
         $browser->loginAs($user)
-            ->visit('/vehicles/create')
+            ->visit('/vehicles')
             ->waitForText('Crear Vehículo')
+            ->press('Crear Vehículo')
+            ->waitForText('Complete los campos para registrar un nuevo vehículo.')
             ->assertSee('Código Interno')
             ->assertSee('Placa')
             ->assertSee('Número Móvil')
@@ -68,8 +71,10 @@ test('incident-types create form shows required markers on code / nombre / sever
 
     $this->browse(function (Browser $browser) use ($user): void {
         $browser->loginAs($user)
-            ->visit('/incident-types/create')
-            ->waitForText('Crear Tipo de Novedad')
+            ->visit('/incident-types')
+            ->waitForText('Nuevo Tipo de Novedad')
+            ->press('Nuevo Tipo de Novedad')
+            ->waitForText('Complete los campos del tipo de novedad.')
             ->assertSee('Código')
             ->assertSee('Nombre')
             ->assertSee('Severidad')
@@ -87,8 +92,10 @@ test('contracts create form shows required markers on all required labels', func
 
     $this->browse(function (Browser $browser) use ($user): void {
         $browser->loginAs($user)
-            ->visit('/contracts/create')
+            ->visit('/contracts')
             ->waitForText('Crear Contrato')
+            ->press('Crear Contrato')
+            ->waitForText('Complete los campos para registrar un nuevo contrato.')
             ->assertSee('Cliente')
             ->assertSee('Objeto del Contrato')
             ->assertSee('Fecha de Inicio')
@@ -111,8 +118,10 @@ test('drivers create form shows required markers on the required label set', fun
 
     $this->browse(function (Browser $browser) use ($user): void {
         $browser->loginAs($user)
-            ->visit('/drivers/create')
+            ->visit('/drivers')
             ->waitForText('Crear Conductor')
+            ->press('Crear Conductor')
+            ->waitForText('Complete los campos para registrar un nuevo conductor.')
             ->screenshot('required-markers-drivers-create');
 
         $markerCount = $browser->script(
@@ -127,8 +136,10 @@ test('third-parties create form shows required markers on the required label set
 
     $this->browse(function (Browser $browser) use ($user): void {
         $browser->loginAs($user)
-            ->visit('/third-parties/create')
+            ->visit('/third-parties')
             ->waitForText('Crear Tercero')
+            ->press('Crear Tercero')
+            ->waitForText('Complete los campos para registrar un nuevo tercero.')
             ->screenshot('required-markers-third-parties-create');
 
         $markerCount = $browser->script(

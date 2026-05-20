@@ -47,9 +47,25 @@ test('index returns a paginated payload', function (): void {
 
 test('index passes catalog data needed by the create modal', function (): void {
     DocumentType::factory()->create();
-    Municipality::factory()->create();
+    $municipality = Municipality::factory()->create();
 
     $response = get(route('third-parties.index'));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->has('municipalities')
+            ->where('municipalities.0.department.id', $municipality->department_id)
+            ->has('documentTypes')
+    );
+});
+
+test('show passes catalog data needed by the edit modal', function (): void {
+    $thirdParty = ThirdParty::factory()->create();
+    DocumentType::factory()->create();
+    Municipality::factory()->create();
+
+    $response = get(route('third-parties.show', $thirdParty));
 
     $response->assertOk();
     $response->assertInertia(
@@ -122,24 +138,6 @@ test('index filters by is_natural_person', function (): void {
     );
 });
 
-test('create behaves as expected', function (): void {
-    $response = get(route('third-parties.create'));
-
-    $response->assertOk();
-});
-
-test('create page includes municipalities with department relation', function (): void {
-    $municipality = Municipality::factory()->create();
-
-    $response = get(route('third-parties.create'));
-
-    $response->assertOk();
-    $response->assertInertia(fn ($page) => $page
-        ->has('municipalities')
-        ->where('municipalities.0.department.id', $municipality->department_id)
-    );
-});
-
 test('store uses form request validation')
     ->assertActionUsesFormRequest(
         \App\Http\Controllers\ThirdPartyController::class,
@@ -165,7 +163,7 @@ test('store saves natural person and redirects', function (): void {
         'active' => true,
     ]);
 
-    $response->assertRedirect(route('third-parties.index'));
+    $response->assertRedirect();
     expect(ThirdParty::query()->where('document_type_id', $document_type->id)->count())->toBe(1);
 });
 
@@ -186,7 +184,7 @@ test('store saves company and redirects', function (): void {
         'active' => true,
     ]);
 
-    $response->assertRedirect(route('third-parties.index'));
+    $response->assertRedirect();
     expect(ThirdParty::query()->where('document_type_id', $document_type->id)->count())->toBe(1);
 });
 
@@ -288,26 +286,6 @@ test('show eager-loads relationships used by the rebuilt page', function (): voi
     );
 });
 
-test('edit behaves as expected', function (): void {
-    $thirdParty = ThirdParty::factory()->create();
-
-    $response = get(route('third-parties.edit', $thirdParty));
-
-    $response->assertOk();
-});
-
-test('edit page includes municipalities with department relation', function (): void {
-    $thirdParty = ThirdParty::factory()->create();
-    $municipality = Municipality::factory()->create();
-
-    $response = get(route('third-parties.edit', $thirdParty));
-
-    $response->assertOk();
-    $response->assertInertia(fn ($page) => $page
-        ->has('municipalities')
-    );
-});
-
 test('update uses form request validation')
     ->assertActionUsesFormRequest(
         \App\Http\Controllers\ThirdPartyController::class,
@@ -336,7 +314,7 @@ test('update redirects', function (): void {
 
     $thirdParty->refresh();
 
-    $response->assertRedirect(route('third-parties.index'));
+    $response->assertRedirect();
     expect($newName)->toEqual($thirdParty->first_name);
 });
 

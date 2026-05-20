@@ -1,5 +1,9 @@
 import { Head, Link } from '@inertiajs/react';
 import { Building2, Pencil, UserCircle2 } from 'lucide-react';
+import { useState } from 'react';
+import { type MunicipalityOption } from '@/components/municipality-combobox';
+import ThirdPartyDialog from '@/components/third-parties/third-party-dialog';
+import { type DocumentTypeOption } from '@/components/third-parties/third-party-form';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,6 +30,7 @@ import type { ThirdParty } from '@/types/models';
 type ShowThirdParty = Pick<
     ThirdParty,
     | 'id'
+    | 'document_type_id'
     | 'identification_number'
     | 'is_natural_person'
     | 'first_name'
@@ -34,6 +39,7 @@ type ShowThirdParty = Pick<
     | 'second_lastname'
     | 'company_name'
     | 'trade_name'
+    | 'municipality_id'
     | 'address'
     | 'phone'
     | 'email'
@@ -134,11 +140,17 @@ export default function ThirdPartiesShow({
     thirdParty,
     recentVehicles,
     recentContracts,
+    documentTypes,
+    municipalities,
 }: {
     thirdParty: ShowThirdParty;
     recentVehicles: RecentVehicleRow[];
     recentContracts: RecentContractRow[];
+    documentTypes: DocumentTypeOption[];
+    municipalities: MunicipalityOption[];
 }) {
+    const [editOpen, setEditOpen] = useState(false);
+
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Terceros', href: thirdParties.index().url },
         { title: fullName(thirdParty) || '#', href: '#' },
@@ -185,20 +197,27 @@ export default function ThirdPartiesShow({
                                 >
                                     {thirdParty.active ? 'Activo' : 'Inactivo'}
                                 </Badge>
-                                <Button asChild size="sm" variant="outline">
-                                    <Link
-                                        href={
-                                            thirdParties.edit(thirdParty.id).url
-                                        }
-                                    >
-                                        <Pencil className="mr-1 size-4" />
-                                        Editar
-                                    </Link>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setEditOpen(true)}
+                                >
+                                    <Pencil className="mr-1 size-4" />
+                                    Editar
                                 </Button>
                             </div>
                         </div>
                     </CardHeader>
                 </Card>
+
+                <ThirdPartyDialog
+                    open={editOpen}
+                    onOpenChange={setEditOpen}
+                    mode="edit"
+                    thirdParty={thirdParty}
+                    documentTypes={documentTypes}
+                    municipalities={municipalities}
+                />
 
                 {/* Información General (unconditional) */}
                 <Card>

@@ -1,5 +1,7 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
+import { useState } from 'react';
 import EpsController from '@/actions/App/Http/Controllers/EpsController';
+import CatalogCodeNameDialog from '@/components/catalogs/catalog-code-name-dialog';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -12,6 +14,8 @@ import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem, Eps } from '@/types';
 
 export default function EpsShow({ eps }: { eps: Eps }) {
+    const [editOpen, setEditOpen] = useState(false);
+
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'EPS', href: EpsController.index.url() },
         { title: eps.name, href: EpsController.show.url(eps.id) },
@@ -30,14 +34,26 @@ export default function EpsShow({ eps }: { eps: Eps }) {
                                     Código: {eps.code}
                                 </CardDescription>
                             </div>
-                            <Link href={EpsController.edit.url(eps.id)}>
-                                <Button variant="outline">Editar</Button>
-                            </Link>
+                            <Button
+                                variant="outline"
+                                onClick={() => setEditOpen(true)}
+                            >
+                                Editar
+                            </Button>
                         </div>
                     </CardHeader>
                     <CardContent />
                 </Card>
             </div>
+            <CatalogCodeNameDialog
+                open={editOpen}
+                onOpenChange={setEditOpen}
+                mode="edit"
+                record={eps}
+                entityLabel="EPS"
+                storeUrl={EpsController.store.url()}
+                updateUrl={(id) => EpsController.update.url(id)}
+            />
         </AppLayout>
     );
 }

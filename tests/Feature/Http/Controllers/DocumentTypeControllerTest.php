@@ -37,12 +37,6 @@ test('index returns inertia page with document types', function (): void {
     );
 });
 
-test('create behaves as expected', function (): void {
-    $response = get(route('document-types.create'));
-
-    $response->assertOk();
-});
-
 test('store uses form request validation')
     ->assertActionUsesFormRequest(
         \App\Http\Controllers\DocumentTypeController::class,
@@ -72,21 +66,14 @@ test('store saves and redirects', function (): void {
     expect($documentTypes)->toHaveCount(1);
     $documentType = $documentTypes->first();
 
-    $response->assertRedirect(route('document-types.index'));
+    $response->assertRedirect();
+    $response->assertSessionHas('success');
 });
 
 test('show behaves as expected', function (): void {
     $documentType = DocumentType::factory()->create();
 
     $response = get(route('document-types.show', $documentType));
-
-    $response->assertOk();
-});
-
-test('edit behaves as expected', function (): void {
-    $documentType = DocumentType::factory()->create();
-
-    $response = get(route('document-types.edit', $documentType));
 
     $response->assertOk();
 });
@@ -114,7 +101,8 @@ test('update redirects', function (): void {
 
     $documentType->refresh();
 
-    $response->assertRedirect(route('document-types.index'));
+    $response->assertRedirect();
+    $response->assertSessionHas('success');
 
     expect($code)->toEqual($documentType->code);
     expect($name)->toEqual($documentType->name);

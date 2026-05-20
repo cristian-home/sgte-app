@@ -1,19 +1,21 @@
 import { Head } from '@inertiajs/react';
 import { PlusIcon } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { DataTable } from '@/components/data-table';
 import MunicipalityCombobox, {
     type MunicipalityOption,
 } from '@/components/municipality-combobox';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import VehicleCreateDialog from '@/components/vehicles/vehicle-create-dialog';
+import VehicleDialog, {
+    type EditableVehicle,
+} from '@/components/vehicles/vehicle-dialog';
 import { vehicleDocsAggregateStatus } from '@/components/vehicles/vehicle-document-pills';
 import { useServerTable } from '@/hooks/use-server-table';
 import AppLayout from '@/layouts/app-layout';
 import vehicles from '@/routes/vehicles';
 
-import { columns } from './columns';
+import { columns, type VehicleTableMeta } from './columns';
 
 import type { Row } from '@tanstack/react-table';
 import type { BreadcrumbItem, FilterDefinition, PaginatedData } from '@/types';
@@ -91,7 +93,27 @@ export default function VehiclesIndex({
     municipalities: MunicipalityOption[];
     thirdParties: ThirdPartyOption[];
 }) {
-    const [createOpen, setCreateOpen] = useState(false);
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
+    const [selectedVehicle, setSelectedVehicle] =
+        useState<EditableVehicle | null>(null);
+
+    function openCreate() {
+        setSelectedVehicle(null);
+        setDialogMode('create');
+        setDialogOpen(true);
+    }
+
+    function openEdit(vehicle: EditableVehicle) {
+        setSelectedVehicle(vehicle);
+        setDialogMode('edit');
+        setDialogOpen(true);
+    }
+
+    const tableMeta: VehicleTableMeta = useMemo(
+        () => ({ onEdit: openEdit }),
+        [],
+    );
 
     const {
         table,
@@ -107,6 +129,7 @@ export default function VehiclesIndex({
     } = useServerTable<Vehicle>({
         data: paginatedVehicles,
         columns,
+        meta: tableMeta,
     });
 
     const selectedMunicipalityId =
@@ -155,7 +178,7 @@ export default function VehiclesIndex({
                     onClearFilters={clearFilters}
                     getRowClassName={rowTintFor}
                     actions={
-                        <Button onClick={() => setCreateOpen(true)} size="sm">
+                        <Button onClick={openCreate} size="sm">
                             <PlusIcon className="mr-2 size-4" />
                             Crear Vehículo
                         </Button>
@@ -163,9 +186,11 @@ export default function VehiclesIndex({
                 />
             </div>
 
-            <VehicleCreateDialog
-                open={createOpen}
-                onOpenChange={setCreateOpen}
+            <VehicleDialog
+                open={dialogOpen}
+                onOpenChange={setDialogOpen}
+                mode={dialogMode}
+                vehicle={selectedVehicle}
                 municipalities={municipalities}
                 thirdParties={thirdParties}
             />

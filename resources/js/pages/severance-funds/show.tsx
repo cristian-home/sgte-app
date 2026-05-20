@@ -1,5 +1,7 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
+import { useState } from 'react';
 import SeveranceFundController from '@/actions/App/Http/Controllers/SeveranceFundController';
+import CatalogCodeNameDialog from '@/components/catalogs/catalog-code-name-dialog';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -16,6 +18,8 @@ export default function SeveranceFundsShow({
 }: {
     severanceFund: SeveranceFund;
 }) {
+    const [editOpen, setEditOpen] = useState(false);
+
     const breadcrumbs: BreadcrumbItem[] = [
         {
             title: 'Fondos de Cesantías',
@@ -40,18 +44,26 @@ export default function SeveranceFundsShow({
                                     Código: {severanceFund.code}
                                 </CardDescription>
                             </div>
-                            <Link
-                                href={SeveranceFundController.edit.url(
-                                    severanceFund.id,
-                                )}
+                            <Button
+                                variant="outline"
+                                onClick={() => setEditOpen(true)}
                             >
-                                <Button variant="outline">Editar</Button>
-                            </Link>
+                                Editar
+                            </Button>
                         </div>
                     </CardHeader>
                     <CardContent />
                 </Card>
             </div>
+            <CatalogCodeNameDialog
+                open={editOpen}
+                onOpenChange={setEditOpen}
+                mode="edit"
+                record={severanceFund}
+                entityLabel="Fondo de Cesantías"
+                storeUrl={SeveranceFundController.store.url()}
+                updateUrl={(id) => SeveranceFundController.update.url(id)}
+            />
         </AppLayout>
     );
 }

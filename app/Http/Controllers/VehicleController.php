@@ -69,6 +69,19 @@ class VehicleController extends Controller
 
         return Inertia::render('vehicles/index', [
             'vehicles' => $vehicles,
+            ...$this->modalOptions(),
+        ]);
+    }
+
+    /**
+     * Reference data shared by the vehicle create/edit modal — provider
+     * third parties and municipalities (with department for grouping).
+     *
+     * @return array{thirdParties: \Illuminate\Database\Eloquent\Collection<int, ThirdParty>, municipalities: \Illuminate\Database\Eloquent\Collection<int, Municipality>}
+     */
+    private function modalOptions(): array
+    {
+        return [
             'thirdParties' => ThirdParty::query()
                 ->where('active', true)
                 ->where('is_provider', true)
@@ -77,7 +90,7 @@ class VehicleController extends Controller
                 ->with('department:id,name')
                 ->orderBy('name')
                 ->get(['id', 'name', 'code', 'department_id']),
-        ]);
+        ];
     }
 
     /**
@@ -149,28 +162,12 @@ class VehicleController extends Controller
         });
     }
 
-    public function create(Request $request): Response
-    {
-        Gate::authorize(Permission::CREATE_VEHICLES->value);
-
-        return Inertia::render('vehicles/create', [
-            'thirdParties' => ThirdParty::query()
-                ->where('active', true)
-                ->where('is_provider', true)
-                ->get(['id', 'identification_number', 'first_name', 'first_lastname', 'company_name', 'is_natural_person']),
-            'municipalities' => Municipality::query()
-                ->with('department:id,name')
-                ->orderBy('name')
-                ->get(['id', 'name', 'code', 'department_id']),
-        ]);
-    }
-
     public function store(VehicleStoreRequest $request): RedirectResponse
     {
         Gate::authorize(Permission::CREATE_VEHICLES->value);
-        $vehicle = Vehicle::create($request->validated());
+        Vehicle::create($request->validated());
 
-        return redirect()->route('vehicles.index');
+        return back()->with('success', 'Vehículo creado.');
     }
 
     public function show(Request $request, Vehicle $vehicle): Response
@@ -206,23 +203,7 @@ class VehicleController extends Controller
             'vehicle' => $vehicle,
             'recentServices' => $recentServices,
             'recentLocations' => $recentLocations,
-        ]);
-    }
-
-    public function edit(Request $request, Vehicle $vehicle): Response
-    {
-        Gate::authorize(Permission::UPDATE_VEHICLES->value);
-
-        return Inertia::render('vehicles/edit', [
-            'vehicle' => $vehicle,
-            'thirdParties' => ThirdParty::query()
-                ->where('active', true)
-                ->where('is_provider', true)
-                ->get(['id', 'identification_number', 'first_name', 'first_lastname', 'company_name', 'is_natural_person']),
-            'municipalities' => Municipality::query()
-                ->with('department:id,name')
-                ->orderBy('name')
-                ->get(['id', 'name', 'code', 'department_id']),
+            ...$this->modalOptions(),
         ]);
     }
 
@@ -231,7 +212,7 @@ class VehicleController extends Controller
         Gate::authorize(Permission::UPDATE_VEHICLES->value);
         $vehicle->update($request->validated());
 
-        return redirect()->route('vehicles.index');
+        return back()->with('success', 'Vehículo actualizado.');
     }
 
     public function destroy(Request $request, Vehicle $vehicle): RedirectResponse

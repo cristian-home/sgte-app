@@ -37,6 +37,8 @@ class InvoiceController extends Controller
                 'thirdParty:id,document_type_id,identification_number,is_natural_person,first_name,first_lastname,company_name,is_customer,is_provider',
                 'thirdParty.documentType:id,code,name',
             ])
+            // services_count drives the locked-total state of the edit modal.
+            ->withCount('services')
             ->allowedFilters([
                 'invoice_number',
                 AllowedFilter::exact('payment_status'),
@@ -58,9 +60,9 @@ class InvoiceController extends Controller
     }
 
     /**
-     * Shared customer option list — used by the create modal on the
-     * index, the above-the-table combobox filter, and the standalone
-     * create/edit pages. Mirrors ContractController::customerOptions.
+     * Shared customer option list — used by the create/edit modal and
+     * the above-the-table combobox filter. Mirrors
+     * ContractController::customerOptions.
      *
      * @return \Illuminate\Database\Eloquent\Collection<int, ThirdParty>
      */
@@ -84,21 +86,12 @@ class InvoiceController extends Controller
             ]);
     }
 
-    public function create(Request $request): Response
-    {
-        Gate::authorize(Permission::CREATE_INVOICES->value);
-
-        return Inertia::render('invoices/create', [
-            'thirdParties' => $this->customerOptions(),
-        ]);
-    }
-
     public function store(InvoiceStoreRequest $request): RedirectResponse
     {
         Gate::authorize(Permission::CREATE_INVOICES->value);
         Invoice::create($request->validated());
 
-        return redirect()->route('invoices.index');
+        return back()->with('success', 'Factura creada.');
     }
 
     public function show(Request $request, Invoice $invoice, InvoiceTotalCalculator $calculator): Response
@@ -148,18 +141,6 @@ class InvoiceController extends Controller
             'computedTotal' => $calculator->computeFor($invoice),
             'candidateServices' => $cleanCandidates->values(),
             'blockedCandidateServices' => $blockedCandidates->values(),
-        ]);
-    }
-
-    public function edit(Request $request, Invoice $invoice): Response
-    {
-        Gate::authorize(Permission::UPDATE_INVOICES->value);
-
-        $invoice->load('thirdParty.documentType');
-        $invoice->loadCount('services');
-
-        return Inertia::render('invoices/edit', [
-            'invoice' => $invoice,
             'thirdParties' => $this->customerOptions(),
         ]);
     }
@@ -169,7 +150,7 @@ class InvoiceController extends Controller
         Gate::authorize(Permission::UPDATE_INVOICES->value);
         $invoice->update($request->validated());
 
-        return redirect()->route('invoices.index');
+        return back()->with('success', 'Factura actualizada.');
     }
 
     public function destroy(Request $request, Invoice $invoice): RedirectResponse

@@ -6,7 +6,7 @@ import { type MunicipalityOption } from '@/components/municipality-combobox';
 import ThirdPartyCombobox, {
     type ThirdPartyOption,
 } from '@/components/third-parties/third-party-combobox';
-import ThirdPartyCreateDialog from '@/components/third-parties/third-party-create-dialog';
+import ThirdPartyDialog from '@/components/third-parties/third-party-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -194,9 +194,11 @@ export default function ContractForm({
             </div>
 
             {allowCreateThirdParty && documentTypes && municipalities && (
-                <ThirdPartyCreateDialog
+                <ThirdPartyDialog
                     open={createTpOpen}
                     onOpenChange={setCreateTpOpen}
+                    mode="create"
+                    cascade
                     documentTypes={documentTypes}
                     municipalities={municipalities}
                 />
