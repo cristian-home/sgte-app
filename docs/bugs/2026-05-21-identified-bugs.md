@@ -17,7 +17,7 @@ ranges as of the date above; line numbers may drift as the code evolves.
 |----|-------|----------|------|--------|
 | BUG-001 | Silent login failure after driver account creation | High | Auth / Drivers | Resolved (2026-05-21) |
 | BUG-002 | Contract modal submit triggers the underlying service form | High | Services / Contracts (UI) | Resolved (2026-05-21) |
-| BUG-003 | Driver "finish service" action does not close the service | High | Services / Driver | Open |
+| BUG-003 | Driver "finish service" action does not close the service | High | Services / Driver | Resolved (2026-05-21) |
 | BUG-004 | Driver can add incidents / modify a service after it is closed | Medium | Services / Incidents | Open |
 
 | ID | Title | Type | Area |
@@ -314,6 +314,23 @@ $service->update([
 It never sets `service_status` to `ServiceStatus::Closed`. The status transition
 exists only in the admin-facing `ServiceController::update()` path, so a service
 finished by a driver is never closed automatically.
+
+### Resolution (2026-05-21)
+
+Reproduced as a driver: confirming start then end on service #54 left
+`service_status = open` (card showed "Servicio completado" but the badge still
+read "Abierto").
+
+**Fix:** `DriverDashboardController::confirmEnd()` now sets
+`service_status => ServiceStatus::Closed` alongside `actual_end_at`. A guard
+(`abort_if($service->actual_start_at === null, 422, …)`) rejects a confirm-end
+on a service that was never started, keeping the invariant that a closed service
+carries both actual times.
+
+Verified after the fix: a driver confirm-end transitions the service to
+`closed` (badge "Cerrado"), no admin intervention. Regression tests added/updated
+in `tests/Feature/Http/Controllers/DriverDashboardControllerTest.php` (close on
+confirm-end; 422 when not started).
 
 ---
 

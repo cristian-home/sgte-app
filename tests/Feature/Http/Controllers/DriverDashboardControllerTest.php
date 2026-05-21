@@ -3,6 +3,7 @@
 namespace Tests\Feature\Http\Controllers;
 
 use App\Enums\Role;
+use App\Enums\ServiceStatus;
 use App\Models\Driver;
 use App\Models\IncidentType;
 use App\Models\Service;
@@ -89,11 +90,12 @@ test('confirm start sets actual_start_time', function (): void {
     expect($service->actual_start_at)->not->toBeNull();
 });
 
-test('confirm end sets actual_end_time', function (): void {
+test('confirm end sets actual_end_time and closes the service', function (): void {
     $driver = Driver::factory()->create(['user_id' => $this->user->id]);
     $service = Service::factory()->create([
         'driver_id' => $driver->id,
         'service_date' => today(),
+        'service_status' => ServiceStatus::Open,
         'actual_start_time' => '08:00:00',
         'actual_end_time' => null,
     ]);
@@ -103,6 +105,25 @@ test('confirm end sets actual_end_time', function (): void {
     $response->assertRedirect(route('driver.dashboard'));
     $service->refresh();
     expect($service->actual_end_at)->not->toBeNull();
+    expect($service->service_status)->toBe(ServiceStatus::Closed);
+});
+
+test('confirm end is rejected when the service has no actual start', function (): void {
+    $driver = Driver::factory()->create(['user_id' => $this->user->id]);
+    $service = Service::factory()->create([
+        'driver_id' => $driver->id,
+        'service_date' => today(),
+        'service_status' => ServiceStatus::Open,
+        'actual_start_time' => null,
+        'actual_end_time' => null,
+    ]);
+
+    $response = post(route('driver.confirm-end', $service));
+
+    $response->assertStatus(422);
+    $service->refresh();
+    expect($service->actual_end_at)->toBeNull();
+    expect($service->service_status)->toBe(ServiceStatus::Open);
 });
 
 test('confirm start persists a VehicleLocation when coordinates are provided', function (): void {
