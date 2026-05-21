@@ -124,6 +124,9 @@ export function UserDialog({
 
     function submit(e: React.FormEvent) {
         e.preventDefault();
+        // This dialog owns its <form>; stop the submit event from bubbling
+        // through the React tree to an ancestor <form>. See BUG-002.
+        e.stopPropagation();
         if (!isValid) return;
         if (mode === 'create') {
             form.post(usersStore().url, {

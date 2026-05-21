@@ -229,6 +229,21 @@ contract is created, auto-selected in the service form, and no service is
 submitted. Regression test added in `tests/Browser/ServiceFormTest.php`
 (Dusk).
 
+### Follow-up audit (2026-05-21)
+
+A codebase-wide sweep for the same pattern found **10 dialog components that
+render their own `<form>`**. One more live instance: `ThirdPartyDialog` (the
+"Crear nuevo cliente" dialog) is nested inside `ContractForm`, so submitting it
+also submitted the contract form — reproduced with Playwright (`POST
+/third-parties` + `POST /contracts`).
+
+Hardening fix: every dialog-with-form's `submit()` handler now calls
+`e.stopPropagation()`, so a dialog's submit event can never reach an ancestor
+`<form>` regardless of where the dialog is mounted. Applied to all 9 remaining
+dialogs (`contract-dialog` already had it). Regression test for the nested case
+added in `tests/Browser/ContractsIndexAndShowTest.php`. Verified: the nested
+"Crear Tercero" dialog now fires only `POST /third-parties`.
+
 ---
 
 ## BUG-003 — Driver "finish service" action does not close the service
