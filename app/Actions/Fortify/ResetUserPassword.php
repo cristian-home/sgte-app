@@ -14,6 +14,10 @@ class ResetUserPassword implements ResetsUserPasswords
     /**
      * Validate and reset the user's forgotten password.
      *
+     * Completing a reset means the user has chosen their own password, so the
+     * `must_change_password` flag (set on invited / temp-credential accounts)
+     * is cleared here — otherwise EnsurePasswordChanged keeps blocking them.
+     *
      * @param  array<string, string>  $input
      */
     public function reset(User $user, array $input): void
@@ -24,6 +28,7 @@ class ResetUserPassword implements ResetsUserPasswords
 
         $user->forceFill([
             'password' => $input['password'],
+            'must_change_password' => false,
         ])->save();
     }
 }

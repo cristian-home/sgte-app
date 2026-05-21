@@ -146,10 +146,10 @@ class DriverController extends Controller
                     'name' => $driver->fullName(),
                     'email' => $accountEmail,
                     'password' => Hash::make(Str::password(32)),
-                    'email_verified_at' => now(),
                     'is_active' => true,
                     'must_change_password' => true,
                 ]);
+                $user->markEmailAsVerified();
                 $user->syncRoles([Role::DRIVER->value]);
                 $driver->forceFill(['user_id' => $user->id])->saveQuietly();
                 $user->notify(new DriverAccountInvitationNotification);
@@ -237,10 +237,10 @@ class DriverController extends Controller
                 'name' => $driver->fullName(),
                 'email' => $accountEmail,
                 'password' => Hash::make(Str::password(32)),
-                'email_verified_at' => now(),
                 'is_active' => true,
                 'must_change_password' => true,
             ]);
+            $user->markEmailAsVerified();
             $user->syncRoles([Role::DRIVER->value]);
             $driver->forceFill(['user_id' => $user->id])->saveQuietly();
             $user->notify(new DriverAccountInvitationNotification);

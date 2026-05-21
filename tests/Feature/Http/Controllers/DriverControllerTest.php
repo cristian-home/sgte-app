@@ -562,6 +562,7 @@ test('store creates driver with linked user and sends invitation when create_acc
     expect($user->name)->toBe('Carlos Mejía');
     expect($user->must_change_password)->toBeTrue();
     expect($user->is_active)->toBeTrue();
+    expect($user->hasVerifiedEmail())->toBeTrue();
     expect($user->hasRole(Role::DRIVER->value))->toBeTrue();
 
     Notification::assertSentTo($user, DriverAccountInvitationNotification::class);
@@ -640,6 +641,7 @@ test('invite-account creates a user, links the driver and sends the invitation',
     expect($driver->user_id)->not->toBeNull();
     expect($driver->user->email)->toBe('mario-cuenta@sgte.app');
     expect($driver->user->hasRole(Role::DRIVER->value))->toBeTrue();
+    expect($driver->user->hasVerifiedEmail())->toBeTrue();
 
     Notification::assertSentTo($driver->user, DriverAccountInvitationNotification::class);
     $response->assertRedirect(route('drivers.show', $driver));

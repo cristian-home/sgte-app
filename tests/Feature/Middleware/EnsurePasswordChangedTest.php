@@ -44,6 +44,14 @@ test('user with flag can post the password update', function (): void {
     expect($user->fresh()->must_change_password)->toBeFalse();
 });
 
+test('user with flag and unverified email can reach the verification notice without a redirect loop', function (): void {
+    $user = User::factory()->unverified()->create(['must_change_password' => true]);
+    $user->assignRole(Role::ADMIN->value);
+    actingAs($user);
+
+    get(route('verification.notice'))->assertOk();
+});
+
 test('user with flag can hit logout without redirect loop', function (): void {
     $user = User::factory()->create(['must_change_password' => true]);
     $user->assignRole(Role::ADMIN->value);

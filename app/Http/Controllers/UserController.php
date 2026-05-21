@@ -87,11 +87,11 @@ class UserController extends Controller
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($temporaryPassword),
-            'email_verified_at' => now(),
             'is_active' => $data['is_active'],
             'must_change_password' => $sendWelcome,
         ]);
 
+        $user->markEmailAsVerified();
         $user->syncRoles($data['roles']);
 
         if ($sendWelcome) {
