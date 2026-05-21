@@ -26,11 +26,13 @@ interface Service {
     origin_coordinates: string | null;
     origin_coordinates_source: string | null;
     origin_coordinates_accuracy: string | null;
+    origin_place_id: string | null;
     destination_municipality_id: number | null;
     destination_address: string | null;
     destination_coordinates: string | null;
     destination_coordinates_source: string | null;
     destination_coordinates_accuracy: string | null;
+    destination_place_id: string | null;
     planned_start_local: string;
     planned_duration: number;
     actual_start_local: string | null;
@@ -82,6 +84,7 @@ export default function ServicesEdit({
         origin_coordinates: service.origin_coordinates ?? '',
         origin_coordinates_source: service.origin_coordinates_source ?? '',
         origin_coordinates_accuracy: service.origin_coordinates_accuracy ?? '',
+        origin_place_id: service.origin_place_id ?? '',
         destination_municipality_id: service.destination_municipality_id
             ? String(service.destination_municipality_id)
             : '',
@@ -91,6 +94,7 @@ export default function ServicesEdit({
             service.destination_coordinates_source ?? '',
         destination_coordinates_accuracy:
             service.destination_coordinates_accuracy ?? '',
+        destination_place_id: service.destination_place_id ?? '',
         planned_start_time: service.planned_start_local,
         planned_duration: String(service.planned_duration),
         actual_start_time: service.actual_start_local ?? '',

@@ -19,6 +19,7 @@ import ServiceIncidentController from '@/actions/App/Http/Controllers/ServiceInc
 import { Can } from '@/components/can';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { IncidentSeverityPill } from '@/components/incidents/incident-severity-pill';
+import LocationStaticMap from '@/components/services/location-static-map';
 import { ServiceTimelineBar } from '@/components/services/service-timeline-bar';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -311,7 +312,7 @@ export default function ServicesShow({
                         <CardHeader>
                             <CardTitle>Detalle de la Ruta</CardTitle>
                         </CardHeader>
-                        <CardContent>
+                        <CardContent className="space-y-4">
                             <div className="relative flex min-h-[200px] flex-col justify-between rounded-lg border border-dashed border-muted-foreground/20 bg-muted/30 p-4">
                                 {/* Origin */}
                                 <div className="flex items-start gap-3">
@@ -351,11 +352,34 @@ export default function ServicesShow({
                                         </p>
                                     </div>
                                 </div>
+                            </div>
 
-                                {/* Map placeholder note */}
-                                <p className="absolute right-3 bottom-2 text-[10px] text-muted-foreground/50 italic">
-                                    Mapa en desarrollo
-                                </p>
+                            {/* Static-map previews of the origin and
+                                destination coordinates. */}
+                            <div className="grid gap-3 sm:grid-cols-2">
+                                <div className="space-y-1">
+                                    <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
+                                        Mapa del Origen
+                                    </p>
+                                    <LocationStaticMap
+                                        label="Origen"
+                                        coordinates={
+                                            service.origin_coordinates ?? null
+                                        }
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
+                                        Mapa del Destino
+                                    </p>
+                                    <LocationStaticMap
+                                        label="Destino"
+                                        coordinates={
+                                            service.destination_coordinates ??
+                                            null
+                                        }
+                                    />
+                                </div>
                             </div>
                         </CardContent>
                     </Card>

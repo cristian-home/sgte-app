@@ -68,7 +68,7 @@ export function dlog(channel: string, event: string, data?: LogPayload): void {
 
 export function dwarn(channel: string, event: string, data?: LogPayload): void {
     // Warnings are always emitted — they signal genuine errors
-    // (network down, mapbox response not OK) and devs / QA need to
+    // (network down, Google Maps response not OK) and devs / QA need to
     // see them at the default DevTools filter regardless of
     // APP_DEBUG.
     emit('warn', `[${channel}] ${event}`, data);

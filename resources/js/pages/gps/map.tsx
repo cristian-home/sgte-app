@@ -1,46 +1,32 @@
 import { Head, Link, router } from '@inertiajs/react';
-import L from 'leaflet';
-import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
-import iconUrl from 'leaflet/dist/images/marker-icon.png';
-import iconShadow from 'leaflet/dist/images/marker-shadow.png';
-import 'leaflet/dist/leaflet.css';
-import { MapPin } from 'lucide-react';
-import { Fragment, useEffect, useMemo } from 'react';
 import {
-    CircleMarker,
-    MapContainer,
-    Marker,
-    Polyline,
-    Popup,
-    TileLayer,
+    APIProvider,
+    AdvancedMarker,
+    Map as GoogleMap,
+    InfoWindow,
+    Pin,
+    useAdvancedMarkerRef,
     useMap,
-} from 'react-leaflet';
+} from '@vis.gl/react-google-maps';
+import { MapPin } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import AppLayout from '@/layouts/app-layout';
 import { formatTimestampInViewerTz } from '@/lib/datetime';
-import { MAPBOX_ATTRIBUTION, mapboxTileUrl } from '@/lib/mapbox';
+import {
+    GOOGLE_MAPS_BROWSER_KEY,
+    GOOGLE_MAPS_MAP_ID,
+    MEDELLIN_CENTER,
+    MEDELLIN_ZOOM,
+} from '@/lib/google-maps';
 
 import type { BreadcrumbItem } from '@/types';
-
-// Vite quirk: Leaflet's default icons break because its default URLs are
-// resolved relative to the CSS file. Rebind to the imported asset URLs.
-L.Marker.prototype.options.icon = L.icon({
-    iconRetinaUrl,
-    iconUrl,
-    shadowUrl: iconShadow,
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41],
-});
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'GPS', href: '#' },
     { title: 'Mapa', href: '/gps/map' },
 ];
 
-const MEDELLIN_CENTER: [number, number] = [6.2518, -75.5636];
-const MEDELLIN_ZOOM = 11;
 const REFRESH_INTERVAL_MS = 300_000;
 
 interface CoordPair {
@@ -74,8 +60,8 @@ function serviceColor(id: number): string {
     return `hsl(${hue.toFixed(0)}, 70%, 42%)`;
 }
 
-function toLatLng(p: CoordPair): [number, number] {
-    return [p.latitude, p.longitude];
+function toLatLng(p: CoordPair): google.maps.LatLngLiteral {
+    return { lat: p.latitude, lng: p.longitude };
 }
 
 function formatDistance(m: number | null): string | null {
@@ -100,9 +86,9 @@ function MapLegend() {
     return (
         <div
             className="pointer-events-none absolute bottom-2 left-2 w-48 rounded-md border bg-card/95 p-3 text-xs shadow-md backdrop-blur"
-            // Tailwind v4 doesn't emit arbitrary `z-[1000]` rules. Leaflet
-            // panes sit at z-index 200-700 internally, so the legend
-            // needs to stack above them via inline style.
+            // Google Maps panes stack internally; keep the legend above
+            // them via an explicit z-index (Tailwind v4 doesn't emit an
+            // arbitrary `z-[1000]` rule).
             style={{ zIndex: 1000 }}
         >
             <div className="mb-2 font-medium">Símbolos</div>
@@ -161,39 +147,185 @@ function MapLegend() {
     );
 }
 
-function FitBoundsOnData({ services }: { services: ActiveService[] }) {
+interface RouteData {
+    service_id: number;
+    color: string;
+    path: google.maps.LatLngLiteral[];
+    origin: google.maps.LatLngLiteral;
+    destination: google.maps.LatLngLiteral;
+    /** True when a real fetched route is drawn (solid), false for the estimated straight line (dashed). */
+    confirmed: boolean;
+}
+
+interface MarkerService {
+    service_id: number;
+    vehicle_plate: string | null;
+    driver_name: string | null;
+    position: google.maps.LatLngLiteral;
+    is_manual: boolean;
+    recorded_at: string | null;
+    route_distance_m: number | null;
+    route_duration_s: number | null;
+}
+
+/**
+ * Imperatively fits the map viewport to every plotted point — runs
+ * whenever the dataset changes.
+ */
+function FitBounds({ services }: { services: ActiveService[] }) {
     const map = useMap();
 
     useEffect(() => {
-        const points: L.LatLng[] = [];
+        if (!map) return;
+        const bounds = new google.maps.LatLngBounds();
+        let count = 0;
 
         for (const s of services) {
             if (s.location) {
-                points.push(
-                    L.latLng(s.location.latitude, s.location.longitude),
-                );
+                bounds.extend({
+                    lat: s.location.latitude,
+                    lng: s.location.longitude,
+                });
+                count++;
             }
             if (s.origin) {
-                points.push(L.latLng(s.origin.latitude, s.origin.longitude));
+                bounds.extend(toLatLng(s.origin));
+                count++;
             }
             if (s.destination) {
-                points.push(
-                    L.latLng(s.destination.latitude, s.destination.longitude),
-                );
+                bounds.extend(toLatLng(s.destination));
+                count++;
             }
             if (s.route) {
                 for (const p of s.route) {
-                    points.push(L.latLng(p.latitude, p.longitude));
+                    bounds.extend(toLatLng(p));
+                    count++;
                 }
             }
         }
 
-        if (points.length > 0) {
-            map.fitBounds(L.latLngBounds(points).pad(0.15));
+        if (count > 0) {
+            map.fitBounds(bounds, 48);
         }
     }, [map, services]);
 
     return null;
+}
+
+/**
+ * Draws a route as a native google.maps.Polyline — the library ships no
+ * declarative `<Polyline>`. Confirmed routes render solid; estimated
+ * straight-line fallbacks render dashed (stroke opacity 0 + dash icons).
+ */
+function RoutePolyline({
+    path,
+    color,
+    confirmed,
+}: {
+    path: google.maps.LatLngLiteral[];
+    color: string;
+    confirmed: boolean;
+}) {
+    const map = useMap();
+
+    useEffect(() => {
+        if (!map) return;
+
+        const polyline = new google.maps.Polyline({
+            map,
+            path,
+            strokeColor: color,
+            strokeOpacity: confirmed ? 0.75 : 0,
+            strokeWeight: 4,
+            icons: confirmed
+                ? undefined
+                : [
+                      {
+                          icon: {
+                              path: 'M 0,-1 0,1',
+                              strokeOpacity: 0.75,
+                              strokeWeight: 4,
+                              scale: 3,
+                          },
+                          offset: '0',
+                          repeat: '14px',
+                      },
+                  ],
+        });
+
+        return () => {
+            polyline.setMap(null);
+        };
+    }, [map, path, color, confirmed]);
+
+    return null;
+}
+
+/**
+ * A vehicle GPS marker with a click-toggled InfoWindow carrying the
+ * plate, driver, timestamp, source badge, route summary, and a link to
+ * the service detail page.
+ */
+function VehicleMarker({ service }: { service: MarkerService }) {
+    const [markerRef, marker] = useAdvancedMarkerRef();
+    const [open, setOpen] = useState(false);
+
+    const distance = formatDistance(service.route_distance_m);
+    const duration = formatDuration(service.route_duration_s);
+
+    return (
+        <>
+            <AdvancedMarker
+                ref={markerRef}
+                position={service.position}
+                onClick={() => setOpen((v) => !v)}
+                title={
+                    service.vehicle_plate ?? `Servicio ${service.service_id}`
+                }
+            >
+                <Pin
+                    background="#2563eb"
+                    borderColor="#1e40af"
+                    glyphColor="#ffffff"
+                />
+            </AdvancedMarker>
+            {open && (
+                <InfoWindow anchor={marker} onCloseClick={() => setOpen(false)}>
+                    <div className="space-y-1 text-sm">
+                        <div className="font-mono font-medium">
+                            {service.vehicle_plate ?? '—'}
+                        </div>
+                        <div>{service.driver_name ?? '—'}</div>
+                        <div className="text-xs text-muted-foreground">
+                            {formatTimestampInViewerTz(service.recorded_at) ||
+                                '—'}
+                        </div>
+                        <div>
+                            {service.is_manual ? (
+                                <Badge variant="outline">Manual</Badge>
+                            ) : (
+                                <Badge>GPS</Badge>
+                            )}
+                        </div>
+                        {(distance || duration) && (
+                            <div className="text-xs text-muted-foreground">
+                                Ruta:{' '}
+                                {[distance, duration]
+                                    .filter(Boolean)
+                                    .join(' · ')}
+                            </div>
+                        )}
+                        <Link
+                            href={`/services/${service.service_id}`}
+                            className="text-primary hover:underline"
+                        >
+                            Ver servicio #{service.service_id}
+                        </Link>
+                    </div>
+                </InfoWindow>
+            )}
+        </>
+    );
 }
 
 export default function GpsMap({
@@ -216,28 +348,44 @@ export default function GpsMap({
         return () => clearInterval(interval);
     }, []);
 
-    const markerServices = useMemo(
+    const markerServices = useMemo<MarkerService[]>(
         () =>
-            activeServices.filter(
-                (
-                    s,
-                ): s is ActiveService & {
-                    location: NonNullable<ActiveService['location']>;
-                } => s.location !== null,
-            ),
+            activeServices
+                .filter((s) => s.location !== null)
+                .map((s) => ({
+                    service_id: s.service_id,
+                    vehicle_plate: s.vehicle_plate,
+                    driver_name: s.driver_name,
+                    position: {
+                        lat: s.location!.latitude,
+                        lng: s.location!.longitude,
+                    },
+                    is_manual: s.location!.is_manual,
+                    recorded_at: s.location!.recorded_at,
+                    route_distance_m: s.route_distance_m,
+                    route_duration_s: s.route_duration_s,
+                })),
         [activeServices],
     );
 
-    const routableServices = useMemo(
+    const routes = useMemo<RouteData[]>(
         () =>
-            activeServices.filter(
-                (
-                    s,
-                ): s is ActiveService & {
-                    origin: NonNullable<ActiveService['origin']>;
-                    destination: NonNullable<ActiveService['destination']>;
-                } => s.origin !== null && s.destination !== null,
-            ),
+            activeServices
+                .filter((s) => s.origin !== null && s.destination !== null)
+                .map((s) => {
+                    const hasRealRoute =
+                        s.route !== null && s.route.length >= 2;
+                    return {
+                        service_id: s.service_id,
+                        color: serviceColor(s.service_id),
+                        origin: toLatLng(s.origin!),
+                        destination: toLatLng(s.destination!),
+                        confirmed: hasRealRoute,
+                        path: hasRealRoute
+                            ? s.route!.map(toLatLng)
+                            : [toLatLng(s.origin!), toLatLng(s.destination!)],
+                    };
+                }),
         [activeServices],
     );
 
@@ -258,130 +406,63 @@ export default function GpsMap({
                 </div>
                 <div className="relative flex-1 overflow-hidden rounded-md border">
                     <MapLegend />
-                    <MapContainer
-                        center={MEDELLIN_CENTER}
-                        zoom={MEDELLIN_ZOOM}
-                        style={{ height: '100%', width: '100%' }}
-                    >
-                        <TileLayer
-                            url={mapboxTileUrl()}
-                            attribution={MAPBOX_ATTRIBUTION}
-                            tileSize={512}
-                            zoomOffset={-1}
-                            detectRetina
-                        />
-                        <FitBoundsOnData services={activeServices} />
+                    <APIProvider apiKey={GOOGLE_MAPS_BROWSER_KEY}>
+                        <GoogleMap
+                            mapId={GOOGLE_MAPS_MAP_ID}
+                            defaultCenter={MEDELLIN_CENTER}
+                            defaultZoom={MEDELLIN_ZOOM}
+                            gestureHandling="greedy"
+                            clickableIcons={false}
+                            className="h-full w-full"
+                        >
+                            <FitBounds services={activeServices} />
 
-                        {routableServices.map((service) => {
-                            const color = serviceColor(service.service_id);
-                            const hasRealRoute =
-                                service.route !== null &&
-                                service.route.length >= 2;
-                            const polylinePositions: [number, number][] =
-                                hasRealRoute
-                                    ? service.route!.map(toLatLng)
-                                    : [
-                                          toLatLng(service.origin),
-                                          toLatLng(service.destination),
-                                      ];
+                            {routes.map((route) => (
+                                <RoutePolyline
+                                    key={`route-${route.service_id}`}
+                                    path={route.path}
+                                    color={route.color}
+                                    confirmed={route.confirmed}
+                                />
+                            ))}
 
-                            return (
-                                <Fragment key={`route-${service.service_id}`}>
-                                    <Polyline
-                                        positions={polylinePositions}
-                                        pathOptions={{
-                                            color,
-                                            weight: 4,
-                                            opacity: 0.75,
-                                            dashArray: hasRealRoute
-                                                ? undefined
-                                                : '6 8',
-                                        }}
-                                    />
-                                    <CircleMarker
-                                        center={toLatLng(service.origin)}
-                                        radius={6}
-                                        pathOptions={{
-                                            color,
-                                            fillColor: color,
-                                            fillOpacity: 1,
-                                            weight: 2,
-                                        }}
-                                    />
-                                    <CircleMarker
-                                        center={toLatLng(service.destination)}
-                                        radius={6}
-                                        pathOptions={{
-                                            color,
-                                            fillColor: '#ffffff',
-                                            fillOpacity: 1,
-                                            weight: 2,
-                                        }}
-                                    />
-                                </Fragment>
-                            );
-                        })}
-
-                        {markerServices.map((service) => {
-                            const distance = formatDistance(
-                                service.route_distance_m,
-                            );
-                            const duration = formatDuration(
-                                service.route_duration_s,
-                            );
-
-                            return (
-                                <Marker
-                                    key={service.service_id}
-                                    position={[
-                                        service.location.latitude,
-                                        service.location.longitude,
-                                    ]}
+                            {routes.map((route) => (
+                                <AdvancedMarker
+                                    key={`origin-${route.service_id}`}
+                                    position={route.origin}
                                 >
-                                    <Popup>
-                                        <div className="space-y-1 text-sm">
-                                            <div className="font-mono font-medium">
-                                                {service.vehicle_plate ?? '—'}
-                                            </div>
-                                            <div>
-                                                {service.driver_name ?? '—'}
-                                            </div>
-                                            <div className="text-xs text-muted-foreground">
-                                                {formatTimestampInViewerTz(
-                                                    service.location
-                                                        .recorded_at,
-                                                ) || '—'}
-                                            </div>
-                                            <div>
-                                                {service.location.is_manual ? (
-                                                    <Badge variant="outline">
-                                                        Manual
-                                                    </Badge>
-                                                ) : (
-                                                    <Badge>GPS</Badge>
-                                                )}
-                                            </div>
-                                            {(distance || duration) && (
-                                                <div className="text-xs text-muted-foreground">
-                                                    Ruta:{' '}
-                                                    {[distance, duration]
-                                                        .filter(Boolean)
-                                                        .join(' · ')}
-                                                </div>
-                                            )}
-                                            <Link
-                                                href={`/services/${service.service_id}`}
-                                                className="text-primary hover:underline"
-                                            >
-                                                Ver servicio #
-                                                {service.service_id}
-                                            </Link>
-                                        </div>
-                                    </Popup>
-                                </Marker>
-                            );
-                        })}
-                    </MapContainer>
+                                    <span
+                                        className="block size-3.5 rounded-full"
+                                        style={{
+                                            background: route.color,
+                                            border: `2px solid ${route.color}`,
+                                        }}
+                                    />
+                                </AdvancedMarker>
+                            ))}
+
+                            {routes.map((route) => (
+                                <AdvancedMarker
+                                    key={`destination-${route.service_id}`}
+                                    position={route.destination}
+                                >
+                                    <span
+                                        className="block size-3.5 rounded-full bg-white"
+                                        style={{
+                                            border: `2px solid ${route.color}`,
+                                        }}
+                                    />
+                                </AdvancedMarker>
+                            ))}
+
+                            {markerServices.map((service) => (
+                                <VehicleMarker
+                                    key={service.service_id}
+                                    service={service}
+                                />
+                            ))}
+                        </GoogleMap>
+                    </APIProvider>
                 </div>
             </div>
         </AppLayout>

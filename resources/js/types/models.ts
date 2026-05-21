@@ -191,9 +191,13 @@ export type Service = {
     origin_municipality_id: number | null;
     origin_address: string | null;
     origin_coordinates: string | null;
+    /** Google Place ID for the origin address; null for manual pins / legacy. */
+    origin_place_id: string | null;
     destination_municipality_id: number | null;
     destination_address: string | null;
     destination_coordinates: string | null;
+    /** Google Place ID for the destination address; null for manual pins / legacy. */
+    destination_place_id: string | null;
     /** UTC instant (ISO 8601). Render via `lib/datetime.ts` helpers in `timezone`. */
     planned_start_at: string;
     planned_duration: number;

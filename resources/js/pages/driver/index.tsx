@@ -11,6 +11,7 @@ import {
 import { useState } from 'react';
 import { index as driverDashboard } from '@/actions/App/Http/Controllers/DriverDashboardController';
 import { DateNavigator } from '@/components/date-navigator';
+import LocationStaticMap from '@/components/services/location-static-map';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -272,6 +273,28 @@ export default function DriverDashboard({
                                                 )}
                                             </p>
                                         </div>
+                                    </div>
+
+                                    {/* Static-map previews */}
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <LocationStaticMap
+                                            label="Origen"
+                                            coordinates={
+                                                service.origin_coordinates ??
+                                                null
+                                            }
+                                            width={240}
+                                            height={110}
+                                        />
+                                        <LocationStaticMap
+                                            label="Destino"
+                                            coordinates={
+                                                service.destination_coordinates ??
+                                                null
+                                            }
+                                            width={240}
+                                            height={110}
+                                        />
                                     </div>
 
                                     {/* Schedule */}

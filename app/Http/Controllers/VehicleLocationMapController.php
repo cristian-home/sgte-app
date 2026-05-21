@@ -13,7 +13,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * Dedicated admin/operator map view at /gps/map. Renders a Leaflet
+ * Dedicated admin/operator map view at /gps/map. Renders a Google
  * map with one marker per active service for today, using the most
  * recent VehicleLocation as the marker coordinates. Service-scoped
  * location preferred; falls back to the last 24 hours of any
@@ -102,8 +102,8 @@ class VehicleLocationMapController extends Controller
     }
 
     /**
-     * Parse a `lat,lng` string into a Leaflet-friendly pair, returning
-     * null when the value is missing or malformed.
+     * Parse a `lat,lng` string into a { latitude, longitude } pair,
+     * returning null when the value is missing or malformed.
      *
      * @return array{latitude: float, longitude: float}|null
      */
@@ -128,8 +128,8 @@ class VehicleLocationMapController extends Controller
     }
 
     /**
-     * Convert a Mapbox GeoJSON LineString (array of [lng, lat] pairs)
-     * into Leaflet-friendly { latitude, longitude } pairs. Returns null
+     * Convert a GeoJSON LineString (array of [lng, lat] pairs) into
+     * { latitude, longitude } pairs for the client map. Returns null
      * when the geometry hasn't been fetched yet.
      *
      * @param  array<int, array{0: float|int, 1: float|int}>|null  $geometry

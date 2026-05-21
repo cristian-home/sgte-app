@@ -1,3 +1,4 @@
+import { useMapsLibrary } from '@vis.gl/react-google-maps';
 import {
     AlertTriangle,
     Loader2,
@@ -24,21 +25,22 @@ import {
 } from '@/components/ui/tooltip';
 import { dlog, dperf } from '@/lib/debug-log';
 import {
-    type GeocodingAccuracy,
-    type GeocodingFeature,
-    findFeatureByMapboxId,
-    forwardGeocode,
-    pickRoutableCoords,
-} from '@/lib/mapbox-geocoding';
+    createSessionToken,
+    fetchAutocomplete,
+    locationTypeTone,
+    type PlaceSuggestion,
+    resolvePlace,
+} from '@/lib/google-geocoding';
 import { normalizeCity } from '@/lib/normalize-city';
 import { cn } from '@/lib/utils';
 import type { MunicipalityOption } from '@/components/municipality-combobox';
 
 const MIN_QUERY_LENGTH = 3;
 const TYPEAHEAD_DEBOUNCE_MS = 250;
-const TYPEAHEAD_LIMIT = 10;
+/** Radius (m) of the location-bias circle around the selected municipality. */
+const BIAS_RADIUS_M = 30_000;
 
-export type CoordinatesSource = 'mapbox' | 'manual' | '';
+export type CoordinatesSource = 'google' | 'manual' | '';
 
 interface LocationFieldProps {
     id: string;
@@ -53,8 +55,9 @@ interface LocationFieldProps {
     onAddressChange: (text: string) => void;
     onCoordinatesChange: (
         coords: string,
-        source: 'mapbox' | 'manual',
+        source: 'google' | 'manual',
         accuracy: string | null,
+        placeId: string | null,
     ) => void;
     onCommitInFlight: (inFlight: boolean) => void;
     onOpenMapPicker: () => void;
@@ -101,6 +104,13 @@ export default function LocationField({
     const channel = `location-field:${id}`;
     const mode: Mode = municipalityId ? 'address' : 'city';
 
+    // Load the Google Maps libraries this field needs. `places` powers
+    // the autocomplete typeahead; `geocoding` backs resolvePlace's
+    // Geocoder. Both come from the surrounding <APIProvider>.
+    const placesLib = useMapsLibrary('places');
+    useMapsLibrary('geocoding');
+    const placesReady = placesLib !== null;
+
     // --- City mode -----------------------------------------------------
     // Separate from `address` so removing the chip doesn't accidentally
     // re-seed the dropdown with whatever the operator typed as an
@@ -109,7 +119,7 @@ export default function LocationField({
     const [cityQuery, setCityQuery] = useState('');
 
     // --- Address mode --------------------------------------------------
-    const [suggestions, setSuggestions] = useState<GeocodingFeature[]>([]);
+    const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
     const [loadingSuggest, setLoadingSuggest] = useState(false);
     const [committing, setCommitting] = useState(false);
     const [commitError, setCommitError] = useState<string | null>(null);
@@ -123,11 +133,17 @@ export default function LocationField({
     const listboxId = useId();
 
     const suggestAbortRef = useRef<AbortController | null>(null);
-    const commitAbortRef = useRef<AbortController | null>(null);
     const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // One AutocompleteSessionToken groups a typeahead session's keystroke
+    // requests; created on first keystroke, cleared after a commit.
+    const sessionTokenRef =
+        useRef<google.maps.places.AutocompleteSessionToken | null>(null);
+    // Geocoder has no AbortController; a monotonic counter lets a newer
+    // commit (or an unmount) supersede a slower in-flight resolvePlace.
+    const commitSeqRef = useRef(0);
 
     // Bubble `committing` to the parent so it can disable the form's Save
-    // button while a permanent Mapbox fetch is in-flight (compliance D1).
+    // button while a place-details fetch is in-flight (compliance D1).
     useEffect(() => {
         onCommitInFlight(committing);
     }, [committing, onCommitInFlight]);
@@ -143,10 +159,12 @@ export default function LocationField({
         ? selectedMunicipality.name
         : '';
 
-    // Proximity for Mapbox typeahead is derived inside the component now —
-    // no need for the form to feed it. Falls back to 'ip' biasing when
-    // there's no city selected.
-    const proximityParam = useMemo<string>(() => {
+    // Location bias for the Google autocomplete — a circle around the
+    // selected municipality's centroid. Falls back to undefined (no
+    // bias, Colombia-wide) when no city is selected.
+    const locationBias = useMemo<
+        google.maps.places.LocationBias | undefined
+    >(() => {
         if (
             selectedMunicipality &&
             selectedMunicipality.latitude !== null &&
@@ -154,15 +172,16 @@ export default function LocationField({
             Number.isFinite(Number(selectedMunicipality.latitude)) &&
             Number.isFinite(Number(selectedMunicipality.longitude))
         ) {
-            return `${selectedMunicipality.longitude},${selectedMunicipality.latitude}`;
+            return {
+                center: {
+                    lat: Number(selectedMunicipality.latitude),
+                    lng: Number(selectedMunicipality.longitude),
+                },
+                radius: BIAS_RADIUS_M,
+            };
         }
-        return 'ip';
+        return undefined;
     }, [selectedMunicipality]);
-
-    const targetCity = useMemo(
-        () => normalizeCity(selectedMunicipality?.name ?? ''),
-        [selectedMunicipality?.name],
-    );
 
     // --- City mode: local filter + group by department -----------------
     const grouped = useMemo<GroupedMunicipalities[]>(() => {
@@ -205,23 +224,17 @@ export default function LocationField({
         }
     }, []);
 
-    const cancelPendingCommit = useCallback(() => {
-        if (commitAbortRef.current) {
-            commitAbortRef.current.abort();
-            commitAbortRef.current = null;
-        }
-    }, []);
-
     useEffect(() => {
         return () => {
             cancelPendingSuggest();
-            cancelPendingCommit();
+            // Supersede any in-flight commit so its resolve is ignored.
+            commitSeqRef.current += 1;
         };
-    }, [cancelPendingSuggest, cancelPendingCommit]);
+    }, [cancelPendingSuggest]);
 
     const runSuggest = useCallback(
         (text: string) => {
-            const normalized = normalizeForMapbox(text);
+            const normalized = normalizeQuery(text);
             if (normalized.length < MIN_QUERY_LENGTH) {
                 dlog(channel, 'suggest skip (below min length)', {
                     text,
@@ -231,63 +244,43 @@ export default function LocationField({
                 setLoadingSuggest(false);
                 return;
             }
+            if (!placesReady) {
+                dlog(channel, 'suggest skip (places library not loaded)');
+                return;
+            }
             cancelPendingSuggest();
             const ac = new AbortController();
             suggestAbortRef.current = ac;
             setLoadingSuggest(true);
+            if (!sessionTokenRef.current) {
+                sessionTokenRef.current = createSessionToken();
+            }
             dlog(channel, 'suggest fire', {
                 rawText: text,
                 normalized,
-                proximity: proximityParam,
-                targetCity: targetCity || null,
+                biased: locationBias !== undefined,
             });
-            forwardGeocode(
-                normalized,
-                {
-                    permanent: false,
-                    country: 'co',
-                    language: 'es',
-                    types: 'address,street',
-                    limit: TYPEAHEAD_LIMIT,
-                    proximity: proximityParam,
-                    autocomplete: true,
-                },
-                ac.signal,
-            )
-                .then((res) => {
+            fetchAutocomplete(normalized, {
+                sessionToken: sessionTokenRef.current,
+                locationBias,
+                signal: ac.signal,
+            })
+                .then((results) => {
                     if (ac.signal.aborted) return;
-                    let features = res.features ?? [];
-                    let cityFiltered = false;
-                    if (targetCity) {
-                        const matched = features.filter(
-                            (f) =>
-                                normalizeCity(
-                                    f.properties.context?.place?.name ?? '',
-                                ) === targetCity,
-                        );
-                        if (matched.length > 0) {
-                            features = matched;
-                            cityFiltered = true;
-                        }
-                    }
-                    dlog(channel, 'suggest result', {
-                        kept: features.length,
-                        cityFiltered,
-                    });
-                    setSuggestions(features);
+                    dlog(channel, 'suggest result', { kept: results.length });
+                    setSuggestions(results);
                     setActiveIndex(-1);
                     setLoadingSuggest(false);
                 })
                 .catch((err) => {
-                    if ((err as { name?: string }).name === 'AbortError')
-                        return;
+                    if (ac.signal.aborted) return;
                     dlog(channel, 'suggest error', {
                         error: (err as Error).message,
                     });
                     setLoadingSuggest(false);
                 });
         },
-        [cancelPendingSuggest, channel, proximityParam, targetCity],
+        [cancelPendingSuggest, channel, locationBias, placesReady],
     );
 
     const scheduleSuggest = useCallback(
@@ -302,88 +295,59 @@ export default function LocationField({
     );
 
     const commitPick = useCallback(
-        async (suggestion: GeocodingFeature) => {
+        async (suggestion: PlaceSuggestion) => {
             cancelPendingSuggest();
-            cancelPendingCommit();
 
-            const ac = new AbortController();
-            commitAbortRef.current = ac;
+            const seq = ++commitSeqRef.current;
             setCommitting(true);
             setCommitError(null);
             const done = dperf(channel, 'commit', {
-                pickedName: suggestion.properties.name,
-                pickedMapboxId: suggestion.properties.mapbox_id,
+                placeId: suggestion.placeId,
+                pickedText: suggestion.primaryText,
             });
 
             try {
-                const queryForCommit = suggestion.properties.name;
-                const res = await forwardGeocode(
-                    queryForCommit,
-                    {
-                        permanent: true,
-                        country: 'co',
-                        language: 'es',
-                        types: 'address,street',
-                        limit: 10,
-                        proximity: proximityParam,
-                        autocomplete: true,
-                    },
-                    ac.signal,
-                );
-                if (ac.signal.aborted) return;
-                const byId = findFeatureByMapboxId(
-                    res,
-                    suggestion.properties.mapbox_id,
-                );
-                const matched = byId ?? res.features?.[0] ?? null;
-                if (!matched) {
+                const resolved = await resolvePlace(suggestion.placeId);
+                if (seq !== commitSeqRef.current) {
+                    done({ outcome: 'superseded' });
+                    return;
+                }
+                if (!resolved) {
                     done({ outcome: 'no-match' });
                     setCommitError(
                         'No se pudo confirmar la dirección. Intenta de nuevo o marca el punto en el mapa.',
                     );
                     return;
                 }
-                const { lat, lng } = pickRoutableCoords(matched);
-                const accuracy =
-                    matched.properties.coordinates.accuracy ?? null;
                 done({
-                    outcome: byId ? 'matched-by-id' : 'fallback-features[0]',
-                    matchedName: matched.properties.name,
-                    accuracy,
+                    outcome: 'resolved',
+                    accuracy: resolved.locationType,
                 });
-                onAddressChange(matched.properties.name);
+                onAddressChange(resolved.formattedAddress);
                 onCoordinatesChange(
-                    `${lat.toFixed(7)},${lng.toFixed(7)}`,
-                    'mapbox',
-                    accuracy,
+                    `${resolved.lat.toFixed(7)},${resolved.lng.toFixed(7)}`,
+                    'google',
+                    resolved.locationType,
+                    resolved.placeId,
                 );
+                // The place-details call closes this autocomplete session.
+                sessionTokenRef.current = null;
                 setOpen(false);
                 setSuggestions([]);
                 setActiveIndex(-1);
             } catch (err) {
-                if ((err as { name?: string }).name === 'AbortError') {
-                    done({ outcome: 'aborted' });
-                    return;
-                }
+                if (seq !== commitSeqRef.current) return;
                 done({ outcome: 'error', error: (err as Error).message });
                 setCommitError(
                     'No se pudo confirmar la dirección. Intenta de nuevo o marca el punto en el mapa.',
                 );
             } finally {
-                if (commitAbortRef.current === ac) {
-                    commitAbortRef.current = null;
+                if (seq === commitSeqRef.current) {
+                    setCommitting(false);
                 }
-                setCommitting(false);
             }
         },
-        [
-            cancelPendingCommit,
-            cancelPendingSuggest,
-            channel,
-            onAddressChange,
-            onCoordinatesChange,
-            proximityParam,
-        ],
+        [cancelPendingSuggest, channel, onAddressChange, onCoordinatesChange],
     );
 
     // --- Handlers ------------------------------------------------------
@@ -398,7 +362,7 @@ export default function LocationField({
         // setTimeout to let React commit the chip first.
         setTimeout(() => inputRef.current?.focus(), 0);
         // If there was preserved address text from a previous city, it
-        // re-activates as the Mapbox query immediately.
+        // re-activates as the Google query immediately.
         if (address.trim().length >= MIN_QUERY_LENGTH) {
             scheduleSuggest(address);
         }
@@ -407,11 +371,10 @@ export default function LocationField({
     const handleChipRemove = useCallback(() => {
         dlog(channel, 'chip remove');
         cancelPendingSuggest();
-        cancelPendingCommit();
         onMunicipalityChange('');
         // Discard coords — they belonged to the previous city.
         if (coordinates) {
-            onCoordinatesChange('', 'mapbox', null);
+            onCoordinatesChange('', 'manual', null, null);
         }
         setSuggestions([]);
         setActiveIndex(-1);
@@ -421,7 +384,6 @@ export default function LocationField({
         setCityQuery('');
         setOpen(false);
     }, [
-        cancelPendingCommit,
         cancelPendingSuggest,
         channel,
         coordinates,
@@ -435,10 +397,9 @@ export default function LocationField({
         // belonged to the previous city) but preserves the address text
         // (the operator may just want to move it to another city).
         cancelPendingSuggest();
-        cancelPendingCommit();
         onMunicipalityChange('');
         if (coordinates) {
-            onCoordinatesChange('', 'mapbox', null);
+            onCoordinatesChange('', 'manual', null, null);
         }
         setCityQuery('');
         setSuggestions([]);
@@ -446,7 +407,6 @@ export default function LocationField({
         setOpen(true);
         setTimeout(() => inputRef.current?.focus(), 0);
     }, [
-        cancelPendingCommit,
         cancelPendingSuggest,
         channel,
         coordinates,
@@ -481,17 +441,15 @@ export default function LocationField({
     const handleClearText = useCallback(() => {
         dlog(channel, 'clear text+coords by X');
         cancelPendingSuggest();
-        cancelPendingCommit();
         onAddressChange('');
         if (coordinates) {
-            onCoordinatesChange('', 'mapbox', null);
+            onCoordinatesChange('', 'manual', null, null);
         }
         setSuggestions([]);
         setActiveIndex(-1);
         setOpen(false);
         setCommitError(null);
     }, [
-        cancelPendingCommit,
         cancelPendingSuggest,
         channel,
         coordinates,
@@ -602,7 +560,7 @@ export default function LocationField({
         open &&
         !disabled &&
         (loadingSuggest || suggestions.length > 0) &&
-        normalizeForMapbox(address).length >= MIN_QUERY_LENGTH;
+        normalizeQuery(address).length >= MIN_QUERY_LENGTH;
 
     const showDropdown = showCityDropdown || showAddressDropdown;
     const wrapperInvalid =
@@ -910,10 +868,10 @@ function AddressDropdown({
     setActiveIndex,
 }: {
     listboxId: string;
-    suggestions: GeocodingFeature[];
+    suggestions: PlaceSuggestion[];
     loadingSuggest: boolean;
     activeIndex: number;
-    onSelect: (s: GeocodingFeature) => void;
+    onSelect: (s: PlaceSuggestion) => void;
     setActiveIndex: (i: number) => void;
 }) {
     return (
@@ -927,7 +885,7 @@ function AddressDropdown({
                 )}
                 {suggestions.map((s, i) => (
                     <li
-                        key={s.properties.mapbox_id}
+                        key={s.placeId}
                         id={`${listboxId}-option-${i}`}
                         role="option"
                         aria-selected={i === activeIndex}
@@ -946,27 +904,29 @@ function AddressDropdown({
                         <MapPin className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
                         <div className="flex min-w-0 flex-col">
                             <span className="truncate font-medium">
-                                {s.properties.name}
+                                {s.primaryText}
                             </span>
-                            {s.properties.place_formatted && (
+                            {s.secondaryText && (
                                 <span className="truncate text-xs text-muted-foreground">
-                                    {s.properties.place_formatted}
+                                    {s.secondaryText}
                                 </span>
                             )}
                         </div>
                     </li>
                 ))}
             </ul>
+            {/* Places API policy requires Google attribution wherever
+                predictions are shown outside a Google map. */}
             <div className="border-t px-3 py-1.5 text-right text-[10px] text-muted-foreground">
-                Powered by{' '}
-                <a
-                    href="https://www.mapbox.com/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline"
-                >
-                    Mapbox
-                </a>
+                Con tecnología de{' '}
+                <span className="font-semibold tracking-tight">
+                    <span className="text-[#4285F4]">G</span>
+                    <span className="text-[#EA4335]">o</span>
+                    <span className="text-[#FBBC05]">o</span>
+                    <span className="text-[#4285F4]">g</span>
+                    <span className="text-[#34A853]">l</span>
+                    <span className="text-[#EA4335]">e</span>
+                </span>
             </div>
         </>
     );
@@ -991,7 +951,7 @@ function CoordsIndicator({
     source: CoordinatesSource;
     accuracy: string;
 }) {
-    const tone = badgeTone(source, accuracy as GeocodingAccuracy | '');
+    const tone = badgeTone(source, accuracy);
     const toneClass =
         tone === 'green'
             ? 'text-emerald-600 dark:text-emerald-400'
@@ -1001,7 +961,7 @@ function CoordsIndicator({
     const sourceText = sourceLabel(source);
     const detail = [
         sourceText || null,
-        accuracy && source === 'mapbox' ? accuracy : null,
+        accuracy && source === 'google' ? accuracy : null,
     ]
         .filter(Boolean)
         .join(' · ');
@@ -1039,28 +999,21 @@ function CoordsIndicator({
 }
 
 function sourceLabel(source: CoordinatesSource): string {
-    if (source === 'mapbox') return 'Mapbox';
+    if (source === 'google') return 'Google';
     if (source === 'manual') return 'pin manual';
     return '';
 }
 
 function badgeTone(
     source: CoordinatesSource,
-    accuracy: GeocodingAccuracy | '',
+    accuracy: string,
 ): 'green' | 'yellow' | 'gray' {
-    if (source === 'mapbox') {
-        if (
-            accuracy === 'rooftop' ||
-            accuracy === 'parcel' ||
-            accuracy === 'point'
-        ) {
-            return 'green';
-        }
-        return 'yellow';
+    if (source === 'google') {
+        return locationTypeTone(accuracy);
     }
     return 'gray';
 }
 
-function normalizeForMapbox(input: string): string {
+function normalizeQuery(input: string): string {
     return input.replace(/[#-]/g, ' ').replace(/\s+/g, ' ').trim();
 }
