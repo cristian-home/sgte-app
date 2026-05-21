@@ -48,7 +48,7 @@ test('service create page loads with form sections and fields', function (): voi
             // Their visibility-on-close behavior is covered by the
             // retroactive-justification + same-day-closed tests below.
             ->assertSee('Facturación')
-            ->assertSee('Grupo de Facturación')
+            ->assertSee('Grupos de Facturación')
             ->assertSee('Valor Unitario (COP)')
             ->assertSee('Cantidad')
             ->assertSee('Método de Pago')
