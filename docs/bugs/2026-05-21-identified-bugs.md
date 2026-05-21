@@ -16,7 +16,7 @@ ranges as of the date above; line numbers may drift as the code evolves.
 | ID | Title | Severity | Area | Status |
 |----|-------|----------|------|--------|
 | BUG-001 | Silent login failure after driver account creation | High | Auth / Drivers | Resolved (2026-05-21) |
-| BUG-002 | Contract modal submit triggers the underlying service form | High | Services / Contracts (UI) | Open |
+| BUG-002 | Contract modal submit triggers the underlying service form | High | Services / Contracts (UI) | Resolved (2026-05-21) |
 | BUG-003 | Driver "finish service" action does not close the service | High | Services / Driver | Open |
 | BUG-004 | Driver can add incidents / modify a service after it is closed | Medium | Services / Incidents | Open |
 
@@ -206,6 +206,28 @@ tree and also reaches the service `<form>`'s `onSubmit` handler.
 Recommended direction: render `<ContractDialog>` as a **sibling** of the service
 `<form>` (outside it) while keeping its open/close state in the parent — and/or
 stop propagation of the contract form's submit event.
+
+### Resolution (2026-05-21)
+
+Reproduced with Playwright: a single click on the contract dialog's "Guardar"
+fired **both** `POST /contracts` and `POST /services` — the empty service form's
+`302` won the race and reloaded the page, aborting the contract request
+client-side (the contract was still created server-side). Confirmed root cause as
+above: React propagates the submit event through the component tree even though
+Radix portals the dialog's DOM.
+
+**Fix:**
+- `services/create.tsx` — `<ContractDialog>` is now rendered as a **sibling** of
+  the service `<form>` (outside it), so the contract form's submit event has no
+  ancestor service `<form>` to bubble into. A comment pins it in place.
+- `contract-dialog.tsx` — the dialog's `submit()` handler now also calls
+  `e.stopPropagation()`, so the dialog is self-contained regardless of where it
+  is mounted.
+
+Verified after the fix: clicking "Guardar" fires only `POST /contracts`; the
+contract is created, auto-selected in the service form, and no service is
+submitted. Regression test added in `tests/Browser/ServiceFormTest.php`
+(Dusk).
 
 ---
 
