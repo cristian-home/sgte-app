@@ -112,6 +112,7 @@ class DriverDashboardController extends Controller
         abort_unless($driver && $service->driver_id === $driver->id, 403);
 
         $this->assertActionAllowedToday($service);
+        abort_if($service->service_status === ServiceStatus::Closed, 422, 'No puedes modificar un servicio cerrado.');
         $this->assertDocumentsStillValid($service);
 
         $service->update([
@@ -169,6 +170,7 @@ class DriverDashboardController extends Controller
         abort_unless($driver && $service->driver_id === $driver->id, 403);
 
         $this->assertActionAllowedToday($service);
+        abort_if($service->service_status === ServiceStatus::Closed, 422, 'No puedes modificar un servicio cerrado.');
         abort_if($service->actual_start_at === null, 422, 'Debes confirmar el inicio del servicio antes de finalizarlo.');
 
         $service->update([

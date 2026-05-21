@@ -126,6 +126,36 @@ test('confirm end is rejected when the service has no actual start', function ()
     expect($service->service_status)->toBe(ServiceStatus::Open);
 });
 
+test('confirm start is rejected when the service is already closed', function (): void {
+    $driver = Driver::factory()->create(['user_id' => $this->user->id]);
+    $service = Service::factory()->create([
+        'driver_id' => $driver->id,
+        'service_date' => today(),
+        'service_status' => ServiceStatus::Closed,
+        'actual_start_time' => null,
+    ]);
+
+    $response = post(route('driver.confirm-start', $service));
+
+    $response->assertStatus(422);
+    expect($service->fresh()->actual_start_at)->toBeNull();
+});
+
+test('confirm end is rejected when the service is already closed', function (): void {
+    $driver = Driver::factory()->create(['user_id' => $this->user->id]);
+    $service = Service::factory()->create([
+        'driver_id' => $driver->id,
+        'service_date' => today(),
+        'service_status' => ServiceStatus::Closed,
+        'actual_start_time' => '08:00:00',
+        'actual_end_time' => '10:00:00',
+    ]);
+
+    $response = post(route('driver.confirm-end', $service));
+
+    $response->assertStatus(422);
+});
+
 test('confirm start persists a VehicleLocation when coordinates are provided', function (): void {
     config()->set('sgte.gps_enabled', true);
     $driver = Driver::factory()->create(['user_id' => $this->user->id]);

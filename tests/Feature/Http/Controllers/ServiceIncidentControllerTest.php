@@ -3,6 +3,7 @@
 namespace Tests\Feature\Http\Controllers;
 
 use App\Enums\IncidentSeverity;
+use App\Enums\ServiceStatus;
 use App\Models\Driver;
 use App\Models\IncidentType;
 use App\Models\Service;
@@ -378,6 +379,48 @@ test('super admin bypasses the driver scope rule', function (): void {
     ]);
 
     $response->assertRedirect();
+});
+
+test('store rejects a driver incident on a closed service', function (): void {
+    $driverUser = User::factory()->create();
+    $driverUser->assignRole('driver');
+    $driver = Driver::factory()->create(['user_id' => $driverUser->id]);
+    $service = Service::factory()->create([
+        'driver_id' => $driver->id,
+        'service_status' => ServiceStatus::Closed,
+    ]);
+    $incidentType = IncidentType::factory()->create();
+
+    $this->actingAs($driverUser);
+
+    $response = post(route('service-incidents.store'), [
+        'service_id' => $service->id,
+        'incident_type_id' => $incidentType->id,
+        'description' => 'Late report on a closed service',
+        'affects_billing' => false,
+    ]);
+
+    $response->assertSessionHasErrors(['service_id']);
+    expect(ServiceIncident::query()->where('service_id', $service->id)->exists())->toBeFalse();
+});
+
+test('store allows an operator to log an incident on a closed service', function (): void {
+    $operator = User::factory()->create();
+    $operator->assignRole('operator');
+    $service = Service::factory()->create(['service_status' => ServiceStatus::Closed]);
+    $incidentType = IncidentType::factory()->create();
+
+    $this->actingAs($operator);
+
+    $response = post(route('service-incidents.store'), [
+        'service_id' => $service->id,
+        'incident_type_id' => $incidentType->id,
+        'description' => 'Operator post-close audit note',
+        'affects_billing' => false,
+    ]);
+
+    $response->assertSessionHasNoErrors();
+    expect(ServiceIncident::query()->where('service_id', $service->id)->exists())->toBeTrue();
 });
 
 test('store dispatches BillingIncidentNotification when affects_billing is true', function (): void {
