@@ -2,10 +2,10 @@
 name: migrate-mapbox-to-google-maps
 type: feat
 scope: maps
-status: pending
+status: completed
 priority: medium
 created_date: 2026-05-21
-completed_date:
+completed_date: 2026-05-21
 srs_refs: ["REQ-010"]
 migration_strategy: modify-existing
 ---
@@ -53,40 +53,40 @@ replaced with Google equivalents. The database is rebuilt with
 
 ## Acceptance Criteria
 
-- [ ] AC1: WHEN an operator types ≥ 3 characters in the address field of the
+- [x] AC1: WHEN an operator types ≥ 3 characters in the address field of the
   service form THEN the system SHALL show Google Places autocomplete suggestions
   restricted to Colombia (`includedRegionCodes: ['co']`) and biased toward the
   selected municipality's centroid when one is selected.
-- [ ] AC2: WHEN an operator selects an autocomplete suggestion THEN the system
+- [x] AC2: WHEN an operator selects an autocomplete suggestion THEN the system
   SHALL resolve the place details and store the address text, the coordinates as
   a `"lat,lng"` string (7 decimal places), the Google `place_id`, the accuracy
   as a Google `location_type` value, and set the coordinate source to `google`.
-- [ ] AC3: WHEN an operator opens the map picker and clicks or drags the pin
+- [x] AC3: WHEN an operator opens the map picker and clicks or drags the pin
   THEN the system SHALL render an interactive Google map, reverse-geocode the pin
   to populate the "Cerca de:" hint, and on **Confirmar** store the coordinates
   with source `manual` and a `null` `place_id`.
-- [ ] AC4: WHEN an admin or operator opens `/gps/map` THEN the system SHALL
+- [x] AC4: WHEN an admin or operator opens `/gps/map` THEN the system SHALL
   render an interactive Google map showing one marker per active service's
   vehicle location, origin/destination markers, route polylines, and an info
   window per vehicle marker — with auto-fit bounds and the existing 5-minute
   auto-refresh preserved.
-- [ ] AC5: WHEN a service is saved with both origin and destination coordinates
+- [x] AC5: WHEN a service is saved with both origin and destination coordinates
   THEN the `FetchServiceRoute` job SHALL fetch driving route geometry from the
   Google Routes API and persist `route_geometry`, `route_distance_m`,
   `route_duration_s`, `route_fetched_at`, and `route_source = 'google'`.
-- [ ] AC6: WHEN any user views the service detail page (`services/show.tsx`)
+- [x] AC6: WHEN any user views the service detail page (`services/show.tsx`)
   THEN the "Detalle de la Ruta" card SHALL display Google static-map previews for
   the origin and destination coordinates, replacing the "Mapa en desarrollo"
   placeholder; coordinates that are absent SHALL render a neutral empty state
   instead of a broken image.
-- [ ] AC7: WHEN a driver views their service cards on `/driver` THEN each card
+- [x] AC7: WHEN a driver views their service cards on `/driver` THEN each card
   SHALL display Google static-map previews for the service's origin and
   destination coordinates when present.
-- [ ] AC8: WHEN a service is created or updated THEN `ServiceStoreRequest` SHALL
+- [x] AC8: WHEN a service is created or updated THEN `ServiceStoreRequest` SHALL
   accept and validate `origin_place_id` / `destination_place_id` (nullable
   string) and SHALL validate `origin_coordinates_source` /
   `destination_coordinates_source` against `['google', 'manual']`.
-- [ ] AC9: WHEN the codebase is built THEN it SHALL contain **no** reference to
+- [x] AC9: WHEN the codebase is built THEN it SHALL contain **no** reference to
   Mapbox or Leaflet — no imports, no `mapbox`/`leaflet` npm dependencies, no
   `MAPBOX_TOKEN` env var, no `services.mapbox` config key, no
   `App\Services\Mapbox` namespace — and `npm run build`, `npm run types`, Pint,
@@ -210,288 +210,288 @@ work.
 
 ### Backend
 
-- [ ] **Task 1 — Add Place ID columns to the services migration.**
+- [x] **Task 1 — Add Place ID columns to the services migration.**
   In `database/migrations/2026_02_27_225424_create_services_table.php`:
-  - [ ] Add `$table->string('origin_place_id', 255)->nullable();` directly after
+  - [x] Add `$table->string('origin_place_id', 255)->nullable();` directly after
     the `origin_coordinates_accuracy` column.
-  - [ ] Add `$table->string('destination_place_id', 255)->nullable();` directly
+  - [x] Add `$table->string('destination_place_id', 255)->nullable();` directly
     after the `destination_coordinates_accuracy` column.
-  - [ ] Update the inline Spanish comments at lines ~32 and ~36 that mention
+  - [x] Update the inline Spanish comments at lines ~32 and ~36 that mention
     `'mapbox'` and "Geocoding v6" to describe Google (`'google'` source,
     `location_type` accuracy).
-  - [ ] Update the comment near line ~81 ("Mapbox returned no route…") to refer
+  - [x] Update the comment near line ~81 ("Mapbox returned no route…") to refer
     to the Google Routes API.
 
-- [ ] **Task 2 — Update the `Service` model.**
+- [x] **Task 2 — Update the `Service` model.**
   In `app/Models/Service.php`:
-  - [ ] Add `'origin_place_id'` and `'destination_place_id'` to the `$fillable`
+  - [x] Add `'origin_place_id'` and `'destination_place_id'` to the `$fillable`
     array (next to the existing `*_coordinates*` keys).
-  - [ ] Add both keys to the activity-log `logOnly([...])` list so Place ID
+  - [x] Add both keys to the activity-log `logOnly([...])` list so Place ID
     changes are audited alongside the coordinate fields.
-  - [ ] No cast needed (plain nullable strings). Leave the `route_geometry`
+  - [x] No cast needed (plain nullable strings). Leave the `route_geometry`
     `array` cast and the `booted()` route-refresh hooks unchanged.
 
-- [ ] **Task 3 — Update `ServiceStoreRequest` validation.**
+- [x] **Task 3 — Update `ServiceStoreRequest` validation.**
   In `app/Http/Requests/ServiceStoreRequest.php`:
-  - [ ] Change `origin_coordinates_source` rule from
+  - [x] Change `origin_coordinates_source` rule from
     `Rule::in(['mapbox', 'manual'])` to `Rule::in(['google', 'manual'])`.
-  - [ ] Change `destination_coordinates_source` rule the same way.
-  - [ ] Add `'origin_place_id' => ['nullable', 'string', 'max:255']`.
-  - [ ] Add `'destination_place_id' => ['nullable', 'string', 'max:255']`.
-  - [ ] Update the comment at line ~70 that mentions "picking a Mapbox
+  - [x] Change `destination_coordinates_source` rule the same way.
+  - [x] Add `'origin_place_id' => ['nullable', 'string', 'max:255']`.
+  - [x] Add `'destination_place_id' => ['nullable', 'string', 'max:255']`.
+  - [x] Update the comment at line ~70 that mentions "picking a Mapbox
     suggestion" to say "Google".
-  - [ ] `ServiceUpdateRequest` extends `ServiceStoreRequest` and overrides no
+  - [x] `ServiceUpdateRequest` extends `ServiceStoreRequest` and overrides no
     rules — no change required there; verify after editing.
 
-- [ ] **Task 4 — Replace the Mapbox config with `google_maps`.**
+- [x] **Task 4 — Replace the Mapbox config with `google_maps`.**
   In `config/services.php`, remove the `mapbox` array and add the `google_maps`
   array exactly as specified in *Configuration & Environment* above.
 
-- [ ] **Task 5 — Update `.env.example`.**
+- [x] **Task 5 — Update `.env.example`.**
   Remove the `MAPBOX_TOKEN` / `VITE_MAPBOX_TOKEN` lines and their comment block;
   add the five `GOOGLE_MAPS_*` / `VITE_GOOGLE_MAPS_*` lines with an explanatory
   comment block matching the file's style. Note in the comment that the browser
   key must allow the local dev origin (`http://localhost`) as an HTTP referrer.
 
-- [ ] **Task 6 — Create `App\Services\Google\RoutesClient`.**
+- [x] **Task 6 — Create `App\Services\Google\RoutesClient`.**
   New file `app/Services/Google/RoutesClient.php`, replacing
   `App\Services\Mapbox\DirectionsClient`. Mirror `DirectionsClient`'s public
   contract so `FetchServiceRoute` changes minimally:
-  - [ ] Constructor: `public function __construct(protected ?string $token = null)`
+  - [x] Constructor: `public function __construct(protected ?string $token = null)`
     — fall back to `config('services.google_maps.server_key')` when null/empty
     (same pattern as `DirectionsClient`).
-  - [ ] Method `driving(float $originLng, float $originLat, float $destLng, float $destLat): ?array`
+  - [x] Method `driving(float $originLng, float $originLat, float $destLng, float $destLat): ?array`
     returning `array{geometry: array<int, array{0: float, 1: float}>, distance_m: int, duration_s: int}|null`.
-  - [ ] POST to `https://routes.googleapis.com/directions/v2:computeRoutes` with
+  - [x] POST to `https://routes.googleapis.com/directions/v2:computeRoutes` with
     headers `X-Goog-Api-Key: <server_key>` and
     `X-Goog-FieldMask: routes.distanceMeters,routes.duration,routes.polyline.encodedPolyline`.
-  - [ ] Request body: `origin`/`destination` as `{location:{latLng:{latitude,longitude}}}`,
+  - [x] Request body: `origin`/`destination` as `{location:{latLng:{latitude,longitude}}}`,
     `travelMode: 'DRIVE'`, `polylineEncoding: 'ENCODED_POLYLINE'`.
-  - [ ] Decode the returned `routes[0].polyline.encodedPolyline` (Google encoded
+  - [x] Decode the returned `routes[0].polyline.encodedPolyline` (Google encoded
     polyline algorithm) into an array of `[lng, lat]` pairs so the stored
     `route_geometry` format is unchanged from the Mapbox era (the GeoJSON
     LineString `[lng, lat]` order consumed by `VehicleLocationMapController::geometryToLatLngs()`).
     Implement the decoder as a private method in this class.
-  - [ ] `duration` comes back as a string like `"843s"` — strip the trailing
+  - [x] `duration` comes back as a string like `"843s"` — strip the trailing
     `s` and cast to int seconds.
-  - [ ] Return `null` on missing token, `ConnectionException`, non-2xx, or a
+  - [x] Return `null` on missing token, `ConnectionException`, non-2xx, or a
     malformed/empty `routes` array — log a warning with status + truncated body,
     matching `DirectionsClient`'s logging. Use `Http::timeout(10)->retry(2, 250, throw: false)`.
-  - [ ] Follow `app/Services/Mapbox/DirectionsClient.php` as the structural
+  - [x] Follow `app/Services/Mapbox/DirectionsClient.php` as the structural
     reference for error handling and PHPDoc.
 
-- [ ] **Task 7 — Rewire `FetchServiceRoute` to use `RoutesClient`.**
+- [x] **Task 7 — Rewire `FetchServiceRoute` to use `RoutesClient`.**
   In `app/Jobs/FetchServiceRoute.php`:
-  - [ ] Replace the `use App\Services\Mapbox\DirectionsClient;` import and the
+  - [x] Replace the `use App\Services\Mapbox\DirectionsClient;` import and the
     `handle(DirectionsClient $client)` type hint with `RoutesClient`.
-  - [ ] Change both `'route_source' => 'mapbox'` writes to `'route_source' => 'google'`.
-  - [ ] Update the class-level PHPDoc ("Fetches a driving route from Mapbox…")
+  - [x] Change both `'route_source' => 'mapbox'` writes to `'route_source' => 'google'`.
+  - [x] Update the class-level PHPDoc ("Fetches a driving route from Mapbox…")
     to refer to Google. Keep the `lat,lng` → `lng,lat` coordinate-order comment
     accurate.
 
-- [ ] **Task 8 — Delete the Mapbox backend service.**
+- [x] **Task 8 — Delete the Mapbox backend service.**
   Delete `app/Services/Mapbox/DirectionsClient.php` and the now-empty
   `app/Services/Mapbox/` directory. Confirm no other file references the
   `App\Services\Mapbox` namespace.
 
-- [ ] **Task 9 — Update the address factory.**
+- [x] **Task 9 — Update the address factory.**
   In `database/factories/Support/RealColombianAddresses.php`:
-  - [ ] Change every `'source' => 'mapbox'` (16 occurrences) to `'source' => 'google'`.
-  - [ ] Replace the Mapbox Geocoding-v6 `accuracy` values with Google
+  - [x] Change every `'source' => 'mapbox'` (16 occurrences) to `'source' => 'google'`.
+  - [x] Replace the Mapbox Geocoding-v6 `accuracy` values with Google
     `location_type` values: `rooftop`/`parcel`/`point` → `ROOFTOP`,
     `interpolated` → `RANGE_INTERPOLATED`, `approximate` → `APPROXIMATE`
     (use `GEOMETRIC_CENTER` for street-level entries if any). Keep the spread of
     precision levels so factory data still exercises the accuracy-badge tones.
-  - [ ] Optionally add a representative `'place_id'` key (a syntactically
+  - [x] Optionally add a representative `'place_id'` key (a syntactically
     plausible `ChIJ…`-style string) to each entry; if added, ensure
     `ServiceFactory` maps it onto `origin_place_id` / `destination_place_id`.
     If a real-looking value cannot be produced, leave `place_id` absent (the
     columns are nullable).
-  - [ ] Update the file's header PHPDoc that explains the Mapbox `permanent`
+  - [x] Update the file's header PHPDoc that explains the Mapbox `permanent`
     geocoding origin.
 
 ### Frontend
 
-- [ ] **Task 10 — Swap mapping dependencies.**
-  - [ ] `npm install @vis.gl/react-google-maps`.
-  - [ ] `npm uninstall leaflet react-leaflet @types/leaflet @mapbox/search-js-react`.
-  - [ ] Commit the resulting `package.json` + `package-lock.json`.
-  - [ ] Run via Sail on the host (`./vendor/bin/sail npm …`) — host `npm` fails
+- [x] **Task 10 — Swap mapping dependencies.**
+  - [x] `npm install @vis.gl/react-google-maps`.
+  - [x] `npm uninstall leaflet react-leaflet @types/leaflet @mapbox/search-js-react`.
+  - [x] Commit the resulting `package.json` + `package-lock.json`.
+  - [x] Run via Sail on the host (`./vendor/bin/sail npm …`) — host `npm` fails
     (see project memory).
 
-- [ ] **Task 11 — Create `resources/js/lib/google-maps.ts`.**
+- [x] **Task 11 — Create `resources/js/lib/google-maps.ts`.**
   Replaces `mapbox.ts`. Exports:
-  - [ ] `GOOGLE_MAPS_BROWSER_KEY` and `GOOGLE_MAPS_MAP_ID` read from
+  - [x] `GOOGLE_MAPS_BROWSER_KEY` and `GOOGLE_MAPS_MAP_ID` read from
     `import.meta.env.VITE_GOOGLE_MAPS_BROWSER_KEY` / `VITE_GOOGLE_MAPS_MAP_ID`,
     with a `import.meta.env.PROD` console warning when empty (mirror the old
     `mapbox.ts` warning).
-  - [ ] Default map center/zoom constants (Medellín, reusing the existing
+  - [x] Default map center/zoom constants (Medellín, reusing the existing
     `gps/map.tsx` values; Bogotá fallback for the picker).
-  - [ ] `staticMapUrl({ lat, lng, zoom?, width?, height?, scale? })` — builds a
+  - [x] `staticMapUrl({ lat, lng, zoom?, width?, height?, scale? })` — builds a
     `https://maps.googleapis.com/maps/api/staticmap` URL with a single red
     marker at the coordinate, `scale=2` for retina, and the browser key.
     Sensible defaults: `zoom=15`, `width=300`, `height=160`.
 
-- [ ] **Task 12 — Create `resources/js/lib/google-geocoding.ts`.**
+- [x] **Task 12 — Create `resources/js/lib/google-geocoding.ts`.**
   Replaces `mapbox-geocoding.ts`. Wraps the Google Maps JS SDK objects (loaded
   by `@vis.gl/react-google-maps`'s `useMapsLibrary`). Exports:
-  - [ ] Types `PlaceSuggestion` (prediction: `placeId`, primary/secondary text)
+  - [x] Types `PlaceSuggestion` (prediction: `placeId`, primary/secondary text)
     and `ResolvedPlace` (`{ lat, lng, placeId, formattedAddress, locationType, placeName }`).
-  - [ ] `fetchAutocomplete(input, { sessionToken, locationBias?, signal? })` —
+  - [x] `fetchAutocomplete(input, { sessionToken, locationBias?, signal? })` —
     uses `google.maps.places.AutocompleteSuggestion.fetchAutocompleteSuggestions`
     with `includedRegionCodes: ['co']`, `language: 'es'`, and an optional
     `locationBias` circle around the municipality centroid.
-  - [ ] `resolvePlace(placeId, sessionToken)` — fetches place details
+  - [x] `resolvePlace(placeId, sessionToken)` — fetches place details
     (`location`, `formattedAddress`, address components) to produce a
     `ResolvedPlace`. Round lat/lng to 7 decimals.
-  - [ ] `reverseGeocode(lat, lng)` — uses `google.maps.Geocoder` to produce a
+  - [x] `reverseGeocode(lat, lng)` — uses `google.maps.Geocoder` to produce a
     display string plus the detected city name (`locality` /
     `administrative_area_level_2` component) for the map-picker hint and chip
     auto-population.
-  - [ ] A helper mapping Google `location_type` → the accuracy-badge tone
+  - [x] A helper mapping Google `location_type` → the accuracy-badge tone
     (`ROOFTOP` → green, `RANGE_INTERPOLATED` / `GEOMETRIC_CENTER` → yellow,
     `APPROXIMATE` → gray).
-  - [ ] Use a per-typeahead `AutocompleteSessionToken` (created when the user
+  - [x] Use a per-typeahead `AutocompleteSessionToken` (created when the user
     starts typing, consumed by `resolvePlace`) so autocomplete + details are
     billed as one session.
 
-- [ ] **Task 13 — Create `LocationStaticMap` component.**
+- [x] **Task 13 — Create `LocationStaticMap` component.**
   New `resources/js/components/services/location-static-map.tsx`:
-  - [ ] Props: `coordinates: string | null` (a `"lat,lng"` string), `label`
+  - [x] Props: `coordinates: string | null` (a `"lat,lng"` string), `label`
     (e.g. "Origen" / "Destino"), optional `className`, `width`, `height`.
-  - [ ] When coordinates parse, render an `<img>` with `src` from
+  - [x] When coordinates parse, render an `<img>` with `src` from
     `staticMapUrl(...)`, `loading="lazy"`, descriptive `alt`, and rounded-border
     styling consistent with the project's card aesthetic.
-  - [ ] When coordinates are absent/unparseable, render a neutral muted empty
+  - [x] When coordinates are absent/unparseable, render a neutral muted empty
     state ("Sin ubicación", with a `MapPin` icon) at the same dimensions — never
     a broken image.
 
-- [ ] **Task 14 — Rewrite `map-picker-modal.tsx` on Google Maps.**
-  - [ ] Replace `react-leaflet` (`MapContainer`, `TileLayer`, `Marker`,
+- [x] **Task 14 — Rewrite `map-picker-modal.tsx` on Google Maps.**
+  - [x] Replace `react-leaflet` (`MapContainer`, `TileLayer`, `Marker`,
     `useMap`, `useMapEvents`) and the Leaflet icon-rebinding block with
     `@vis.gl/react-google-maps`: `<APIProvider>` (or rely on a parent provider),
     `<Map>` with `mapId={GOOGLE_MAPS_MAP_ID}`, `<AdvancedMarker>`.
-  - [ ] Click-to-drop: handle `<Map onClick={…}>`; drag: `<AdvancedMarker
+  - [x] Click-to-drop: handle `<Map onClick={…}>`; drag: `<AdvancedMarker
     draggable onDragEnd={…}>`.
-  - [ ] Recenter-on-pin behaviour: pan via `useMap()` + `map.panTo(...)`,
+  - [x] Recenter-on-pin behaviour: pan via `useMap()` + `map.panTo(...)`,
     preserving the "don't zoom out below 14" rule.
-  - [ ] Keep the editable address draft input, the "Usar sugerencia" button, the
+  - [x] Keep the editable address draft input, the "Usar sugerencia" button, the
     debounced reverse-geocode "Cerca de:" hint, and the `onConfirm` payload
     shape (`{ coords, address, placeName }`) **unchanged**.
-  - [ ] Reverse geocoding goes through `google-geocoding.ts`'s `reverseGeocode`.
+  - [x] Reverse geocoding goes through `google-geocoding.ts`'s `reverseGeocode`.
 
-- [ ] **Task 15 — Rewrite `gps/map.tsx` on Google Maps.**
-  - [ ] Replace `react-leaflet` (`MapContainer`, `TileLayer`, `Marker`,
+- [x] **Task 15 — Rewrite `gps/map.tsx` on Google Maps.**
+  - [x] Replace `react-leaflet` (`MapContainer`, `TileLayer`, `Marker`,
     `Popup`, `CircleMarker`, `Polyline`, `useMap`) and the Leaflet icon block
     with `@vis.gl/react-google-maps`: `<APIProvider>` + `<Map mapId={…}>`.
-  - [ ] Vehicle markers → `<AdvancedMarker>` with `<InfoWindow>` carrying the
+  - [x] Vehicle markers → `<AdvancedMarker>` with `<InfoWindow>` carrying the
     existing popup content (plate, driver, timestamp, GPS/Manual badge, route
     distance/duration, link to the service).
-  - [ ] Origin/destination markers → small `<AdvancedMarker>`s with custom
+  - [x] Origin/destination markers → small `<AdvancedMarker>`s with custom
     filled/hollow circle content, preserving the legend's meaning.
-  - [ ] Route polylines → a `Polyline` wrapper component built on `useMap()` +
+  - [x] Route polylines → a `Polyline` wrapper component built on `useMap()` +
     `new google.maps.Polyline(...)` (the library ships no `<Polyline>`); honor
     the per-service `serviceColor()` hue and the solid-vs-dashed
     confirmed/estimated distinction.
-  - [ ] Auto-fit bounds → replace `FitBoundsOnData` with a component that calls
+  - [x] Auto-fit bounds → replace `FitBoundsOnData` with a component that calls
     `map.fitBounds(new google.maps.LatLngBounds(...))` over all points.
-  - [ ] Keep the `MapLegend` overlay, the active-services count line, and the
+  - [x] Keep the `MapLegend` overlay, the active-services count line, and the
     5-minute `router.reload` auto-refresh (with the `document.hidden` guard).
 
-- [ ] **Task 16 — Rewrite the geocoding internals of `location-field.tsx`.**
-  - [ ] Replace `forwardGeocode` / `findFeatureByMapboxId` / `pickRoutableCoords`
+- [x] **Task 16 — Rewrite the geocoding internals of `location-field.tsx`.**
+  - [x] Replace `forwardGeocode` / `findFeatureByMapboxId` / `pickRoutableCoords`
     imports with `google-geocoding.ts` functions.
-  - [ ] Typeahead pipeline: debounced `fetchAutocomplete`, biased by the
+  - [x] Typeahead pipeline: debounced `fetchAutocomplete`, biased by the
     selected municipality centroid (`locationBias` circle) instead of the
     Mapbox `proximity` string; keep the 250 ms debounce, 3-char minimum,
     `AbortController` cancellation, and keyboard navigation.
-  - [ ] Commit-on-pick: call `resolvePlace(placeId, sessionToken)`; store
+  - [x] Commit-on-pick: call `resolvePlace(placeId, sessionToken)`; store
     coordinates, `place_id`, `formattedAddress`, and the `location_type`
     accuracy. Remove the Mapbox `permanent` two-step (typeahead `permanent:false`
     → commit `permanent:true`) entirely — Google's place details call is the
     single commit step.
-  - [ ] Update `CoordinatesSource` to `'google' | 'manual' | ''` and the
+  - [x] Update `CoordinatesSource` to `'google' | 'manual' | ''` and the
     `onCoordinatesChange` source argument type to `'google' | 'manual'`.
-  - [ ] `pickRoutableCoords` is removed — use the place `location` directly
+  - [x] `pickRoutableCoords` is removed — use the place `location` directly
     (Google has no routable-point concept).
-  - [ ] `badgeTone` / `sourceLabel` / `CoordsIndicator`: map over Google
+  - [x] `badgeTone` / `sourceLabel` / `CoordsIndicator`: map over Google
     `location_type` values and relabel "Mapbox" → "Google".
-  - [ ] Replace the "Powered by Mapbox" footer in `AddressDropdown` with the
+  - [x] Replace the "Powered by Mapbox" footer in `AddressDropdown` with the
     Google attribution required by Places policy (the "Powered by Google" logo
     asset) when predictions are shown outside a Google map.
-  - [ ] The `LocationField` must consume the surrounding `APIProvider` (added in
+  - [x] The `LocationField` must consume the surrounding `APIProvider` (added in
     `service-form.tsx`) so the Places library is loaded.
 
-- [ ] **Task 17 — Adjust `service-form.tsx`.**
-  - [ ] Wrap the form (or at least the `LocationField` + `MapPickerModal`
+- [x] **Task 17 — Adjust `service-form.tsx`.**
+  - [x] Wrap the form (or at least the `LocationField` + `MapPickerModal`
     subtree) in a single `<APIProvider apiKey={GOOGLE_MAPS_BROWSER_KEY}>` so
     both children share one Maps JS load. The service form renders inside the
     CRUD modal dialog; place the provider so it mounts with the form.
-  - [ ] Update any `place_id` plumbing: the form's data shape and the payload to
+  - [x] Update any `place_id` plumbing: the form's data shape and the payload to
     `ServiceController` must carry `origin_place_id` / `destination_place_id`
     alongside the existing `*_coordinates*` fields.
-  - [ ] Update Mapbox-referencing comments (lines ~109–153, ~367, ~457) to
+  - [x] Update Mapbox-referencing comments (lines ~109–153, ~367, ~457) to
     describe Google.
 
-- [ ] **Task 18 — Wire static maps into the service detail page.**
+- [x] **Task 18 — Wire static maps into the service detail page.**
   In `resources/js/pages/services/show.tsx`, replace the "Mapa en desarrollo"
   placeholder (~line 357) inside the "Detalle de la Ruta" card with two
   `LocationStaticMap` components — one for `service.origin_coordinates`, one for
   `service.destination_coordinates` — laid out beneath the existing origin and
   destination address blocks.
 
-- [ ] **Task 19 — Wire static maps into the driver dashboard.**
+- [x] **Task 19 — Wire static maps into the driver dashboard.**
   In `resources/js/pages/driver/index.tsx`, add `LocationStaticMap` previews for
   the origin and destination coordinates to each service card's `CardContent`
   (near the existing origin/destination municipality rows, ~lines 260–271). Keep
   the cards compact — use a small preview size.
 
-- [ ] **Task 20 — Delete Mapbox frontend files & clean up comments.**
-  - [ ] Delete `resources/js/lib/mapbox.ts` and
+- [x] **Task 20 — Delete Mapbox frontend files & clean up comments.**
+  - [x] Delete `resources/js/lib/mapbox.ts` and
     `resources/js/lib/mapbox-geocoding.ts`.
-  - [ ] Update the Mapbox comment in `resources/js/lib/normalize-city.ts`
+  - [x] Update the Mapbox comment in `resources/js/lib/normalize-city.ts`
     (the function still applies — it normalizes city names against the geocoder's
     place context; just retarget the wording to Google).
-  - [ ] Update the Mapbox mention in `resources/js/lib/debug-log.ts` (~line 71).
-  - [ ] Grep `resources/js` for `mapbox` / `leaflet` (case-insensitive) and
+  - [x] Update the Mapbox mention in `resources/js/lib/debug-log.ts` (~line 71).
+  - [x] Grep `resources/js` for `mapbox` / `leaflet` (case-insensitive) and
     confirm zero remaining references.
 
 ### Tests
 
-- [ ] **Task 21 — Create `tests/Feature/Services/Google/RoutesClientTest.php`.**
-  - [ ] `Http::fake()` a successful Routes API response with a known
+- [x] **Task 21 — Create `tests/Feature/Services/Google/RoutesClientTest.php`.**
+  - [x] `Http::fake()` a successful Routes API response with a known
     `encodedPolyline`; assert `driving()` returns decoded `[lng, lat]` geometry,
     correct `distance_m`, and `duration_s` parsed from the `"NNNs"` string.
-  - [ ] Assert `null` is returned for: empty server key, a non-2xx response, and
+  - [x] Assert `null` is returned for: empty server key, a non-2xx response, and
     a response with an empty/missing `routes` array.
-  - [ ] Assert the request carries the `X-Goog-Api-Key` and `X-Goog-FieldMask`
+  - [x] Assert the request carries the `X-Goog-Api-Key` and `X-Goog-FieldMask`
     headers and a body with `travelMode: 'DRIVE'`.
-  - [ ] Follow the existing Mapbox-era job/route tests for `Http::fake`
+  - [x] Follow the existing Mapbox-era job/route tests for `Http::fake`
     conventions.
 
-- [ ] **Task 22 — Update `tests/Feature/Jobs/FetchServiceRouteTest.php`.**
-  - [ ] Swap the mocked/faked `DirectionsClient` for `RoutesClient`.
-  - [ ] Assert the persisted `route_source` is `'google'` on both the
+- [x] **Task 22 — Update `tests/Feature/Jobs/FetchServiceRouteTest.php`.**
+  - [x] Swap the mocked/faked `DirectionsClient` for `RoutesClient`.
+  - [x] Assert the persisted `route_source` is `'google'` on both the
     success and the no-route paths.
-  - [ ] Keep coverage of the "both coords required" and "marks attempted on
+  - [x] Keep coverage of the "both coords required" and "marks attempted on
     failure" behaviours.
 
-- [ ] **Task 23 — Update coordinate/route feature tests for the `google` source.**
-  - [ ] `tests/Feature/Http/Controllers/ServiceControllerStoreCoordsTest.php` —
+- [x] **Task 23 — Update coordinate/route feature tests for the `google` source.**
+  - [x] `tests/Feature/Http/Controllers/ServiceControllerStoreCoordsTest.php` —
     change request payloads from `'…_coordinates_source' => 'mapbox'` to
     `'google'`; add assertions that `origin_place_id` / `destination_place_id`
     are accepted and persisted, and that an invalid source value (`'mapbox'`,
     now removed) is rejected with a validation error.
-  - [ ] `tests/Feature/Models/ServiceRouteCacheTest.php` — update any `'mapbox'`
+  - [x] `tests/Feature/Models/ServiceRouteCacheTest.php` — update any `'mapbox'`
     literals to `'google'`.
-  - [ ] `tests/Feature/Http/Controllers/VehicleLocationMapControllerTest.php` —
+  - [x] `tests/Feature/Http/Controllers/VehicleLocationMapControllerTest.php` —
     update `'mapbox'` literals; the `route` geometry contract is unchanged.
-  - [ ] `tests/Feature/Http/Controllers/ServiceControllerTest.php` — update any
+  - [x] `tests/Feature/Http/Controllers/ServiceControllerTest.php` — update any
     `'mapbox'` literals.
-  - [ ] Grep `tests/` for `mapbox` (case-insensitive) and confirm zero
+  - [x] Grep `tests/` for `mapbox` (case-insensitive) and confirm zero
     remaining references.
 
-- [ ] **Task 24 — Dusk browser test: service form mapping.**
+- [x] **Task 24 — Dusk browser test: service form mapping.**
   In `tests/Browser/` (extend `ServiceFormTest.php` or add a sibling): assert the
   service create dialog renders the `LocationField` control without error
   banners, the address input and "Marcar en mapa" button are present with the
@@ -500,14 +500,14 @@ work.
   assert Google's internal map tiles render (network-dependent) — assert the
   container and SGTE chrome only.
 
-- [ ] **Task 25 — Dusk browser test: GPS map & static-map previews.**
-  - [ ] `/gps/map` as admin: page renders without error banners; the heading,
+- [x] **Task 25 — Dusk browser test: GPS map & static-map previews.**
+  - [x] `/gps/map` as admin: page renders without error banners; the heading,
     the active-services count line, and the `MapLegend` ("Símbolos", "Origen",
     "Destino", "Vehículo (GPS)") are present; screenshot.
-  - [ ] Service detail page: the "Detalle de la Ruta" card no longer shows
+  - [x] Service detail page: the "Detalle de la Ruta" card no longer shows
     "Mapa en desarrollo" and contains static-map `<img>` elements whose `src`
     contains `maps.googleapis.com/maps/api/staticmap`.
-  - [ ] Driver dashboard as `driver@sgte.app`: service cards render static-map
+  - [x] Driver dashboard as `driver@sgte.app`: service cards render static-map
     previews; screenshot.
 
 ## Verification
@@ -538,24 +538,24 @@ Reference users (all password `password`): `admin@sgte.app`, `operator@sgte.app`
 
 Run `./vendor/bin/sail test --compact`. Required coverage:
 
-- [ ] `RoutesClientTest` — polyline decode, distance/duration parsing, all
+- [x] `RoutesClientTest` — polyline decode, distance/duration parsing, all
   `null` failure modes, request headers/body (Task 21).
-- [ ] `FetchServiceRouteTest` — `route_source = 'google'`, success + no-route
+- [x] `FetchServiceRouteTest` — `route_source = 'google'`, success + no-route
   paths (Task 22).
-- [ ] `ServiceControllerStoreCoordsTest` — `google` source accepted, `place_id`
+- [x] `ServiceControllerStoreCoordsTest` — `google` source accepted, `place_id`
   persisted, removed `mapbox` value rejected (Task 23).
-- [ ] `ServiceRouteCacheTest`, `VehicleLocationMapControllerTest`,
+- [x] `ServiceRouteCacheTest`, `VehicleLocationMapControllerTest`,
   `ServiceControllerTest` — green after the `google` literal updates (Task 23).
-- [ ] Full suite green; `vendor/bin/pint --dirty --format agent` clean.
+- [x] Full suite green; `vendor/bin/pint --dirty --format agent` clean.
 
 ### 3. UI regression — Laravel Dusk browser tests
 
 Run `./vendor/bin/sail dusk`. Run `php artisan migrate:fresh --seed --no-interaction`
 inside the test when a clean database is needed.
 
-- [ ] Service form mapping test (Task 24) — `LocationField` + map picker dialog
+- [x] Service form mapping test (Task 24) — `LocationField` + map picker dialog
   render with the right Spanish copy, no error UI, screenshots captured.
-- [ ] GPS map + static-map test (Task 25) — `/gps/map` legend present, service
+- [x] GPS map + static-map test (Task 25) — `/gps/map` legend present, service
   detail shows static-map `<img>`s pointing at `maps.googleapis.com`, driver
   cards show previews, no error banners, screenshots captured.
 
@@ -565,11 +565,11 @@ Not applicable — this requirement adds no API endpoints.
 
 ### 5. Build & type checks
 
-- [ ] `./vendor/bin/sail npm run build` succeeds.
-- [ ] `./vendor/bin/sail npm run types` passes (no `CoordinatesSource` /
+- [x] `./vendor/bin/sail npm run build` succeeds.
+- [x] `./vendor/bin/sail npm run types` passes (no `CoordinatesSource` /
   removed-import type errors).
-- [ ] `./vendor/bin/sail npm run lint` passes.
-- [ ] `grep -ri "mapbox\|leaflet"` over `app/`, `resources/js/`, `config/`,
+- [x] `./vendor/bin/sail npm run lint` passes.
+- [x] `grep -ri "mapbox\|leaflet"` over `app/`, `resources/js/`, `config/`,
   `tests/`, `.env.example`, `package.json` returns nothing (AC9).
 
 ## Dependencies
