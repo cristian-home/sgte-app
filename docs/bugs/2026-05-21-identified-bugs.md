@@ -18,7 +18,7 @@ ranges as of the date above; line numbers may drift as the code evolves.
 | BUG-001 | Silent login failure after driver account creation | High | Auth / Drivers | Resolved (2026-05-21) |
 | BUG-002 | Contract modal submit triggers the underlying service form | High | Services / Contracts (UI) | Resolved (2026-05-21) |
 | BUG-003 | Driver "finish service" action does not close the service | High | Services / Driver | Resolved (2026-05-21) |
-| BUG-004 | Driver can add incidents / modify a service after it is closed | Medium | Services / Incidents | Open |
+| BUG-004 | Driver can add incidents / modify a service after it is closed | Medium | Services / Incidents | Resolved (2026-05-21) |
 
 | ID | Title | Type | Area |
 |----|-------|------|------|
@@ -403,6 +403,36 @@ There is no status guard anywhere in the incident-creation chain:
 A guard on the parent service's `service_status` is needed in the backend
 (controller/policy and/or form request), with the UI affordances hidden or
 disabled to match.
+
+### Resolution (2026-05-21)
+
+Reproduced as a driver: registered a novedad against the closed service #54 —
+the `POST` succeeded with no restriction.
+
+**Fix:**
+- New validation rule `App\Rules\ServiceOpenForDriverIncident`, applied to
+  `service_id` in `ServiceIncidentStoreRequest`. It mirrors
+  `ServiceBelongsToAuthenticatedDriver` — driver-scoped only, so admin /
+  operator / accounting may still log incidents against closed services (a
+  legitimate post-hoc need); a driver gets a `422`.
+- `DriverDashboardController::confirmStart()` / `confirmEnd()` now reject a
+  closed service (`abort_if(... ServiceStatus::Closed ...)`), so a driver can't
+  mutate a closed service's times via a crafted request either.
+- `driver/index.tsx` hides the **Registrar Novedad** button on closed services;
+  `service-incident-form.tsx` surfaces the `service_id` error on the
+  preselected-service path.
+
+The `ServiceFactory` was also changed to default `service_status` to `Open`
+(the canonical new-service state, matching the DB column default) instead of a
+random value — the confirm-action guards above made the previous randomization
+a source of flaky tests.
+
+Verified after the fix: a driver's incident `POST` on a closed service is
+rejected ("No puede registrar novedades en un servicio cerrado.") and no
+incident row is created; the dashboard button is hidden. Regression tests added
+in `tests/Feature/Http/Controllers/ServiceIncidentControllerTest.php` (driver
+rejected, operator still allowed) and `DriverDashboardControllerTest.php`
+(confirm-start / confirm-end rejected on a closed service).
 
 ---
 

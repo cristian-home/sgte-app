@@ -84,7 +84,9 @@ class ServiceFactory extends Factory
                     ->all()
                 : null,
             'payment_method' => fake()->randomElement(PaymentMethod::cases()),
-            'service_status' => fake()->randomElement(ServiceStatus::cases()),
+            // A freshly-created service is open (matches the DB column
+            // default); tests needing a closed service set it explicitly.
+            'service_status' => ServiceStatus::Open,
         ];
     }
 

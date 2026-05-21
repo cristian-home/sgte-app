@@ -211,6 +211,7 @@ export default function DriverDashboard({
                         const hasStarted = !!service.actual_start_at;
                         const hasEnded = !!service.actual_end_at;
                         const isDeclined = !!service.driver_declined_at;
+                        const isClosed = service.service_status === 'closed';
                         const incidentCount =
                             service.service_incidents_count ?? 0;
                         const stateKey = classifyServiceState(service, isToday);
@@ -387,18 +388,23 @@ export default function DriverDashboard({
                                                 </Badge>
                                             </div>
                                         )}
-                                        <Button
-                                            variant="outline"
-                                            asChild
-                                            className="flex-1"
-                                        >
-                                            <Link
-                                                href={`/service-incidents/create?service_id=${service.id}`}
+                                        {/* A closed service is finalized — the
+                                            driver can no longer log novedades
+                                            against it. See BUG-004. */}
+                                        {!isClosed && (
+                                            <Button
+                                                variant="outline"
+                                                asChild
+                                                className="flex-1"
                                             >
-                                                <AlertCircle className="mr-1 size-4" />
-                                                Registrar Novedad
-                                            </Link>
-                                        </Button>
+                                                <Link
+                                                    href={`/service-incidents/create?service_id=${service.id}`}
+                                                >
+                                                    <AlertCircle className="mr-1 size-4" />
+                                                    Registrar Novedad
+                                                </Link>
+                                            </Button>
+                                        )}
                                     </div>
                                 </CardContent>
                             </Card>

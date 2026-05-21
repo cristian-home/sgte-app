@@ -183,6 +183,7 @@ export default function ServiceIncidentForm({
                     <p className="text-xs text-muted-foreground italic">
                         Preseleccionado desde el servicio.
                     </p>
+                    <InputError message={errors.service_id} />
                 </div>
             ) : (
                 <div className="grid gap-2">

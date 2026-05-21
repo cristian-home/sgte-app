@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Enums\Permission;
 use App\Rules\ServiceBelongsToAuthenticatedDriver;
+use App\Rules\ServiceOpenForDriverIncident;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Gate;
 
@@ -23,7 +24,7 @@ class ServiceIncidentStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'service_id' => ['required', 'integer', 'exists:services,id', new ServiceBelongsToAuthenticatedDriver],
+            'service_id' => ['required', 'integer', 'exists:services,id', new ServiceBelongsToAuthenticatedDriver, new ServiceOpenForDriverIncident],
             'incident_type_id' => ['required', 'integer', 'exists:incident_types,id'],
             'description' => ['required', 'string'],
             'affects_billing' => ['boolean'],
