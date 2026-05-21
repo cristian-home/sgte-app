@@ -151,6 +151,10 @@ export default function ContractDialog({
 
     function submit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
+        // Defensive: this dialog renders its own <form>. Stop the submit event
+        // from bubbling through the React tree to any ancestor <form> (e.g. the
+        // service create page), which would submit that form too. See BUG-002.
+        e.stopPropagation();
         if (mode === 'create') {
             post(ContractController.store().url, {
                 preserveScroll: true,

@@ -141,16 +141,6 @@ export default function ServicesCreate({
                                 }
                             />
 
-                            <ContractDialog
-                                open={contractDialogOpen}
-                                onOpenChange={setContractDialogOpen}
-                                mode="create"
-                                cascade
-                                thirdParties={thirdParties}
-                                documentTypes={documentTypes}
-                                municipalities={municipalities}
-                            />
-
                             {isExecutedDay && (
                                 <Alert variant="destructive">
                                     <AlertTitle>Día ejecutado</AlertTitle>
@@ -208,6 +198,23 @@ export default function ServicesCreate({
                                 </Link>
                             </div>
                         </form>
+
+                        {/*
+                            ContractDialog renders its own <form>. Keep it
+                            OUTSIDE the service <form> above: React propagates
+                            submit events through the component tree (not the
+                            portaled DOM), so nesting it would also fire the
+                            service form's onSubmit. See BUG-002.
+                        */}
+                        <ContractDialog
+                            open={contractDialogOpen}
+                            onOpenChange={setContractDialogOpen}
+                            mode="create"
+                            cascade
+                            thirdParties={thirdParties}
+                            documentTypes={documentTypes}
+                            municipalities={municipalities}
+                        />
                     </CardContent>
                 </Card>
             </div>

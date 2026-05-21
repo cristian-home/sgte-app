@@ -273,3 +273,26 @@ test('third-party vehicle hides driver field and shows provider info', function 
             ->assertDontSee('Seleccionar conductor...');
     });
 });
+
+test('contract dialog submit does not also submit the service form (BUG-002)', function (): void {
+    $user = authenticateAsSuperAdmin();
+
+    $this->browse(function (Browser $browser) use ($user): void {
+        $browser->loginAs($user)
+            ->visit('/services/create')
+            ->waitForText('Crear Servicio')
+            ->click('button[aria-label="Crear nuevo contrato"]')
+            ->waitForText('Crear Contrato')
+            // Submit the contract dialog with an empty form. The contract
+            // <form> must be the ONLY form that submits: the dialog stays
+            // open showing its own validation. If the nested-form leak
+            // regressed, the underlying service <form> would also submit,
+            // reload the page and close the dialog.
+            ->within('[role=dialog]', function (Browser $dialog): void {
+                $dialog->press('Guardar');
+            })
+            ->pause(1500)
+            ->assertSee('Crear Contrato')
+            ->assertSee('Número de Contrato');
+    });
+});
