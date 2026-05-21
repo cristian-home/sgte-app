@@ -45,6 +45,9 @@ export function DriverInviteDialog({
 
     function submit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
+        // This dialog owns its <form>; stop the submit event from bubbling
+        // through the React tree to an ancestor <form>. See BUG-002.
+        e.stopPropagation();
         post(DriverController.inviteAccount(driverId).url, {
             preserveScroll: true,
             onSuccess: () => onOpenChange(false),

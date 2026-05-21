@@ -63,6 +63,9 @@ export default function DocumentTypeDialog({
 
     function submit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
+        // This dialog owns its <form>; stop the submit event from bubbling
+        // through the React tree to an ancestor <form>. See BUG-002.
+        e.stopPropagation();
         if (mode === 'create') {
             post(DocumentTypeController.store().url, {
                 preserveScroll: true,

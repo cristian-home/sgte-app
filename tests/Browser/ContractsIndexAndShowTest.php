@@ -195,3 +195,28 @@ test('third-party show Contratos card link lands on the rebuilt contract show pa
             ->screenshot('third-party-to-contract-cross-link');
     });
 });
+
+test('nested create-client dialog submit does not submit the contract form (BUG-002)', function (): void {
+    $user = contractsAuthenticateAsSuperAdmin();
+
+    $this->browse(function (Browser $browser) use ($user): void {
+        $browser->loginAs($user)
+            ->visit('/contracts')
+            ->waitForText('Contratos')
+            ->press('Crear Contrato')
+            ->waitForText('Crear Contrato')
+            ->click('button[aria-label="Crear nuevo cliente"]')
+            ->waitForText('Crear Tercero')
+            // Submit the nested "Crear Tercero" dialog with an empty form. It
+            // must stay open showing its own validation — the contract <form>
+            // behind it must NOT submit (which would reload the page and close
+            // both dialogs). Radix marks the backgrounded dialog aria-hidden,
+            // so :not([aria-hidden="true"]) targets the active nested dialog.
+            ->within('[role=dialog]:not([aria-hidden="true"])', function (Browser $dialog): void {
+                $dialog->press('Guardar');
+            })
+            ->pause(1500)
+            ->assertSee('Crear Tercero')
+            ->assertSee('Número de Identificación');
+    });
+});
