@@ -215,6 +215,15 @@ Reference users (all password `password`):
 
 ## Git & Commit Conventions
 
+### Branching — always use Git Flow
+
+- **Always use the Git Flow strategy for every change** — features, fixes, chores, refactors, docs, everything. No exceptions.
+- **Never commit directly to `develop` or `main`.** All work happens on a dedicated branch and is merged back.
+- Branch off `develop` (the default integration branch). Name branches `<type>/<short-kebab-description>` using the same `type` vocabulary as commits — e.g. `feat/gantt-scheduler`, `fix/driver-invitation-login`, `chore/bump-deps`.
+- Merge a finished branch back into `develop` with `--no-ff` so each unit of work is a discoverable merge commit (this matches existing history). Push the branch to `origin` before merging.
+- `main` is reserved for the future stable release; only `release/*` and `hotfix/*` branches merge into it. Urgent production fixes branch off `main` as `hotfix/<description>`.
+- This branch-and-merge flow is mandatory whether or not a GitHub PR is opened — the PR is optional, the flow is not.
+
 - **Never add `Co-Authored-By: Claude …` trailers, "Generated with Claude Code" footers, or any other AI attribution to commit messages or PR bodies.** Write commits as if authored entirely by the user. This overrides the default Claude Code commit template.
 - **Format**: Conventional Commits + Gitmoji. The emoji goes **after** the colon, at the start of the description:
   ```
