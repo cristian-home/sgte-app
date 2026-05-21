@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\Permission;
 use App\Enums\Role;
+use App\Enums\ServiceStatus;
 use App\Http\Requests\DriverDeclineServiceRequest;
 use App\Models\IncidentType;
 use App\Models\Service;
@@ -154,6 +155,12 @@ class DriverDashboardController extends Controller
         }
     }
 
+    /**
+     * Confirm the end of a service. Stamps `actual_end_at` and closes the
+     * service (`service_status = closed`) — a driver-finished service is
+     * complete and needs no manual admin follow-up. The start guard keeps
+     * the "a closed service has both actual times" invariant intact.
+     */
     public function confirmEnd(Request $request, Service $service): RedirectResponse
     {
         Gate::authorize(Permission::REGISTER_SERVICE_TIMES->value);
@@ -162,9 +169,11 @@ class DriverDashboardController extends Controller
         abort_unless($driver && $service->driver_id === $driver->id, 403);
 
         $this->assertActionAllowedToday($service);
+        abort_if($service->actual_start_at === null, 422, 'Debes confirmar el inicio del servicio antes de finalizarlo.');
 
         $service->update([
             'actual_end_at' => now(),
+            'service_status' => ServiceStatus::Closed,
         ]);
 
         $this->persistLocationIfProvided($service, $request);
