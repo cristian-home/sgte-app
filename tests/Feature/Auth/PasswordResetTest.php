@@ -59,6 +59,27 @@ test('password can be reset with valid token', function () {
     });
 });
 
+test('password reset clears the must_change_password flag', function () {
+    Notification::fake();
+
+    $user = User::factory()->create(['must_change_password' => true]);
+
+    $this->post(route('password.email'), ['email' => $user->email]);
+
+    Notification::assertSentTo($user, ResetPassword::class, function ($notification) use ($user) {
+        $this->post(route('password.update'), [
+            'token' => $notification->token,
+            'email' => $user->email,
+            'password' => 'NewSecure2026!',
+            'password_confirmation' => 'NewSecure2026!',
+        ])->assertSessionHasNoErrors();
+
+        expect($user->fresh()->must_change_password)->toBeFalse();
+
+        return true;
+    });
+});
+
 test('password cannot be reset with invalid token', function () {
     $user = User::factory()->create();
 

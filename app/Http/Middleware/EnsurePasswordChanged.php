@@ -16,7 +16,9 @@ use Symfony\Component\HttpFoundation\Response;
  * - Future: any flow that hands out a temporary credential.
  *
  * Whitelisted routes: the password edit/update pair (so the user can comply),
- * logout, and Fortify 2FA challenges (so 2FA still works at first login).
+ * the email-verification routes (so a user who is also unverified isn't bounced
+ * into an infinite loop against the `verified` middleware), logout, and Fortify
+ * 2FA challenges (so 2FA still works at first login).
  */
 class EnsurePasswordChanged
 {
@@ -26,6 +28,9 @@ class EnsurePasswordChanged
     private const ALLOWED_ROUTE_NAMES = [
         'user-password.edit',
         'user-password.update',
+        'verification.notice',
+        'verification.verify',
+        'verification.send',
         'logout',
         'two-factor.login',
         'two-factor.show',

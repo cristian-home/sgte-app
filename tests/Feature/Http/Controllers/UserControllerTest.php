@@ -92,6 +92,7 @@ test('admin can store a new user with multiple roles', function (): void {
     expect($user->hasRole(Role::OPERATOR->value))->toBeTrue();
     expect($user->hasRole(Role::ACCOUNTING->value))->toBeTrue();
     expect($user->is_active)->toBeTrue();
+    expect($user->hasVerifiedEmail())->toBeTrue();
 });
 
 test('store dispatches welcome email when flag set', function (): void {
@@ -108,6 +109,7 @@ test('store dispatches welcome email when flag set', function (): void {
 
     $user = User::where('email', 'welcome@sgte.app')->first();
     expect($user->must_change_password)->toBeTrue();
+    expect($user->hasVerifiedEmail())->toBeTrue();
     Notification::assertSentTo($user, WelcomeUserNotification::class);
 });
 
