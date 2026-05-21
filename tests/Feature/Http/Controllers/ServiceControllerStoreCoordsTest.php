@@ -16,11 +16,12 @@ use function Pest\Laravel\post;
 use function Pest\Laravel\put;
 
 /**
- * Coords-source/accuracy storage and validation. Companion to the
- * Geocoding v6 + pin picker rollout (2026-05-09): origin/destination
- * coordinates now travel with a `_source` discriminator ('mapbox' or
- * 'manual') and an optional `_accuracy` string. Both columns are
- * nullable for legacy records.
+ * Coords-source/accuracy/place-id storage and validation. Companion to
+ * the Google Maps migration (ENH-001): origin/destination coordinates
+ * travel with a `_source` discriminator ('google' or 'manual'), an
+ * optional `_accuracy` string (a Google Geocoder `location_type`), and
+ * an optional `_place_id` (the durable Google Place ID). All three
+ * columns are nullable for manual pins and legacy records.
  */
 beforeEach(function (): void {
     $admin = User::factory()->create();
@@ -48,13 +49,15 @@ function buildStoreCoordsPayload(array $overrides = []): array
         'origin_municipality_id' => $origin->id,
         'origin_address' => 'Calle 41A Sur #83-17',
         'origin_coordinates' => '4.5816950,-74.1784720',
-        'origin_coordinates_source' => 'mapbox',
-        'origin_coordinates_accuracy' => 'rooftop',
+        'origin_coordinates_source' => 'google',
+        'origin_coordinates_accuracy' => 'ROOFTOP',
+        'origin_place_id' => 'ChIJaY1z8KcZP44Rk5lEZJrKn2Q',
         'destination_municipality_id' => $destination->id,
         'destination_address' => 'Carrera 11 #82-71',
         'destination_coordinates' => '4.6679000,-74.0541000',
         'destination_coordinates_source' => 'manual',
         'destination_coordinates_accuracy' => null,
+        'destination_place_id' => null,
         'planned_start_time' => '08:00',
         'planned_duration' => 120,
         'unit_value' => 250000,
@@ -65,22 +68,24 @@ function buildStoreCoordsPayload(array $overrides = []): array
     ], $overrides);
 }
 
-test('store accepts mapbox source with accuracy', function (): void {
+test('store accepts google source with accuracy and place id', function (): void {
     post(route('services.store'), buildStoreCoordsPayload())
         ->assertRedirect(route('services.index'));
 
     $service = Service::query()->latest('id')->first();
-    expect($service->origin_coordinates_source)->toBe('mapbox');
-    expect($service->origin_coordinates_accuracy)->toBe('rooftop');
+    expect($service->origin_coordinates_source)->toBe('google');
+    expect($service->origin_coordinates_accuracy)->toBe('ROOFTOP');
+    expect($service->origin_place_id)->toBe('ChIJaY1z8KcZP44Rk5lEZJrKn2Q');
 });
 
-test('store accepts manual source with null accuracy', function (): void {
+test('store accepts manual source with null accuracy and null place id', function (): void {
     post(route('services.store'), buildStoreCoordsPayload())
         ->assertRedirect(route('services.index'));
 
     $service = Service::query()->latest('id')->first();
     expect($service->destination_coordinates_source)->toBe('manual');
     expect($service->destination_coordinates_accuracy)->toBeNull();
+    expect($service->destination_place_id)->toBeNull();
 });
 
 test('store rejects malformed coordinates with 422', function (): void {
@@ -90,10 +95,10 @@ test('store rejects malformed coordinates with 422', function (): void {
     )->assertStatus(302)->assertSessionHasErrors(['origin_coordinates']);
 });
 
-test('store rejects unknown coordinate source with 422', function (): void {
+test('store rejects the removed mapbox coordinate source', function (): void {
     post(
         route('services.store'),
-        buildStoreCoordsPayload(['origin_coordinates_source' => 'google'])
+        buildStoreCoordsPayload(['origin_coordinates_source' => 'mapbox'])
     )->assertStatus(302)->assertSessionHasErrors(['origin_coordinates_source']);
 });
 
@@ -108,11 +113,13 @@ test('store accepts fully empty origin and destination', function (): void {
             'origin_coordinates' => null,
             'origin_coordinates_source' => null,
             'origin_coordinates_accuracy' => null,
+            'origin_place_id' => null,
             'destination_address' => null,
             'destination_municipality_id' => null,
             'destination_coordinates' => null,
             'destination_coordinates_source' => null,
             'destination_coordinates_accuracy' => null,
+            'destination_place_id' => null,
         ])
     )->assertRedirect(route('services.index'));
 
@@ -120,6 +127,7 @@ test('store accepts fully empty origin and destination', function (): void {
     expect($service->origin_address)->toBeNull();
     expect($service->origin_coordinates)->toBeNull();
     expect($service->origin_coordinates_source)->toBeNull();
+    expect($service->origin_place_id)->toBeNull();
 });
 
 test('store rejects address text without coordinates (origin)', function (): void {
@@ -167,17 +175,19 @@ test('store rejects address text with coords but missing source', function (): v
         ->assertSessionHasErrors(['origin_coordinates_source']);
 });
 
-test('update can switch source from mapbox to manual', function (): void {
+test('update can switch source from google to manual and clears the place id', function (): void {
     $service = Service::factory()->create([
         'origin_coordinates' => '4.5816950,-74.1784720',
-        'origin_coordinates_source' => 'mapbox',
-        'origin_coordinates_accuracy' => 'rooftop',
+        'origin_coordinates_source' => 'google',
+        'origin_coordinates_accuracy' => 'ROOFTOP',
+        'origin_place_id' => 'ChIJaY1z8KcZP44Rk5lEZJrKn2Q',
     ]);
 
     $payload = buildStoreCoordsPayload([
         'origin_coordinates' => '4.6000000,-74.1000000',
         'origin_coordinates_source' => 'manual',
         'origin_coordinates_accuracy' => null,
+        'origin_place_id' => null,
     ]);
 
     put(route('services.update', $service), $payload)
@@ -186,5 +196,6 @@ test('update can switch source from mapbox to manual', function (): void {
     $service->refresh();
     expect($service->origin_coordinates_source)->toBe('manual');
     expect($service->origin_coordinates_accuracy)->toBeNull();
+    expect($service->origin_place_id)->toBeNull();
     expect($service->origin_coordinates)->toBe('4.6000000,-74.1000000');
 });

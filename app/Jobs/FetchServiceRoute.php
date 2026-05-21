@@ -3,16 +3,17 @@
 namespace App\Jobs;
 
 use App\Models\Service;
-use App\Services\Mapbox\DirectionsClient;
+use App\Services\Google\RoutesClient;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
- * Fetches a driving route from Mapbox for the given service and caches
- * geometry + distance/duration on the row so /gps/map can render
- * polylines without hitting Mapbox on every page load.
+ * Fetches a driving route from the Google Routes API for the given
+ * service and caches geometry + distance/duration on the row so
+ * /gps/map can render polylines without hitting Google on every
+ * page load.
  *
  * Dispatched from Service::booted() whenever either coordinate pair
  * changes. afterCommit so an outer DB transaction (e.g. import flow)
@@ -28,7 +29,7 @@ class FetchServiceRoute implements ShouldQueue
 
     public function __construct(public Service $service) {}
 
-    public function handle(DirectionsClient $client): void
+    public function handle(RoutesClient $client): void
     {
         $origin = $this->parseCoords($this->service->origin_coordinates);
         $dest = $this->parseCoords($this->service->destination_coordinates);
@@ -37,7 +38,7 @@ class FetchServiceRoute implements ShouldQueue
             return;
         }
 
-        // Coords are stored as 'lat,lng' — Mapbox API expects lng,lat.
+        // Coords are stored as 'lat,lng' — RoutesClient expects lng,lat.
         $route = $client->driving($origin[1], $origin[0], $dest[1], $dest[0]);
 
         if ($route === null) {
@@ -46,7 +47,7 @@ class FetchServiceRoute implements ShouldQueue
             // stays null → map falls back to a straight line.
             $this->service->update([
                 'route_fetched_at' => now(),
-                'route_source' => 'mapbox',
+                'route_source' => 'google',
             ]);
 
             return;
@@ -57,7 +58,7 @@ class FetchServiceRoute implements ShouldQueue
             'route_distance_m' => $route['distance_m'],
             'route_duration_s' => $route['duration_s'],
             'route_fetched_at' => now(),
-            'route_source' => 'mapbox',
+            'route_source' => 'google',
         ]);
     }
 

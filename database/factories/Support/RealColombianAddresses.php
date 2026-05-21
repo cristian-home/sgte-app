@@ -7,15 +7,17 @@ namespace Database\Factories\Support;
  *
  * Coordinates are approximate (within ~100m of the actual building) and
  * their `source` / `accuracy` mirror what the production flow would
- * persist if an operator had geocoded the address through Mapbox or
- * dropped a pin manually. The list intentionally mixes:
+ * persist if an operator had geocoded the address through Google Places
+ * or dropped a pin manually. The list intentionally mixes:
  *
- * - `source='mapbox'` rows with various Geocoding v6 `accuracy` levels
- *   (rooftop / parcel / point / interpolated), exercising the full
- *   coordinate-quality spectrum the UI must render.
- * - `source='manual'` rows with `accuracy=null`, exercising the
- *   pin-picker path (the badge under the input shows "pin manual" in
- *   gray for these).
+ * - `source='google'` rows with various Google Geocoder `location_type`
+ *   `accuracy` levels (ROOFTOP / RANGE_INTERPOLATED / GEOMETRIC_CENTER /
+ *   APPROXIMATE), exercising the full coordinate-quality spectrum the UI
+ *   must render — and a syntactically plausible `place_id` (the durable
+ *   Google reference persisted on `*_place_id`).
+ * - `source='manual'` rows with `accuracy=null` and no `place_id`,
+ *   exercising the pin-picker path (the badge under the input shows
+ *   "pin manual" in gray for these).
  *
  * Each record's `municipality_code` is the DANE code; the factory and
  * seeder resolve `municipality_id` via that code. Names matching the
@@ -26,7 +28,7 @@ namespace Database\Factories\Support;
 final class RealColombianAddresses
 {
     /**
-     * @return list<array{municipality_code:string,address:string,coordinates:string,source:string,accuracy:string|null}>
+     * @return list<array{municipality_code:string,address:string,coordinates:string,source:string,accuracy:string|null,place_id?:string}>
      */
     public static function all(): array
     {
@@ -36,57 +38,65 @@ final class RealColombianAddresses
                 'municipality_code' => '11001',
                 'address' => 'Carrera 11 #82-71',
                 'coordinates' => '4.6679000,-74.0541000',
-                'source' => 'mapbox',
-                'accuracy' => 'rooftop',
+                'source' => 'google',
+                'accuracy' => 'ROOFTOP',
+                'place_id' => 'ChIJaY1z8KcZP44Rk5lEZJrKn2Q',
             ],
             [
                 'municipality_code' => '11001',
                 'address' => 'Calle 26 #103-09',
                 'coordinates' => '4.7016000,-74.1469000',
-                'source' => 'mapbox',
-                'accuracy' => 'rooftop',
+                'source' => 'google',
+                'accuracy' => 'ROOFTOP',
+                'place_id' => 'ChIJX2v7tQUZP44RbW0pLm9xVtE',
             ],
             [
                 'municipality_code' => '11001',
                 'address' => 'Carrera 7 #40-62',
                 'coordinates' => '4.6291000,-74.0648000',
-                'source' => 'mapbox',
-                'accuracy' => 'rooftop',
+                'source' => 'google',
+                'accuracy' => 'ROOFTOP',
+                'place_id' => 'ChIJk9Lm3RYZP44RtZ4eWnQ8sRc',
             ],
             [
                 'municipality_code' => '11001',
                 'address' => 'Carrera 30 #45-03',
                 'coordinates' => '4.6378000,-74.0828000',
-                'source' => 'mapbox',
-                'accuracy' => 'parcel',
+                'source' => 'google',
+                'accuracy' => 'ROOFTOP',
+                'place_id' => 'ChIJp7Qd5sIZP44RvL2mHnB3kYx',
             ],
             [
                 'municipality_code' => '11001',
                 'address' => 'Calle 100 #11A-35',
                 'coordinates' => '4.6862000,-74.0451000',
-                'source' => 'mapbox',
-                'accuracy' => 'rooftop',
+                'source' => 'google',
+                'accuracy' => 'ROOFTOP',
+                'place_id' => 'ChIJd3Nf6tEZP44RcK8wTmP1zUv',
             ],
             [
                 'municipality_code' => '11001',
                 'address' => 'Avenida Calle 26 #57-83',
                 'coordinates' => '4.6543000,-74.0962000',
-                'source' => 'mapbox',
-                'accuracy' => 'point',
+                'source' => 'google',
+                'accuracy' => 'GEOMETRIC_CENTER',
+                'place_id' => 'ChIJr5Hg7uJZP44RmX9oVnL4qWb',
             ],
             [
                 'municipality_code' => '11001',
                 'address' => 'Carrera 13 #93-40',
                 'coordinates' => '4.6764000,-74.0530000',
-                'source' => 'mapbox',
-                'accuracy' => 'interpolated',
+                'source' => 'google',
+                'accuracy' => 'RANGE_INTERPOLATED',
+                'place_id' => 'ChIJt8Jk9vMZP44RpY2sBnK6rZc',
             ],
             [
                 'municipality_code' => '11001',
                 'address' => 'Calle 41A Sur #83-17',
                 'coordinates' => '4.6302670,-74.1663090',
-                'source' => 'mapbox',
-                'accuracy' => 'point',
+                'source' => 'google',
+                'accuracy' => 'GEOMETRIC_CENTER',
+                'place_id' => 'ChIJw1Lm2xNZP44RnZ5tCnM7sXd',
             ],
             [
                 'municipality_code' => '11001',
@@ -109,15 +119,17 @@ final class RealColombianAddresses
                 'municipality_code' => '5001',
                 'address' => 'Carrera 70 #1-15',
                 'coordinates' => '6.2562000,-75.5905000',
-                'source' => 'mapbox',
-                'accuracy' => 'parcel',
+                'source' => 'google',
+                'accuracy' => 'ROOFTOP',
+                'place_id' => 'ChIJa4Np5yQZP44RoW6uDnN8tYe',
             ],
             [
                 'municipality_code' => '5001',
                 'address' => 'Carrera 36 #5-00',
                 'coordinates' => '6.2086000,-75.5680000',
-                'source' => 'mapbox',
-                'accuracy' => 'point',
+                'source' => 'google',
+                'accuracy' => 'GEOMETRIC_CENTER',
+                'place_id' => 'ChIJb7Qr8zSZP44RpX7vEnO9uZf',
             ],
             [
                 'municipality_code' => '5001',
@@ -132,15 +144,17 @@ final class RealColombianAddresses
                 'municipality_code' => '76001',
                 'address' => 'Avenida Roosevelt #34-72',
                 'coordinates' => '3.4214000,-76.5436000',
-                'source' => 'mapbox',
-                'accuracy' => 'parcel',
+                'source' => 'google',
+                'accuracy' => 'ROOFTOP',
+                'place_id' => 'ChIJc1St2aUZP44RqY8wFnP1vAg',
             ],
             [
                 'municipality_code' => '76001',
                 'address' => 'Calle 9 #50-25',
                 'coordinates' => '3.4399000,-76.5469000',
-                'source' => 'mapbox',
-                'accuracy' => 'rooftop',
+                'source' => 'google',
+                'accuracy' => 'ROOFTOP',
+                'place_id' => 'ChIJd4Uv5bVZP44RrZ9xGnQ2wBh',
             ],
 
             // Cartagena de Indias — code 13001
@@ -148,8 +162,9 @@ final class RealColombianAddresses
                 'municipality_code' => '13001',
                 'address' => 'Calle de la Soledad #5-29',
                 'coordinates' => '10.4244000,-75.5510000',
-                'source' => 'mapbox',
-                'accuracy' => 'interpolated',
+                'source' => 'google',
+                'accuracy' => 'RANGE_INTERPOLATED',
+                'place_id' => 'ChIJe7Wx8cWZP44RsA1yHnR3xCi',
             ],
 
             // Soacha — code 25754
@@ -157,8 +172,9 @@ final class RealColombianAddresses
                 'municipality_code' => '25754',
                 'address' => 'Carrera 8 #26-60',
                 'coordinates' => '4.5793000,-74.2155000',
-                'source' => 'mapbox',
-                'accuracy' => 'interpolated',
+                'source' => 'google',
+                'accuracy' => 'RANGE_INTERPOLATED',
+                'place_id' => 'ChIJf1Yz2dXZP44RtB2zInS4yDj',
             ],
 
             // Zipaquirá — code 25899
@@ -166,8 +182,9 @@ final class RealColombianAddresses
                 'municipality_code' => '25899',
                 'address' => 'Calle 1 #6-14',
                 'coordinates' => '5.0269000,-74.0044000',
-                'source' => 'mapbox',
-                'accuracy' => 'point',
+                'source' => 'google',
+                'accuracy' => 'APPROXIMATE',
+                'place_id' => 'ChIJg4Ab5eYZP44RuC3aJnT5zEk',
             ],
 
             // Chía — code 25175
@@ -184,8 +201,9 @@ final class RealColombianAddresses
                 'municipality_code' => '68001',
                 'address' => 'Carrera 27 #36-37',
                 'coordinates' => '7.1254000,-73.1198000',
-                'source' => 'mapbox',
-                'accuracy' => 'parcel',
+                'source' => 'google',
+                'accuracy' => 'ROOFTOP',
+                'place_id' => 'ChIJh7Cd8fZZP44RvD4bKnU6aFl',
             ],
         ];
     }
@@ -194,7 +212,7 @@ final class RealColombianAddresses
      * Pick a random address record. Useful for factory states that
      * want any landmark, regardless of municipality.
      *
-     * @return array{municipality_code:string,address:string,coordinates:string,source:string,accuracy:string|null}
+     * @return array{municipality_code:string,address:string,coordinates:string,source:string,accuracy:string|null,place_id?:string}
      */
     public static function random(): array
     {

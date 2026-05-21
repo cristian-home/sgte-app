@@ -29,19 +29,25 @@ return new class extends Migration
             $table->foreignId('origin_municipality_id')->nullable()->constrained('municipalities');
             $table->string('origin_address', 255)->nullable();
             $table->string('origin_coordinates', 50)->nullable();
-            // 'mapbox' (pickeada del autocomplete con permanent=true) o
+            // 'google' (pickeada del autocomplete de Google Places) o
             // 'manual' (pin colocado en el mapa por el operador). NULL para
             // coords legacy sin trazabilidad.
             $table->string('origin_coordinates_source', 10)->nullable();
-            // Cuando source='mapbox', accuracy de Geocoding v6:
-            // rooftop/parcel/point/interpolated/approximate/intersection.
+            // Cuando source='google', location_type del Geocoder de Google:
+            // ROOFTOP/RANGE_INTERPOLATED/GEOMETRIC_CENTER/APPROXIMATE.
             // NULL para 'manual' o legacy.
             $table->string('origin_coordinates_accuracy', 20)->nullable();
+            // Google Place ID de la dirección de origen. Referencia durable
+            // del lugar geocodificado; NULL en pines manuales o legacy.
+            $table->string('origin_place_id', 255)->nullable();
             $table->foreignId('destination_municipality_id')->nullable()->constrained('municipalities');
             $table->string('destination_address', 255)->nullable();
             $table->string('destination_coordinates', 50)->nullable();
             $table->string('destination_coordinates_source', 10)->nullable();
             $table->string('destination_coordinates_accuracy', 20)->nullable();
+            // Google Place ID de la dirección de destino. Referencia durable
+            // del lugar geocodificado; NULL en pines manuales o legacy.
+            $table->string('destination_place_id', 255)->nullable();
             // UTC instants (TIMESTAMPTZ). Source of truth for ordering and
             // queries. Wall-clock projection is derived from these + the
             // `timezone` column via accessors on the Service model.
@@ -78,8 +84,8 @@ return new class extends Migration
             // model's saving hook when either coord changes.
             // `route_fetched_at` doubles as a "fetch attempted"
             // sentinel — non-null with a null `route_geometry` means
-            // Mapbox returned no route (or failed) and the map should
-            // fall back to a straight line.
+            // the Google Routes API returned no route (or failed) and
+            // the map should fall back to a straight line.
             $table->json('route_geometry')->nullable();
             $table->integer('route_distance_m')->nullable();
             $table->integer('route_duration_s')->nullable();

@@ -11,10 +11,9 @@ use function Pest\Laravel\actingAs;
 use function Pest\Laravel\get;
 
 /**
- * The service create/edit screens build a Mapbox-aware proximity for the
- * address autocomplete from the selected municipality's lat/lng. The
- * controller must therefore project both columns into the Inertia
- * response.
+ * The service create/edit screens bias the Google Places autocomplete
+ * toward the selected municipality's lat/lng. The controller must
+ * therefore project both columns into the Inertia response.
  */
 beforeEach(function (): void {
     $admin = User::factory()->create();

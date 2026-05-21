@@ -35,12 +35,16 @@ return [
         ],
     ],
 
-    'mapbox' => [
-        // Public access token (pk....) shared with the Vite bundle as
-        // VITE_MAPBOX_TOKEN via .env interpolation. Used by the Address
-        // Autofill component on the service form and by the Mapbox tile
-        // layer on /gps/map. Restrict by URL in account.mapbox.com.
-        'token' => env('MAPBOX_TOKEN'),
+    'google_maps' => [
+        // Browser key: HTTP-referrer restricted. Shared with the Vite
+        // bundle via VITE_GOOGLE_MAPS_BROWSER_KEY. Used for Maps
+        // JavaScript, Places Autocomplete, client-side Geocoding, and
+        // Static Maps.
+        'browser_key' => env('GOOGLE_MAPS_BROWSER_KEY'),
+        // Server key: IP-restricted. Used server-side by RoutesClient.
+        'server_key' => env('GOOGLE_MAPS_SERVER_KEY'),
+        // Map ID for the vector map + AdvancedMarker support.
+        'map_id' => env('GOOGLE_MAPS_MAP_ID'),
     ],
 
 ];

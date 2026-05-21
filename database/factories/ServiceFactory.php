@@ -39,7 +39,8 @@ class ServiceFactory extends Factory
             : null;
 
         // Origin / destination: pick two random landmarks from the curated
-        // list. Each one already brings (address, coords, source, accuracy)
+        // list. Each one already brings (address, coords, source,
+        // accuracy, place_id)
         // matching what a real operator would persist via the address
         // autocomplete or the manual pin picker. ~10% of services land
         // without an origin and ~10% without a destination, mirroring
@@ -64,6 +65,7 @@ class ServiceFactory extends Factory
             'origin_coordinates' => $originSeed['coordinates'] ?? null,
             'origin_coordinates_source' => $originSeed['source'] ?? null,
             'origin_coordinates_accuracy' => $originSeed['accuracy'] ?? null,
+            'origin_place_id' => $originSeed['place_id'] ?? null,
             'destination_municipality_id' => $destinationSeed
                 ? self::resolveMunicipalityId($destinationSeed['municipality_code'])
                 : (Municipality::inRandomOrder()->first()?->id ?? Municipality::factory()),
@@ -71,6 +73,7 @@ class ServiceFactory extends Factory
             'destination_coordinates' => $destinationSeed['coordinates'] ?? null,
             'destination_coordinates_source' => $destinationSeed['source'] ?? null,
             'destination_coordinates_accuracy' => $destinationSeed['accuracy'] ?? null,
+            'destination_place_id' => $destinationSeed['place_id'] ?? null,
             'planned_start_at' => $plannedStartUtc,
             'planned_duration' => fake()->numberBetween(30, 480),
             'actual_start_at' => $actualStart,

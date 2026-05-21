@@ -143,7 +143,7 @@ test('payload exposes route geometry as latitude/longitude pairs when cached', f
         'route_distance_m' => 350000,
         'route_duration_s' => 18000,
         'route_fetched_at' => now(),
-        'route_source' => 'mapbox',
+        'route_source' => 'google',
     ]);
 
     $response = get(route('gps.map'))->assertOk();
