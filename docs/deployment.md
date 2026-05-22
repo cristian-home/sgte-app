@@ -15,7 +15,7 @@
 
 ## Overview
 
-SGTE uses **Laravel Octane with FrankenPHP** as the production application server, replacing the development `php artisan serve`. The production setup runs inside a single Docker container managed by Supervisor, which launches four processes:
+SGTE uses **Laravel Octane with FrankenPHP** as the production application server, replacing the development `php artisan serve`. The production setup runs inside a single Docker container managed by Supervisor, which launches five processes:
 
 | Process | Command | Port | Purpose |
 |---------|---------|------|---------|
@@ -23,6 +23,7 @@ SGTE uses **Laravel Octane with FrankenPHP** as the production application serve
 | **Horizon** | `horizon` | — | Queue worker management |
 | **Reverb** | `reverb:start` | 8080 | WebSocket server |
 | **SSR** | `inertia:start-ssr` | 13714 | Server-side rendering |
+| **Scheduler** | `schedule:work` | — | Runs scheduled tasks (backups, reminders, reapers) |
 
 Supporting services (PostgreSQL, Redis, Typesense, MinIO, Mailpit) run as separate containers via `compose.staging.yaml`.
 
@@ -47,6 +48,7 @@ Supporting services (PostgreSQL, Redis, Typesense, MinIO, Mailpit) run as separa
                         │  │ Horizon              │  │
                         │  │ Reverb               │  │
                         │  │ Inertia SSR          │  │
+                        │  │ Scheduler            │  │
                         │  └─────────────────────┘  │
                         └──────┬──────────┬────────┘
                                │          │
@@ -75,7 +77,7 @@ The entrypoint runs at container startup (not at build time) because it needs ru
 2. `php artisan route:cache` — caches routes
 3. `php artisan storage:link` — creates public storage symlink (idempotent)
 4. `php artisan migrate --force` — runs pending migrations
-5. `supervisord` — starts all four processes
+5. `supervisord` — starts all five processes
 
 ### SSR Configuration
 
@@ -92,7 +94,7 @@ FrankenPHP/Caddy compresses all HTTP responses (HTML, JSON, JS, CSS) automatical
 | File | Description |
 |------|-------------|
 | `docker/production/Dockerfile` | Multi-stage production build (4 stages) |
-| `docker/production/supervisord.conf` | Supervisor config (4 processes) |
+| `docker/production/supervisord.conf` | Supervisor config (5 processes) |
 | `docker/production/start-container` | Entrypoint: config cache + migrations + supervisor |
 | `compose.staging.yaml` | Infrastructure services + app (via `local` profile) |
 | `.dockerignore` | Excludes dev artifacts from build context |
@@ -150,6 +152,7 @@ docker exec sgte-app-app-1 supervisorctl status
 #   horizon    RUNNING   pid ...
 #   octane     RUNNING   pid ...
 #   reverb     RUNNING   pid ...
+#   scheduler  RUNNING   pid ...
 #   ssr        RUNNING   pid ...
 
 # Application logs
@@ -480,6 +483,52 @@ Reference data and default users are handled by **data migrations**, not seeders
 - Admin (`admin@sgte.app`), Operator (`operator@sgte.app`), Driver (`driver@sgte.app`), Accounting (`accounting@sgte.app`)
 
 **Adding new reference data**: create a new migration (e.g., `php artisan make:migration add_vandalism_incident_type`). It runs once on the next deploy via `migrate --force`.
+
+### Database Backups & Restore
+
+Database backups are handled by **spatie/laravel-backup** (`config/backup.php`).
+
+**What runs** — scheduled in `routes/console.php`, executed by the `scheduler` supervisor process:
+
+| Command | Time | Purpose |
+|---------|------|---------|
+| `backup:clean` | 01:00 | Enforce retention |
+| `backup:run --only-db` | 01:30 | Encrypted DB dump → MinIO + R2 |
+| `backup:monitor` | 02:00 | Alert by email if no fresh, healthy backup |
+
+> The scheduled backup tasks are gated to `APP_ENV` **production** / **staging** — on a `local` dev container the scheduler skips them, so dev data never reaches the R2 bucket. Set `APP_ENV` accordingly on the VPS, or the scheduled backups will silently not run. (Manual `php artisan backup:run` is never gated.)
+
+**What's in a backup** — only the PostgreSQL database, dumped with `pg_dump` in binary custom format (`--format=c`, `.backup` extension), zipped and **AES-256 encrypted** with `BACKUP_ARCHIVE_PASSWORD`. Application code lives in Git; uploaded files live in MinIO and are **not** covered — that is a separate concern.
+
+**Destinations** — every backup is written to two disks (`continue_on_failure` is on, so one failing does not block the other):
+
+- `backups` — a dedicated MinIO bucket on the VPS (fast restore while the VPS is alive)
+- `r2` — Cloudflare R2, off-site (survives a full VPS loss)
+
+**Retention** — the `DefaultStrategy` keeps all backups for 7 days, then thins to daily/weekly/monthly/yearly, with a hard **8 GB cap** to stay inside R2's 10 GB free tier.
+
+**Required env vars** — `BACKUP_ARCHIVE_PASSWORD`, `BACKUP_NOTIFICATION_MAIL`, `BACKUP_MINIO_BUCKET`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_ENDPOINT` (see `.env.example`). The MinIO bucket must be created before the first run.
+
+> ⚠️ Store `BACKUP_ARCHIVE_PASSWORD` **and** the production `APP_KEY` in a password manager, off the VPS. Without them an encrypted backup in R2 cannot be restored after a catastrophe.
+
+#### Restore runbook
+
+spatie/laravel-backup has no restore command — restoring is manual. Pick the strategy that matches the failure:
+
+- **Single accidental deletion from the app** — do *not* restore a backup. All business models use `SoftDeletes`; the row is still in the table with `deleted_at` set → restore it. For a bad data edit, the activity log holds the previous state.
+- **Bad migration / bad data / direct DB tampering** — restore the most recent *good* backup into a **scratch database**, never over production. With the binary format you can `pg_restore -t <table>` to bring back only the affected tables, preserving legitimate work done since.
+- **Catastrophe (VPS lost, ransomware, Dokploy unrecoverable)** — (1) new VPS → hardening → Dokploy; (2) redeploy the app from GitHub and bring up fresh infra; (3) restore `APP_KEY` and secrets from the password manager; (4) download the latest archive from R2 and restore it.
+
+**Restoring a dump** (the archive is AES-encrypted — the classic `unzip` cannot read it; use 7-Zip / p7zip):
+
+```bash
+7z x -p"$BACKUP_ARCHIVE_PASSWORD" <archive>.zip -o/tmp/restore
+pg_restore --clean --if-exists --no-owner \
+  -h "$DB_HOST" -U "$DB_USERNAME" -d "$DB_DATABASE" \
+  /tmp/restore/db-dumps/*.backup
+```
+
+Test a real restore into a scratch database periodically — an untested backup is not a backup.
 
 ### Monitoring & Health
 
