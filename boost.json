@@ -16,6 +16,7 @@
         "pest-testing",
         "inertia-react-development",
         "tailwindcss-development",
+        "echo-development",
         "developing-with-fortify"
     ]
 }
