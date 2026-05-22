@@ -96,6 +96,16 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => env('DB_SSLMODE', 'prefer'),
+
+            /*
+             * Used by spatie/laravel-backup. `--format=c` produces a compressed
+             * binary dump that pg_restore can restore selectively (e.g. a single
+             * table), which is smaller and faster than a plain SQL dump.
+             */
+            'dump' => [
+                'add_extra_option' => '--format=c',
+                'timeout' => 60 * 5,
+            ],
         ],
 
         'sqlsrv' => [
