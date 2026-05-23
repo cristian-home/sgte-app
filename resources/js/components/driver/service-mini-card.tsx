@@ -1,13 +1,6 @@
-import { ArrowRight, Clock, MapPin, Play, Truck } from 'lucide-react';
+import { MapPin, Play, Truck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { ServiceStatusLabel } from '@/enums/ServiceStatus';
 import { formatEventTime } from '@/lib/datetime';
 import { cn } from '@/lib/utils';
@@ -62,89 +55,69 @@ export function ServiceMiniCard({
                 }
             }}
             className={cn(
-                'cursor-pointer transition-colors hover:bg-muted/40',
+                'cursor-pointer gap-1 p-3 text-xs transition-colors hover:bg-muted/40',
                 className,
             )}
         >
-            <CardHeader className="pb-2">
-                <div className="flex items-center justify-between gap-2">
-                    <CardTitle className="text-base">
-                        <span className="flex items-center gap-2">
-                            <Truck className="size-4" />
-                            {service.vehicle?.plate ?? '—'}
-                        </span>
-                    </CardTitle>
-                    <div className="flex items-center gap-2">
-                        {incidentCount > 0 && (
-                            <Badge variant="destructive">
-                                {incidentCount} novedad
-                                {incidentCount > 1 ? 'es' : ''}
-                            </Badge>
-                        )}
-                        <Badge variant={isClosed ? 'default' : 'secondary'}>
-                            {ServiceStatusLabel[
-                                service.service_status as keyof typeof ServiceStatusLabel
-                            ] ?? service.service_status}
+            <div className="flex items-center justify-between gap-2">
+                <span className="flex items-center gap-1.5 text-sm font-semibold">
+                    <Truck className="size-3.5" />
+                    {service.vehicle?.plate ?? '—'}
+                </span>
+                <div className="flex items-center gap-1.5">
+                    {incidentCount > 0 && (
+                        <Badge variant="destructive">
+                            {incidentCount} novedad
+                            {incidentCount > 1 ? 'es' : ''}
                         </Badge>
-                    </div>
+                    )}
+                    <Badge variant={isClosed ? 'default' : 'secondary'}>
+                        {ServiceStatusLabel[
+                            service.service_status as keyof typeof ServiceStatusLabel
+                        ] ?? service.service_status}
+                    </Badge>
                 </div>
-                <CardDescription>{clientName(service)}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-1.5 text-sm">
-                <div className="flex items-start gap-2">
-                    <MapPin className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-                    <span>
-                        {municipalityName(service.origin_municipality)} &rarr;{' '}
-                        {municipalityName(service.destination_municipality)}
-                    </span>
-                </div>
-                <div className="flex items-center gap-2">
-                    <Clock className="size-4 shrink-0 text-muted-foreground" />
-                    <span>
-                        Planificado:{' '}
+            </div>
+            <p className="truncate text-muted-foreground">
+                {clientName(service)}
+            </p>
+            <div className="flex items-center gap-1.5">
+                <MapPin className="size-3.5 shrink-0 text-muted-foreground" />
+                <span className="truncate">
+                    {municipalityName(service.origin_municipality)} &rarr;{' '}
+                    {municipalityName(service.destination_municipality)}
+                    <span className="text-muted-foreground">
+                        {' '}
+                        &middot;{' '}
                         {formatServiceTime(
                             service.planned_start_at,
                             service.timezone,
                         )}{' '}
                         ({service.planned_duration} min)
                     </span>
+                </span>
+            </div>
+            {hasStarted && (
+                <div className="flex items-center gap-1.5">
+                    <Play className="size-3.5 shrink-0 text-green-600" />
+                    <span>
+                        {formatServiceTime(
+                            service.actual_start_at,
+                            service.timezone,
+                        )}
+                        {hasEnded && (
+                            <>
+                                {' '}
+                                &mdash;{' '}
+                                {formatServiceTime(
+                                    service.actual_end_at,
+                                    service.timezone,
+                                )}
+                            </>
+                        )}
+                    </span>
                 </div>
-                {hasStarted && (
-                    <div className="flex items-center gap-2">
-                        <Play className="size-4 shrink-0 text-green-600" />
-                        <span>
-                            Inicio real:{' '}
-                            {formatServiceTime(
-                                service.actual_start_at,
-                                service.timezone,
-                            )}
-                            {hasEnded && (
-                                <>
-                                    {' '}
-                                    | Fin:{' '}
-                                    {formatServiceTime(
-                                        service.actual_end_at,
-                                        service.timezone,
-                                    )}
-                                </>
-                            )}
-                        </span>
-                    </div>
-                )}
-                <div className="flex justify-end pt-1">
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onOpen();
-                        }}
-                    >
-                        Ver <ArrowRight className="ml-1 size-4" />
-                    </Button>
-                </div>
-            </CardContent>
+            )}
         </Card>
     );
 }
