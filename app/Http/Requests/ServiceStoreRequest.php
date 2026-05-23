@@ -71,14 +71,14 @@ class ServiceStoreRequest extends FormRequest
             // suggestion or by placing a pin on the map. We refuse to
             // persist a free-text-only address because it has no usable
             // geographic meaning for FUEC, GPS, or driver navigation.
-            'origin_coordinates' => ['required_with:origin_address', 'nullable', 'string', 'max:50', 'regex:/^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/'],
-            'origin_coordinates_source' => ['required_with:origin_address', 'nullable', Rule::in(['google', 'manual'])],
+            'origin_coordinates' => ['required_with:origin_address,origin_municipality_id', 'nullable', 'string', 'max:50', 'regex:/^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/'],
+            'origin_coordinates_source' => ['required_with:origin_address,origin_municipality_id', 'nullable', Rule::in(['google', 'manual'])],
             'origin_coordinates_accuracy' => ['nullable', 'string', 'max:20'],
             'origin_place_id' => ['nullable', 'string', 'max:255'],
             'destination_municipality_id' => ['nullable', 'integer', 'exists:municipalities,id'],
             'destination_address' => ['nullable', 'string', 'max:255'],
-            'destination_coordinates' => ['required_with:destination_address', 'nullable', 'string', 'max:50', 'regex:/^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/'],
-            'destination_coordinates_source' => ['required_with:destination_address', 'nullable', Rule::in(['google', 'manual'])],
+            'destination_coordinates' => ['required_with:destination_address,destination_municipality_id', 'nullable', 'string', 'max:50', 'regex:/^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/'],
+            'destination_coordinates_source' => ['required_with:destination_address,destination_municipality_id', 'nullable', Rule::in(['google', 'manual'])],
             'destination_coordinates_accuracy' => ['nullable', 'string', 'max:20'],
             'destination_place_id' => ['nullable', 'string', 'max:255'],
             'planned_duration' => ['required', 'integer'],

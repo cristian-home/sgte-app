@@ -58,9 +58,14 @@ class ServiceFactory extends Factory
             'driver_id' => Driver::inRandomOrder()->first()->id ?? Driver::factory(),
             'invoice_id' => null,
             'service_date_local' => $day,
+            // When a side has no seed (~10% of factories model an
+            // ad-hoc operation without a known location), null *both*
+            // the municipality and the coordinate columns together so
+            // the invariant "municipality → coords" holds: either both
+            // are filled or both are null.
             'origin_municipality_id' => $originSeed
                 ? self::resolveMunicipalityId($originSeed['municipality_code'])
-                : (Municipality::inRandomOrder()->first()?->id ?? Municipality::factory()),
+                : null,
             'origin_address' => $originSeed['address'] ?? null,
             'origin_coordinates' => $originSeed['coordinates'] ?? null,
             'origin_coordinates_source' => $originSeed['source'] ?? null,
@@ -68,7 +73,7 @@ class ServiceFactory extends Factory
             'origin_place_id' => $originSeed['place_id'] ?? null,
             'destination_municipality_id' => $destinationSeed
                 ? self::resolveMunicipalityId($destinationSeed['municipality_code'])
-                : (Municipality::inRandomOrder()->first()?->id ?? Municipality::factory()),
+                : null,
             'destination_address' => $destinationSeed['address'] ?? null,
             'destination_coordinates' => $destinationSeed['coordinates'] ?? null,
             'destination_coordinates_source' => $destinationSeed['source'] ?? null,

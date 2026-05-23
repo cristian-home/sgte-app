@@ -1,6 +1,6 @@
 import { MapPin } from 'lucide-react';
 import { useAppearance } from '@/hooks/use-appearance';
-import { staticRouteMapUrl } from '@/lib/google-maps';
+import { staticMapUrl, staticRouteMapUrl } from '@/lib/google-maps';
 import { cn } from '@/lib/utils';
 
 interface RouteStaticMapProps {
@@ -54,7 +54,9 @@ export default function RouteStaticMap({
     const parsedOrigin = parseCoordinates(origin);
     const parsedDestination = parseCoordinates(destination);
 
-    if (!parsedOrigin || !parsedDestination) {
+    // Both sides unknown → keep the neutral placeholder so the layout
+    // doesn't shift.
+    if (!parsedOrigin && !parsedDestination) {
         return (
             <div
                 className={cn(
@@ -66,6 +68,35 @@ export default function RouteStaticMap({
                 <MapPin className="size-5" />
                 <span className="text-xs">Ruta no disponible</span>
             </div>
+        );
+    }
+
+    // One side known → drop a single marker on a centered static map.
+    // Better than the empty placeholder when the operator has at least
+    // anchored one end of the trip.
+    if (!parsedOrigin || !parsedDestination) {
+        const point = parsedOrigin ?? parsedDestination!;
+        const altLabel = parsedOrigin
+            ? 'Mapa con el origen del servicio'
+            : 'Mapa con el destino del servicio';
+        return (
+            <img
+                src={staticMapUrl({
+                    lat: point.lat,
+                    lng: point.lng,
+                    width,
+                    height,
+                    zoom: 13,
+                })}
+                alt={altLabel}
+                width={width}
+                height={height}
+                loading="lazy"
+                className={cn(
+                    'h-auto w-full rounded-md border object-cover',
+                    className,
+                )}
+            />
         );
     }
 
