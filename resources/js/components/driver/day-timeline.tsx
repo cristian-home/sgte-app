@@ -130,7 +130,7 @@ export function DayTimeline({
                                 ref={
                                     isFirstService ? firstServiceRef : undefined
                                 }
-                                className="relative z-10 flex flex-1 flex-col gap-2 py-2 pr-3"
+                                className="relative z-10 flex min-w-0 flex-1 flex-col gap-2 py-2 pr-3"
                             >
                                 {items.map((service) => (
                                     <ServiceMiniCard
