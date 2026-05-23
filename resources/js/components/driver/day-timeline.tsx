@@ -130,7 +130,7 @@ export function DayTimeline({
                                 ref={
                                     isFirstService ? firstServiceRef : undefined
                                 }
-                                className="flex flex-1 flex-col gap-2 py-2 pr-3"
+                                className="relative z-10 flex flex-1 flex-col gap-2 py-2 pr-3"
                             >
                                 {items.map((service) => (
                                     <ServiceMiniCard
@@ -143,14 +143,16 @@ export function DayTimeline({
                                 ))}
                             </div>
 
-                            {/* AHORA line — rendered *inside* the current
-                                hour row and positioned by minute fraction so
-                                it stays accurate even though empty rows are
-                                shorter than rows with cards. */}
+                            {/* AHORA line — positioned by minute fraction
+                                inside the current hour row. The line is
+                                rendered first in DOM order and the cards
+                                container is z-elevated below, so the line
+                                runs through the empty gutter and behind any
+                                card that happens to land at the same row. */}
                             {isCurrentHour && (
                                 <div
                                     ref={nowRef}
-                                    className="pointer-events-none absolute right-0 left-0 z-10 flex items-center"
+                                    className="pointer-events-none absolute right-0 left-0 flex items-center"
                                     style={{
                                         top: `${(now.minute / 60) * 100}%`,
                                     }}
@@ -159,7 +161,7 @@ export function DayTimeline({
                                     <div className="w-14 pl-3 text-[10px] font-semibold tracking-wide text-destructive uppercase">
                                         Ahora
                                     </div>
-                                    <div className="h-px flex-1 bg-destructive" />
+                                    <div className="h-px flex-1 bg-destructive/60" />
                                 </div>
                             )}
                         </div>
