@@ -3,7 +3,6 @@ import { ServiceMiniCard } from '@/components/driver/service-mini-card';
 import { cn } from '@/lib/utils';
 import type { Service } from '@/types';
 
-const HOUR_ROW_HEIGHT = 96;
 const HOURS = Array.from({ length: 24 }, (_, h) => h);
 
 function hourLabel(h: number): string {
@@ -95,10 +94,6 @@ export function DayTimeline({
         }
     }, [isToday]);
 
-    const nowTop = isToday
-        ? now.hour * HOUR_ROW_HEIGHT + (now.minute / 60) * HOUR_ROW_HEIGHT
-        : null;
-
     return (
         <div
             ref={containerRef}
@@ -107,17 +102,23 @@ export function DayTimeline({
             <div className="relative">
                 {HOURS.map((h) => {
                     const items = buckets.get(h) ?? [];
+                    const isEmpty = items.length === 0;
                     const isFirstService = h === firstServiceHour;
                     const isCurrentHour = isToday && now.hour === h;
                     return (
                         <div
                             key={h}
-                            className="flex gap-4 border-b border-border/40 last:border-b-0"
-                            style={{ minHeight: `${HOUR_ROW_HEIGHT}px` }}
+                            className={cn(
+                                'relative flex gap-4 border-b border-border/40 last:border-b-0',
+                                // Shrink empty rows so a sparse day reads as a
+                                // tight ladder; rows with services stay tall
+                                // enough to host one or more mini cards.
+                                isEmpty ? 'min-h-8' : 'min-h-24',
+                            )}
                         >
                             <div
                                 className={cn(
-                                    'sticky left-0 w-14 shrink-0 pt-3 pl-3 font-mono text-xs',
+                                    'sticky left-0 w-14 shrink-0 pt-2 pl-3 font-mono text-xs',
                                     isCurrentHour
                                         ? 'text-destructive'
                                         : 'text-muted-foreground',
@@ -126,7 +127,9 @@ export function DayTimeline({
                                 {hourLabel(h)}
                             </div>
                             <div
-                                ref={isFirstService ? firstServiceRef : undefined}
+                                ref={
+                                    isFirstService ? firstServiceRef : undefined
+                                }
                                 className="flex flex-1 flex-col gap-2 py-2 pr-3"
                             >
                                 {items.map((service) => (
@@ -139,23 +142,29 @@ export function DayTimeline({
                                     />
                                 ))}
                             </div>
+
+                            {/* AHORA line — rendered *inside* the current
+                                hour row and positioned by minute fraction so
+                                it stays accurate even though empty rows are
+                                shorter than rows with cards. */}
+                            {isCurrentHour && (
+                                <div
+                                    ref={nowRef}
+                                    className="pointer-events-none absolute right-0 left-0 z-10 flex items-center"
+                                    style={{
+                                        top: `${(now.minute / 60) * 100}%`,
+                                    }}
+                                    aria-hidden="true"
+                                >
+                                    <div className="w-14 pl-3 text-[10px] font-semibold tracking-wide text-destructive uppercase">
+                                        Ahora
+                                    </div>
+                                    <div className="h-px flex-1 bg-destructive" />
+                                </div>
+                            )}
                         </div>
                     );
                 })}
-
-                {nowTop !== null && (
-                    <div
-                        ref={nowRef}
-                        className="pointer-events-none absolute right-0 left-0 z-10 flex items-center"
-                        style={{ top: `${nowTop}px` }}
-                        aria-hidden="true"
-                    >
-                        <div className="w-14 pl-3 text-[10px] font-semibold tracking-wide text-destructive uppercase">
-                            Ahora
-                        </div>
-                        <div className="h-px flex-1 bg-destructive" />
-                    </div>
-                )}
             </div>
         </div>
     );
