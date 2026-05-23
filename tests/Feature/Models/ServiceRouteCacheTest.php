@@ -21,7 +21,7 @@ test('changing origin_coordinates clears the cached route fields', function (): 
         'route_distance_m' => 12345,
         'route_duration_s' => 678,
         'route_fetched_at' => now(),
-        'route_source' => 'mapbox',
+        'route_source' => 'google',
     ]);
 
     $service->refresh();

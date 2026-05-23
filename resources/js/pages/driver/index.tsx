@@ -11,6 +11,8 @@ import {
 import { useState } from 'react';
 import { index as driverDashboard } from '@/actions/App/Http/Controllers/DriverDashboardController';
 import { DateNavigator } from '@/components/date-navigator';
+import OpenInMapsButton from '@/components/services/open-in-maps-button';
+import RouteStaticMap from '@/components/services/route-static-map';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -274,6 +276,24 @@ export default function DriverDashboard({
                                         </div>
                                     </div>
 
+                                    {/* Single route preview — A/B markers
+                                        plus the cached polyline so the
+                                        driver sees the trip at a glance. */}
+                                    <RouteStaticMap
+                                        origin={
+                                            service.origin_coordinates ?? null
+                                        }
+                                        destination={
+                                            service.destination_coordinates ??
+                                            null
+                                        }
+                                        geometry={
+                                            service.route_geometry ?? null
+                                        }
+                                        width={480}
+                                        height={220}
+                                    />
+
                                     {/* Schedule */}
                                     <div className="flex items-center gap-2 text-sm">
                                         <Clock className="size-4 shrink-0 text-muted-foreground" />
@@ -388,6 +408,16 @@ export default function DriverDashboard({
                                                 </Badge>
                                             </div>
                                         )}
+                                        <OpenInMapsButton
+                                            origin={
+                                                service.origin_coordinates ??
+                                                null
+                                            }
+                                            destination={
+                                                service.destination_coordinates ??
+                                                null
+                                            }
+                                        />
                                         {/* A closed service is finalized — the
                                             driver can no longer log novedades
                                             against it. See BUG-004. */}

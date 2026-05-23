@@ -2,6 +2,7 @@
 
 @import 'tw-animate-css';
 
+@source '../js';
 @source '../views';
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 
@@ -184,4 +185,33 @@
     from {
         opacity: 0;
     }
+}
+
+/*
+ * Google Maps InfoWindow — Google keeps the bubble white regardless of
+ * the map's `colorScheme`. Paint the bubble and its tail with the app's
+ * popover colour so the InfoWindow tracks light/dark mode like every
+ * other surface; the content then uses ordinary theme tokens and the
+ * `colorScheme`-driven close button stays legible on top.
+ */
+.gm-style-iw-c,
+.gm-style-iw-tc::after {
+    background-color: var(--popover) !important;
+}
+
+.gm-style-iw-c{
+    padding: 0 !important;
+}
+
+/*
+ * The InfoWindow content area is forced to `overflow: scroll`, leaving an
+ * always-on native scrollbar that shows as a light strip on the dark
+ * bubble. The content is short and never needs to scroll, so hide it.
+ */
+.gm-style-iw-d {
+    scrollbar-width: none;
+}
+
+.gm-style-iw-d::-webkit-scrollbar {
+    display: none;
 }

@@ -1,206 +1,57 @@
-import { Head, Link, router } from '@inertiajs/react';
-import L from 'leaflet';
-import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
-import iconUrl from 'leaflet/dist/images/marker-icon.png';
-import iconShadow from 'leaflet/dist/images/marker-shadow.png';
-import 'leaflet/dist/leaflet.css';
-import { MapPin } from 'lucide-react';
-import { Fragment, useEffect, useMemo } from 'react';
+import { Head, router } from '@inertiajs/react';
 import {
-    CircleMarker,
-    MapContainer,
-    Marker,
-    Polyline,
-    Popup,
-    TileLayer,
-    useMap,
-} from 'react-leaflet';
-import { Badge } from '@/components/ui/badge';
+    APIProvider,
+    AdvancedMarker,
+    Map as GoogleMap,
+} from '@vis.gl/react-google-maps';
+import { List } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { FitBounds } from '@/components/gps/fit-bounds';
+import { FocusService } from '@/components/gps/focus-service';
+import { RoutePolyline } from '@/components/gps/route-polyline';
+import { ServicesPanel } from '@/components/gps/services-panel';
+import { VehicleMarker } from '@/components/gps/vehicle-marker';
+import { Button } from '@/components/ui/button';
+import {
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+    SheetTrigger,
+} from '@/components/ui/sheet';
+import { useAppearance } from '@/hooks/use-appearance';
+import { useIsMobile } from '@/hooks/use-mobile';
 import AppLayout from '@/layouts/app-layout';
-import { formatTimestampInViewerTz } from '@/lib/datetime';
-import { MAPBOX_ATTRIBUTION, mapboxTileUrl } from '@/lib/mapbox';
-
+import {
+    GOOGLE_MAPS_BROWSER_KEY,
+    GOOGLE_MAPS_MAP_ID,
+    MEDELLIN_CENTER,
+    MEDELLIN_ZOOM,
+} from '@/lib/google-maps';
+import { serviceColor, toLatLng } from '@/lib/gps-map';
 import type { BreadcrumbItem } from '@/types';
-
-// Vite quirk: Leaflet's default icons break because its default URLs are
-// resolved relative to the CSS file. Rebind to the imported asset URLs.
-L.Marker.prototype.options.icon = L.icon({
-    iconRetinaUrl,
-    iconUrl,
-    shadowUrl: iconShadow,
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41],
-});
+import type { ActiveService, MarkerService, RouteData } from '@/types/gps-map';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'GPS', href: '#' },
     { title: 'Mapa', href: '/gps/map' },
 ];
 
-const MEDELLIN_CENTER: [number, number] = [6.2518, -75.5636];
-const MEDELLIN_ZOOM = 11;
 const REFRESH_INTERVAL_MS = 300_000;
-
-interface CoordPair {
-    latitude: number;
-    longitude: number;
-}
-
-interface ActiveService {
-    service_id: number;
-    vehicle_plate: string | null;
-    driver_name: string | null;
-    location: {
-        latitude: number;
-        longitude: number;
-        accuracy: number | null;
-        is_manual: boolean;
-        recorded_at: string | null;
-    } | null;
-    origin: CoordPair | null;
-    destination: CoordPair | null;
-    route: CoordPair[] | null;
-    route_distance_m: number | null;
-    route_duration_s: number | null;
-}
-
-// Stable per-service color via golden-angle hue stepping. Service IDs
-// that are close numerically still end up far apart visually so two
-// adjacent rows don't get near-identical lines on the map.
-function serviceColor(id: number): string {
-    const hue = (id * 137.508) % 360;
-    return `hsl(${hue.toFixed(0)}, 70%, 42%)`;
-}
-
-function toLatLng(p: CoordPair): [number, number] {
-    return [p.latitude, p.longitude];
-}
-
-function formatDistance(m: number | null): string | null {
-    if (m === null || m === undefined) return null;
-    if (m < 1000) return `${m} m`;
-    return `${(m / 1000).toFixed(1)} km`;
-}
-
-function formatDuration(s: number | null): string | null {
-    if (s === null || s === undefined) return null;
-    const minutes = Math.round(s / 60);
-    if (minutes < 60) return `${minutes} min`;
-    const h = Math.floor(minutes / 60);
-    const rem = minutes % 60;
-    return rem === 0 ? `${h} h` : `${h} h ${rem} min`;
-}
-
-function MapLegend() {
-    // Use a neutral foreground color for the example glyphs so the
-    // legend doesn't pretend to belong to any particular service —
-    // each real service uses its own HSL hue.
-    return (
-        <div
-            className="pointer-events-none absolute bottom-2 left-2 w-48 rounded-md border bg-card/95 p-3 text-xs shadow-md backdrop-blur"
-            // Tailwind v4 doesn't emit arbitrary `z-[1000]` rules. Leaflet
-            // panes sit at z-index 200-700 internally, so the legend
-            // needs to stack above them via inline style.
-            style={{ zIndex: 1000 }}
-        >
-            <div className="mb-2 font-medium">Símbolos</div>
-            <ul className="space-y-1.5 text-muted-foreground">
-                <li className="flex items-center gap-2">
-                    <span className="inline-block size-3 rounded-full bg-foreground" />
-                    <span>Origen</span>
-                </li>
-                <li className="flex items-center gap-2">
-                    <span className="inline-block size-3 rounded-full border-2 border-foreground bg-background" />
-                    <span>Destino</span>
-                </li>
-                <li className="flex items-center gap-2">
-                    <MapPin className="size-3.5 fill-blue-500 text-blue-500" />
-                    <span>Vehículo (GPS)</span>
-                </li>
-                <li className="flex items-center gap-2">
-                    <svg
-                        aria-hidden="true"
-                        viewBox="0 0 24 4"
-                        className="h-1 w-4 text-foreground"
-                    >
-                        <line
-                            x1="0"
-                            y1="2"
-                            x2="24"
-                            y2="2"
-                            stroke="currentColor"
-                            strokeWidth="3"
-                            strokeLinecap="round"
-                        />
-                    </svg>
-                    <span>Ruta confirmada</span>
-                </li>
-                <li className="flex items-center gap-2">
-                    <svg
-                        aria-hidden="true"
-                        viewBox="0 0 24 4"
-                        className="h-1 w-4 text-foreground"
-                    >
-                        <line
-                            x1="0"
-                            y1="2"
-                            x2="24"
-                            y2="2"
-                            stroke="currentColor"
-                            strokeWidth="3"
-                            strokeLinecap="round"
-                            strokeDasharray="4 4"
-                        />
-                    </svg>
-                    <span>Ruta estimada</span>
-                </li>
-            </ul>
-        </div>
-    );
-}
-
-function FitBoundsOnData({ services }: { services: ActiveService[] }) {
-    const map = useMap();
-
-    useEffect(() => {
-        const points: L.LatLng[] = [];
-
-        for (const s of services) {
-            if (s.location) {
-                points.push(
-                    L.latLng(s.location.latitude, s.location.longitude),
-                );
-            }
-            if (s.origin) {
-                points.push(L.latLng(s.origin.latitude, s.origin.longitude));
-            }
-            if (s.destination) {
-                points.push(
-                    L.latLng(s.destination.latitude, s.destination.longitude),
-                );
-            }
-            if (s.route) {
-                for (const p of s.route) {
-                    points.push(L.latLng(p.latitude, p.longitude));
-                }
-            }
-        }
-
-        if (points.length > 0) {
-            map.fitBounds(L.latLngBounds(points).pad(0.15));
-        }
-    }, [map, services]);
-
-    return null;
-}
 
 export default function GpsMap({
     activeServices,
 }: {
     activeServices: ActiveService[];
 }) {
+    const [selectedId, setSelectedId] = useState<number | null>(null);
+    const [sheetOpen, setSheetOpen] = useState(false);
+    // The drawer trigger + sheet are mobile-only; gating the render on
+    // this keeps them out of the desktop DOM entirely (no hidden nodes).
+    const isMobile = useIsMobile();
+    // Drive the Google map's colour scheme from the app theme.
+    const { resolvedAppearance } = useAppearance();
+
     useEffect(() => {
         // Skip the auto-refresh when the tab is hidden — Inertia v2
         // triggers View Transitions on successful responses, and the
@@ -216,28 +67,51 @@ export default function GpsMap({
         return () => clearInterval(interval);
     }, []);
 
-    const markerServices = useMemo(
+    // Picking a service from the panel focuses it on the map; on mobile
+    // it also closes the slide-in sheet so the map is visible.
+    const handleSelect = (id: number): void => {
+        setSelectedId(id);
+        setSheetOpen(false);
+    };
+
+    const markerServices = useMemo<MarkerService[]>(
         () =>
-            activeServices.filter(
-                (
-                    s,
-                ): s is ActiveService & {
-                    location: NonNullable<ActiveService['location']>;
-                } => s.location !== null,
-            ),
+            activeServices
+                .filter((s) => s.location !== null)
+                .map((s) => ({
+                    service_id: s.service_id,
+                    vehicle_plate: s.vehicle_plate,
+                    driver_name: s.driver_name,
+                    position: {
+                        lat: s.location!.latitude,
+                        lng: s.location!.longitude,
+                    },
+                    is_manual: s.location!.is_manual,
+                    recorded_at: s.location!.recorded_at,
+                    route_distance_m: s.route_distance_m,
+                    route_duration_s: s.route_duration_s,
+                })),
         [activeServices],
     );
 
-    const routableServices = useMemo(
+    const routes = useMemo<RouteData[]>(
         () =>
-            activeServices.filter(
-                (
-                    s,
-                ): s is ActiveService & {
-                    origin: NonNullable<ActiveService['origin']>;
-                    destination: NonNullable<ActiveService['destination']>;
-                } => s.origin !== null && s.destination !== null,
-            ),
+            activeServices
+                .filter((s) => s.origin !== null && s.destination !== null)
+                .map((s) => {
+                    const hasRealRoute =
+                        s.route !== null && s.route.length >= 2;
+                    return {
+                        service_id: s.service_id,
+                        color: serviceColor(s.service_id),
+                        origin: toLatLng(s.origin!),
+                        destination: toLatLng(s.destination!),
+                        confirmed: hasRealRoute,
+                        path: hasRealRoute
+                            ? s.route!.map(toLatLng)
+                            : [toLatLng(s.origin!), toLatLng(s.destination!)],
+                    };
+                }),
         [activeServices],
     );
 
@@ -251,137 +125,157 @@ export default function GpsMap({
                 // the actual chrome: header h-16 (64px) + main m-2 (16px).
                 style={{ height: 'calc(100vh - 5rem)' }}
             >
-                <div className="text-xs text-muted-foreground">
-                    {markerServices.length} de {activeServices.length} servicios
-                    activos con ubicación conocida. Actualización automática
-                    cada {REFRESH_INTERVAL_MS / 60_000} min.
-                </div>
-                <div className="relative flex-1 overflow-hidden rounded-md border">
-                    <MapLegend />
-                    <MapContainer
-                        center={MEDELLIN_CENTER}
-                        zoom={MEDELLIN_ZOOM}
-                        style={{ height: '100%', width: '100%' }}
-                    >
-                        <TileLayer
-                            url={mapboxTileUrl()}
-                            attribution={MAPBOX_ATTRIBUTION}
-                            tileSize={512}
-                            zoomOffset={-1}
-                            detectRetina
-                        />
-                        <FitBoundsOnData services={activeServices} />
-
-                        {routableServices.map((service) => {
-                            const color = serviceColor(service.service_id);
-                            const hasRealRoute =
-                                service.route !== null &&
-                                service.route.length >= 2;
-                            const polylinePositions: [number, number][] =
-                                hasRealRoute
-                                    ? service.route!.map(toLatLng)
-                                    : [
-                                          toLatLng(service.origin),
-                                          toLatLng(service.destination),
-                                      ];
-
-                            return (
-                                <Fragment key={`route-${service.service_id}`}>
-                                    <Polyline
-                                        positions={polylinePositions}
-                                        pathOptions={{
-                                            color,
-                                            weight: 4,
-                                            opacity: 0.75,
-                                            dashArray: hasRealRoute
-                                                ? undefined
-                                                : '6 8',
-                                        }}
-                                    />
-                                    <CircleMarker
-                                        center={toLatLng(service.origin)}
-                                        radius={6}
-                                        pathOptions={{
-                                            color,
-                                            fillColor: color,
-                                            fillOpacity: 1,
-                                            weight: 2,
-                                        }}
-                                    />
-                                    <CircleMarker
-                                        center={toLatLng(service.destination)}
-                                        radius={6}
-                                        pathOptions={{
-                                            color,
-                                            fillColor: '#ffffff',
-                                            fillOpacity: 1,
-                                            weight: 2,
-                                        }}
-                                    />
-                                </Fragment>
-                            );
-                        })}
-
-                        {markerServices.map((service) => {
-                            const distance = formatDistance(
-                                service.route_distance_m,
-                            );
-                            const duration = formatDuration(
-                                service.route_duration_s,
-                            );
-
-                            return (
-                                <Marker
-                                    key={service.service_id}
-                                    position={[
-                                        service.location.latitude,
-                                        service.location.longitude,
-                                    ]}
+                <div className="flex items-center justify-between gap-3">
+                    <div className="text-xs text-muted-foreground">
+                        {markerServices.length} de {activeServices.length}{' '}
+                        servicios activos con ubicación conocida. Actualización
+                        automática cada {REFRESH_INTERVAL_MS / 60_000} min.
+                    </div>
+                    {/* Mobile-only trigger + drawer for the services panel —
+                        rendered only on mobile so it never reaches the DOM
+                        on desktop. */}
+                    {isMobile && (
+                        <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+                            <SheetTrigger asChild>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="shrink-0"
                                 >
-                                    <Popup>
-                                        <div className="space-y-1 text-sm">
-                                            <div className="font-mono font-medium">
-                                                {service.vehicle_plate ?? '—'}
-                                            </div>
-                                            <div>
-                                                {service.driver_name ?? '—'}
-                                            </div>
-                                            <div className="text-xs text-muted-foreground">
-                                                {formatTimestampInViewerTz(
-                                                    service.location
-                                                        .recorded_at,
-                                                ) || '—'}
-                                            </div>
-                                            <div>
-                                                {service.location.is_manual ? (
-                                                    <Badge variant="outline">
-                                                        Manual
-                                                    </Badge>
-                                                ) : (
-                                                    <Badge>GPS</Badge>
-                                                )}
-                                            </div>
-                                            {(distance || duration) && (
-                                                <div className="text-xs text-muted-foreground">
-                                                    Ruta:{' '}
-                                                    {[distance, duration]
-                                                        .filter(Boolean)
-                                                        .join(' · ')}
-                                                </div>
-                                            )}
-                                            <Link
-                                                href={`/services/${service.service_id}`}
-                                                className="text-primary hover:underline"
-                                            >
-                                                Ver servicio #
-                                                {service.service_id}
-                                            </Link>
-                                        </div>
-                                    </Popup>
-                                </Marker>
-                            );
-                        })}
-                    </MapContainer>
+                                    <List className="size-4" />
+                                    Servicios ({activeServices.length})
+                                </Button>
+                            </SheetTrigger>
+                            <SheetContent
+                                side="left"
+                                className="w-[256px] gap-0 p-0 sm:max-w-sm"
+                            >
+                                <SheetHeader className="sr-only">
+                                    <SheetTitle>Servicios activos</SheetTitle>
+                                </SheetHeader>
+                                <ServicesPanel
+                                    services={activeServices}
+                                    selectedId={selectedId}
+                                    onSelect={handleSelect}
+                                />
+                            </SheetContent>
+                        </Sheet>
+                    )}
+                </div>
+
+                <div className="flex min-h-0 flex-1 gap-2">
+                    {/* Desktop-only services sidebar. */}
+                    {!isMobile && (
+                        <aside className="flex w-[256px] shrink-0 overflow-hidden rounded-md border bg-card">
+                            <ServicesPanel
+                                services={activeServices}
+                                selectedId={selectedId}
+                                onSelect={handleSelect}
+                            />
+                        </aside>
+                    )}
+
+                    <div className="relative min-h-0 flex-1 overflow-hidden rounded-md border">
+                        <APIProvider apiKey={GOOGLE_MAPS_BROWSER_KEY}>
+                            <GoogleMap
+                                // Google applies `colorScheme` only at map
+                                // creation, so re-key the map on theme change
+                                // to force a fresh instance in the new scheme.
+                                key={resolvedAppearance}
+                                colorScheme={
+                                    resolvedAppearance === 'dark'
+                                        ? 'DARK'
+                                        : 'LIGHT'
+                                }
+                                mapId={GOOGLE_MAPS_MAP_ID}
+                                defaultCenter={MEDELLIN_CENTER}
+                                defaultZoom={MEDELLIN_ZOOM}
+                                gestureHandling="greedy"
+                                clickableIcons={false}
+                                streetViewControl={false}
+                                className="h-full w-full"
+                            >
+                                <FitBounds services={activeServices} />
+                                <FocusService
+                                    selectedId={selectedId}
+                                    services={activeServices}
+                                />
+
+                                {routes.map((route) => (
+                                    <RoutePolyline
+                                        key={`route-${route.service_id}`}
+                                        path={route.path}
+                                        color={route.color}
+                                        confirmed={route.confirmed}
+                                        selected={
+                                            selectedId === route.service_id
+                                        }
+                                        dimmed={
+                                            selectedId !== null &&
+                                            selectedId !== route.service_id
+                                        }
+                                    />
+                                ))}
+
+                                {routes.map((route) => {
+                                    const dimmed =
+                                        selectedId !== null &&
+                                        selectedId !== route.service_id;
+                                    return (
+                                        <AdvancedMarker
+                                            key={`origin-${route.service_id}`}
+                                            position={route.origin}
+                                        >
+                                            <span
+                                                className="block size-3.5 rounded-full transition-opacity"
+                                                style={{
+                                                    background: route.color,
+                                                    border: `2px solid ${route.color}`,
+                                                    opacity: dimmed ? 0.3 : 1,
+                                                }}
+                                            />
+                                        </AdvancedMarker>
+                                    );
+                                })}
+
+                                {routes.map((route) => {
+                                    const dimmed =
+                                        selectedId !== null &&
+                                        selectedId !== route.service_id;
+                                    return (
+                                        <AdvancedMarker
+                                            key={`destination-${route.service_id}`}
+                                            position={route.destination}
+                                        >
+                                            <span
+                                                className="block size-3.5 rounded-full bg-white transition-opacity"
+                                                style={{
+                                                    border: `2px solid ${route.color}`,
+                                                    opacity: dimmed ? 0.3 : 1,
+                                                }}
+                                            />
+                                        </AdvancedMarker>
+                                    );
+                                })}
+
+                                {markerServices.map((service) => (
+                                    <VehicleMarker
+                                        key={service.service_id}
+                                        service={service}
+                                        open={selectedId === service.service_id}
+                                        onOpenChange={(isOpen) =>
+                                            setSelectedId(
+                                                isOpen
+                                                    ? service.service_id
+                                                    : null,
+                                            )
+                                        }
+                                    />
+                                ))}
+                            </GoogleMap>
+                        </APIProvider>
+                    </div>
                 </div>
             </div>
         </AppLayout>

@@ -2,26 +2,22 @@
 
 use App\Jobs\FetchServiceRoute;
 use App\Models\Service;
+use App\Services\Google\RoutesClient;
 use Illuminate\Support\Facades\Http;
 
 beforeEach(function (): void {
-    config()->set('services.mapbox.token', 'pk.test-token');
+    config()->set('services.google_maps.server_key', 'test-server-key');
 });
 
-test('successful Mapbox response populates geometry, distance, duration', function (): void {
+test('successful Routes API response populates geometry, distance, duration', function (): void {
     Http::fake([
-        'api.mapbox.com/*' => Http::response([
+        'routes.googleapis.com/*' => Http::response([
             'routes' => [[
-                'distance' => 12500.4,
-                'duration' => 1234.7,
-                'geometry' => [
-                    'type' => 'LineString',
-                    'coordinates' => [
-                        [-75.5636, 6.2518],
-                        [-75.5700, 6.2600],
-                        [-75.5800, 6.2700],
-                    ],
-                ],
+                'distanceMeters' => 12500,
+                'duration' => '1234s',
+                // Canonical Google encoded-polyline example: decodes to
+                // (38.5,-120.2), (40.7,-120.95), (43.252,-126.453).
+                'polyline' => ['encodedPolyline' => '_p~iF~ps|U_ulLnnqC_mqNvxq`@'],
             ]],
         ], 200),
     ]);
@@ -31,21 +27,24 @@ test('successful Mapbox response populates geometry, distance, duration', functi
         'destination_coordinates' => '6.2700,-75.5800',
     ]);
 
-    (new FetchServiceRoute($service))->handle(app(\App\Services\Mapbox\DirectionsClient::class));
+    (new FetchServiceRoute($service))->handle(app(RoutesClient::class));
 
     $service->refresh();
 
     expect($service->route_geometry)->toBeArray();
-    expect($service->route_geometry[0])->toBe([-75.5636, 6.2518]);
+    expect($service->route_geometry)->toHaveCount(3);
+    // Geometry is stored [lng, lat] (GeoJSON LineString order).
+    expect($service->route_geometry[0][0])->toEqualWithDelta(-120.2, 1e-6);
+    expect($service->route_geometry[0][1])->toEqualWithDelta(38.5, 1e-6);
     expect($service->route_distance_m)->toBe(12500);
-    expect($service->route_duration_s)->toBe(1235);
-    expect($service->route_source)->toBe('mapbox');
+    expect($service->route_duration_s)->toBe(1234);
+    expect($service->route_source)->toBe('google');
     expect($service->route_fetched_at)->not->toBeNull();
 });
 
-test('failed Mapbox response marks fetched_at but leaves geometry null', function (): void {
+test('failed Routes API response marks fetched_at but leaves geometry null', function (): void {
     Http::fake([
-        'api.mapbox.com/*' => Http::response(['message' => 'No route'], 422),
+        'routes.googleapis.com/*' => Http::response(['error' => 'No route'], 422),
     ]);
 
     $service = Service::factory()->create([
@@ -53,7 +52,7 @@ test('failed Mapbox response marks fetched_at but leaves geometry null', functio
         'destination_coordinates' => '6.2700,-75.5800',
     ]);
 
-    (new FetchServiceRoute($service))->handle(app(\App\Services\Mapbox\DirectionsClient::class));
+    (new FetchServiceRoute($service))->handle(app(RoutesClient::class));
 
     $service->refresh();
 
@@ -61,7 +60,7 @@ test('failed Mapbox response marks fetched_at but leaves geometry null', functio
     expect($service->route_distance_m)->toBeNull();
     expect($service->route_duration_s)->toBeNull();
     expect($service->route_fetched_at)->not->toBeNull();
-    expect($service->route_source)->toBe('mapbox');
+    expect($service->route_source)->toBe('google');
 });
 
 test('job is a no-op when either coord is missing', function (): void {
@@ -72,7 +71,7 @@ test('job is a no-op when either coord is missing', function (): void {
         'destination_coordinates' => null,
     ]);
 
-    (new FetchServiceRoute($service))->handle(app(\App\Services\Mapbox\DirectionsClient::class));
+    (new FetchServiceRoute($service))->handle(app(RoutesClient::class));
 
     Http::assertNothingSent();
 
@@ -80,10 +79,14 @@ test('job is a no-op when either coord is missing', function (): void {
     expect($service->route_fetched_at)->toBeNull();
 });
 
-test('Mapbox is called with lng,lat order even though coords are stored lat,lng', function (): void {
+test('Routes API is called with lat/lng even though coords are stored lat,lng', function (): void {
     Http::fake([
-        'api.mapbox.com/*' => Http::response([
-            'routes' => [['distance' => 0, 'duration' => 0, 'geometry' => ['coordinates' => [[0, 0], [1, 1]]]]],
+        'routes.googleapis.com/*' => Http::response([
+            'routes' => [[
+                'distanceMeters' => 0,
+                'duration' => '0s',
+                'polyline' => ['encodedPolyline' => '_p~iF~ps|U'],
+            ]],
         ], 200),
     ]);
 
@@ -92,9 +95,15 @@ test('Mapbox is called with lng,lat order even though coords are stored lat,lng'
         'destination_coordinates' => '4.6097,-74.0817',
     ]);
 
-    (new FetchServiceRoute($service))->handle(app(\App\Services\Mapbox\DirectionsClient::class));
+    (new FetchServiceRoute($service))->handle(app(RoutesClient::class));
 
     Http::assertSent(function ($request) {
-        return str_contains($request->url(), '-75.563600,6.251800;-74.081700,4.609700');
+        $origin = $request['origin']['location']['latLng'];
+        $destination = $request['destination']['location']['latLng'];
+
+        return $origin['latitude'] === 6.2518
+            && $origin['longitude'] === -75.5636
+            && $destination['latitude'] === 4.6097
+            && $destination['longitude'] === -74.0817;
     });
 });

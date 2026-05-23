@@ -196,8 +196,8 @@ test('store saves and redirects', function (): void {
         'origin_address' => $origin_address,
         // address ↔ coords are required together (see ServiceStoreRequest).
         'origin_coordinates' => '4.5816950,-74.1784720',
-        'origin_coordinates_source' => 'mapbox',
-        'origin_coordinates_accuracy' => 'rooftop',
+        'origin_coordinates_source' => 'google',
+        'origin_coordinates_accuracy' => 'ROOFTOP',
         'destination_municipality_id' => $destination_municipality->id,
         'destination_address' => $destination_address,
         'destination_coordinates' => '4.6679000,-74.0541000',

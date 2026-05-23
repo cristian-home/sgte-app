@@ -1,4 +1,5 @@
 import { usePage } from '@inertiajs/react';
+import { APIProvider } from '@vis.gl/react-google-maps';
 import {
     AlertTriangle,
     ArrowRightLeft,
@@ -49,6 +50,7 @@ import { PaymentMethod, PaymentMethodLabel } from '@/enums/PaymentMethod';
 import { ServiceStatus, ServiceStatusLabel } from '@/enums/ServiceStatus';
 import { type VehicleType, VehicleTypeLabel } from '@/enums/VehicleType';
 import { viewerToday } from '@/lib/datetime';
+import { GOOGLE_MAPS_BROWSER_KEY } from '@/lib/google-maps';
 import { normalizeCity } from '@/lib/normalize-city';
 import { cn } from '@/lib/utils';
 import type { DayStatus } from '@/types/models';
@@ -106,18 +108,22 @@ export interface ServiceFormData {
     service_date: string;
     origin_municipality_id: string;
     origin_address: string;
-    /** "lat,lng" pair captured from a Mapbox pick (with permanent=true) or a manual map pin. Empty when the operator typed the address without confirming a location. */
+    /** "lat,lng" pair captured from a Google Places pick or a manual map pin. Empty when the operator typed the address without confirming a location. */
     origin_coordinates: string;
-    /** 'mapbox' | 'manual' | '' — discriminator for `origin_coordinates`. */
+    /** 'google' | 'manual' | '' — discriminator for `origin_coordinates`. */
     origin_coordinates_source: string;
-    /** Geocoding v6 accuracy when source is 'mapbox' (rooftop/parcel/...). Empty for manual or legacy. */
+    /** Google Geocoder location_type when source is 'google' (ROOFTOP/...). Empty for manual or legacy. */
     origin_coordinates_accuracy: string;
+    /** Google Place ID when source is 'google'. Empty for manual pins or legacy. */
+    origin_place_id: string;
     destination_municipality_id: string;
     destination_address: string;
-    /** "lat,lng" pair captured from a Mapbox pick or manual pin. */
+    /** "lat,lng" pair captured from a Google Places pick or a manual pin. */
     destination_coordinates: string;
     destination_coordinates_source: string;
     destination_coordinates_accuracy: string;
+    /** Google Place ID when source is 'google'. Empty for manual pins or legacy. */
+    destination_place_id: string;
     planned_start_time: string;
     planned_duration: string;
     actual_start_time: string;
@@ -150,8 +156,8 @@ function parseCoordsString(value: string): { lat: number; lng: number } | null {
  * Resolve the picked municipality's centroid (lat/lng + display name) for
  * use as the map picker's `initialCenter` and `municipalityHint`. Returns
  * null if no municipality is selected or its coords are missing. The
- * LocationField derives its own Mapbox proximity internally — this helper
- * exists solely for the map-picker modal.
+ * LocationField derives its own Google location bias internally — this
+ * helper exists solely for the map-picker modal.
  */
 function useMunicipalityCenter(
     municipalities: MunicipalityOption[],
@@ -362,9 +368,9 @@ interface ServiceFormProps {
     /**
      * Bubble up a "should block submit" signal so the page can disable
      * the Save button. True when:
-     *  - any address has a permanent-commit fetch in flight, OR
+     *  - any address has a place-details fetch in flight, OR
      *  - any address has text but no captured coordinates (operator
-     *    must pick a Mapbox suggestion or drop a manual pin first).
+     *    must pick a Google suggestion or drop a manual pin first).
      */
     onAddressCommitInFlight?: (inFlight: boolean) => void;
     /**
@@ -454,7 +460,7 @@ export default function ServiceForm({
     }, []);
 
     // An address that has text but no captured coordinates is invalid:
-    // the operator typed something but never picked a Mapbox suggestion
+    // the operator typed something but never picked a Google suggestion
     // or placed a manual pin, so we cannot persist a usable location.
     // Backend mirrors this with `required_with` rules on coordinates and
     // coordinates_source — frontend just blocks the Save button to give
@@ -560,7 +566,9 @@ export default function ServiceForm({
         mode === 'create' && isFutureOrToday && isClosed;
 
     return (
-        <>
+        // One APIProvider for the whole form so both LocationFields and
+        // both MapPickerModals share a single Google Maps JS load.
+        <APIProvider apiKey={GOOGLE_MAPS_BROWSER_KEY}>
             {isFullyLocked && (
                 <Alert variant="destructive">
                     <Lock className="size-4" />
@@ -1056,6 +1064,7 @@ export default function ServiceForm({
                                     coords,
                                     source,
                                     accuracy,
+                                    placeId,
                                 ) => {
                                     setData('origin_coordinates', coords);
                                     setData(
@@ -1065,6 +1074,10 @@ export default function ServiceForm({
                                     setData(
                                         'origin_coordinates_accuracy',
                                         accuracy ?? '',
+                                    );
+                                    setData(
+                                        'origin_place_id',
+                                        coords ? (placeId ?? '') : '',
                                     );
                                 }}
                                 onCommitInFlight={handleOriginCommit}
@@ -1118,6 +1131,7 @@ export default function ServiceForm({
                                         'manual',
                                     );
                                     setData('origin_coordinates_accuracy', '');
+                                    setData('origin_place_id', '');
                                     if (
                                         !data.origin_municipality_id &&
                                         placeName
@@ -1176,6 +1190,7 @@ export default function ServiceForm({
                                     coords,
                                     source,
                                     accuracy,
+                                    placeId,
                                 ) => {
                                     setData('destination_coordinates', coords);
                                     setData(
@@ -1185,6 +1200,10 @@ export default function ServiceForm({
                                     setData(
                                         'destination_coordinates_accuracy',
                                         accuracy ?? '',
+                                    );
+                                    setData(
+                                        'destination_place_id',
+                                        coords ? (placeId ?? '') : '',
                                     );
                                 }}
                                 onCommitInFlight={handleDestinationCommit}
@@ -1243,6 +1262,7 @@ export default function ServiceForm({
                                         'destination_coordinates_accuracy',
                                         '',
                                     );
+                                    setData('destination_place_id', '');
                                     if (
                                         !data.destination_municipality_id &&
                                         placeName
@@ -1580,6 +1600,6 @@ export default function ServiceForm({
                     </Card>
                 </>
             )}
-        </>
+        </APIProvider>
     );
 }

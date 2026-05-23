@@ -44,9 +44,9 @@ class ServiceSeeder extends Seeder
 
         // Resolve municipality_id by DANE code from the curated landmark
         // list, so demo origins/destinations always carry a real
-        // (address, coordinates, source, accuracy) tuple — same shape
-        // the address autocomplete and pin picker would produce in
-        // production.
+        // (address, coordinates, source, accuracy, place_id) tuple —
+        // same shape the address autocomplete and pin picker would
+        // produce in production.
         $byCode = Municipality::whereIn('code', ['11001', '25899', '25754', '05001'])
             ->pluck('id', 'code');
 
@@ -183,11 +183,13 @@ class ServiceSeeder extends Seeder
                 'origin_coordinates' => $s['origin']['coordinates'],
                 'origin_coordinates_source' => $s['origin']['source'],
                 'origin_coordinates_accuracy' => $s['origin']['accuracy'],
+                'origin_place_id' => $s['origin']['place_id'] ?? null,
                 'destination_municipality_id' => $byCode->get($s['destination']['municipality_code']),
                 'destination_address' => $s['destination']['address'],
                 'destination_coordinates' => $s['destination']['coordinates'],
                 'destination_coordinates_source' => $s['destination']['source'],
                 'destination_coordinates_accuracy' => $s['destination']['accuracy'],
+                'destination_place_id' => $s['destination']['place_id'] ?? null,
                 'planned_start_at' => $plannedAt,
                 'planned_duration' => $s['planned_duration'],
                 'actual_start_at' => $actualStart,

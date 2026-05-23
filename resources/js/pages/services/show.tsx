@@ -19,6 +19,7 @@ import ServiceIncidentController from '@/actions/App/Http/Controllers/ServiceInc
 import { Can } from '@/components/can';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { IncidentSeverityPill } from '@/components/incidents/incident-severity-pill';
+import RouteStaticMap from '@/components/services/route-static-map';
 import { ServiceTimelineBar } from '@/components/services/service-timeline-bar';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -312,51 +313,13 @@ export default function ServicesShow({
                             <CardTitle>Detalle de la Ruta</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="relative flex min-h-[200px] flex-col justify-between rounded-lg border border-dashed border-muted-foreground/20 bg-muted/30 p-4">
-                                {/* Origin */}
-                                <div className="flex items-start gap-3">
-                                    <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-amber-500 text-sm font-bold text-white">
-                                        A
-                                    </span>
-                                    <div>
-                                        <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
-                                            Origen
-                                        </p>
-                                        <p className="text-sm font-medium">
-                                            {municipalityDisplay(
-                                                service.origin_municipality,
-                                                service.origin_address,
-                                            )}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* Connecting line */}
-                                <div className="absolute top-14 bottom-14 left-[1.95rem] w-px border-l border-dashed border-muted-foreground/30" />
-
-                                {/* Destination */}
-                                <div className="flex items-start gap-3">
-                                    <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-amber-500 text-sm font-bold text-white">
-                                        B
-                                    </span>
-                                    <div>
-                                        <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
-                                            Destino
-                                        </p>
-                                        <p className="text-sm font-medium">
-                                            {municipalityDisplay(
-                                                service.destination_municipality,
-                                                service.destination_address,
-                                            )}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* Map placeholder note */}
-                                <p className="absolute right-3 bottom-2 text-[10px] text-muted-foreground/50 italic">
-                                    Mapa en desarrollo
-                                </p>
-                            </div>
+                            <RouteStaticMap
+                                origin={service.origin_coordinates ?? null}
+                                destination={
+                                    service.destination_coordinates ?? null
+                                }
+                                geometry={service.route_geometry ?? null}
+                            />
                         </CardContent>
                     </Card>
                 </div>
