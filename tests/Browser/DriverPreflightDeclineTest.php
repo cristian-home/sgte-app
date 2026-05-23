@@ -50,10 +50,14 @@ function declineTestCreateDriverWithTodayService(): array
 test('driver sees Declinar servicio button on the dashboard (REQ-012 regression)', function (): void {
     [$driverUser, $service] = declineTestCreateDriverWithTodayService();
 
-    $this->browse(function (Browser $browser) use ($driverUser): void {
+    $this->browse(function (Browser $browser) use ($driverUser, $service): void {
+        $miniCard = '[data-dusk="service-mini-'.$service->id.'"]';
         $browser->loginAs($driverUser)
             ->visit('/driver')
             ->waitForText('Mis Servicios')
+            ->waitFor($miniCard, 10)
+            ->click("{$miniCard} button")
+            ->waitForText('Declinar servicio', 10)
             ->assertSee('Declinar servicio')
             ->assertSee('Confirmar Inicio')
             ->screenshot('driver-decline-button-visible');
@@ -64,15 +68,24 @@ test('driver opens decline dialog and submits a reason (REQ-012 regression)', fu
     [$driverUser, $service] = declineTestCreateDriverWithTodayService();
 
     $this->browse(function (Browser $browser) use ($driverUser, $service): void {
+        $miniCard = '[data-dusk="service-mini-'.$service->id.'"]';
         $browser->loginAs($driverUser)
             ->visit('/driver')
             ->waitForText('Mis Servicios')
+            ->waitFor($miniCard, 10)
+            ->click("{$miniCard} button")
+            ->waitForText('Declinar servicio', 10)
             ->press('Declinar servicio')
             ->waitForText('Motivo del rechazo')
             ->assertSee('Motivo del rechazo')
             ->type('#reason_text', 'Incapacidad médica antes de iniciar el turno.')
             ->press('Confirmar rechazo')
-            ->waitForText('Servicio declinado')
+            ->waitForLocation('/driver')
+            ->waitFor($miniCard, 10)
+            // Reopen the detail dialog — the declined banner now lives inside
+            // the modal, not inline on the mini card.
+            ->click("{$miniCard} button")
+            ->waitForText('Servicio declinado', 10)
             ->assertSee('Servicio declinado')
             ->assertSee('pendiente de reasignación')
             ->screenshot('driver-decline-submitted');
