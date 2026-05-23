@@ -14,6 +14,7 @@ interface OpenInMapsButtonProps {
     /** Optional origin. When null, the navigation app uses the device's current location. */
     origin?: string | null;
     className?: string;
+    variant?: 'default' | 'outline' | 'secondary' | 'ghost';
 }
 
 function parseCoordinates(value: string | null | undefined): string | null {
@@ -36,6 +37,7 @@ export default function OpenInMapsButton({
     destination,
     origin,
     className,
+    variant = 'default',
 }: OpenInMapsButtonProps) {
     const dest = parseCoordinates(destination);
     if (!dest) {
@@ -58,7 +60,7 @@ export default function OpenInMapsButton({
             <DropdownMenuTrigger asChild>
                 <Button
                     type="button"
-                    variant="default"
+                    variant={variant}
                     className={cn('flex-1', className)}
                 >
                     <Navigation className="mr-1 size-4" />

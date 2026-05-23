@@ -2,6 +2,7 @@ import { Link, useForm } from '@inertiajs/react';
 import {
     AlertCircle,
     Ban,
+    CheckCircle2,
     Clock,
     Flag,
     MapPin,
@@ -95,12 +96,21 @@ export function ServiceDetailDialog({
             <Dialog open={open} onOpenChange={onOpenChange}>
                 <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
                     <DialogHeader>
-                        <div className="flex items-center justify-between gap-3">
-                            <DialogTitle className="flex items-center gap-2 text-lg">
-                                <Truck className="size-5" />
-                                {service.vehicle?.plate ?? '—'}
-                            </DialogTitle>
-                            <div className="flex items-center gap-2">
+                        <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-start gap-3">
+                                <div className="flex size-12 shrink-0 items-center justify-center rounded-lg border bg-muted/40">
+                                    <Truck className="size-6 text-muted-foreground" />
+                                </div>
+                                <div className="min-w-0">
+                                    <DialogTitle className="text-xl leading-tight">
+                                        {service.vehicle?.plate ?? '—'}
+                                    </DialogTitle>
+                                    <DialogDescription className="mt-0.5">
+                                        {clientName(service)}
+                                    </DialogDescription>
+                                </div>
+                            </div>
+                            <div className="flex shrink-0 items-center gap-2">
                                 {incidentCount > 0 && (
                                     <Badge variant="destructive">
                                         {incidentCount} novedad
@@ -108,31 +118,54 @@ export function ServiceDetailDialog({
                                     </Badge>
                                 )}
                                 <Badge
-                                    variant={
-                                        isClosed ? 'default' : 'secondary'
-                                    }
+                                    variant={isClosed ? 'default' : 'secondary'}
+                                    className="gap-1.5"
                                 >
+                                    <span
+                                        className={
+                                            isClosed
+                                                ? 'size-1.5 rounded-full bg-current'
+                                                : 'size-1.5 rounded-full bg-foreground'
+                                        }
+                                        aria-hidden="true"
+                                    />
                                     {ServiceStatusLabel[
                                         service.service_status as keyof typeof ServiceStatusLabel
                                     ] ?? service.service_status}
                                 </Badge>
                             </div>
                         </div>
-                        <DialogDescription>
-                            {clientName(service)}
-                        </DialogDescription>
                     </DialogHeader>
 
-                    <div className="space-y-3">
-                        <div className="flex items-start gap-2 text-sm">
-                            <MapPin className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-                            <p>
-                                {municipalityName(service.origin_municipality)}{' '}
-                                &rarr;{' '}
-                                {municipalityName(
-                                    service.destination_municipality,
-                                )}
-                            </p>
+                    <div className="space-y-4">
+                        {/* Route row — A pin · origin ─────► B pin · destination */}
+                        <div className="flex items-center gap-3 text-sm">
+                            <div className="flex shrink-0 items-center gap-2">
+                                <MapPin className="size-4 text-muted-foreground" />
+                                <span className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
+                                    A
+                                </span>
+                                <span className="text-sm font-medium">
+                                    {municipalityName(
+                                        service.origin_municipality,
+                                    )}
+                                </span>
+                            </div>
+                            <div className="relative flex-1">
+                                <div className="h-px w-full bg-border" />
+                                <div className="absolute top-1/2 right-0 size-0 -translate-y-1/2 border-y-[4px] border-l-[6px] border-y-transparent border-l-border" />
+                            </div>
+                            <div className="flex shrink-0 items-center gap-2">
+                                <MapPin className="size-4 text-muted-foreground" />
+                                <span className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
+                                    B
+                                </span>
+                                <span className="text-sm font-medium">
+                                    {municipalityName(
+                                        service.destination_municipality,
+                                    )}
+                                </span>
+                            </div>
                         </div>
 
                         <RouteStaticMap
@@ -143,39 +176,58 @@ export function ServiceDetailDialog({
                             height={260}
                         />
 
-                        <div className="flex items-center gap-2 text-sm">
-                            <Clock className="size-4 shrink-0 text-muted-foreground" />
-                            <span>
-                                Planificado:{' '}
-                                {formatServiceTime(
-                                    service.planned_start_at,
-                                    service.timezone,
-                                )}{' '}
-                                ({service.planned_duration} min)
-                            </span>
-                        </div>
-
-                        {hasStarted && (
-                            <div className="flex items-center gap-2 text-sm">
-                                <Play className="size-4 shrink-0 text-green-600" />
-                                <span>
-                                    Inicio real:{' '}
-                                    {formatServiceTime(
-                                        service.actual_start_at,
-                                        service.timezone,
-                                    )}
-                                </span>
-                                {hasEnded && (
-                                    <span className="ml-2">
-                                        | Fin:{' '}
-                                        {formatServiceTime(
-                                            service.actual_end_at,
-                                            service.timezone,
-                                        )}
-                                    </span>
+                        {/* Métricas de Tiempo — bordered card with the planned
+                            and actual horizons side by side. */}
+                        <div className="rounded-lg border bg-muted/20 p-4">
+                            <p className="mb-3 text-sm font-medium">
+                                M&eacute;tricas de Tiempo
+                            </p>
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <div className="flex items-start gap-2.5">
+                                    <Clock className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                                    <div>
+                                        <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
+                                            Horario planificado
+                                        </p>
+                                        <p className="text-sm">
+                                            {formatServiceTime(
+                                                service.planned_start_at,
+                                                service.timezone,
+                                            )}{' '}
+                                            ({service.planned_duration} min)
+                                        </p>
+                                    </div>
+                                </div>
+                                {hasStarted && (
+                                    <div className="flex items-start gap-2.5">
+                                        <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                                        <div>
+                                            <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
+                                                {hasEnded
+                                                    ? 'Horario real'
+                                                    : 'Horario de inicio real'}
+                                            </p>
+                                            <p className="text-sm">
+                                                {formatServiceTime(
+                                                    service.actual_start_at,
+                                                    service.timezone,
+                                                )}
+                                                {hasEnded && (
+                                                    <>
+                                                        {' '}
+                                                        &mdash;{' '}
+                                                        {formatServiceTime(
+                                                            service.actual_end_at,
+                                                            service.timezone,
+                                                        )}
+                                                    </>
+                                                )}
+                                            </p>
+                                        </div>
+                                    </div>
                                 )}
                             </div>
-                        )}
+                        </div>
 
                         {isDeclined && (
                             <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
@@ -192,54 +244,62 @@ export function ServiceDetailDialog({
                         )}
                     </div>
 
-                    <DialogFooter className="flex-wrap gap-2 sm:justify-start">
-                        {isToday && !hasStarted && !isDeclined && (
-                            <Button
-                                onClick={() => onConfirmStart(service.id)}
-                            >
-                                <Play className="mr-1 size-4" />
-                                Confirmar Inicio
-                            </Button>
-                        )}
-                        {isToday && hasStarted && !hasEnded && (
-                            <Button
-                                variant="secondary"
-                                onClick={() => onConfirmEnd(service.id)}
-                            >
-                                <Flag className="mr-1 size-4" />
-                                Confirmar Fin
-                            </Button>
-                        )}
-                        {isToday && hasStarted && hasEnded && (
-                            <span className="self-center text-sm text-muted-foreground">
-                                Servicio completado
-                            </span>
-                        )}
-                        {isToday && !hasStarted && !isDeclined && (
-                            <Button
-                                variant="destructive"
-                                onClick={() => setDeclineOpen(true)}
-                            >
-                                <Ban className="mr-1 size-4" />
-                                Declinar servicio
-                            </Button>
-                        )}
+                    <DialogFooter className="flex-wrap gap-2 sm:justify-between">
+                        <div className="flex flex-wrap gap-2">
+                            <OpenInMapsButton
+                                variant="outline"
+                                origin={service.origin_coordinates ?? null}
+                                destination={
+                                    service.destination_coordinates ?? null
+                                }
+                            />
 
-                        <OpenInMapsButton
-                            origin={service.origin_coordinates ?? null}
-                            destination={service.destination_coordinates ?? null}
-                        />
+                            {!isClosed && (
+                                <Button variant="outline" asChild>
+                                    <Link
+                                        href={`/service-incidents/create?service_id=${service.id}`}
+                                    >
+                                        <AlertCircle className="mr-1 size-4" />
+                                        Registrar Novedad
+                                    </Link>
+                                </Button>
+                            )}
 
-                        {!isClosed && (
-                            <Button variant="outline" asChild>
-                                <Link
-                                    href={`/service-incidents/create?service_id=${service.id}`}
+                            {isToday && !hasStarted && !isDeclined && (
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setDeclineOpen(true)}
+                                    className="text-destructive hover:text-destructive"
                                 >
-                                    <AlertCircle className="mr-1 size-4" />
-                                    Registrar Novedad
-                                </Link>
-                            </Button>
-                        )}
+                                    <Ban className="mr-1 size-4" />
+                                    Declinar servicio
+                                </Button>
+                            )}
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                            {isToday && !hasStarted && !isDeclined && (
+                                <Button
+                                    onClick={() => onConfirmStart(service.id)}
+                                >
+                                    <Play className="mr-1 size-4" />
+                                    Confirmar Inicio
+                                </Button>
+                            )}
+                            {isToday && hasStarted && !hasEnded && (
+                                <Button
+                                    onClick={() => onConfirmEnd(service.id)}
+                                >
+                                    <Flag className="mr-1 size-4" />
+                                    Confirmar Fin
+                                </Button>
+                            )}
+                            {isToday && hasStarted && hasEnded && (
+                                <span className="self-center text-sm text-muted-foreground">
+                                    Servicio completado
+                                </span>
+                            )}
+                        </div>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
