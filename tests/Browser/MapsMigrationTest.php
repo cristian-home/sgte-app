@@ -53,7 +53,7 @@ test('service create form renders the LocationField and opens the Google map pic
     });
 });
 
-test('service detail page shows Google static-map previews instead of the placeholder', function (): void {
+test('service detail page shows a single Google static-map route preview', function (): void {
     $user = mapsSuperAdmin();
     $service = Service::factory()->create([
         'origin_coordinates' => '4.6679000,-74.0541000',
@@ -66,15 +66,14 @@ test('service detail page shows Google static-map previews instead of the placeh
         $browser->loginAs($user)
             ->visit('/services/'.$service->id)
             ->waitForText('Detalle de la Ruta')
-            // The labels render via CSS `uppercase`, so check the HTML
-            // source (mixed-case in the DOM) rather than rendered text.
-            ->assertSourceHas('Mapa del Origen')
-            ->assertSourceHas('Mapa del Destino')
             ->assertSourceMissing('Mapa en desarrollo')
-            // The static-map previews are <img>s pointing at the
-            // Maps Static API.
+            ->assertSourceMissing('Mapa del Origen')
+            ->assertSourceMissing('Mapa del Destino')
+            // A single static-map <img> framing the trip, with the
+            // alt text exposed by RouteStaticMap.
             ->assertSourceHas('maps.googleapis.com/maps/api/staticmap')
-            ->screenshot('enh-001-service-detail-static-maps');
+            ->assertSourceHas('Mapa de la ruta entre el origen y el destino')
+            ->screenshot('enh-001-service-detail-route-map');
     });
 });
 
