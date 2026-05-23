@@ -15,6 +15,14 @@ interface OpenInMapsButtonProps {
     origin?: string | null;
     className?: string;
     variant?: 'default' | 'outline' | 'secondary' | 'ghost';
+    /**
+     * Force the trigger into a disabled state regardless of the
+     * destination coordinates. When `true` (or when the destination
+     * cannot be parsed) the button renders but the dropdown does not
+     * open — the caller can still place it in a layout grid without
+     * leaving a hole.
+     */
+    disabled?: boolean;
 }
 
 function parseCoordinates(value: string | null | undefined): string | null {
@@ -38,12 +46,11 @@ export default function OpenInMapsButton({
     origin,
     className,
     variant = 'default',
+    disabled = false,
 }: OpenInMapsButtonProps) {
     const dest = parseCoordinates(destination);
-    if (!dest) {
-        return null;
-    }
     const orig = parseCoordinates(origin);
+    const effectivelyDisabled = disabled || !dest;
 
     const googleUrl = orig
         ? `https://www.google.com/maps/dir/?api=1&origin=${orig}&destination=${dest}&travelmode=driving`
@@ -57,10 +64,11 @@ export default function OpenInMapsButton({
 
     return (
         <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+            <DropdownMenuTrigger asChild disabled={effectivelyDisabled}>
                 <Button
                     type="button"
                     variant={variant}
+                    disabled={effectivelyDisabled}
                     className={cn('flex-1', className)}
                 >
                     <Navigation className="mr-1 size-4" />

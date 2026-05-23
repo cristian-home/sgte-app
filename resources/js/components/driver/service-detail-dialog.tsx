@@ -244,8 +244,11 @@ export function ServiceDetailDialog({
                         )}
                     </div>
 
-                    <DialogFooter className="flex-wrap gap-2 sm:justify-between">
-                        <div className="flex flex-wrap gap-2">
+                    <DialogFooter className="!flex-col gap-2">
+                        {/* Row 1 — secondary actions, all always present so
+                            the layout stays stable across states. Each one
+                            is disabled when its gating condition fails. */}
+                        <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-3">
                             <OpenInMapsButton
                                 variant="outline"
                                 origin={service.origin_coordinates ?? null}
@@ -254,7 +257,12 @@ export function ServiceDetailDialog({
                                 }
                             />
 
-                            {!isClosed && (
+                            {isClosed ? (
+                                <Button variant="outline" disabled>
+                                    <AlertCircle className="mr-1 size-4" />
+                                    Registrar Novedad
+                                </Button>
+                            ) : (
                                 <Button variant="outline" asChild>
                                     <Link
                                         href={`/service-incidents/create?service_id=${service.id}`}
@@ -265,41 +273,84 @@ export function ServiceDetailDialog({
                                 </Button>
                             )}
 
-                            {isToday && !hasStarted && !isDeclined && (
-                                <Button
-                                    variant="outline"
-                                    onClick={() => setDeclineOpen(true)}
-                                    className="text-destructive hover:text-destructive"
-                                >
-                                    <Ban className="mr-1 size-4" />
-                                    Declinar servicio
-                                </Button>
-                            )}
+                            <Button
+                                variant="outline"
+                                onClick={() => setDeclineOpen(true)}
+                                disabled={
+                                    !isToday ||
+                                    hasStarted ||
+                                    isDeclined ||
+                                    isClosed
+                                }
+                                className="text-destructive hover:text-destructive"
+                            >
+                                <Ban className="mr-1 size-4" />
+                                Declinar servicio
+                            </Button>
                         </div>
 
-                        <div className="flex flex-wrap gap-2">
-                            {isToday && !hasStarted && !isDeclined && (
+                        {/* Row 2 — primary action, full width. Its label
+                            tracks the service's current lifecycle stage so
+                            the driver always sees what happens next (or
+                            why nothing can happen). */}
+                        {(() => {
+                            if (!isToday) {
+                                return (
+                                    <Button
+                                        className="w-full"
+                                        disabled
+                                        variant="secondary"
+                                    >
+                                        Disponible solo el d&iacute;a del
+                                        servicio
+                                    </Button>
+                                );
+                            }
+                            if (isDeclined) {
+                                return (
+                                    <Button
+                                        className="w-full"
+                                        disabled
+                                        variant="secondary"
+                                    >
+                                        <Ban className="mr-1 size-4" />
+                                        Servicio declinado
+                                    </Button>
+                                );
+                            }
+                            if (isClosed || (hasStarted && hasEnded)) {
+                                return (
+                                    <Button
+                                        className="w-full"
+                                        disabled
+                                        variant="secondary"
+                                    >
+                                        <CheckCircle2 className="mr-1 size-4" />
+                                        Servicio completado
+                                    </Button>
+                                );
+                            }
+                            if (hasStarted) {
+                                return (
+                                    <Button
+                                        className="w-full"
+                                        onClick={() => onConfirmEnd(service.id)}
+                                    >
+                                        <Flag className="mr-1 size-4" />
+                                        Confirmar Fin
+                                    </Button>
+                                );
+                            }
+                            return (
                                 <Button
+                                    className="w-full"
                                     onClick={() => onConfirmStart(service.id)}
                                 >
                                     <Play className="mr-1 size-4" />
                                     Confirmar Inicio
                                 </Button>
-                            )}
-                            {isToday && hasStarted && !hasEnded && (
-                                <Button
-                                    onClick={() => onConfirmEnd(service.id)}
-                                >
-                                    <Flag className="mr-1 size-4" />
-                                    Confirmar Fin
-                                </Button>
-                            )}
-                            {isToday && hasStarted && hasEnded && (
-                                <span className="self-center text-sm text-muted-foreground">
-                                    Servicio completado
-                                </span>
-                            )}
-                        </div>
+                            );
+                        })()}
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
