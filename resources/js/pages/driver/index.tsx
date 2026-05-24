@@ -81,7 +81,7 @@ export default function DriverDashboard({
                 // then absorbs the remaining height via `flex-1` and
                 // becomes its own scroll container, so the hour rail
                 // never spills past the window even on a 24h-tall day.
-                style={{ height: 'calc(100svh - 4rem)' }}
+                style={{ height: 'calc(100svh - 5rem)' }}
             >
                 {/* Compact header: title + date on the left, date
                     navigator on the right. Wraps on narrow widths. */}
