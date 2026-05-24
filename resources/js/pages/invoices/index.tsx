@@ -2,6 +2,7 @@ import { Head } from '@inertiajs/react';
 import { PlusIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { DataTable } from '@/components/data-table';
+import { ToolbarLabel } from '@/components/data-table/toolbar-label';
 import InvoiceDialog, {
     type EditableInvoice,
 } from '@/components/invoices/invoice-dialog';
@@ -124,9 +125,13 @@ export default function InvoicesIndex({
                     onClearFilters={clearFilters}
                     getRowClassName={rowTintFor}
                     actions={
-                        <Button onClick={openCreate} size="sm">
-                            <PlusIcon className="mr-2 size-4" />
-                            Crear Factura
+                        <Button
+                            onClick={openCreate}
+                            size="sm"
+                            aria-label="Crear Factura"
+                        >
+                            <PlusIcon className="size-4" />
+                            <ToolbarLabel>Crear Factura</ToolbarLabel>
                         </Button>
                     }
                 />

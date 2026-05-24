@@ -2,6 +2,7 @@ import { Head } from '@inertiajs/react';
 import { PlusIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { DataTable } from '@/components/data-table';
+import { ToolbarLabel } from '@/components/data-table/toolbar-label';
 import DriverDialog, {
     type EditableDriver,
 } from '@/components/drivers/driver-dialog';
@@ -166,9 +167,13 @@ export default function DriversIndex({
                     onClearFilters={clearFilters}
                     getRowClassName={rowTintFor}
                     actions={
-                        <Button onClick={openCreate} size="sm">
-                            <PlusIcon className="mr-2 size-4" />
-                            Crear Conductor
+                        <Button
+                            onClick={openCreate}
+                            size="sm"
+                            aria-label="Crear Conductor"
+                        >
+                            <PlusIcon className="size-4" />
+                            <ToolbarLabel>Crear Conductor</ToolbarLabel>
                         </Button>
                     }
                 />

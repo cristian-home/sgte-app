@@ -2,6 +2,7 @@ import { Head } from '@inertiajs/react';
 import { PlusIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { DataTable } from '@/components/data-table';
+import { ToolbarLabel } from '@/components/data-table/toolbar-label';
 import { type MunicipalityOption } from '@/components/municipality-combobox';
 import ThirdPartyDialog, {
     type EditableThirdParty,
@@ -147,9 +148,13 @@ export default function ThirdPartiesIndex({
                     onFilterChange={setFilter}
                     onClearFilters={clearFilters}
                     actions={
-                        <Button onClick={openCreate} size="sm">
-                            <PlusIcon className="mr-2 size-4" />
-                            Crear Tercero
+                        <Button
+                            onClick={openCreate}
+                            size="sm"
+                            aria-label="Crear Tercero"
+                        >
+                            <PlusIcon className="size-4" />
+                            <ToolbarLabel>Crear Tercero</ToolbarLabel>
                         </Button>
                     }
                 />

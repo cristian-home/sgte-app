@@ -1,6 +1,7 @@
 import { Head, router } from '@inertiajs/react';
 import { PlusIcon } from 'lucide-react';
 import { DataTable } from '@/components/data-table';
+import { ToolbarLabel } from '@/components/data-table/toolbar-label';
 import { Button } from '@/components/ui/button';
 import { useServerTable } from '@/hooks/use-server-table';
 import AppLayout from '@/layouts/app-layout';
@@ -117,9 +118,10 @@ export default function ServiceIncidentsIndex({
                                 router.visit(serviceIncidents.create().url)
                             }
                             size="sm"
+                            aria-label="Crear Novedad"
                         >
-                            <PlusIcon className="mr-2 size-4" />
-                            Crear Novedad
+                            <PlusIcon className="size-4" />
+                            <ToolbarLabel>Crear Novedad</ToolbarLabel>
                         </Button>
                     }
                 />

@@ -56,7 +56,7 @@ export function DataTableToolbar<TData>({
 
     return (
         <div className="flex flex-col gap-2">
-            <div className="flex items-start justify-between gap-4">
+            <div className="@container/toolbar flex items-start justify-between gap-4">
                 <div className="relative min-w-37.5 flex-1 lg:min-w-62.5">
                     <Search className="pointer-events-none absolute top-1/2 left-2 size-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
