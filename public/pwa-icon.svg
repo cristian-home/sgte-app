@@ -1,10 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <!--
-    Monochrome silhouette for the Android themed icon. The platform tints
-    this layer at runtime; we draw the path in solid black on a transparent
-    background per the adaptive-icon convention.
-  -->
-  <g transform="translate(76 67) scale(9)" fill="#000000">
+  <rect width="512" height="512" rx="80" ry="80" fill="#DF9C00"/>
+  <g transform="translate(76 67) scale(9)" fill="#FFFFFF">
     <path
       fill-rule="evenodd"
       clip-rule="evenodd"

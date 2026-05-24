@@ -4,26 +4,22 @@ import {
 } from '@vite-pwa/assets-generator/config';
 
 /**
- * Source images for the PWA icon set.
+ * Source image for the PWA icon set.
  *
- * - `transparent`: full-color SVG used to derive the standard PWA icons
- *   (pwa-64, pwa-192, pwa-512) and the Apple touch icon. The amber
- *   rounded-square in the SVG matches the dark-mode sidebar-primary token
- *   (oklch(73.902% 0.15403 77.923) ≈ #DF9C00).
- * - `maskable`: same source as `transparent` — the rounded-square already
- *   covers the safe area required by Android adaptive icons.
- * - `monochrome`: black-on-transparent silhouette used for the Android
- *   themed icon (the OS recolors it at runtime).
+ * `public/pwa-icon.svg` is the amber rounded-square containing the SGTE logo
+ * (matches the dark-mode sidebar-primary token, oklch(73.902% 0.15403 77.923)
+ * ≈ #DF9C00). The generator emits PNGs alongside it in `public/`:
  *
- * Regenerate the PNGs after editing the SVG sources:
+ *   - pwa-64x64.png, pwa-192x192.png, pwa-512x512.png
+ *   - maskable-icon-512x512.png  (auto-padded to the maskable safe area)
+ *   - apple-touch-icon-180x180.png
+ *   - favicon.ico
+ *
+ * Regenerate after editing the source SVG:
  *
  *     npm run generate-pwa-assets
  */
 export default defineConfig({
     preset,
-    images: {
-        transparent: 'resources/pwa/icon.svg',
-        maskable: 'resources/pwa/icon.svg',
-        monochrome: 'resources/pwa/icon-monochrome.svg',
-    },
+    images: ['public/pwa-icon.svg'],
 });
