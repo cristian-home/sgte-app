@@ -8,9 +8,11 @@ use App\Models\Contract;
 use App\Models\Driver;
 use App\Models\Invoice;
 use App\Models\Service;
+use App\Models\ServiceIncident;
 use App\Models\ThirdParty;
 use App\Models\User;
 use App\Models\Vehicle;
+use App\Models\VehicleLocation;
 use Illuminate\Support\Carbon;
 
 use function Pest\Laravel\actingAs;
@@ -327,6 +329,140 @@ test('dashboard sorts contract alerts into the 10-row cap alongside vehicles and
     $kinds = array_unique(array_map(fn ($a) => $a['kind'], $alerts));
     sort($kinds);
     expect($kinds)->toBe(['contract', 'driver', 'vehicle']);
+});
+
+test('trends.services returns 14 entries ending today, zero-filling empty days', function () {
+    $user = User::factory()->create();
+    $user->assignRole(Role::ADMIN->value);
+
+    Service::factory()->count(2)->create([
+        'service_date' => Carbon::today(),
+    ]);
+    Service::factory()->create([
+        'service_date' => Carbon::today()->subDays(3),
+    ]);
+
+    actingAs($user);
+
+    $payload = get(route('dashboard'))->viewData('page')['props']['trends']['services'];
+
+    expect($payload)->toHaveCount(14);
+    expect(end($payload)['date'])->toBe(Carbon::today()->toDateString());
+    expect(end($payload)['count'])->toBe(2);
+
+    $threeDaysAgo = collect($payload)
+        ->firstWhere('date', Carbon::today()->subDays(3)->toDateString());
+    expect($threeDaysAgo['count'])->toBe(1);
+
+    // A day with no services is still present with count=0.
+    $sevenDaysAgo = collect($payload)
+        ->firstWhere('date', Carbon::today()->subDays(7)->toDateString());
+    expect($sevenDaysAgo['count'])->toBe(0);
+});
+
+test('todayServices lists only services scheduled for today', function () {
+    $user = User::factory()->create();
+    $user->assignRole(Role::ADMIN->value);
+
+    Service::factory()->create(['service_date' => Carbon::today()]);
+    Service::factory()->create(['service_date' => Carbon::today()]);
+    Service::factory()->create(['service_date' => Carbon::today()->subDay()]);
+
+    actingAs($user);
+
+    $payload = get(route('dashboard'))->viewData('page')['props']['todayServices'];
+
+    expect($payload)->toHaveCount(2);
+    foreach ($payload as $row) {
+        expect($row)->toHaveKeys([
+            'id', 'vehicle_plate', 'planned_start_at',
+            'planned_duration_min', 'timezone', 'status',
+        ]);
+    }
+});
+
+test('activeVehicles surfaces vehicles with an open service today + recent location', function () {
+    $user = User::factory()->create();
+    $user->assignRole(Role::ADMIN->value);
+
+    $vehicle = Vehicle::factory()->create(['plate' => 'ACT-001']);
+    $service = Service::factory()->create([
+        'vehicle_id' => $vehicle->id,
+        'service_date' => Carbon::today(),
+        'service_status' => ServiceStatus::Open->value,
+    ]);
+    VehicleLocation::factory()->create([
+        'vehicle_id' => $vehicle->id,
+        'service_id' => $service->id,
+        'recorded_at' => now(),
+    ]);
+
+    actingAs($user);
+
+    $payload = get(route('dashboard'))->viewData('page')['props']['activeVehicles'];
+
+    expect($payload)->toHaveCount(1);
+    expect($payload[0]['vehicle_plate'])->toBe('ACT-001');
+    expect($payload[0]['location'])->toHaveKeys(['lat', 'lng', 'recorded_at']);
+});
+
+test('overdueInvoices returns top 5 oldest-first with customer name and value', function () {
+    $user = User::factory()->create();
+    $user->assignRole(Role::ADMIN->value);
+
+    $customer = ThirdParty::factory()->create(['company_name' => 'Cliente X SAS']);
+
+    $oldest = Invoice::factory()->create([
+        'third_party_id' => $customer->id,
+        'payment_status' => PaymentStatus::Overdue->value,
+        'issue_date' => Carbon::today()->subDays(45),
+    ]);
+    Invoice::factory()->create([
+        'third_party_id' => $customer->id,
+        'payment_status' => PaymentStatus::Overdue->value,
+        'issue_date' => Carbon::today()->subDays(10),
+    ]);
+    Invoice::factory()->create([
+        'third_party_id' => $customer->id,
+        'payment_status' => PaymentStatus::Pending->value,
+        'issue_date' => Carbon::today()->subDays(30),
+    ]);
+
+    actingAs($user);
+
+    $payload = get(route('dashboard'))->viewData('page')['props']['overdueInvoices'];
+
+    expect($payload)->toHaveCount(2);
+    expect($payload[0]['id'])->toBe($oldest->id);
+    expect($payload[0]['customer_name'])->toBe('Cliente X SAS');
+    expect($payload[0]['days_since_issue'])->toBeGreaterThanOrEqual(45);
+});
+
+test('incidents_today counts only incidents reported today in operation TZ', function () {
+    $user = User::factory()->create();
+    $user->assignRole(Role::ADMIN->value);
+
+    ServiceIncident::factory()->create([
+        'reported_at' => now(),
+        'affects_billing' => true,
+        'is_driver_report' => false,
+    ]);
+    ServiceIncident::factory()->create([
+        'reported_at' => now(),
+        'affects_billing' => false,
+        'is_driver_report' => true,
+    ]);
+    ServiceIncident::factory()->create([
+        'reported_at' => now()->subDays(2),
+    ]);
+
+    actingAs($user);
+
+    $payload = get(route('dashboard'))->viewData('page')['props']['kpis']['incidents_today'];
+
+    expect($payload['total'])->toBe(2);
+    expect($payload['affects_billing'])->toBe(1);
+    expect($payload['from_driver'])->toBe(1);
 });
 
 test('authenticated users without permission cannot visit the dashboard', function () {
