@@ -46,31 +46,19 @@ export default defineConfig({
                 // Theme color matches `--primary` (`oklch(0.216 0.006 56.043)`)
                 // — the deep stone tone used across the chrome.
                 theme_color: '#292524',
-                icons: [
-                    // TODO(pwa-icons): generate these PNGs from the brand assets.
-                    // Required: 192x192, 512x512, and a 512x512 maskable variant.
-                    // Drop them into `public/icons/` with the exact filenames
-                    // below. `public/apple-touch-icon.png` and `public/favicon.svg`
-                    // are the closest existing references.
-                    {
-                        src: '/icons/pwa-192.png',
-                        sizes: '192x192',
-                        type: 'image/png',
-                        purpose: 'any',
-                    },
-                    {
-                        src: '/icons/pwa-512.png',
-                        sizes: '512x512',
-                        type: 'image/png',
-                        purpose: 'any',
-                    },
-                    {
-                        src: '/icons/pwa-maskable-512.png',
-                        sizes: '512x512',
-                        type: 'image/png',
-                        purpose: 'maskable',
-                    },
-                ],
+                // `icons` are intentionally omitted here — `pwaAssets` below
+                // loads `pwa-assets.config.ts` and overrides the manifest's
+                // icon entries with the generator's output (`pwa-64x64.png`,
+                // `pwa-192x192.png`, `pwa-512x512.png`,
+                // `maskable-icon-512x512.png`, `apple-touch-icon.png`).
+            },
+            // Generate PWA icons from `resources/pwa/icon*.svg` via the
+            // companion `pwa-assets.config.ts`. Run
+            // `npm run generate-pwa-assets` after editing the SVG sources;
+            // generated PNGs live in `public/` and are committed.
+            pwaAssets: {
+                config: true,
+                overrideManifestIcons: true,
             },
             workbox: {
                 // Never serve a cached navigation response for auth, API, websocket
