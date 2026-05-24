@@ -81,7 +81,7 @@ function GanttHourHeader() {
             {/* Spacer mirrors the plate column in GanttRow so hour cells
                 align with the track that lives at the same flex slot. */}
             <div className="w-18 shrink-0" />
-            <div className="flex flex-1 border-b">
+            <div className="flex flex-1 items-center gap-0 border-b">
                 {HOUR_LABELS.map((label, i) => {
                     // Progressive label density via the `@container/gantt`
                     // scope on the wrapper. The cells keep their flex-1
@@ -97,14 +97,14 @@ function GanttHourHeader() {
                         i % 4 === 0
                             ? ''
                             : i % 2 === 0
-                              ? 'hidden @md/gantt:inline'
-                              : 'hidden @lg/gantt:inline';
+                              ? 'hidden @lg/gantt:flex'
+                              : 'hidden @3xl/gantt:flex';
                     return (
                         <div
+                            className={`${labelVisibility} flex flex-1 justify-center border-l first:border-0`}
                             key={label}
-                            className="flex-1 border-l py-1 text-center first:border-l-0"
                         >
-                            <span className={labelVisibility}>{label}</span>
+                            <span>{label}</span>
                         </div>
                     );
                 })}
@@ -132,7 +132,10 @@ function GanttRow({
             </div>
             <div className="relative h-7 flex-1 rounded bg-muted/40">
                 {services.map((service) => {
-                    if (!service.planned_start_at || !service.planned_duration_min) {
+                    if (
+                        !service.planned_start_at ||
+                        !service.planned_duration_min
+                    ) {
                         return null;
                     }
                     const pos = serviceBarPosition(
@@ -147,7 +150,7 @@ function GanttRow({
                             key={service.id}
                             href={`/services/${service.id}`}
                             className={cn(
-                                'absolute top-0.5 bottom-0.5 flex items-center overflow-hidden rounded px-1 text-[10px] font-medium transition-opacity hover:opacity-80',
+                                'absolute inset-y-0.5 flex items-center overflow-hidden rounded px-1 text-[10px] font-medium transition-opacity hover:opacity-80',
                                 isOpen
                                     ? 'bg-primary/80 text-primary-foreground'
                                     : 'bg-muted text-muted-foreground',
@@ -159,10 +162,7 @@ function GanttRow({
                             title={`#${service.id} ${service.origin_label ?? ''}`}
                         >
                             <span className="truncate">
-                                #{service.id}
-                                {service.origin_label
-                                    ? ` · ${service.origin_label}`
-                                    : ''}
+                                {service.origin_label}
                             </span>
                         </Link>
                     );
