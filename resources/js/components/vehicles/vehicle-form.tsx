@@ -148,7 +148,7 @@ export default function VehicleForm({
                         }
                         maxLength={6}
                         placeholder="ABC123"
-                        className="font-mono uppercase tracking-wider"
+                        className="font-mono tracking-wider uppercase"
                         autoCapitalize="characters"
                     />
                     <InputError message={errors.plate} />
@@ -161,9 +161,7 @@ export default function VehicleForm({
                     <PhoneInput
                         id={id('mobile_number')}
                         value={data.mobile_number}
-                        onValueChange={(raw) =>
-                            setData('mobile_number', raw)
-                        }
+                        onValueChange={(raw) => setData('mobile_number', raw)}
                         invalid={invalid('mobile_number')}
                     />
                     <InputError message={errors.mobile_number} />
@@ -281,9 +279,7 @@ export default function VehicleForm({
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
                     data-error={invalid('engine_number')}
                 >
-                    <Label htmlFor={id('engine_number')}>
-                        Número de Motor
-                    </Label>
+                    <Label htmlFor={id('engine_number')}>Número de Motor</Label>
                     <Input
                         id={id('engine_number')}
                         value={data.engine_number}
@@ -442,7 +438,7 @@ export default function VehicleForm({
                                 key={opt.value}
                                 id={`${id('status')}-${opt.value}`}
                                 value={opt.value}
-                                className="h-full !items-center"
+                                className="h-full items-center!"
                             >
                                 <ChoiceboxItemHeader>
                                     <ChoiceboxItemTitle className="flex items-center gap-2">

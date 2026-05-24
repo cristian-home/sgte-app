@@ -94,7 +94,6 @@ export default function Login({ status, canResetPassword }: Props) {
                                 Iniciar sesión
                             </Button>
                         </div>
-
                     </>
                 )}
             </Form>

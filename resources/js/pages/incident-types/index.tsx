@@ -105,9 +105,7 @@ export default function IncidentTypesIndex({
                     onEdit={() => openEdit(row.original)}
                     onDelete={() =>
                         router.delete(
-                            IncidentTypeController.destroy.url(
-                                row.original.id,
-                            ),
+                            IncidentTypeController.destroy.url(row.original.id),
                             { preserveScroll: true },
                         )
                     }

@@ -72,6 +72,7 @@ export default function ThirdPartiesIndex({
     municipalities: MunicipalityOption[];
     documentTypes: DocumentTypeOption[];
 }) {
+    'use no memo';
     const [dialogOpen, setDialogOpen] = useState(false);
     const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
     const [selectedThirdParty, setSelectedThirdParty] =

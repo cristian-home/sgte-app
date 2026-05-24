@@ -642,7 +642,7 @@ export default function LocationField({
                     {showDropdown && (
                         <div
                             className={cn(
-                                'absolute top-full right-0 left-0 z-50 mt-1 max-h-72 overflow-auto',
+                                'absolute inset-x-0 top-full z-50 mt-1 max-h-72 overflow-auto',
                                 'rounded-md border bg-popover shadow-md',
                             )}
                         >

@@ -284,7 +284,7 @@ function MapPickerBody({
                                 ? ColorScheme.DARK
                                 : ColorScheme.LIGHT
                         }
-                        className="h-full w-full"
+                        className="size-full"
                         onClick={(ev: MapMouseEvent) => {
                             const ll = ev.detail.latLng;
                             if (ll) {

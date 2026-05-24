@@ -104,6 +104,7 @@ export default function DaySummaryIndex({
     const [executing, setExecuting] = useState(false);
     const isExecuted = dayStatus?.status === 'executed';
 
+    // eslint-disable-next-line react-hooks/incompatible-library
     const table = useReactTable({
         data: services,
         columns,
@@ -155,18 +156,18 @@ export default function DaySummaryIndex({
                         <Button
                             variant="outline"
                             size="icon"
-                            className="h-8 w-8"
+                            className="size-8"
                             onClick={() => navigate(addDays(date, -1))}
                         >
-                            <ChevronLeft className="h-4 w-4" />
+                            <ChevronLeft className="size-4" />
                         </Button>
                         <Button
                             variant="outline"
                             size="icon"
-                            className="h-8 w-8"
+                            className="size-8"
                             onClick={() => navigate(addDays(date, 1))}
                         >
-                            <ChevronRight className="h-4 w-4" />
+                            <ChevronRight className="size-4" />
                         </Button>
                     </div>
 

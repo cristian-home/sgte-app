@@ -152,9 +152,11 @@ function ClientSideDataTable<TData, TValue>({
     searchPlaceholder = 'Buscar...',
     toolbar,
 }: ClientSideProps<TData, TValue>) {
+    'use no memo';
     const [sorting, setSorting] = useState<SortingState>([]);
     const [globalFilter, setGlobalFilter] = useState('');
 
+    // eslint-disable-next-line react-hooks/incompatible-library
     const table = useReactTable({
         data,
         columns,

@@ -64,17 +64,17 @@ if (import.meta.env.PROD) {
                     // calling `updateSW(true)` to activate the new SW.
                     // For now we just surface that an update is available
                     // so developers can confirm the SW lifecycle works.
-                     
-                    console.info('[PWA] New content available, refresh to update.');
+
+                    console.info(
+                        '[PWA] New content available, refresh to update.',
+                    );
                 },
                 onOfflineReady() {
-                     
                     console.info('[PWA] App shell cached for offline use.');
                 },
             });
         })
         .catch((error) => {
-             
             console.warn('[PWA] Failed to register service worker', error);
         });
 }

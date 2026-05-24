@@ -89,6 +89,7 @@ export default function DriversIndex({
     pensionFunds: CatalogOption[];
     severanceFunds: CatalogOption[];
 }) {
+    'use no memo';
     const [dialogOpen, setDialogOpen] = useState(false);
     const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
     const [selectedDriver, setSelectedDriver] = useState<EditableDriver | null>(

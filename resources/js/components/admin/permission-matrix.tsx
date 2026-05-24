@@ -134,7 +134,7 @@ export function PermissionMatrix({
                                             <div className="text-sm font-medium">
                                                 {perm.label}
                                             </div>
-                                            <div className="text-xs leading-snug text-muted-foreground">
+                                            <div className="text-xs/snug text-muted-foreground">
                                                 {perm.description}
                                             </div>
                                             <div className="mt-0.5 font-mono text-[10.5px] text-muted-foreground/70">

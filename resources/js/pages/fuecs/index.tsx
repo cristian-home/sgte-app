@@ -27,6 +27,7 @@ export default function FuecsIndex({
 }: {
     fuecs: PaginatedData<FuecRow>;
 }) {
+    'use no memo';
     const {
         table,
         paginatedData,

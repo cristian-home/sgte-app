@@ -198,7 +198,7 @@ export default function ContractForm({
                                     aria-label="Crear nuevo cliente"
                                     title="Crear nuevo cliente"
                                 >
-                                    <Plus className="h-4 w-4" />
+                                    <Plus className="size-4" />
                                 </Button>
                             )}
                     </div>
@@ -225,9 +225,7 @@ export default function ContractForm({
                 <Choicebox
                     id={id('contract_object')}
                     value={data.contract_object}
-                    onValueChange={(value) =>
-                        setData('contract_object', value)
-                    }
+                    onValueChange={(value) => setData('contract_object', value)}
                     aria-invalid={invalid('contract_object')}
                     className="grid grid-cols-2 gap-2 sm:grid-cols-4"
                 >
@@ -254,7 +252,6 @@ export default function ContractForm({
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
-
                 <div className="grid gap-2">
                     <Label htmlFor={id('start_date')}>
                         Fecha de Inicio
@@ -341,7 +338,7 @@ export default function ContractForm({
                                 key={opt.value}
                                 id={`${id('billing_unit_type')}-${opt.value}`}
                                 value={opt.value}
-                                className="h-full !items-center"
+                                className="h-full items-center!"
                             >
                                 <ChoiceboxItemHeader>
                                     <ChoiceboxItemTitle className="flex items-center gap-2">

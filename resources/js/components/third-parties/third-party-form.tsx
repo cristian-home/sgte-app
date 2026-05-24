@@ -140,10 +140,7 @@ export default function ThirdPartyForm({
                             value={data.identification_number}
                             aria-invalid={!!errors.identification_number}
                             onChange={(e) =>
-                                setData(
-                                    'identification_number',
-                                    e.target.value,
-                                )
+                                setData('identification_number', e.target.value)
                             }
                         />
                     ) : (

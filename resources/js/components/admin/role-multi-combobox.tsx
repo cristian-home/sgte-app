@@ -106,7 +106,7 @@ export function RoleMultiCombobox({
                     <ChevronDown className="ml-2 size-4 shrink-0 text-muted-foreground" />
                 </button>
             </PopoverTrigger>
-            <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+            <PopoverContent className="w-(--radix-popover-trigger-width) p-0">
                 <Command>
                     <CommandInput placeholder="Buscar rol…" />
                     <CommandList>

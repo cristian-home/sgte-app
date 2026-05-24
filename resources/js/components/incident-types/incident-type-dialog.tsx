@@ -132,7 +132,10 @@ export default function IncidentTypeDialog({
                                 maxLength={10}
                                 aria-invalid={!!errors.code}
                                 onChange={(e) =>
-                                    setData('code', e.target.value.toUpperCase())
+                                    setData(
+                                        'code',
+                                        e.target.value.toUpperCase(),
+                                    )
                                 }
                                 className="uppercase"
                                 autoCapitalize="characters"

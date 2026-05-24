@@ -76,7 +76,7 @@ export function DataTableToolbar<TData>({
                 <Separator label="Filtros:" labelPosition="start" />
             )}
             {hasFilterRow && (
-                <div className="scroll-fade-x flex items-center gap-2 overflow-y-hidden [&>*]:shrink-0">
+                <div className="scroll-fade-x flex items-center gap-2 overflow-y-hidden *:shrink-0">
                     {filters?.map((filter) => (
                         <DataTableFacetedFilter
                             key={filter.name}

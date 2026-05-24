@@ -125,11 +125,11 @@ export function ServiceTimelineBar({
             {/* Legend */}
             <div className="flex gap-4 text-[10px] text-muted-foreground">
                 <div className="flex items-center gap-1">
-                    <div className="h-2 w-2 rounded-full bg-blue-500/70" />
+                    <div className="size-2 rounded-full bg-blue-500/70" />
                     <span>Planificado</span>
                 </div>
                 <div className="flex items-center gap-1">
-                    <div className="h-2 w-2 rounded-full bg-emerald-500/70" />
+                    <div className="size-2 rounded-full bg-emerald-500/70" />
                     <span>Real</span>
                 </div>
             </div>

@@ -177,7 +177,8 @@ export default function ImportsCreate({ types }: { types: TypeOption[] }) {
                                                         seleccionar
                                                     </div>
                                                     <div className="text-xs text-muted-foreground">
-                                                        CSV o XLSX · máximo 20 MB
+                                                        CSV o XLSX · máximo 20
+                                                        MB
                                                     </div>
                                                 </>
                                             )}

@@ -42,20 +42,20 @@ export function DateNavigator({
                 <Button
                     variant="outline"
                     size="icon"
-                    className="h-8 w-8"
+                    className="size-8"
                     onClick={() => onDateChange(addDays(date, -1))}
                     aria-label="Día anterior"
                 >
-                    <ChevronLeft className="h-4 w-4" />
+                    <ChevronLeft className="size-4" />
                 </Button>
                 <Button
                     variant="outline"
                     size="icon"
-                    className="h-8 w-8"
+                    className="size-8"
                     onClick={() => onDateChange(addDays(date, 1))}
                     aria-label="Día siguiente"
                 >
-                    <ChevronRight className="h-4 w-4" />
+                    <ChevronRight className="size-4" />
                 </Button>
             </div>
 
