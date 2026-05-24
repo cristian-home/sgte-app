@@ -39,7 +39,7 @@ test('admin sees dashboard with KPIs and document alerts', function () {
         'service_status' => ServiceStatus::Closed->value,
     ]);
 
-    Invoice::factory()->create(['payment_status' => PaymentStatus::Pending->value]);
+    Invoice::factory()->create(['payment_status' => PaymentStatus::Overdue->value]);
 
     actingAs($user);
 
@@ -50,7 +50,12 @@ test('admin sees dashboard with KPIs and document alerts', function () {
                 ->component('dashboard')
                 ->has('kpis.vehicles', fn ($bucket) => $bucket->where('total', 2)->where('active', 1)->where('maintenance', 1)->etc())
                 ->has('kpis.services_today', fn ($bucket) => $bucket->where('total', 2)->where('open', 1)->where('closed', 1)->etc())
-                ->has('kpis.invoices_pending', fn ($bucket) => $bucket->where('total', 1)->etc())
+                ->has('kpis.incidents_today', fn ($bucket) => $bucket->where('total', 0)->where('affects_billing', 0)->where('from_driver', 0))
+                ->has('trends.services', 14)
+                ->has('trends.incidents', 14)
+                ->has('todayServices')
+                ->has('activeVehicles')
+                ->has('overdueInvoices', 1)
                 ->has('documentAlerts')
         );
 });
