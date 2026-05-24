@@ -94,58 +94,64 @@ export function ServiceDetailDialog({
     return (
         <>
             <Dialog open={open} onOpenChange={onOpenChange}>
-                <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
-                    <DialogHeader>
-                        <div className="flex items-start justify-between gap-3">
-                            <div className="flex items-start gap-3">
-                                <div className="flex size-12 shrink-0 items-center justify-center rounded-lg border bg-muted/40">
-                                    <Truck className="size-6 text-muted-foreground" />
+                <DialogContent className="flex max-h-[90svh] flex-col gap-0 p-0 sm:max-w-2xl">
+                    {/* Sticky header — vehicle identity + status + the
+                        origin→destination ruler. Anchored above the
+                        scroll area so the driver never loses track of
+                        which service they're looking at. */}
+                    <div className="shrink-0 space-y-4 border-b px-6 pt-6 pb-4">
+                        <DialogHeader>
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="flex items-start gap-3">
+                                    <div className="flex size-12 shrink-0 items-center justify-center rounded-lg border bg-muted/40">
+                                        <Truck className="size-6 text-muted-foreground" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <DialogTitle className="text-xl leading-tight">
+                                            {service.vehicle?.plate ?? '—'}
+                                        </DialogTitle>
+                                        <DialogDescription className="mt-0.5">
+                                            {clientName(service)}
+                                        </DialogDescription>
+                                    </div>
                                 </div>
-                                <div className="min-w-0">
-                                    <DialogTitle className="text-xl leading-tight">
-                                        {service.vehicle?.plate ?? '—'}
-                                    </DialogTitle>
-                                    <DialogDescription className="mt-0.5">
-                                        {clientName(service)}
-                                    </DialogDescription>
-                                </div>
-                            </div>
-                            <div className="flex shrink-0 items-center gap-2">
-                                {incidentCount > 0 && (
-                                    <Badge variant="destructive">
-                                        {incidentCount} novedad
-                                        {incidentCount > 1 ? 'es' : ''}
-                                    </Badge>
-                                )}
-                                <Badge
-                                    variant={isClosed ? 'default' : 'secondary'}
-                                    className="gap-1.5"
-                                >
-                                    <span
-                                        className={
-                                            isClosed
-                                                ? 'size-1.5 rounded-full bg-current'
-                                                : 'size-1.5 rounded-full bg-foreground'
+                                <div className="flex shrink-0 items-center gap-2 pr-6">
+                                    {incidentCount > 0 && (
+                                        <Badge variant="destructive">
+                                            {incidentCount} novedad
+                                            {incidentCount > 1 ? 'es' : ''}
+                                        </Badge>
+                                    )}
+                                    <Badge
+                                        variant={
+                                            isClosed ? 'default' : 'secondary'
                                         }
-                                        aria-hidden="true"
-                                    />
-                                    {ServiceStatusLabel[
-                                        service.service_status as keyof typeof ServiceStatusLabel
-                                    ] ?? service.service_status}
-                                </Badge>
+                                        className="gap-1.5"
+                                    >
+                                        <span
+                                            className={
+                                                isClosed
+                                                    ? 'size-1.5 rounded-full bg-current'
+                                                    : 'size-1.5 rounded-full bg-foreground'
+                                            }
+                                            aria-hidden="true"
+                                        />
+                                        {ServiceStatusLabel[
+                                            service.service_status as keyof typeof ServiceStatusLabel
+                                        ] ?? service.service_status}
+                                    </Badge>
+                                </div>
                             </div>
-                        </div>
-                    </DialogHeader>
+                        </DialogHeader>
 
-                    <div className="space-y-4">
                         {/* Route row — A pin · origin ─────► B pin · destination */}
                         <div className="flex items-center gap-3 text-sm">
-                            <div className="flex shrink-0 items-center gap-2">
+                            <div className="flex min-w-0 shrink-0 items-center gap-2">
                                 <MapPin className="size-4 text-muted-foreground" />
                                 <span className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
                                     A
                                 </span>
-                                <span className="text-sm font-medium">
+                                <span className="truncate text-sm font-medium">
                                     {municipalityName(
                                         service.origin_municipality,
                                     )}
@@ -155,22 +161,28 @@ export function ServiceDetailDialog({
                                 <div className="h-px w-full bg-border" />
                                 <div className="absolute top-1/2 right-0 size-0 -translate-y-1/2 border-y-[4px] border-l-[6px] border-y-transparent border-l-border" />
                             </div>
-                            <div className="flex shrink-0 items-center gap-2">
+                            <div className="flex min-w-0 shrink-0 items-center gap-2">
                                 <MapPin className="size-4 text-muted-foreground" />
                                 <span className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
                                     B
                                 </span>
-                                <span className="text-sm font-medium">
+                                <span className="truncate text-sm font-medium">
                                     {municipalityName(
                                         service.destination_municipality,
                                     )}
                                 </span>
                             </div>
                         </div>
+                    </div>
 
+                    {/* Scrollable body — only this part scrolls when the
+                        content exceeds the dialog's max height. */}
+                    <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-4">
                         <RouteStaticMap
                             origin={service.origin_coordinates ?? null}
-                            destination={service.destination_coordinates ?? null}
+                            destination={
+                                service.destination_coordinates ?? null
+                            }
                             geometry={service.route_geometry ?? null}
                             width={560}
                             height={260}
@@ -228,9 +240,15 @@ export function ServiceDetailDialog({
                                 )}
                             </div>
                         </div>
+                    </div>
 
+                    {/* Sticky footer — declined banner (when applicable),
+                        secondary action grid, and the full-width primary
+                        CTA. Always visible regardless of how long the
+                        scrollable body grows. */}
+                    <DialogFooter className="!flex-col shrink-0 gap-2 border-t px-6 pt-4 pb-6">
                         {isDeclined && (
-                            <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                            <div className="w-full rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
                                 <p className="font-medium">
                                     Servicio declinado &mdash; pendiente de
                                     reasignaci&oacute;n
@@ -242,9 +260,6 @@ export function ServiceDetailDialog({
                                 )}
                             </div>
                         )}
-                    </div>
-
-                    <DialogFooter className="!flex-col gap-2">
                         {/* Row 1 — secondary actions, all always present so
                             the layout stays stable across states. Each one
                             is disabled when its gating condition fails. */}
