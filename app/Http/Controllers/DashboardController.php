@@ -134,19 +134,31 @@ class DashboardController extends Controller
     /**
      * Daily count of services for the trailing TREND_WINDOW_DAYS, including
      * today. Zero-fills missing days so the sparkline renders an even
-     * timeline. Grouped on `service_date_local` which is already projected
-     * to the row's operation TZ.
+     * timeline. Bucketed in PHP from the raw `service_date_local` values
+     * because the column comes back as a `date` on Postgres but as a
+     * datetime string on SQLite (test env) — bucketing client-side keeps
+     * the key shape consistent across drivers.
      *
      * @return array<int, array{date: string, count: int}>
      */
     private function buildServiceTrend(string $todayString): array
     {
         $start = Carbon::parse($todayString)->subDays(self::TREND_WINDOW_DAYS - 1);
-        $counts = Service::query()
-            ->whereBetween('service_date_local', [$start->toDateString(), $todayString])
-            ->selectRaw('service_date_local as date, count(*) as count')
-            ->groupBy('service_date_local')
-            ->pluck('count', 'date')
+
+        // `service_date_local` stores a date column on Postgres but a
+        // string on SQLite; `whereBetween` works for both as long as
+        // the bounds are date strings. We bucket in PHP so the key
+        // shape (`Y-m-d`) is consistent across drivers.
+        $rows = Service::query()
+            ->whereBetween('service_date_local', [
+                Carbon::parse($start->toDateString())->startOfDay(),
+                Carbon::parse($todayString)->endOfDay(),
+            ])
+            ->get(['service_date_local']);
+
+        $counts = $rows
+            ->groupBy(fn (Service $service) => Carbon::parse($service->service_date_local)->toDateString())
+            ->map(fn ($group) => $group->count())
             ->all();
 
         return $this->fillDateSeries($start, self::TREND_WINDOW_DAYS, $counts);
