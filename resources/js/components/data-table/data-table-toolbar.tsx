@@ -75,7 +75,7 @@ export function DataTableToolbar<TData>({
                 </div>
             </div>
             {hasFilterRow && (
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="scroll-fade-x flex items-center gap-2 overflow-y-hidden [&>*]:shrink-0">
                     {filters?.map((filter) => (
                         <DataTableFacetedFilter
                             key={filter.name}
@@ -89,17 +89,19 @@ export function DataTableToolbar<TData>({
                         />
                     ))}
                     {extraFilters}
-                    {hasActiveFilters && (
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 px-2 lg:px-3"
-                            onClick={onClearFilters}
-                        >
-                            Limpiar
-                            <X className="ml-2 size-4" />
-                        </Button>
-                    )}
+                </div>
+            )}
+            {hasActiveFilters && (
+                <div>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 px-2 lg:px-3"
+                        onClick={onClearFilters}
+                    >
+                        Limpiar
+                        <X className="ml-2 size-4" />
+                    </Button>
                 </div>
             )}
         </div>
