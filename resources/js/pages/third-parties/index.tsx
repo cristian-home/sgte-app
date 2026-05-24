@@ -2,15 +2,12 @@ import { Head } from '@inertiajs/react';
 import { PlusIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { DataTable } from '@/components/data-table';
-import MunicipalityCombobox, {
-    type MunicipalityOption,
-} from '@/components/municipality-combobox';
+import { type MunicipalityOption } from '@/components/municipality-combobox';
 import ThirdPartyDialog, {
     type EditableThirdParty,
 } from '@/components/third-parties/third-party-dialog';
 import { type DocumentTypeOption } from '@/components/third-parties/third-party-form';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { useServerTable } from '@/hooks/use-server-table';
 import AppLayout from '@/layouts/app-layout';
 import thirdParties from '@/routes/third-parties';
@@ -24,7 +21,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Terceros', href: thirdParties.index().url },
 ];
 
-const thirdPartyFilters: FilterDefinition[] = [
+const STATIC_THIRD_PARTY_FILTERS: FilterDefinition[] = [
     {
         name: 'active',
         label: 'Estado',
@@ -97,6 +94,23 @@ export default function ThirdPartiesIndex({
         [],
     );
 
+    const thirdPartyFilters = useMemo<FilterDefinition[]>(
+        () => [
+            ...STATIC_THIRD_PARTY_FILTERS,
+            {
+                name: 'municipality_id',
+                label: 'Municipio',
+                options: municipalities.map((m) => ({
+                    value: String(m.id),
+                    label: m.department
+                        ? `${m.name} (${m.department.name})`
+                        : m.name,
+                })),
+            },
+        ],
+        [municipalities],
+    );
+
     const {
         table,
         paginatedData,
@@ -114,37 +128,10 @@ export default function ThirdPartiesIndex({
         meta: tableMeta,
     });
 
-    const selectedMunicipalityId =
-        activeFilters['municipality_id']?.[0] ?? null;
-
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Terceros" />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
-                <div className="flex flex-wrap items-end gap-2">
-                    <div className="flex flex-col gap-1">
-                        <Label
-                            htmlFor="third-parties-municipality"
-                            className="text-xs text-muted-foreground"
-                        >
-                            Municipio
-                        </Label>
-                        <MunicipalityCombobox
-                            id="third-parties-municipality"
-                            municipalities={municipalities}
-                            value={selectedMunicipalityId}
-                            onChange={(value) =>
-                                setFilter(
-                                    'municipality_id',
-                                    value ? [value] : [],
-                                )
-                            }
-                            placeholder="Todos los municipios"
-                            className="w-64"
-                        />
-                    </div>
-                </div>
-
                 <DataTable
                     table={table}
                     paginatedData={paginatedData}

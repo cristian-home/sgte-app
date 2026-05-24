@@ -7,12 +7,9 @@ import ContractDialog, {
 import { contractRowTint } from '@/components/contracts/contract-period-pill';
 import { DataTable } from '@/components/data-table';
 import { type MunicipalityOption } from '@/components/municipality-combobox';
-import ThirdPartyCombobox, {
-    type ThirdPartyOption,
-} from '@/components/third-parties/third-party-combobox';
+import { type ThirdPartyOption } from '@/components/third-parties/third-party-combobox';
 import { type DocumentTypeOption } from '@/components/third-parties/third-party-form';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { useServerTable } from '@/hooks/use-server-table';
 import AppLayout from '@/layouts/app-layout';
 import contracts from '@/routes/contracts';
@@ -26,7 +23,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Contratos', href: contracts.index().url },
 ];
 
-const contractFilters: FilterDefinition[] = [
+const STATIC_CONTRACT_FILTERS: FilterDefinition[] = [
     {
         name: 'contract_status',
         label: 'Estado',
@@ -102,6 +99,27 @@ export default function ContractsIndex({
         [],
     );
 
+    const contractFilters = useMemo<FilterDefinition[]>(
+        () => [
+            ...STATIC_CONTRACT_FILTERS,
+            {
+                name: 'third_party_id',
+                label: 'Cliente',
+                options: thirdParties
+                    .filter((tp) => tp.is_customer)
+                    .map((tp) => ({
+                        value: String(tp.id),
+                        label: tp.is_natural_person
+                            ? [tp.first_name, tp.first_lastname]
+                                  .filter(Boolean)
+                                  .join(' ') || '—'
+                            : (tp.company_name ?? '—'),
+                    })),
+            },
+        ],
+        [thirdParties],
+    );
+
     const {
         table,
         paginatedData,
@@ -119,37 +137,10 @@ export default function ContractsIndex({
         meta: tableMeta,
     });
 
-    const selectedThirdPartyId = activeFilters['third_party_id']?.[0] ?? null;
-
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Contratos" />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
-                <div className="flex flex-wrap items-end gap-2">
-                    <div className="flex flex-col gap-1">
-                        <Label
-                            htmlFor="contracts-third-party"
-                            className="text-xs text-muted-foreground"
-                        >
-                            Cliente
-                        </Label>
-                        <ThirdPartyCombobox
-                            id="contracts-third-party"
-                            thirdParties={thirdParties}
-                            role="customer"
-                            value={selectedThirdPartyId}
-                            onChange={(value) =>
-                                setFilter(
-                                    'third_party_id',
-                                    value ? [value] : [],
-                                )
-                            }
-                            placeholder="Todos los clientes"
-                            className="w-72"
-                        />
-                    </div>
-                </div>
-
                 <DataTable
                     table={table}
                     paginatedData={paginatedData}

@@ -6,11 +6,8 @@ import InvoiceDialog, {
     type EditableInvoice,
 } from '@/components/invoices/invoice-dialog';
 import { paymentStatusRowTint } from '@/components/invoices/payment-status-pill';
-import ThirdPartyCombobox, {
-    type ThirdPartyOption,
-} from '@/components/third-parties/third-party-combobox';
+import { type ThirdPartyOption } from '@/components/third-parties/third-party-combobox';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { useServerTable } from '@/hooks/use-server-table';
 import AppLayout from '@/layouts/app-layout';
 import invoices from '@/routes/invoices';
@@ -24,7 +21,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Facturas', href: invoices.index().url },
 ];
 
-const invoiceFilters: FilterDefinition[] = [
+const STATIC_INVOICE_FILTERS: FilterDefinition[] = [
     {
         name: 'payment_status',
         label: 'Estado',
@@ -69,6 +66,27 @@ export default function InvoicesIndex({
         [],
     );
 
+    const invoiceFilters = useMemo<FilterDefinition[]>(
+        () => [
+            ...STATIC_INVOICE_FILTERS,
+            {
+                name: 'third_party_id',
+                label: 'Cliente',
+                options: thirdParties
+                    .filter((tp) => tp.is_customer)
+                    .map((tp) => ({
+                        value: String(tp.id),
+                        label: tp.is_natural_person
+                            ? [tp.first_name, tp.first_lastname]
+                                  .filter(Boolean)
+                                  .join(' ') || '—'
+                            : (tp.company_name ?? '—'),
+                    })),
+            },
+        ],
+        [thirdParties],
+    );
+
     const {
         table,
         paginatedData,
@@ -86,37 +104,10 @@ export default function InvoicesIndex({
         meta: tableMeta,
     });
 
-    const selectedThirdPartyId = activeFilters['third_party_id']?.[0] ?? null;
-
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Facturas" />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
-                <div className="flex flex-wrap items-end gap-2">
-                    <div className="flex flex-col gap-1">
-                        <Label
-                            htmlFor="invoices-third-party"
-                            className="text-xs text-muted-foreground"
-                        >
-                            Cliente
-                        </Label>
-                        <ThirdPartyCombobox
-                            id="invoices-third-party"
-                            thirdParties={thirdParties}
-                            role="customer"
-                            value={selectedThirdPartyId}
-                            onChange={(value) =>
-                                setFilter(
-                                    'third_party_id',
-                                    value ? [value] : [],
-                                )
-                            }
-                            placeholder="Todos los clientes"
-                            className="w-72"
-                        />
-                    </div>
-                </div>
-
                 <DataTable
                     table={table}
                     paginatedData={paginatedData}

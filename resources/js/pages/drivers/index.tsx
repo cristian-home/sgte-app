@@ -6,11 +6,8 @@ import DriverDialog, {
     type EditableDriver,
 } from '@/components/drivers/driver-dialog';
 import { driverLicenseStatus } from '@/components/drivers/driver-license-pill';
-import MunicipalityCombobox, {
-    type MunicipalityOption,
-} from '@/components/municipality-combobox';
+import { type MunicipalityOption } from '@/components/municipality-combobox';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { useServerTable } from '@/hooks/use-server-table';
 import AppLayout from '@/layouts/app-layout';
 import drivers from '@/routes/drivers';
@@ -29,7 +26,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Conductores', href: drivers.index().url },
 ];
 
-const driverFilters: FilterDefinition[] = [
+const STATIC_DRIVER_FILTERS: FilterDefinition[] = [
     {
         name: 'active',
         label: 'Estado',
@@ -115,6 +112,23 @@ export default function DriversIndex({
         [],
     );
 
+    const driverFilters = useMemo<FilterDefinition[]>(
+        () => [
+            ...STATIC_DRIVER_FILTERS,
+            {
+                name: 'municipality_id',
+                label: 'Municipio',
+                options: municipalities.map((m) => ({
+                    value: String(m.id),
+                    label: m.department
+                        ? `${m.name} (${m.department.name})`
+                        : m.name,
+                })),
+            },
+        ],
+        [municipalities],
+    );
+
     const {
         table,
         paginatedData,
@@ -132,37 +146,10 @@ export default function DriversIndex({
         meta: tableMeta,
     });
 
-    const selectedMunicipalityId =
-        activeFilters['municipality_id']?.[0] ?? null;
-
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Conductores" />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
-                <div className="flex flex-wrap items-end gap-2">
-                    <div className="flex flex-col gap-1">
-                        <Label
-                            htmlFor="drivers-municipality"
-                            className="text-xs text-muted-foreground"
-                        >
-                            Municipio de residencia
-                        </Label>
-                        <MunicipalityCombobox
-                            id="drivers-municipality"
-                            municipalities={municipalities}
-                            value={selectedMunicipalityId}
-                            onChange={(value) =>
-                                setFilter(
-                                    'municipality_id',
-                                    value ? [value] : [],
-                                )
-                            }
-                            placeholder="Todos los municipios"
-                            className="w-64"
-                        />
-                    </div>
-                </div>
-
                 <DataTable
                     table={table}
                     paginatedData={paginatedData}
