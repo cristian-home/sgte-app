@@ -59,7 +59,7 @@ export function TodayServicesGantt({
                         No hay servicios programados hoy.
                     </p>
                 ) : (
-                    <div className="space-y-2">
+                    <div className="@container/gantt space-y-2">
                         <GanttHourHeader />
                         {rows.map(([plate, plateServices]) => (
                             <GanttRow
@@ -82,14 +82,32 @@ function GanttHourHeader() {
                 align with the track that lives at the same flex slot. */}
             <div className="w-18 shrink-0" />
             <div className="flex flex-1 border-b">
-                {HOUR_LABELS.map((label) => (
-                    <div
-                        key={label}
-                        className="flex-1 border-l py-1 text-center first:border-l-0"
-                    >
-                        {label}
-                    </div>
-                ))}
+                {HOUR_LABELS.map((label, i) => {
+                    // Progressive label density via the `@container/gantt`
+                    // scope on the wrapper. The cells keep their flex-1
+                    // distribution (the grid lines remain) — only the
+                    // <span> text hides:
+                    //   - i % 4 === 0  → 4-hour marks (05/09/13/17/21):
+                    //                    always visible (≥5 labels at any width)
+                    //   - i % 2 === 0  → 2-hour marks (07/11/15/19):
+                    //                    shown from @md (~28rem track) up
+                    //   - else         → hourly marks (06/08/10/…):
+                    //                    shown from @lg (~32rem track) up
+                    const labelVisibility =
+                        i % 4 === 0
+                            ? ''
+                            : i % 2 === 0
+                              ? 'hidden @md/gantt:inline'
+                              : 'hidden @lg/gantt:inline';
+                    return (
+                        <div
+                            key={label}
+                            className="flex-1 border-l py-1 text-center first:border-l-0"
+                        >
+                            <span className={labelVisibility}>{label}</span>
+                        </div>
+                    );
+                })}
             </div>
             {/* Invisible badge placeholder so the track widths match
                 between header and rows. */}
