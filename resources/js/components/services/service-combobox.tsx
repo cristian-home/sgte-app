@@ -1,5 +1,3 @@
-'use no memo';
-
 import { Check, ChevronsUpDown, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -83,6 +81,7 @@ export default function ServiceCombobox({
     id,
     className,
 }: ServiceComboboxProps) {
+    'use no memo';
     const [open, setOpen] = useState(false);
 
     const options = useMemo(() => {

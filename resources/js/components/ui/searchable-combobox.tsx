@@ -1,5 +1,3 @@
-'use no memo';
-
 import { Check, ChevronsUpDown, X } from 'lucide-react';
 import { useMemo, useState, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
@@ -84,6 +82,7 @@ export default function SearchableCombobox<T>({
     className,
     contentClassName,
 }: SearchableComboboxProps<T>) {
+    'use no memo';
     const [open, setOpen] = useState(false);
 
     const selected = useMemo(

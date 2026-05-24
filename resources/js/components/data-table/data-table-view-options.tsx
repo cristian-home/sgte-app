@@ -1,5 +1,3 @@
-'use no memo';
-
 import { SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,6 +19,7 @@ interface DataTableViewOptionsProps<TData> {
 export function DataTableViewOptions<TData>({
     table,
 }: DataTableViewOptionsProps<TData>) {
+    'use no memo';
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
