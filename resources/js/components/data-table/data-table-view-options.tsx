@@ -10,6 +10,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { ToolbarLabel } from './toolbar-label';
 
 import type { Table } from '@tanstack/react-table';
 
@@ -23,9 +24,14 @@ export function DataTableViewOptions<TData>({
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="ml-auto h-8">
-                    <SlidersHorizontal className="mr-2 size-4" />
-                    Columnas
+                <Button
+                    variant="outline"
+                    size="sm"
+                    className="ml-auto h-8"
+                    aria-label="Columnas"
+                >
+                    <SlidersHorizontal className="size-4" />
+                    <ToolbarLabel>Columnas</ToolbarLabel>
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-45">

@@ -2,6 +2,7 @@ import { Head } from '@inertiajs/react';
 import { PlusIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { DataTable } from '@/components/data-table';
+import { ToolbarLabel } from '@/components/data-table/toolbar-label';
 import { type MunicipalityOption } from '@/components/municipality-combobox';
 import { Button } from '@/components/ui/button';
 import VehicleDialog, {
@@ -168,9 +169,13 @@ export default function VehiclesIndex({
                     onClearFilters={clearFilters}
                     getRowClassName={rowTintFor}
                     actions={
-                        <Button onClick={openCreate} size="sm">
-                            <PlusIcon className="mr-2 size-4" />
-                            Crear Vehículo
+                        <Button
+                            onClick={openCreate}
+                            size="sm"
+                            aria-label="Crear Vehículo"
+                        >
+                            <PlusIcon className="size-4" />
+                            <ToolbarLabel>Crear Vehículo</ToolbarLabel>
                         </Button>
                     }
                 />

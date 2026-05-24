@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import { PlusIcon } from 'lucide-react';
 import { DataTable } from '@/components/data-table';
+import { ToolbarLabel } from '@/components/data-table/toolbar-label';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -147,9 +148,12 @@ export default function VehicleLocationsIndex({
                     onClearFilters={clearFilters}
                     actions={
                         <Button asChild size="sm">
-                            <Link href="/vehicle-locations/create">
-                                <PlusIcon className="mr-2 size-4" />
-                                Registrar
+                            <Link
+                                href="/vehicle-locations/create"
+                                aria-label="Registrar"
+                            >
+                                <PlusIcon className="size-4" />
+                                <ToolbarLabel>Registrar</ToolbarLabel>
                             </Link>
                         </Button>
                     }

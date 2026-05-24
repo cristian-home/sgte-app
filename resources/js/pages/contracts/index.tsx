@@ -6,6 +6,7 @@ import ContractDialog, {
 } from '@/components/contracts/contract-dialog';
 import { contractRowTint } from '@/components/contracts/contract-period-pill';
 import { DataTable } from '@/components/data-table';
+import { ToolbarLabel } from '@/components/data-table/toolbar-label';
 import { type MunicipalityOption } from '@/components/municipality-combobox';
 import { type ThirdPartyOption } from '@/components/third-parties/third-party-combobox';
 import { type DocumentTypeOption } from '@/components/third-parties/third-party-form';
@@ -157,9 +158,13 @@ export default function ContractsIndex({
                     onClearFilters={clearFilters}
                     getRowClassName={rowTintFor}
                     actions={
-                        <Button onClick={openCreate} size="sm">
-                            <PlusIcon className="mr-2 size-4" />
-                            Crear Contrato
+                        <Button
+                            onClick={openCreate}
+                            size="sm"
+                            aria-label="Crear Contrato"
+                        >
+                            <PlusIcon className="size-4" />
+                            <ToolbarLabel>Crear Contrato</ToolbarLabel>
                         </Button>
                     }
                 />

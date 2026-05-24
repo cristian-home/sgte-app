@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { Can } from '@/components/can';
 import { DataTable } from '@/components/data-table';
 import { DataTableDateRangeFilter } from '@/components/data-table/data-table-date-range-filter';
+import { ToolbarLabel } from '@/components/data-table/toolbar-label';
 import { type MunicipalityOption } from '@/components/municipality-combobox';
 import { Button } from '@/components/ui/button';
 import { type VehicleOption } from '@/components/vehicles/vehicle-combobox';
@@ -291,9 +292,12 @@ export default function ServicesIndex({
                     actions={
                         <Can permission={Permission.CREATE_SERVICES}>
                             <Button asChild size="sm">
-                                <Link href={services.create().url}>
-                                    <Plus className="mr-2 size-4" />
-                                    Crear Servicio
+                                <Link
+                                    href={services.create().url}
+                                    aria-label="Crear Servicio"
+                                >
+                                    <Plus className="size-4" />
+                                    <ToolbarLabel>Crear Servicio</ToolbarLabel>
                                 </Link>
                             </Button>
                         </Can>

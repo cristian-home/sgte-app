@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import { PlusIcon } from 'lucide-react';
 import { DataTable } from '@/components/data-table';
+import { ToolbarLabel } from '@/components/data-table/toolbar-label';
 import { Button } from '@/components/ui/button';
 import { useServerTable } from '@/hooks/use-server-table';
 import AppLayout from '@/layouts/app-layout';
@@ -60,9 +61,9 @@ export default function FuecsIndex({
                     onClearFilters={clearFilters}
                     actions={
                         <Button asChild size="sm">
-                            <Link href="/fuecs/create">
-                                <PlusIcon className="mr-2 size-4" />
-                                Generar FUEC
+                            <Link href="/fuecs/create" aria-label="Generar FUEC">
+                                <PlusIcon className="size-4" />
+                                <ToolbarLabel>Generar FUEC</ToolbarLabel>
                             </Link>
                         </Button>
                     }
