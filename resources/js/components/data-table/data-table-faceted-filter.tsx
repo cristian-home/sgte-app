@@ -1,5 +1,3 @@
-'use no memo';
-
 import { Check, PlusCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -36,6 +34,7 @@ export function DataTableFacetedFilter({
     selected,
     onSelectionChange,
 }: DataTableFacetedFilterProps) {
+    'use no memo';
     const selectedSet = new Set(selected);
 
     function toggleValue(value: string) {

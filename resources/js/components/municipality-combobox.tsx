@@ -1,5 +1,3 @@
-'use no memo';
-
 import { Check, ChevronsUpDown, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -49,6 +47,7 @@ export default function MunicipalityCombobox({
     id,
     className,
 }: MunicipalityComboboxProps) {
+    'use no memo';
     const [open, setOpen] = useState(false);
 
     const grouped = useMemo(() => {

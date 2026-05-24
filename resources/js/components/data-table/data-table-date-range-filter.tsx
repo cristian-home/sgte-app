@@ -1,5 +1,3 @@
-'use no memo';
-
 import { PlusCircle, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -46,6 +44,7 @@ export function DataTableDateRangeFilter({
     fromInputId,
     toInputId,
 }: DataTableDateRangeFilterProps) {
+    'use no memo';
     const hasSelection = from !== '' || to !== '';
 
     return (

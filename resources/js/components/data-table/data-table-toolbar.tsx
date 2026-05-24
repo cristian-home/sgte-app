@@ -1,5 +1,3 @@
-'use no memo';
-
 import { Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -49,6 +47,7 @@ export function DataTableToolbar<TData>({
     extraFilters,
     leadingActions,
 }: DataTableToolbarProps<TData>) {
+    'use no memo';
     const hasActiveFilters =
         activeFilters && Object.values(activeFilters).some((v) => v.length > 0);
     const hasFilterRow =
