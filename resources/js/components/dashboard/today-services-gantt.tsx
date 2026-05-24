@@ -4,12 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import {
-    GANTT_END_HOUR,
-    GANTT_START_HOUR,
-    HOUR_LABELS,
-    serviceBarPosition,
-} from '@/pages/gantt/gantt-utils';
+import { HOUR_LABELS, serviceBarPosition } from '@/pages/gantt/gantt-utils';
 
 export type DashboardTodayService = {
     id: number;
@@ -82,20 +77,25 @@ export function TodayServicesGantt({
 
 function GanttHourHeader() {
     return (
-        <div className="flex items-center gap-2 pl-20 text-[10px] text-muted-foreground tabular-nums">
-            <div className="relative flex-1">
-                {HOUR_LABELS.map((label, idx) => (
-                    <span
+        <div className="flex items-center gap-2 text-[10px] text-muted-foreground tabular-nums">
+            {/* Spacer mirrors the plate column in GanttRow so hour cells
+                align with the track that lives at the same flex slot. */}
+            <div className="w-18 shrink-0" />
+            <div className="flex flex-1 border-b">
+                {HOUR_LABELS.map((label) => (
+                    <div
                         key={label}
-                        className="absolute -translate-x-1/2"
-                        style={{
-                            left: `${(idx / (GANTT_END_HOUR - GANTT_START_HOUR)) * 100}%`,
-                        }}
+                        className="flex-1 border-l py-1 text-center first:border-l-0"
                     >
                         {label}
-                    </span>
+                    </div>
                 ))}
             </div>
+            {/* Invisible badge placeholder so the track widths match
+                between header and rows. */}
+            <Badge variant="outline" className="invisible shrink-0 text-[10px]">
+                0
+            </Badge>
         </div>
     );
 }
