@@ -1,5 +1,6 @@
 import {
     AdvancedMarker,
+    ColorScheme,
     Map as GoogleMap,
     type MapMouseEvent,
     useMap,
@@ -18,6 +19,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useAppearance } from '@/hooks/use-appearance';
 import { dlog } from '@/lib/debug-log';
 import { reverseGeocode } from '@/lib/google-geocoding';
 import { BOGOTA_FALLBACK, GOOGLE_MAPS_MAP_ID } from '@/lib/google-maps';
@@ -147,6 +149,7 @@ function MapPickerBody({
     const [pin, setPin] = useState<LatLng | null>(initialPin);
     const [hint, setHint] = useState<string>('—');
     const [hintLoading, setHintLoading] = useState(false);
+    const { resolvedAppearance } = useAppearance();
     // Editable mirror of the form's address input. Pre-populated with
     // whatever the operator already had typed; confirming the modal
     // pushes this value back as the canonical address text.
@@ -266,12 +269,21 @@ function MapPickerBody({
             <div className="relative flex-1 px-6">
                 <div className="h-full overflow-hidden rounded-md border">
                     <GoogleMap
+                        // Google applies `colorScheme` only at map creation,
+                        // so re-key the map on theme change to force a fresh
+                        // instance in the new scheme.
+                        key={resolvedAppearance}
                         mapId={GOOGLE_MAPS_MAP_ID}
                         defaultCenter={center}
                         defaultZoom={initialZoom}
                         gestureHandling="greedy"
                         disableDefaultUI={false}
                         clickableIcons={false}
+                        colorScheme={
+                            resolvedAppearance === 'dark'
+                                ? ColorScheme.DARK
+                                : ColorScheme.LIGHT
+                        }
                         className="h-full w-full"
                         onClick={(ev: MapMouseEvent) => {
                             const ll = ev.detail.latLng;

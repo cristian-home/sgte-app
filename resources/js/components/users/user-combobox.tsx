@@ -60,8 +60,8 @@ export default function UserCombobox({
     const displayLabel = selected ? selected.name : placeholder;
 
     return (
-        <Popover open={open} onOpenChange={setOpen}>
-            <div className={cn('relative', className)}>
+        <Popover open={open} onOpenChange={setOpen} modal>
+            <div className={cn('relative min-w-0', className)}>
                 <PopoverTrigger asChild>
                     <Button
                         id={id}
@@ -71,11 +71,13 @@ export default function UserCombobox({
                         aria-invalid={invalid}
                         disabled={disabled}
                         className={cn(
-                            'w-full justify-between font-normal',
+                            'w-full min-w-0 justify-between font-normal',
                             !selected && 'text-muted-foreground',
                         )}
                     >
-                        <span className="truncate">{displayLabel}</span>
+                        <span className="min-w-0 truncate text-left">
+                            {displayLabel}
+                        </span>
                         <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
                     </Button>
                 </PopoverTrigger>
