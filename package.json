@@ -29,7 +29,7 @@
         "prettier-plugin-tailwindcss": "^0.6.14",
         "pusher-js": "^8.4.0",
         "typescript-eslint": "^8.56.1",
-        "vite-plugin-pwa": "^1.0.0"
+        "vite-plugin-pwa": "^1.2.0"
     },
     "dependencies": {
         "@dnd-kit/core": "^6.3.1",
