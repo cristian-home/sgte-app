@@ -61,7 +61,7 @@ export function DataTableToolbar<TData>({
                         placeholder={searchPlaceholder}
                         value={search}
                         onChange={(e) => onSearchChange(e.target.value)}
-                        className="h-8 w-37.5 lg:w-62.5"
+                        className="h-8 min-w-37.5 flex-1 lg:min-w-62.5"
                     />
                     {leadingActions && (
                         <div className="flex items-center gap-2">
