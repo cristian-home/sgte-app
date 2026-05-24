@@ -34,14 +34,16 @@ Schedule::command('imports:purge-old-files')
     ->onOneServer()
     ->name('purge-old-import-files');
 
-// Database backups (spatie/laravel-backup). The dump is written to MinIO on
-// the VPS and to Cloudflare R2 off-site. `backup:clean` enforces retention,
-// `backup:monitor` raises an alert if no fresh, healthy backup is found.
+// Database backups (spatie/laravel-backup). The dump is written to the
+// local S3-compatible bucket on the VPS (`backups` disk) and to an
+// off-site S3-compatible bucket (`backup_s3` disk). `backup:clean`
+// enforces retention, `backup:monitor` raises an alert if no fresh,
+// healthy backup is found.
 //
 // Restricted to production/staging so a local dev container running the
-// scheduler never pushes dev data into the production R2 bucket. (Manual
-// `php artisan backup:run` is unaffected — `environments()` only gates the
-// scheduler.)
+// scheduler never pushes dev data into the production off-site bucket.
+// (Manual `php artisan backup:run` is unaffected — `environments()`
+// only gates the scheduler.)
 Schedule::command('backup:clean')
     ->dailyAt('01:00')
     ->onOneServer()

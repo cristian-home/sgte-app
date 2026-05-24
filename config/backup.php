@@ -165,8 +165,8 @@ return [
              * The disk names on which the backups will be stored.
              */
             'disks' => [
-                'backups', // MinIO on the VPS — fast restore while the VPS is alive
-                'r2',      // Cloudflare R2 — off-site, survives a full VPS loss
+                'backups',   // Local S3-compatible bucket (MinIO on the VPS) — fast restore while the VPS is alive
+                'backup_s3', // Off-site S3-compatible bucket — survives a full VPS loss
             ],
 
             /*
@@ -305,7 +305,7 @@ return [
     'monitor_backups' => [
         [
             'name' => env('APP_NAME', 'laravel-backup'),
-            'disks' => ['backups', 'r2'],
+            'disks' => ['backups', 'backup_s3'],
             'health_checks' => [
                 MaximumAgeInDays::class => 1,
                 MaximumStorageInMegabytes::class => 8000,

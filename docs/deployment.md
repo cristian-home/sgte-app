@@ -493,23 +493,25 @@ Database backups are handled by **spatie/laravel-backup** (`config/backup.php`).
 | Command | Time | Purpose |
 |---------|------|---------|
 | `backup:clean` | 01:00 | Enforce retention |
-| `backup:run --only-db` | 01:30 | Encrypted DB dump → MinIO + R2 |
+| `backup:run --only-db` | 01:30 | Encrypted DB dump → local + off-site S3 |
 | `backup:monitor` | 02:00 | Alert by email if no fresh, healthy backup |
 
-> The scheduled backup tasks are gated to `APP_ENV` **production** / **staging** — on a `local` dev container the scheduler skips them, so dev data never reaches the R2 bucket. Set `APP_ENV` accordingly on the VPS, or the scheduled backups will silently not run. (Manual `php artisan backup:run` is never gated.)
+> The scheduled backup tasks are gated to `APP_ENV` **production** / **staging** — on a `local` dev container the scheduler skips them, so dev data never reaches the off-site bucket. Set `APP_ENV` accordingly on the VPS, or the scheduled backups will silently not run. (Manual `php artisan backup:run` is never gated.)
 
 **What's in a backup** — only the PostgreSQL database, dumped with `pg_dump` in binary custom format (`--format=c`, `.backup` extension), zipped and **AES-256 encrypted** with `BACKUP_ARCHIVE_PASSWORD`. Application code lives in Git; uploaded files live in MinIO and are **not** covered — that is a separate concern.
 
 **Destinations** — every backup is written to two disks (`continue_on_failure` is on, so one failing does not block the other):
 
-- `backups` — a dedicated MinIO bucket on the VPS (fast restore while the VPS is alive)
-- `r2` — Cloudflare R2, off-site (survives a full VPS loss)
+- `backups` — local S3-compatible bucket on the VPS (MinIO; fast restore while the VPS is alive)
+- `backup_s3` — off-site S3-compatible bucket (survives a full VPS loss; currently Cloudflare R2)
 
-**Retention** — the `DefaultStrategy` keeps all backups for 7 days, then thins to daily/weekly/monthly/yearly, with a hard **8 GB cap** to stay inside R2's 10 GB free tier.
+> Both disks use `driver: 's3'` + `use_path_style_endpoint: true`, so swapping the off-site provider for AWS S3, a self-hosted MinIO, Backblaze B2 or any other S3-compatible endpoint is just a matter of updating the `BACKUP_S3_*` env vars — no code changes required.
 
-**Required env vars** — `BACKUP_ARCHIVE_PASSWORD`, `BACKUP_NOTIFICATION_MAIL`, `BACKUP_MINIO_BUCKET`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_ENDPOINT` (see `.env.example`). The MinIO bucket must be created before the first run.
+**Retention** — the `DefaultStrategy` keeps all backups for 7 days, then thins to daily/weekly/monthly/yearly, with a hard **8 GB cap** to stay inside the 10 GB free tier of the current off-site provider (Cloudflare R2).
 
-> ⚠️ Store `BACKUP_ARCHIVE_PASSWORD` **and** the production `APP_KEY` in a password manager, off the VPS. Without them an encrypted backup in R2 cannot be restored after a catastrophe.
+**Required env vars** — `BACKUP_ARCHIVE_PASSWORD`, `BACKUP_NOTIFICATION_MAIL`, `BACKUP_LOCAL_BUCKET`, `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY`, `BACKUP_S3_BUCKET`, `BACKUP_S3_ENDPOINT` (see `.env.example`). The local bucket must be created before the first run.
+
+> ⚠️ Store `BACKUP_ARCHIVE_PASSWORD` **and** the production `APP_KEY` in a password manager, off the VPS. Without them an encrypted backup in the off-site bucket cannot be restored after a catastrophe.
 
 #### Restore runbook
 
@@ -517,7 +519,7 @@ spatie/laravel-backup has no restore command — restoring is manual. Pick the s
 
 - **Single accidental deletion from the app** — do *not* restore a backup. All business models use `SoftDeletes`; the row is still in the table with `deleted_at` set → restore it. For a bad data edit, the activity log holds the previous state.
 - **Bad migration / bad data / direct DB tampering** — restore the most recent *good* backup into a **scratch database**, never over production. With the binary format you can `pg_restore -t <table>` to bring back only the affected tables, preserving legitimate work done since.
-- **Catastrophe (VPS lost, ransomware, Dokploy unrecoverable)** — (1) new VPS → hardening → Dokploy; (2) redeploy the app from GitHub and bring up fresh infra; (3) restore `APP_KEY` and secrets from the password manager; (4) download the latest archive from R2 and restore it.
+- **Catastrophe (VPS lost, ransomware, Dokploy unrecoverable)** — (1) new VPS → hardening → Dokploy; (2) redeploy the app from GitHub and bring up fresh infra; (3) restore `APP_KEY` and secrets from the password manager; (4) download the latest archive from the off-site bucket and restore it.
 
 **Restoring a dump** (the archive is AES-encrypted — the classic `unzip` cannot read it; use 7-Zip / p7zip):
 

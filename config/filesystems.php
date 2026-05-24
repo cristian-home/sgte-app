@@ -80,21 +80,24 @@ return [
             'key' => env('AWS_ACCESS_KEY_ID'),
             'secret' => env('AWS_SECRET_ACCESS_KEY'),
             'region' => env('AWS_DEFAULT_REGION'),
-            'bucket' => env('BACKUP_MINIO_BUCKET', 'sgte-backups'),
+            'bucket' => env('BACKUP_LOCAL_BUCKET', 'sgte-backups'),
             'endpoint' => env('AWS_ENDPOINT'),
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
             'throw' => false,
             'report' => false,
         ],
 
-        // Spatie Backup — off-site copy (Cloudflare R2, S3-compatible).
-        'r2' => [
+        // Spatie Backup — off-site copy. Any S3-compatible bucket works
+        // (AWS S3, MinIO, Cloudflare R2, Backblaze B2, …). Production
+        // currently uses Cloudflare R2; swapping providers is just a
+        // matter of changing the BACKUP_S3_* env vars.
+        'backup_s3' => [
             'driver' => 's3',
-            'key' => env('R2_ACCESS_KEY_ID'),
-            'secret' => env('R2_SECRET_ACCESS_KEY'),
-            'region' => env('R2_DEFAULT_REGION', 'auto'),
-            'bucket' => env('R2_BUCKET'),
-            'endpoint' => env('R2_ENDPOINT'),
+            'key' => env('BACKUP_S3_ACCESS_KEY_ID'),
+            'secret' => env('BACKUP_S3_SECRET_ACCESS_KEY'),
+            'region' => env('BACKUP_S3_REGION', 'auto'),
+            'bucket' => env('BACKUP_S3_BUCKET'),
+            'endpoint' => env('BACKUP_S3_ENDPOINT'),
             'use_path_style_endpoint' => true,
             'throw' => false,
             'report' => false,
