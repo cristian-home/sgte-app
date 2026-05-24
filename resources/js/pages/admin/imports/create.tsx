@@ -1,10 +1,9 @@
 import { Form, Head, Link } from '@inertiajs/react';
-import { ArrowLeft, Upload } from 'lucide-react';
-import { useState } from 'react';
+import { ArrowLeft, FileSpreadsheet, Upload } from 'lucide-react';
+import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
     Select,
@@ -14,6 +13,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
+import { cn } from '@/lib/utils';
 import type { DataImportType } from '@/enums/DataImportType';
 import type { BreadcrumbItem } from '@/types';
 
@@ -34,30 +34,46 @@ export default function ImportsCreate({ types }: { types: TypeOption[] }) {
     const [type, setType] = useState<string>('');
     const [file, setFile] = useState<File | null>(null);
     const [clientError, setClientError] = useState<string | null>(null);
+    const [isDragging, setIsDragging] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-    function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-        const f = e.target.files?.[0] ?? null;
+    function acceptFile(f: File | null) {
         if (!f) {
             setFile(null);
             setClientError(null);
             return;
         }
-
         if (f.size > MAX_BYTES) {
             setFile(null);
             setClientError('El archivo excede el límite de 20 MB.');
             return;
         }
-
         const ext = f.name.split('.').pop()?.toLowerCase() ?? '';
         if (!['csv', 'txt', 'xlsx'].includes(ext)) {
             setFile(null);
             setClientError('Solo se aceptan archivos CSV o XLSX.');
             return;
         }
-
         setFile(f);
         setClientError(null);
+    }
+
+    function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+        acceptFile(e.target.files?.[0] ?? null);
+    }
+
+    function handleDrop(e: React.DragEvent<HTMLLabelElement>) {
+        e.preventDefault();
+        setIsDragging(false);
+        const f = e.dataTransfer.files?.[0] ?? null;
+        if (fileInputRef.current && f) {
+            // Mirror the dropped file into the hidden input so the Form
+            // submit picks it up under the `csv` field name.
+            const dt = new DataTransfer();
+            dt.items.add(f);
+            fileInputRef.current.files = dt.files;
+        }
+        acceptFile(f);
     }
 
     return (
@@ -115,16 +131,66 @@ export default function ImportsCreate({ types }: { types: TypeOption[] }) {
 
                                     <div className="flex flex-col gap-2">
                                         <Label htmlFor="csv">Archivo *</Label>
-                                        <Input
+                                        <label
+                                            htmlFor="csv"
+                                            onDragOver={(e) => {
+                                                e.preventDefault();
+                                                setIsDragging(true);
+                                            }}
+                                            onDragLeave={() =>
+                                                setIsDragging(false)
+                                            }
+                                            onDrop={handleDrop}
+                                            className={cn(
+                                                'flex cursor-pointer flex-col items-center justify-center gap-2 rounded-md border-2 border-dashed border-input bg-muted/30 p-6 text-center transition-colors hover:bg-muted/60',
+                                                isDragging &&
+                                                    'border-primary bg-primary/5',
+                                            )}
+                                        >
+                                            {file ? (
+                                                <>
+                                                    <FileSpreadsheet
+                                                        aria-hidden
+                                                        className="size-8 text-primary"
+                                                    />
+                                                    <div className="font-mono text-sm">
+                                                        {file.name}
+                                                    </div>
+                                                    <div className="text-xs text-muted-foreground">
+                                                        {(
+                                                            file.size /
+                                                            (1024 * 1024)
+                                                        ).toFixed(2)}{' '}
+                                                        MB · Pulsa o suelta otro
+                                                        archivo para reemplazar
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Upload
+                                                        aria-hidden
+                                                        className="size-8 text-muted-foreground"
+                                                    />
+                                                    <div className="text-sm font-medium">
+                                                        Arrastra el archivo aquí
+                                                        o haz clic para
+                                                        seleccionar
+                                                    </div>
+                                                    <div className="text-xs text-muted-foreground">
+                                                        CSV o XLSX · máximo 20 MB
+                                                    </div>
+                                                </>
+                                            )}
+                                        </label>
+                                        <input
+                                            ref={fileInputRef}
                                             id="csv"
                                             name="csv"
                                             type="file"
                                             accept=".csv,.txt,.xlsx"
                                             onChange={handleFileChange}
+                                            className="sr-only"
                                         />
-                                        <p className="text-xs text-muted-foreground">
-                                            Acepta CSV o XLSX. Máximo 20 MB.
-                                        </p>
                                         {clientError && (
                                             <p className="text-sm text-destructive">
                                                 {clientError}

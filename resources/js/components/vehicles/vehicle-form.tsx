@@ -1,9 +1,18 @@
+import { CircleCheck, PowerOff, Wrench } from 'lucide-react';
 import InputError from '@/components/input-error';
+import {
+    Choicebox,
+    ChoiceboxIndicator,
+    ChoiceboxItem,
+    ChoiceboxItemHeader,
+    ChoiceboxItemTitle,
+} from '@/components/kibo-ui/choicebox';
 import MunicipalityCombobox, {
     type MunicipalityOption,
 } from '@/components/municipality-combobox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import PhoneInput from '@/components/ui/phone-input';
 import {
     Select,
     SelectContent,
@@ -12,6 +21,32 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+
+const VEHICLE_STATUS_OPTIONS: Array<{
+    value: string;
+    label: string;
+    icon: typeof CircleCheck;
+    iconClass: string;
+}> = [
+    {
+        value: 'active',
+        label: 'Activo',
+        icon: CircleCheck,
+        iconClass: 'text-emerald-600 dark:text-emerald-400',
+    },
+    {
+        value: 'maintenance',
+        label: 'En Mantenimiento',
+        icon: Wrench,
+        iconClass: 'text-amber-600 dark:text-amber-400',
+    },
+    {
+        value: 'retired',
+        label: 'Retirado',
+        icon: PowerOff,
+        iconClass: 'text-muted-foreground',
+    },
+];
 
 export interface ThirdPartyOption {
     id: number;
@@ -84,10 +119,7 @@ export default function VehicleForm({
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
                     data-error={invalid('internal_code')}
                 >
-                    <Label htmlFor={id('internal_code')}>
-                        Código Interno
-                        <RequiredMarker />
-                    </Label>
+                    <Label htmlFor={id('internal_code')}>Código Interno</Label>
                     <Input
                         id={id('internal_code')}
                         value={data.internal_code}
@@ -95,6 +127,7 @@ export default function VehicleForm({
                         onChange={(e) =>
                             setData('internal_code', e.target.value)
                         }
+                        placeholder="V-001"
                     />
                     <InputError message={errors.internal_code} />
                 </div>
@@ -114,6 +147,9 @@ export default function VehicleForm({
                             setData('plate', e.target.value.toUpperCase())
                         }
                         maxLength={6}
+                        placeholder="ABC123"
+                        className="font-mono uppercase tracking-wider"
+                        autoCapitalize="characters"
                     />
                     <InputError message={errors.plate} />
                 </div>
@@ -121,17 +157,14 @@ export default function VehicleForm({
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
                     data-error={invalid('mobile_number')}
                 >
-                    <Label htmlFor={id('mobile_number')}>
-                        Número Móvil
-                        <RequiredMarker />
-                    </Label>
-                    <Input
+                    <Label htmlFor={id('mobile_number')}>Número Móvil</Label>
+                    <PhoneInput
                         id={id('mobile_number')}
                         value={data.mobile_number}
-                        aria-invalid={invalid('mobile_number')}
-                        onChange={(e) =>
-                            setData('mobile_number', e.target.value)
+                        onValueChange={(raw) =>
+                            setData('mobile_number', raw)
                         }
+                        invalid={invalid('mobile_number')}
                     />
                     <InputError message={errors.mobile_number} />
                 </div>
@@ -142,10 +175,7 @@ export default function VehicleForm({
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
                     data-error={invalid('brand')}
                 >
-                    <Label htmlFor={id('brand')}>
-                        Marca
-                        <RequiredMarker />
-                    </Label>
+                    <Label htmlFor={id('brand')}>Marca</Label>
                     <Input
                         id={id('brand')}
                         value={data.brand}
@@ -158,10 +188,7 @@ export default function VehicleForm({
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
                     data-error={invalid('line')}
                 >
-                    <Label htmlFor={id('line')}>
-                        Línea
-                        <RequiredMarker />
-                    </Label>
+                    <Label htmlFor={id('line')}>Línea</Label>
                     <Input
                         id={id('line')}
                         value={data.line}
@@ -174,10 +201,7 @@ export default function VehicleForm({
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
                     data-error={invalid('model_year')}
                 >
-                    <Label htmlFor={id('model_year')}>
-                        Año Modelo
-                        <RequiredMarker />
-                    </Label>
+                    <Label htmlFor={id('model_year')}>Año Modelo</Label>
                     <Input
                         id={id('model_year')}
                         type="number"
@@ -259,7 +283,6 @@ export default function VehicleForm({
                 >
                     <Label htmlFor={id('engine_number')}>
                         Número de Motor
-                        <RequiredMarker />
                     </Label>
                     <Input
                         id={id('engine_number')}
@@ -277,7 +300,6 @@ export default function VehicleForm({
                 >
                     <Label htmlFor={id('chassis_number')}>
                         Número de Chasis
-                        <RequiredMarker />
                     </Label>
                     <Input
                         id={id('chassis_number')}
@@ -307,7 +329,7 @@ export default function VehicleForm({
 
             {data.is_third_party && (
                 <div
-                    className="group/field grid gap-2 md:w-1/2"
+                    className="group/field grid gap-2"
                     data-error={invalid('third_party_id')}
                 >
                     <Label htmlFor={id('third_party_id')}>
@@ -399,31 +421,43 @@ export default function VehicleForm({
             </div>
 
             <div
-                className="group/field grid gap-2 md:w-1/3"
+                className="group/field grid gap-2"
                 data-error={invalid('status')}
             >
-                <Label htmlFor={id('status')}>
-                    Estado
-                    <RequiredMarker />
-                </Label>
-                <Select
+                <Label htmlFor={id('status')}>Estado</Label>
+                <Choicebox
+                    id={id('status')}
                     value={data.status}
-                    onValueChange={(value) => setData('status', value)}
+                    onValueChange={(value) => {
+                        if (!value) return;
+                        setData('status', value);
+                    }}
+                    aria-invalid={invalid('status')}
+                    className="grid grid-cols-1 gap-2 sm:grid-cols-3"
                 >
-                    <SelectTrigger
-                        id={id('status')}
-                        aria-invalid={invalid('status')}
-                    >
-                        <SelectValue placeholder="Seleccionar..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="active">Activo</SelectItem>
-                        <SelectItem value="maintenance">
-                            En Mantenimiento
-                        </SelectItem>
-                        <SelectItem value="retired">Retirado</SelectItem>
-                    </SelectContent>
-                </Select>
+                    {VEHICLE_STATUS_OPTIONS.map((opt) => {
+                        const Icon = opt.icon;
+                        return (
+                            <ChoiceboxItem
+                                key={opt.value}
+                                id={`${id('status')}-${opt.value}`}
+                                value={opt.value}
+                                className="h-full !items-center"
+                            >
+                                <ChoiceboxItemHeader>
+                                    <ChoiceboxItemTitle className="flex items-center gap-2">
+                                        <Icon
+                                            aria-hidden
+                                            className={`size-4 shrink-0 ${opt.iconClass}`}
+                                        />
+                                        <span>{opt.label}</span>
+                                    </ChoiceboxItemTitle>
+                                </ChoiceboxItemHeader>
+                                <ChoiceboxIndicator />
+                            </ChoiceboxItem>
+                        );
+                    })}
+                </Choicebox>
                 <InputError message={errors.status} />
             </div>
         </>

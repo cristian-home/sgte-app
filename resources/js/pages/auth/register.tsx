@@ -53,6 +53,7 @@ export default function Register() {
                                     required
                                     tabIndex={2}
                                     autoComplete="email"
+                                    inputMode="email"
                                     name="email"
                                     placeholder="email@example.com"
                                 />

@@ -106,8 +106,10 @@ export default function DocumentTypeDialog({
                                 maxLength={10}
                                 aria-invalid={!!errors.code}
                                 onChange={(e) =>
-                                    setData('code', e.target.value)
+                                    setData('code', e.target.value.toUpperCase())
                                 }
+                                className="uppercase"
+                                autoCapitalize="characters"
                             />
                             <InputError message={errors.code} />
                         </div>

@@ -1,7 +1,15 @@
 import { useForm } from '@inertiajs/react';
+import { AlertOctagon, AlertTriangle, Info } from 'lucide-react';
 import { useEffect } from 'react';
 import IncidentTypeController from '@/actions/App/Http/Controllers/IncidentTypeController';
 import InputError from '@/components/input-error';
+import {
+    Choicebox,
+    ChoiceboxIndicator,
+    ChoiceboxItem,
+    ChoiceboxItemHeader,
+    ChoiceboxItemTitle,
+} from '@/components/kibo-ui/choicebox';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -14,19 +22,24 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import {
     IncidentSeverity,
     IncidentSeverityLabel,
 } from '@/enums/IncidentSeverity';
 import type { IncidentType } from '@/types';
+
+const SEVERITY_ICON: Record<IncidentSeverity, typeof Info> = {
+    informational: Info,
+    minor: AlertTriangle,
+    major: AlertOctagon,
+};
+
+const SEVERITY_ICON_CLASS: Record<IncidentSeverity, string> = {
+    informational: 'text-muted-foreground',
+    minor: 'text-amber-600 dark:text-amber-400',
+    major: 'text-destructive',
+};
 
 interface IncidentTypeDialogProps {
     open: boolean;
@@ -119,8 +132,10 @@ export default function IncidentTypeDialog({
                                 maxLength={10}
                                 aria-invalid={!!errors.code}
                                 onChange={(e) =>
-                                    setData('code', e.target.value)
+                                    setData('code', e.target.value.toUpperCase())
                                 }
+                                className="uppercase"
+                                autoCapitalize="characters"
                             />
                             <InputError message={errors.code} />
                         </div>
@@ -145,31 +160,43 @@ export default function IncidentTypeDialog({
                                 Severidad
                                 <span className="text-destructive">{' *'}</span>
                             </Label>
-                            <Select
+                            <Choicebox
+                                id="incident-type-severity"
                                 value={data.severity}
                                 onValueChange={(value) =>
                                     setData('severity', value)
                                 }
+                                aria-invalid={!!errors.severity}
+                                className="grid grid-cols-1 gap-2 sm:grid-cols-3"
                             >
-                                <SelectTrigger
-                                    id="incident-type-severity"
-                                    aria-invalid={!!errors.severity}
-                                >
-                                    <SelectValue placeholder="Seleccionar severidad..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {Object.values(IncidentSeverity).map(
-                                        (value) => (
-                                            <SelectItem
+                                {Object.values(IncidentSeverity).map(
+                                    (value) => {
+                                        const Icon = SEVERITY_ICON[value];
+                                        return (
+                                            <ChoiceboxItem
                                                 key={value}
+                                                id={`incident-type-severity-${value}`}
                                                 value={value}
                                             >
-                                                {IncidentSeverityLabel[value]}
-                                            </SelectItem>
-                                        ),
-                                    )}
-                                </SelectContent>
-                            </Select>
+                                                <ChoiceboxItemHeader>
+                                                    <ChoiceboxItemTitle className="flex items-center gap-2">
+                                                        <Icon
+                                                            aria-hidden
+                                                            className={`size-4 ${SEVERITY_ICON_CLASS[value]}`}
+                                                        />
+                                                        {
+                                                            IncidentSeverityLabel[
+                                                                value
+                                                            ]
+                                                        }
+                                                    </ChoiceboxItemTitle>
+                                                </ChoiceboxItemHeader>
+                                                <ChoiceboxIndicator />
+                                            </ChoiceboxItem>
+                                        );
+                                    },
+                                )}
+                            </Choicebox>
                             <InputError message={errors.severity} />
                         </div>
                         <div className="flex items-center gap-3 self-end">

@@ -3,8 +3,8 @@ import ServiceCombobox, {
     type ServiceOption,
 } from '@/components/services/service-combobox';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import MoneyInput from '@/components/ui/money-input';
 import {
     Select,
     SelectContent,
@@ -254,23 +254,15 @@ export default function ServiceIncidentForm({
                     <Label htmlFor={id('additional_value')}>
                         Valor Adicional
                     </Label>
-                    <div className="relative">
-                        <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground">
-                            $
-                        </span>
-                        <Input
-                            id={id('additional_value')}
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={data.additional_value}
-                            aria-invalid={invalid('additional_value')}
-                            onChange={(e) =>
-                                setData('additional_value', e.target.value)
-                            }
-                            className="pl-7 tabular-nums"
-                        />
-                    </div>
+                    <MoneyInput
+                        id={id('additional_value')}
+                        value={data.additional_value}
+                        onValueChange={(raw) =>
+                            setData('additional_value', raw)
+                        }
+                        invalid={invalid('additional_value')}
+                        className="tabular-nums"
+                    />
                     <InputError message={errors.additional_value} />
                 </div>
             </div>

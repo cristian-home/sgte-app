@@ -49,6 +49,7 @@ export default function Login({
                                     autoFocus
                                     tabIndex={1}
                                     autoComplete="email"
+                                    inputMode="email"
                                     placeholder="email@example.com"
                                 />
                                 <InputError message={errors.email} />

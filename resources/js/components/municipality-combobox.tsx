@@ -79,14 +79,14 @@ export default function MunicipalityCombobox({
         : placeholder;
 
     return (
-        <Popover open={open} onOpenChange={setOpen}>
+        <Popover open={open} onOpenChange={setOpen} modal>
             {/* `self-start` keeps this wrapper at its natural button height
                 even when the parent grid cell stretches (e.g. service form
                 aligns the municipality column with the address column, and
                 the address column grows when the coords badge is rendered).
                 Without it, the absolutely-positioned X drifts vertically
                 with the wrapper. */}
-            <div className={cn('relative self-start', className)}>
+            <div className={cn('relative min-w-0 self-start', className)}>
                 <PopoverTrigger asChild>
                     <Button
                         id={id}
@@ -96,11 +96,13 @@ export default function MunicipalityCombobox({
                         aria-invalid={invalid}
                         disabled={disabled}
                         className={cn(
-                            'w-full justify-between font-normal',
+                            'w-full min-w-0 justify-between font-normal',
                             !selected && 'text-muted-foreground',
                         )}
                     >
-                        <span className="truncate">{displayLabel}</span>
+                        <span className="min-w-0 truncate text-left">
+                            {displayLabel}
+                        </span>
                         <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
                     </Button>
                 </PopoverTrigger>

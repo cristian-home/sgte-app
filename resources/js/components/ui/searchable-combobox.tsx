@@ -114,7 +114,11 @@ export default function SearchableCombobox<T>({
     }, [items, groupBy]);
 
     return (
-        <Popover open={open} onOpenChange={setOpen}>
+        // `modal` makes the Popover register its own scroll lock so trackpad
+        // wheel events scroll the CommandList even when this combobox is
+        // nested inside a Radix Dialog (whose `react-remove-scroll` would
+        // otherwise swallow wheel events on portaled siblings).
+        <Popover open={open} onOpenChange={setOpen} modal>
             <div className={cn('relative self-start', className)}>
                 <PopoverTrigger asChild>
                     <Button

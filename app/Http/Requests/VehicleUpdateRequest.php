@@ -25,15 +25,17 @@ class VehicleUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
+            // internal_code editable but never required-empty (existing
+            // vehicles already have one); blanking it is not a use case.
             'internal_code' => ['required', 'string', 'max:20'],
             'plate' => ['required', 'string', 'max:6'],
-            'mobile_number' => ['required', 'string', 'max:20'],
-            'brand' => ['required', 'string', 'max:50'],
-            'line' => ['required', 'string', 'max:50'],
-            'model_year' => ['required', 'integer'],
+            'mobile_number' => ['nullable', 'string', 'max:20'],
+            'brand' => ['nullable', 'string', 'max:50'],
+            'line' => ['nullable', 'string', 'max:50'],
+            'model_year' => ['nullable', 'integer'],
             'type' => ['required', Rule::enum(VehicleType::class)],
-            'engine_number' => ['required', 'string', 'max:50'],
-            'chassis_number' => ['required', 'string', 'max:50'],
+            'engine_number' => ['nullable', 'string', 'max:50'],
+            'chassis_number' => ['nullable', 'string', 'max:50'],
             'capacity' => ['required', 'integer'],
             'municipality_id' => ['nullable', 'integer', 'exists:municipalities,id'],
             'is_third_party' => ['required', 'boolean'],

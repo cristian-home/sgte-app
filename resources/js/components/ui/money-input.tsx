@@ -18,6 +18,7 @@ interface MoneyInputProps {
     onValueChange: (raw: string) => void;
     placeholder?: string;
     disabled?: boolean;
+    readOnly?: boolean;
     invalid?: boolean;
     autoComplete?: string;
     /** Defaults to 'COP'. Reserved for future locales. */
@@ -44,6 +45,7 @@ export default function MoneyInput({
     onValueChange,
     placeholder,
     disabled,
+    readOnly,
     invalid,
     autoComplete = 'off',
     currency: _currency = 'COP',
@@ -64,6 +66,7 @@ export default function MoneyInput({
             prefix={prefix}
             placeholder={placeholder ?? '$ 0'}
             disabled={disabled}
+            readOnly={readOnly}
             aria-invalid={invalid}
             autoComplete={autoComplete}
             inputMode="numeric"

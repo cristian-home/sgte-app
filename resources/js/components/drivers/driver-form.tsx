@@ -4,8 +4,10 @@ import MunicipalityCombobox, {
     type MunicipalityOption,
 } from '@/components/municipality-combobox';
 import { Checkbox } from '@/components/ui/checkbox';
+import IdentificationInput from '@/components/ui/identification-input';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import PhoneInput from '@/components/ui/phone-input';
 import {
     Select,
     SelectContent,
@@ -14,6 +16,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 export interface CatalogOption {
     id: number;
@@ -155,13 +158,13 @@ export default function DriverForm({
                             Número de Identificación
                             <RequiredMarker />
                         </Label>
-                        <Input
+                        <IdentificationInput
                             id={id('identification_number')}
                             value={data.identification_number}
-                            aria-invalid={invalid('identification_number')}
-                            onChange={(e) =>
-                                setData('identification_number', e.target.value)
+                            onValueChange={(raw) =>
+                                setData('identification_number', raw)
                             }
+                            invalid={invalid('identification_number')}
                         />
                         <InputError message={errors.identification_number} />
                     </div>
@@ -268,11 +271,11 @@ export default function DriverForm({
                             Teléfono
                             <RequiredMarker />
                         </Label>
-                        <Input
+                        <PhoneInput
                             id={id('phone')}
                             value={data.phone}
-                            aria-invalid={invalid('phone')}
-                            onChange={(e) => setData('phone', e.target.value)}
+                            onValueChange={(raw) => setData('phone', raw)}
+                            invalid={invalid('phone')}
                         />
                         <InputError message={errors.phone} />
                     </div>
@@ -303,24 +306,28 @@ export default function DriverForm({
                             Categoría
                             <RequiredMarker />
                         </Label>
-                        <Select
+                        <ToggleGroup
+                            id={id('license_category')}
+                            type="single"
+                            variant="outline"
                             value={data.license_category}
-                            onValueChange={(value) =>
-                                setData('license_category', value)
-                            }
+                            onValueChange={(value) => {
+                                if (!value) return;
+                                setData('license_category', value);
+                            }}
+                            aria-invalid={invalid('license_category')}
+                            className="w-full justify-stretch"
                         >
-                            <SelectTrigger
-                                id={id('license_category')}
-                                aria-invalid={invalid('license_category')}
-                            >
-                                <SelectValue placeholder="Selecciona una categoría" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="C1">C1</SelectItem>
-                                <SelectItem value="C2">C2</SelectItem>
-                                <SelectItem value="C3">C3</SelectItem>
-                            </SelectContent>
-                        </Select>
+                            <ToggleGroupItem value="C1" className="flex-1">
+                                C1
+                            </ToggleGroupItem>
+                            <ToggleGroupItem value="C2" className="flex-1">
+                                C2
+                            </ToggleGroupItem>
+                            <ToggleGroupItem value="C3" className="flex-1">
+                                C3
+                            </ToggleGroupItem>
+                        </ToggleGroup>
                         <InputError message={errors.license_category} />
                     </div>
 
