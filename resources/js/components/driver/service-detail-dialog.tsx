@@ -25,6 +25,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { ServiceStatusLabel } from '@/enums/ServiceStatus';
 import { formatEventTime } from '@/lib/datetime';
+import { cn } from '@/lib/utils';
 import type { Service } from '@/types';
 
 function formatServiceTime(at: string | null, timezone: string): string {
@@ -260,10 +261,21 @@ export function ServiceDetailDialog({
                                 )}
                             </div>
                         )}
-                        {/* Row 1 — secondary actions, all always present so
-                            the layout stays stable across states. Each one
-                            is disabled when its gating condition fails. */}
-                        <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-3">
+                        {/* Row 1 — secondary actions. Mobile always
+                            stacks them in a single column. Desktop uses
+                            3 columns when the Declinar button is in play
+                            and collapses to 2 once the service is
+                            declined, since keeping a permanently-disabled
+                            Declinar button just to fill the grid is
+                            redundant. */}
+                        <div
+                            className={cn(
+                                'grid w-full grid-cols-1 gap-2',
+                                isDeclined
+                                    ? 'sm:grid-cols-2'
+                                    : 'sm:grid-cols-3',
+                            )}
+                        >
                             <OpenInMapsButton
                                 variant="outline"
                                 origin={service.origin_coordinates ?? null}
@@ -288,20 +300,19 @@ export function ServiceDetailDialog({
                                 </Button>
                             )}
 
-                            <Button
-                                variant="outline"
-                                onClick={() => setDeclineOpen(true)}
-                                disabled={
-                                    !isToday ||
-                                    hasStarted ||
-                                    isDeclined ||
-                                    isClosed
-                                }
-                                className="text-destructive hover:text-destructive"
-                            >
-                                <Ban className="mr-1 size-4" />
-                                Declinar servicio
-                            </Button>
+                            {!isDeclined && (
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setDeclineOpen(true)}
+                                    disabled={
+                                        !isToday || hasStarted || isClosed
+                                    }
+                                    className="text-destructive hover:text-destructive"
+                                >
+                                    <Ban className="mr-1 size-4" />
+                                    Declinar servicio
+                                </Button>
+                            )}
                         </div>
 
                         {/* Row 2 — primary action, full width. Its label
