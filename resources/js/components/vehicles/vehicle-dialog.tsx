@@ -48,6 +48,12 @@ interface VehicleDialogProps {
     vehicle?: EditableVehicle | null;
     municipalities: MunicipalityOption[];
     thirdParties: ThirdPartyOption[];
+    /**
+     * Next sequential internal code (e.g. "V-006") suggested by the
+     * backend; pre-filled in the form on create. The user may overwrite
+     * it before saving, or clear it to let the model autogenerate again.
+     */
+    suggestedInternalCode?: string;
 }
 
 const emptyData: VehicleFormData = {
@@ -103,6 +109,7 @@ export default function VehicleDialog({
     vehicle,
     municipalities,
     thirdParties,
+    suggestedInternalCode,
 }: VehicleDialogProps) {
     const { data, setData, post, put, processing, errors, clearErrors } =
         useForm<VehicleFormData>({ ...emptyData });
@@ -117,11 +124,14 @@ export default function VehicleDialog({
         if (mode === 'edit' && vehicle) {
             setData(dataFromVehicle(vehicle));
         } else {
-            setData({ ...emptyData });
+            setData({
+                ...emptyData,
+                internal_code: suggestedInternalCode ?? '',
+            });
         }
         clearErrors();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [open, mode, vehicle?.id]);
+    }, [open, mode, vehicle?.id, suggestedInternalCode]);
 
     function submit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();

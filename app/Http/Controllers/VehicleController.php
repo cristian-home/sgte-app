@@ -69,6 +69,7 @@ class VehicleController extends Controller
 
         return Inertia::render('vehicles/index', [
             'vehicles' => $vehicles,
+            'suggestedInternalCode' => Vehicle::nextInternalCode(),
             ...$this->modalOptions(),
         ]);
     }

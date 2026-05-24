@@ -141,6 +141,35 @@ class Vehicle extends Model
         $this->setAttribute($column, Tz::endOfDayInTzAsUtc($date, $this->resolveTimezone())->utc());
     }
 
+    /**
+     * Auto-generate a sequential `V-NNN` code when the caller leaves
+     * `internal_code` blank. Looks at the max numeric suffix among
+     * existing codes that match `V-<digits>` and picks the next one,
+     * zero-padded to three digits (so V-001 sorts before V-010).
+     * If the user typed a custom value it is preserved verbatim.
+     */
+    public static function nextInternalCode(): string
+    {
+        $maxSuffix = static::query()
+            ->withTrashed()
+            ->where('internal_code', 'like', 'V-%')
+            ->pluck('internal_code')
+            ->filter(fn (string $code): bool => (bool) preg_match('/^V-\d+$/', $code))
+            ->map(fn (string $code) => (int) substr($code, 2))
+            ->max() ?? 0;
+
+        return sprintf('V-%03d', $maxSuffix + 1);
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $vehicle): void {
+            if (blank($vehicle->internal_code)) {
+                $vehicle->internal_code = static::nextInternalCode();
+            }
+        });
+    }
+
     public function municipality(): BelongsTo
     {
         return $this->belongsTo(Municipality::class);

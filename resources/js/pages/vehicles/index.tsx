@@ -2,11 +2,8 @@ import { Head } from '@inertiajs/react';
 import { PlusIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { DataTable } from '@/components/data-table';
-import MunicipalityCombobox, {
-    type MunicipalityOption,
-} from '@/components/municipality-combobox';
+import { type MunicipalityOption } from '@/components/municipality-combobox';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import VehicleDialog, {
     type EditableVehicle,
 } from '@/components/vehicles/vehicle-dialog';
@@ -37,7 +34,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-const vehicleFilters: FilterDefinition[] = [
+const STATIC_VEHICLE_FILTERS: FilterDefinition[] = [
     {
         name: 'status',
         label: 'Estado',
@@ -88,10 +85,12 @@ export default function VehiclesIndex({
     vehicles: paginatedVehicles,
     municipalities,
     thirdParties,
+    suggestedInternalCode,
 }: {
     vehicles: PaginatedData<Vehicle>;
     municipalities: MunicipalityOption[];
     thirdParties: ThirdPartyOption[];
+    suggestedInternalCode: string;
 }) {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
@@ -115,6 +114,23 @@ export default function VehiclesIndex({
         [],
     );
 
+    const vehicleFilters = useMemo<FilterDefinition[]>(
+        () => [
+            ...STATIC_VEHICLE_FILTERS,
+            {
+                name: 'municipality_id',
+                label: 'Municipio',
+                options: municipalities.map((m) => ({
+                    value: String(m.id),
+                    label: m.department
+                        ? `${m.name} (${m.department.name})`
+                        : m.name,
+                })),
+            },
+        ],
+        [municipalities],
+    );
+
     const {
         table,
         paginatedData,
@@ -132,37 +148,10 @@ export default function VehiclesIndex({
         meta: tableMeta,
     });
 
-    const selectedMunicipalityId =
-        activeFilters['municipality_id']?.[0] ?? null;
-
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Vehículos" />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
-                <div className="flex flex-wrap items-end gap-2">
-                    <div className="flex flex-col gap-1">
-                        <Label
-                            htmlFor="vehicles-municipality"
-                            className="text-xs text-muted-foreground"
-                        >
-                            Municipio
-                        </Label>
-                        <MunicipalityCombobox
-                            id="vehicles-municipality"
-                            municipalities={municipalities}
-                            value={selectedMunicipalityId}
-                            onChange={(value) =>
-                                setFilter(
-                                    'municipality_id',
-                                    value ? [value] : [],
-                                )
-                            }
-                            placeholder="Todos los municipios"
-                            className="w-64"
-                        />
-                    </div>
-                </div>
-
                 <DataTable
                     table={table}
                     paginatedData={paginatedData}
@@ -193,6 +182,7 @@ export default function VehiclesIndex({
                 vehicle={selectedVehicle}
                 municipalities={municipalities}
                 thirdParties={thirdParties}
+                suggestedInternalCode={suggestedInternalCode}
             />
         </AppLayout>
     );
