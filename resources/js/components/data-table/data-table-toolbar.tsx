@@ -1,8 +1,9 @@
 'use no memo';
 
-import { X } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Separator } from '@/components/ui/separator';
 import { DataTableFacetedFilter } from './data-table-faceted-filter';
 import { DataTableViewOptions } from './data-table-view-options';
 
@@ -56,24 +57,24 @@ export function DataTableToolbar<TData>({
     return (
         <div className="flex flex-col gap-2">
             <div className="flex items-start justify-between gap-4">
-                <div className="flex flex-1 flex-wrap items-center gap-2">
+                <div className="relative min-w-37.5 flex-1 lg:min-w-62.5">
+                    <Search className="pointer-events-none absolute top-1/2 left-2 size-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
                         placeholder={searchPlaceholder}
                         value={search}
                         onChange={(e) => onSearchChange(e.target.value)}
-                        className="h-8 min-w-37.5 flex-1 lg:min-w-62.5"
+                        className="h-8 pl-8"
                     />
-                    {leadingActions && (
-                        <div className="flex items-center gap-2">
-                            {leadingActions}
-                        </div>
-                    )}
                 </div>
+                <Separator orientation="vertical" className="h-8!" />
                 <div className="flex items-center gap-2">
                     <DataTableViewOptions table={table} />
                     {actions}
                 </div>
             </div>
+            {hasFilterRow && (
+                <Separator label="Filtros:" labelPosition="start" />
+            )}
             {hasFilterRow && (
                 <div className="scroll-fade-x flex items-center gap-2 overflow-y-hidden [&>*]:shrink-0">
                     {filters?.map((filter) => (
@@ -89,6 +90,14 @@ export function DataTableToolbar<TData>({
                         />
                     ))}
                     {extraFilters}
+                </div>
+            )}
+            {leadingActions && (
+                <Separator label="Presets:" labelPosition="start" />
+            )}
+            {leadingActions && (
+                <div className="flex flex-wrap items-center gap-2">
+                    {leadingActions}
                 </div>
             )}
             {hasActiveFilters && (
