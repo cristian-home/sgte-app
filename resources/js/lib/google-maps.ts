@@ -47,6 +47,12 @@ interface StaticMapOptions {
     width?: number;
     height?: number;
     scale?: number;
+    /**
+     * Map color scheme. `'dark'` appends the same `style=` rules as
+     * `staticRouteMapUrl` so a single-point preview matches the rest of
+     * the app's dark theme. Shared `DARK_MAP_STYLE` constant below.
+     */
+    theme?: 'light' | 'dark';
 }
 
 /**
@@ -61,15 +67,20 @@ export function staticMapUrl({
     width = 300,
     height = 160,
     scale = 2,
+    theme = 'light',
 }: StaticMapOptions): string {
-    const params = new URLSearchParams({
-        center: `${lat},${lng}`,
-        zoom: String(zoom),
-        size: `${width}x${height}`,
-        scale: String(scale),
-        markers: `color:red|${lat},${lng}`,
-        key: GOOGLE_MAPS_BROWSER_KEY,
-    });
+    const params = new URLSearchParams();
+    params.append('center', `${lat},${lng}`);
+    params.append('zoom', String(zoom));
+    params.append('size', `${width}x${height}`);
+    params.append('scale', String(scale));
+    params.append('markers', `color:red|${lat},${lng}`);
+    if (theme === 'dark') {
+        for (const rule of DARK_MAP_STYLE) {
+            params.append('style', rule);
+        }
+    }
+    params.append('key', GOOGLE_MAPS_BROWSER_KEY);
     return `https://maps.googleapis.com/maps/api/staticmap?${params.toString()}`;
 }
 

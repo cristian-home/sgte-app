@@ -1,5 +1,6 @@
 import { Link, router } from '@inertiajs/react';
-import { Trash2 } from 'lucide-react';
+import { Eye, Trash2 } from 'lucide-react';
+import type { ColumnDef } from '@tanstack/react-table';
 import { Can } from '@/components/can';
 import { DataTableColumnHeader } from '@/components/data-table';
 import { Badge } from '@/components/ui/badge';
@@ -7,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Permission } from '@/enums/Permission';
 import { formatTimestampInViewerTz } from '@/lib/datetime';
 
-import type { ColumnDef } from '@tanstack/react-table';
 
 export interface VehicleLocationRow {
     id: number;
@@ -130,23 +130,37 @@ export const vehicleLocationColumns: ColumnDef<
         id: 'actions',
         header: () => <span className="sr-only">Acciones</span>,
         cell: ({ row }) => (
-            <Can permission={Permission.DELETE_VEHICLE_LOCATIONS}>
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label="Eliminar"
-                    onClick={() => {
-                        if (confirm('¿Eliminar esta ubicación?')) {
-                            router.delete(
-                                `/vehicle-locations/${row.original.id}`,
-                                { preserveScroll: true },
-                            );
-                        }
-                    }}
-                >
-                    <Trash2 className="size-4" />
-                </Button>
-            </Can>
+            <div className="flex items-center gap-1">
+                <Can permission={Permission.VIEW_VEHICLE_LOCATIONS}>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Ver detalle"
+                        asChild
+                    >
+                        <Link href={`/vehicle-locations/${row.original.id}`}>
+                            <Eye className="size-4" />
+                        </Link>
+                    </Button>
+                </Can>
+                <Can permission={Permission.DELETE_VEHICLE_LOCATIONS}>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Eliminar"
+                        onClick={() => {
+                            if (confirm('¿Eliminar esta ubicación?')) {
+                                router.delete(
+                                    `/vehicle-locations/${row.original.id}`,
+                                    { preserveScroll: true },
+                                );
+                            }
+                        }}
+                    >
+                        <Trash2 className="size-4" />
+                    </Button>
+                </Can>
+            </div>
         ),
     },
 ];

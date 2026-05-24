@@ -87,6 +87,7 @@ export default function RouteStaticMap({
                     width,
                     height,
                     zoom: 13,
+                    theme: resolvedAppearance === 'dark' ? 'dark' : 'light',
                 })}
                 alt={altLabel}
                 width={width}

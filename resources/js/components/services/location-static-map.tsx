@@ -1,4 +1,5 @@
 import { MapPin } from 'lucide-react';
+import { useAppearance } from '@/hooks/use-appearance';
 import { staticMapUrl } from '@/lib/google-maps';
 import { cn } from '@/lib/utils';
 
@@ -46,6 +47,7 @@ export default function LocationStaticMap({
     width = 300,
     height = 160,
 }: LocationStaticMapProps) {
+    const { resolvedAppearance } = useAppearance();
     const parsed = parseCoordinates(coordinates);
 
     if (!parsed) {
@@ -70,6 +72,7 @@ export default function LocationStaticMap({
                 lng: parsed.lng,
                 width,
                 height,
+                theme: resolvedAppearance === 'dark' ? 'dark' : 'light',
             })}
             alt={`Mapa de ${label.toLowerCase()}`}
             width={width}
