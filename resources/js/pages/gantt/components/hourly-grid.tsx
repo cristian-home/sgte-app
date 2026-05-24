@@ -153,7 +153,7 @@ export default function HourlyGrid({
                             {HOUR_LABELS.map((_, i) => (
                                 <div
                                     key={i}
-                                    className="absolute top-0 bottom-0 border-l border-border/40"
+                                    className="absolute inset-y-0 border-l border-border/40"
                                     style={{
                                         left: `${(i / TOTAL_HOURS) * 100}%`,
                                     }}
@@ -163,7 +163,7 @@ export default function HourlyGrid({
                             {/* Current time indicator */}
                             {currentTimePosition !== null && (
                                 <div
-                                    className="absolute top-0 bottom-0 z-10 w-px bg-red-500"
+                                    className="absolute inset-y-0 z-10 w-px bg-red-500"
                                     style={{ left: `${currentTimePosition}%` }}
                                 />
                             )}

@@ -130,6 +130,7 @@ export default function ServicesIndex({
     filterVehicles: VehicleOption[];
     filterMunicipalities: MunicipalityOption[];
 }) {
+    'use no memo';
     const {
         table,
         paginatedData,

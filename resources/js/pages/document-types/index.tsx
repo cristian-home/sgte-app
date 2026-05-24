@@ -89,9 +89,7 @@ export default function DocumentTypesIndex({
                     onEdit={() => openEdit(row.original)}
                     onDelete={() =>
                         router.delete(
-                            DocumentTypeController.destroy.url(
-                                row.original.id,
-                            ),
+                            DocumentTypeController.destroy.url(row.original.id),
                             { preserveScroll: true },
                         )
                     }

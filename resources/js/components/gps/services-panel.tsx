@@ -17,7 +17,7 @@ export function ServicesPanel({
     onSelect: (id: number) => void;
 }) {
     return (
-        <div className="flex h-full min-h-0 w-full flex-col">
+        <div className="flex size-full min-h-0 flex-col">
             <div className="border-b px-3 py-2 text-sm font-medium">
                 Servicios
             </div>

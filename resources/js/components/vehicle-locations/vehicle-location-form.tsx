@@ -60,7 +60,10 @@ export function VehicleLocationForm({
     const hasCoords = lat !== null && lng !== null;
     const pin = hasCoords ? { lat: lat!, lng: lng! } : null;
 
-    function applyCoords(coords: { lat: number; lng: number }, accuracy?: number) {
+    function applyCoords(
+        coords: { lat: number; lng: number },
+        accuracy?: number,
+    ) {
         setData('latitude', String(coords.lat));
         setData('longitude', String(coords.lng));
         if (accuracy !== undefined) {

@@ -46,6 +46,7 @@ export default function AuditLogIndex({
     users,
     subjectTypes,
 }: AuditLogIndexProps) {
+    'use no memo';
     const [sheetOpen, setSheetOpen] = useState(false);
     const [selectedActivity, setSelectedActivity] =
         useState<ActivityRow | null>(null);

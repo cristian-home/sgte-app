@@ -74,7 +74,7 @@ function TwoFactorSetupStep({
                 <>
                     <div className="mx-auto flex max-w-md overflow-hidden">
                         <div className="mx-auto aspect-square w-64 rounded-lg border border-border">
-                            <div className="z-10 flex h-full w-full items-center justify-center p-5">
+                            <div className="z-10 flex size-full items-center justify-center p-5">
                                 {qrCodeSvg ? (
                                     <div
                                         className="aspect-square w-full rounded-lg bg-white p-2 [&_svg]:size-full"
@@ -111,7 +111,7 @@ function TwoFactorSetupStep({
                     <div className="flex w-full space-x-2">
                         <div className="flex w-full items-stretch overflow-hidden rounded-xl border border-border">
                             {!manualSetupKey ? (
-                                <div className="flex h-full w-full items-center justify-center bg-muted p-3">
+                                <div className="flex size-full items-center justify-center bg-muted p-3">
                                     <Spinner />
                                 </div>
                             ) : (
@@ -120,7 +120,7 @@ function TwoFactorSetupStep({
                                         type="text"
                                         readOnly
                                         value={manualSetupKey}
-                                        className="h-full w-full bg-background p-3 font-mono text-sm tracking-wider text-foreground outline-none select-all"
+                                        className="size-full bg-background p-3 font-mono text-sm tracking-wider text-foreground outline-none select-all"
                                     />
                                     <button
                                         onClick={() => copy(manualSetupKey)}

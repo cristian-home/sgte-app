@@ -92,6 +92,7 @@ export default function VehiclesIndex({
     thirdParties: ThirdPartyOption[];
     suggestedInternalCode: string;
 }) {
+    'use no memo';
     const [dialogOpen, setDialogOpen] = useState(false);
     const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
     const [selectedVehicle, setSelectedVehicle] =

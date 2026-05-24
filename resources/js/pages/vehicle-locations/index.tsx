@@ -39,6 +39,7 @@ export default function VehicleLocationsIndex({
     vehicleLocations,
     vehicles,
 }: Props) {
+    'use no memo';
     const {
         table,
         paginatedData,

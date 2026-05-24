@@ -87,18 +87,18 @@ export default function DriverDashboard({
                     navigator on the right. Wraps on narrow widths. */}
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="min-w-0">
-                        <h1 className="text-xl leading-tight font-bold tracking-tight sm:text-2xl">
+                        <h1 className="text-xl/tight font-bold tracking-tight sm:text-2xl">
                             Mis Servicios
                         </h1>
                         <p className="text-xs text-muted-foreground capitalize sm:text-sm">
                             {headerDate}
                             {!isToday && (
-                                <span className="ml-2 normal-case text-muted-foreground/80">
+                                <span className="ml-2 text-muted-foreground/80 normal-case">
                                     · acciones limitadas
                                 </span>
                             )}
                             {showViewerHint && (
-                                <span className="ml-2 normal-case text-muted-foreground/80">
+                                <span className="ml-2 text-muted-foreground/80 normal-case">
                                     · {operationTz} (tu nav: {viewerTz})
                                 </span>
                             )}

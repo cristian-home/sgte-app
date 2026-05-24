@@ -49,7 +49,7 @@ export default function RolesIndex({ roles: items }: { roles: RoleCard[] }) {
 
                 <AdminTabs current="roles" />
 
-                <div className="grid [grid-template-columns:repeat(auto-fill,minmax(320px,1fr))] gap-4">
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4">
                     {items.map((role) => (
                         <Card key={role.id} className="flex flex-col gap-3 p-5">
                             <div className="flex items-start gap-3">

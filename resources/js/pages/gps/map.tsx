@@ -194,7 +194,7 @@ export default function GpsMap({
                                 gestureHandling="greedy"
                                 clickableIcons={false}
                                 streetViewControl={false}
-                                className="h-full w-full"
+                                className="size-full"
                             >
                                 <FitBounds services={activeServices} />
                                 <FocusService

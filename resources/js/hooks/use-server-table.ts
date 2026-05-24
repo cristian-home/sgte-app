@@ -283,6 +283,7 @@ export function useServerTable<TData>({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentParams, fetchData]);
 
+    // eslint-disable-next-line react-hooks/incompatible-library
     const table = useReactTable({
         data: paginatedData.data,
         columns,

@@ -44,6 +44,7 @@ export default function InvoicesIndex({
     invoices: PaginatedData<InvoiceRow>;
     thirdParties: ThirdPartyOption[];
 }) {
+    'use no memo';
     const [dialogOpen, setDialogOpen] = useState(false);
     const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
     const [selectedInvoice, setSelectedInvoice] =

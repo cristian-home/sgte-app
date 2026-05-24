@@ -52,7 +52,7 @@ export default function ServiceBar({
                         type="button"
                         data-service-blocked={isBlocked ? 'true' : 'false'}
                         className={cn(
-                            'absolute top-0.5 bottom-0.5 cursor-pointer overflow-hidden rounded px-1.5 py-0.5 text-left text-white shadow-sm transition-colors',
+                            'absolute inset-y-0.5 cursor-pointer overflow-hidden rounded px-1.5 py-0.5 text-left text-white shadow-sm transition-colors',
                             isBlocked
                                 ? 'bg-zinc-400 opacity-70 ring-2 ring-zinc-500 hover:bg-zinc-500 dark:bg-zinc-600 dark:ring-zinc-400 dark:hover:bg-zinc-500'
                                 : isDeclined

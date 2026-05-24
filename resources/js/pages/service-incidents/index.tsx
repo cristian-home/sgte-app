@@ -40,6 +40,7 @@ export default function ServiceIncidentsIndex({
     serviceIncidents: PaginatedData<ServiceIncidentRow>;
     incidentTypes: IncidentTypeOption[];
 }) {
+    'use no memo';
     const {
         table,
         paginatedData,

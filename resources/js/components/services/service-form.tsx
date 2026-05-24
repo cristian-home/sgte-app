@@ -756,7 +756,7 @@ export default function ServiceForm({
                                         aria-label="Crear nuevo contrato"
                                         title="Crear nuevo contrato"
                                     >
-                                        <Plus className="h-4 w-4" />
+                                        <Plus className="size-4" />
                                     </Button>
                                 )}
                             </div>
@@ -1545,7 +1545,7 @@ export default function ServiceForm({
                     </Label>
                     <textarea
                         id="manual_entry_justification"
-                        className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                        className="flex min-h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                         value={data.manual_entry_justification}
                         placeholder="Ej: El servicio se ejecutó sin acceso al sistema; registro histórico."
                         minLength={10}
@@ -1565,7 +1565,7 @@ export default function ServiceForm({
             {isAdminEdit && (
                 <>
                     <Alert variant="destructive">
-                        <AlertTriangle className="h-4 w-4" />
+                        <AlertTriangle className="size-4" />
                         <AlertTitle>Día ejecutado</AlertTitle>
                         <AlertDescription>
                             Este servicio pertenece a un día ejecutado. La
@@ -1587,7 +1587,7 @@ export default function ServiceForm({
                                 </Label>
                                 <textarea
                                     id="justification"
-                                    className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                                    className="flex min-h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                                     value={data.justification}
                                     placeholder="Explique el motivo de la modificación..."
                                     onChange={(e) =>

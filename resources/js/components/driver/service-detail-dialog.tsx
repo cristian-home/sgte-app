@@ -108,7 +108,7 @@ export function ServiceDetailDialog({
                                         <Truck className="size-5 text-muted-foreground sm:size-6" />
                                     </div>
                                     <div className="min-w-0">
-                                        <DialogTitle className="text-lg leading-tight sm:text-xl">
+                                        <DialogTitle className="text-lg/tight sm:text-xl">
                                             {service.vehicle?.plate ?? '—'}
                                         </DialogTitle>
                                         <DialogDescription className="mt-0.5 line-clamp-1">
@@ -160,7 +160,7 @@ export function ServiceDetailDialog({
                             </div>
                             <div className="relative flex-1">
                                 <div className="h-px w-full bg-border" />
-                                <div className="absolute top-1/2 right-0 size-0 -translate-y-1/2 border-y-[4px] border-l-[6px] border-y-transparent border-l-border" />
+                                <div className="absolute top-1/2 right-0 size-0 -translate-y-1/2 border-y-4 border-l-[6px] border-y-transparent border-l-border" />
                             </div>
                             <div className="flex min-w-0 shrink-0 items-center gap-2">
                                 <MapPin className="size-4 text-muted-foreground" />
@@ -247,7 +247,7 @@ export function ServiceDetailDialog({
                         secondary action grid, and the full-width primary
                         CTA. Always visible regardless of how long the
                         scrollable body grows. */}
-                    <DialogFooter className="!flex-col shrink-0 gap-2 border-t px-4 pt-3 pb-4 sm:px-6 sm:pt-4 sm:pb-6">
+                    <DialogFooter className="shrink-0 flex-col! gap-2 border-t px-4 pt-3 pb-4 sm:px-6 sm:pt-4 sm:pb-6">
                         {isDeclined && (
                             <div className="w-full rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
                                 <p className="font-medium">
@@ -409,7 +409,7 @@ export function ServiceDetailDialog({
                             </Label>
                             <textarea
                                 id="reason_text"
-                                className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                                className="flex min-h-25 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                                 value={declineForm.data.reason_text}
                                 placeholder="Ej: Incapacidad médica, vehículo con falla mecánica, etc."
                                 minLength={10}

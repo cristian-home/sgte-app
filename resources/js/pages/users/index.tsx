@@ -42,6 +42,7 @@ export default function UsersIndex({
     users: PaginatedData<UserRow>;
     availableRoles: RoleOption[];
 }) {
+    'use no memo';
     const page = usePage();
     const currentUserId = (page.props.auth as { user: { id: number } }).user.id;
 

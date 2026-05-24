@@ -153,7 +153,7 @@ export default function Dashboard({ kpis, documentAlerts }: DashboardProps) {
                     <CardHeader>
                         <div className="flex items-center gap-2">
                             <AlertTriangle
-                                className="h-5 w-5 text-amber-500"
+                                className="size-5 text-amber-500"
                                 aria-hidden
                             />
                             <CardTitle>Alertas de documentos</CardTitle>
@@ -243,7 +243,7 @@ function KpiCard({
                         {title}
                     </CardTitle>
                     <Icon
-                        className="h-5 w-5 text-muted-foreground"
+                        className="size-5 text-muted-foreground"
                         aria-hidden
                     />
                 </div>
