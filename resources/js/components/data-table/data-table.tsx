@@ -211,9 +211,9 @@ function DataTableBody<TData>({
     const columnCount = table.getAllColumns().length;
 
     return (
-        <div className="rounded-md border">
+        <div className="rounded-md border overflow-hidden">
             <Table>
-                <TableHeader>
+                <TableHeader className="bg-muted">
                     {table.getHeaderGroups().map((headerGroup) => (
                         <TableRow key={headerGroup.id}>
                             {headerGroup.headers.map((header) => (
