@@ -63,7 +63,11 @@ export function DataTableToolbar<TData>({
                         onChange={(e) => onSearchChange(e.target.value)}
                         className="h-8 w-37.5 lg:w-62.5"
                     />
-                    {leadingActions}
+                    {leadingActions && (
+                        <div className="flex items-center gap-2">
+                            {leadingActions}
+                        </div>
+                    )}
                 </div>
                 <div className="flex items-center gap-2">
                     <DataTableViewOptions table={table} />
