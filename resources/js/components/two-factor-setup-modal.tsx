@@ -120,7 +120,7 @@ function TwoFactorSetupStep({
                                         type="text"
                                         readOnly
                                         value={manualSetupKey}
-                                        className="h-full w-full bg-background p-3 text-foreground outline-none"
+                                        className="h-full w-full bg-background p-3 font-mono text-sm tracking-wider text-foreground outline-none select-all"
                                     />
                                     <button
                                         onClick={() => copy(manualSetupKey)}

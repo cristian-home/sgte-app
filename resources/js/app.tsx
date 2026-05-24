@@ -64,17 +64,17 @@ if (import.meta.env.PROD) {
                     // calling `updateSW(true)` to activate the new SW.
                     // For now we just surface that an update is available
                     // so developers can confirm the SW lifecycle works.
-                    // eslint-disable-next-line no-console
+                     
                     console.info('[PWA] New content available, refresh to update.');
                 },
                 onOfflineReady() {
-                    // eslint-disable-next-line no-console
+                     
                     console.info('[PWA] App shell cached for offline use.');
                 },
             });
         })
         .catch((error) => {
-            // eslint-disable-next-line no-console
+             
             console.warn('[PWA] Failed to register service worker', error);
         });
 }

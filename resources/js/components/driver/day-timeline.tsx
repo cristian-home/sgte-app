@@ -101,7 +101,7 @@ export function DayTimeline({
     return (
         <div
             ref={containerRef}
-            className="relative min-h-0 flex-1 overflow-y-auto rounded-md border bg-card"
+            className="relative min-h-0 flex-1 overflow-y-auto rounded-md border bg-muted/50 dark:bg-background"
         >
             <div className="relative">
                 {HOURS.map((h) => {

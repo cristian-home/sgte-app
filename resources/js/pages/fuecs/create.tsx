@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
     Table,
     TableBody,
@@ -194,7 +195,22 @@ export default function FuecsCreate() {
                                 />
                             </div>
 
-                            <div className="rounded-md border">
+                            <RadioGroup
+                                value={
+                                    data.service_id === ''
+                                        ? ''
+                                        : String(data.service_id)
+                                }
+                                onValueChange={(value) => {
+                                    setData(
+                                        'service_id',
+                                        value === '' ? '' : Number(value),
+                                    );
+                                    setPreviewUrl(null);
+                                    setPreviewError(null);
+                                }}
+                                className="rounded-md border"
+                            >
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
@@ -231,24 +247,11 @@ export default function FuecsCreate() {
                                         {candidates.map((candidate) => (
                                             <TableRow key={candidate.id}>
                                                 <TableCell>
-                                                    <input
-                                                        type="radio"
-                                                        name="service_id"
-                                                        value={candidate.id}
-                                                        checked={
-                                                            data.service_id ===
-                                                            candidate.id
-                                                        }
-                                                        onChange={() => {
-                                                            setData(
-                                                                'service_id',
-                                                                candidate.id,
-                                                            );
-                                                            setPreviewUrl(null);
-                                                            setPreviewError(
-                                                                null,
-                                                            );
-                                                        }}
+                                                    <RadioGroupItem
+                                                        value={String(
+                                                            candidate.id,
+                                                        )}
+                                                        aria-label={`Servicio ${candidate.id}`}
                                                     />
                                                 </TableCell>
                                                 <TableCell>
@@ -273,7 +276,7 @@ export default function FuecsCreate() {
                                         ))}
                                     </TableBody>
                                 </Table>
-                            </div>
+                            </RadioGroup>
 
                             <div className="flex flex-wrap gap-2">
                                 <Button

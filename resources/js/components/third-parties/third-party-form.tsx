@@ -3,8 +3,11 @@ import MunicipalityCombobox, {
     type MunicipalityOption,
 } from '@/components/municipality-combobox';
 import { Checkbox } from '@/components/ui/checkbox';
+import IdentificationInput from '@/components/ui/identification-input';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import NitInput from '@/components/ui/nit-input';
+import PhoneInput from '@/components/ui/phone-input';
 import {
     Select,
     SelectContent,
@@ -82,6 +85,12 @@ export default function ThirdPartyForm({
     idPrefix = '',
 }: ThirdPartyFormProps) {
     const id = (name: string) => (idPrefix ? `${idPrefix}_${name}` : name);
+    const selectedDocType = documentTypes.find(
+        (dt) => String(dt.id) === data.document_type_id,
+    );
+    const docCode = selectedDocType?.code.toUpperCase() ?? '';
+    const isNitDocument = docCode === 'NIT';
+    const isPassportDocument = docCode === 'PA' || docCode === 'PASAPORTE';
 
     return (
         <div className="space-y-6">
@@ -116,13 +125,37 @@ export default function ThirdPartyForm({
                         Número de Identificación
                         <RequiredMarker />
                     </Label>
-                    <Input
-                        id={id('identification_number')}
-                        value={data.identification_number}
-                        onChange={(e) =>
-                            setData('identification_number', e.target.value)
-                        }
-                    />
+                    {isNitDocument ? (
+                        <NitInput
+                            id={id('identification_number')}
+                            value={data.identification_number}
+                            onValueChange={(raw) =>
+                                setData('identification_number', raw)
+                            }
+                            invalid={!!errors.identification_number}
+                        />
+                    ) : isPassportDocument ? (
+                        <Input
+                            id={id('identification_number')}
+                            value={data.identification_number}
+                            aria-invalid={!!errors.identification_number}
+                            onChange={(e) =>
+                                setData(
+                                    'identification_number',
+                                    e.target.value,
+                                )
+                            }
+                        />
+                    ) : (
+                        <IdentificationInput
+                            id={id('identification_number')}
+                            value={data.identification_number}
+                            onValueChange={(raw) =>
+                                setData('identification_number', raw)
+                            }
+                            invalid={!!errors.identification_number}
+                        />
+                    )}
                     <InputError message={errors.identification_number} />
                 </div>
             </div>
@@ -261,10 +294,11 @@ export default function ThirdPartyForm({
                         Teléfono
                         <RequiredMarker />
                     </Label>
-                    <Input
+                    <PhoneInput
                         id={id('phone')}
                         value={data.phone}
-                        onChange={(e) => setData('phone', e.target.value)}
+                        onValueChange={(raw) => setData('phone', raw)}
+                        invalid={!!errors.phone}
                     />
                     <InputError message={errors.phone} />
                 </div>

@@ -1,5 +1,5 @@
 import { Form } from '@inertiajs/react';
-import { Eye, EyeOff, LockKeyhole, RefreshCw } from 'lucide-react';
+import { Check, Copy, Eye, EyeOff, LockKeyhole, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -9,6 +9,7 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import { useClipboard } from '@/hooks/use-clipboard';
 import { regenerateRecoveryCodes } from '@/routes/two-factor';
 import AlertError from './alert-error';
 
@@ -26,6 +27,7 @@ export default function TwoFactorRecoveryCodes({
     const [codesAreVisible, setCodesAreVisible] = useState<boolean>(false);
     const codesSectionRef = useRef<HTMLDivElement | null>(null);
     const canRegenerateCodes = recoveryCodesList.length > 0 && codesAreVisible;
+    const [copiedText, copy] = useClipboard();
 
     const toggleCodesVisibility = useCallback(async () => {
         if (!codesAreVisible && !recoveryCodesList.length) {
@@ -117,15 +119,63 @@ export default function TwoFactorRecoveryCodes({
                                     aria-label="Códigos de recuperación"
                                 >
                                     {recoveryCodesList.length ? (
-                                        recoveryCodesList.map((code, index) => (
-                                            <div
-                                                key={index}
-                                                role="listitem"
-                                                className="select-text"
-                                            >
-                                                {code}
+                                        <>
+                                            <div className="mb-2 flex justify-end">
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                        copy(
+                                                            recoveryCodesList.join(
+                                                                '\n',
+                                                            ),
+                                                        )
+                                                    }
+                                                    aria-label="Copiar todos los códigos"
+                                                >
+                                                    {copiedText ===
+                                                    recoveryCodesList.join(
+                                                        '\n',
+                                                    ) ? (
+                                                        <Check className="size-3.5" />
+                                                    ) : (
+                                                        <Copy className="size-3.5" />
+                                                    )}
+                                                    Copiar todos
+                                                </Button>
                                             </div>
-                                        ))
+                                            {recoveryCodesList.map(
+                                                (code, index) => (
+                                                    <div
+                                                        key={index}
+                                                        role="listitem"
+                                                        className="flex items-center justify-between gap-2 rounded px-1 py-0.5 hover:bg-background/60"
+                                                    >
+                                                        <span className="select-text">
+                                                            {code}
+                                                        </span>
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="size-7"
+                                                            onClick={() =>
+                                                                copy(code)
+                                                            }
+                                                            aria-label={`Copiar código ${index + 1}`}
+                                                        >
+                                                            {copiedText ===
+                                                            code ? (
+                                                                <Check className="size-3" />
+                                                            ) : (
+                                                                <Copy className="size-3" />
+                                                            )}
+                                                        </Button>
+                                                    </div>
+                                                ),
+                                            )}
+                                        </>
                                     ) : (
                                         <div
                                             className="space-y-2"

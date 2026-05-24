@@ -1,7 +1,24 @@
 import { usePage } from '@inertiajs/react';
-import { Plus } from 'lucide-react';
+import {
+    Briefcase,
+    CalendarClock,
+    CalendarDays,
+    Clock,
+    HeartPulse,
+    Plane,
+    Plus,
+    Route,
+    Users,
+} from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import InputError from '@/components/input-error';
+import {
+    Choicebox,
+    ChoiceboxIndicator,
+    ChoiceboxItem,
+    ChoiceboxItemHeader,
+    ChoiceboxItemTitle,
+} from '@/components/kibo-ui/choicebox';
 import { type MunicipalityOption } from '@/components/municipality-combobox';
 import ThirdPartyCombobox, {
     type ThirdPartyOption,
@@ -10,14 +27,8 @@ import ThirdPartyDialog from '@/components/third-parties/third-party-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import TimezoneCombobox from '@/components/ui/timezone-combobox';
 import { BillingUnitType } from '@/enums/BillingUnitType';
 import type { DocumentTypeOption } from '@/components/third-parties/third-party-form';
 
@@ -69,21 +80,23 @@ function RequiredMarker() {
 export const CONTRACT_OBJECT_OPTIONS: Array<{
     value: string;
     label: string;
+    icon: typeof Briefcase;
 }> = [
-    { value: 'business', label: 'Empresarial' },
-    { value: 'tourism', label: 'Turismo' },
-    { value: 'health', label: 'Salud' },
-    { value: 'occasional', label: 'Ocasional' },
+    { value: 'business', label: 'Empresarial', icon: Briefcase },
+    { value: 'tourism', label: 'Turismo', icon: Plane },
+    { value: 'health', label: 'Salud', icon: HeartPulse },
+    { value: 'occasional', label: 'Ocasional', icon: CalendarClock },
 ];
 
 export const BILLING_UNIT_TYPE_OPTIONS: Array<{
     value: string;
     label: string;
+    icon: typeof Route;
 }> = [
-    { value: BillingUnitType.Viaje, label: 'Viaje' },
-    { value: BillingUnitType.Pasajero, label: 'Pasajero' },
-    { value: BillingUnitType.Dia, label: 'Día' },
-    { value: BillingUnitType.Hora, label: 'Hora' },
+    { value: BillingUnitType.Viaje, label: 'Viaje', icon: Route },
+    { value: BillingUnitType.Pasajero, label: 'Pasajero', icon: Users },
+    { value: BillingUnitType.Dia, label: 'Día', icon: CalendarDays },
+    { value: BillingUnitType.Hora, label: 'Hora', icon: Clock },
 ];
 
 export default function ContractForm({
@@ -204,34 +217,43 @@ export default function ContractForm({
                 />
             )}
 
-            <div className="grid gap-4 md:grid-cols-3">
-                <div className="grid gap-2">
-                    <Label htmlFor={id('contract_object')}>
-                        Objeto del Contrato
-                        <RequiredMarker />
-                    </Label>
-                    <Select
-                        value={data.contract_object}
-                        onValueChange={(value) =>
-                            setData('contract_object', value)
-                        }
-                    >
-                        <SelectTrigger
-                            id={id('contract_object')}
-                            aria-invalid={invalid('contract_object')}
-                        >
-                            <SelectValue placeholder="Selecciona un objeto" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {CONTRACT_OBJECT_OPTIONS.map((opt) => (
-                                <SelectItem key={opt.value} value={opt.value}>
-                                    {opt.label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                    <InputError message={errors.contract_object} />
-                </div>
+            <div className="grid gap-2">
+                <Label htmlFor={id('contract_object')}>
+                    Objeto del Contrato
+                    <RequiredMarker />
+                </Label>
+                <Choicebox
+                    id={id('contract_object')}
+                    value={data.contract_object}
+                    onValueChange={(value) =>
+                        setData('contract_object', value)
+                    }
+                    aria-invalid={invalid('contract_object')}
+                    className="grid grid-cols-2 gap-2 sm:grid-cols-4"
+                >
+                    {CONTRACT_OBJECT_OPTIONS.map((opt) => {
+                        const Icon = opt.icon;
+                        return (
+                            <ChoiceboxItem
+                                key={opt.value}
+                                id={`${id('contract_object')}-${opt.value}`}
+                                value={opt.value}
+                            >
+                                <ChoiceboxItemHeader>
+                                    <ChoiceboxItemTitle className="flex items-center gap-2">
+                                        <Icon aria-hidden className="size-4" />
+                                        {opt.label}
+                                    </ChoiceboxItemTitle>
+                                </ChoiceboxItemHeader>
+                                <ChoiceboxIndicator />
+                            </ChoiceboxItem>
+                        );
+                    })}
+                </Choicebox>
+                <InputError message={errors.contract_object} />
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
 
                 <div className="grid gap-2">
                     <Label htmlFor={id('start_date')}>
@@ -264,15 +286,13 @@ export default function ContractForm({
                 </div>
             </div>
 
-            <div className="grid gap-2 md:max-w-xs">
+            <div className="grid gap-2">
                 <Label htmlFor={id('timezone')}>Zona horaria</Label>
-                <Input
+                <TimezoneCombobox
                     id={id('timezone')}
-                    type="text"
                     value={data.timezone || operationTz}
-                    aria-invalid={invalid('timezone')}
-                    onChange={(e) => setData('timezone', e.target.value)}
-                    list={id('timezone-options')}
+                    onChange={(value) => setData('timezone', value)}
+                    invalid={invalid('timezone')}
                     placeholder={operationTz}
                 />
                 <p className="text-xs text-muted-foreground">
@@ -301,30 +321,42 @@ export default function ContractForm({
                 <InputError message={errors.route_description} />
             </div>
 
-            <div className="grid gap-2 md:max-w-xs">
+            <div className="grid gap-2">
                 <Label htmlFor={id('billing_unit_type')}>
                     Unidad de Facturación
                 </Label>
-                <Select
+                <Choicebox
+                    id={id('billing_unit_type')}
                     value={data.billing_unit_type}
                     onValueChange={(value) =>
                         setData('billing_unit_type', value)
                     }
+                    aria-invalid={invalid('billing_unit_type')}
+                    className="grid grid-cols-2 gap-2 sm:grid-cols-4"
                 >
-                    <SelectTrigger
-                        id={id('billing_unit_type')}
-                        aria-invalid={invalid('billing_unit_type')}
-                    >
-                        <SelectValue placeholder="Selecciona una unidad (opcional)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {BILLING_UNIT_TYPE_OPTIONS.map((opt) => (
-                            <SelectItem key={opt.value} value={opt.value}>
-                                {opt.label}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+                    {BILLING_UNIT_TYPE_OPTIONS.map((opt) => {
+                        const Icon = opt.icon;
+                        return (
+                            <ChoiceboxItem
+                                key={opt.value}
+                                id={`${id('billing_unit_type')}-${opt.value}`}
+                                value={opt.value}
+                                className="h-full !items-center"
+                            >
+                                <ChoiceboxItemHeader>
+                                    <ChoiceboxItemTitle className="flex items-center gap-2">
+                                        <Icon
+                                            aria-hidden
+                                            className="size-4 shrink-0"
+                                        />
+                                        <span>{opt.label}</span>
+                                    </ChoiceboxItemTitle>
+                                </ChoiceboxItemHeader>
+                                <ChoiceboxIndicator />
+                            </ChoiceboxItem>
+                        );
+                    })}
+                </Choicebox>
                 <p className="text-xs text-muted-foreground">
                     Define cómo se factura este contrato (viaje, pasajero, día u
                     hora). Aparece como "Cantidad (…)" en el formulario de

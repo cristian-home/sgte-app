@@ -4,6 +4,7 @@ import ThirdPartyCombobox, {
 } from '@/components/third-parties/third-party-combobox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import MoneyInput from '@/components/ui/money-input';
 import {
     Select,
     SelectContent,
@@ -135,24 +136,14 @@ export default function InvoiceForm({
                         Valor Total
                         <RequiredMarker />
                     </Label>
-                    <div className="relative">
-                        <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground">
-                            $
-                        </span>
-                        <Input
-                            id={id('total_value')}
-                            type="number"
-                            step="0.01"
-                            min="0.01"
-                            value={data.total_value}
-                            readOnly={isTotalLocked}
-                            aria-invalid={invalid('total_value')}
-                            onChange={(e) =>
-                                setData('total_value', e.target.value)
-                            }
-                            className="pl-7 tabular-nums"
-                        />
-                    </div>
+                    <MoneyInput
+                        id={id('total_value')}
+                        value={data.total_value}
+                        onValueChange={(raw) => setData('total_value', raw)}
+                        readOnly={isTotalLocked}
+                        invalid={invalid('total_value')}
+                        className="tabular-nums"
+                    />
                     {isTotalLocked && (
                         <p className="text-xs text-muted-foreground italic">
                             (calculado automáticamente — hay {servicesCount}{' '}
