@@ -41,10 +41,11 @@ export default defineConfig({
                 scope: '/',
                 start_url: '/',
                 display: 'standalone',
-                // Light background matches `oklch(1 0 0)` from resources/css/app.css.
-                background_color: '#ffffff',
-                // Theme color matches `--primary` (`oklch(0.216 0.006 56.043)`)
-                // — the deep stone tone used across the chrome.
+                // Both colors match `--primary` (`oklch(0.216 0.006 56.043)`)
+                // — the deep stone tone used across the chrome. Keeping
+                // background_color equal to theme_color avoids a white flash
+                // on the Android splash screen before the app boots.
+                background_color: '#292524',
                 theme_color: '#292524',
                 // `icons` are intentionally omitted here — `pwaAssets` below
                 // loads `pwa-assets.config.ts` and overrides the manifest's
