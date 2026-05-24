@@ -33,8 +33,16 @@
         <title inertia>{{ config('app.name', 'Laravel') }}</title>
 
         <link rel="icon" href="/favicon.ico" sizes="any">
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+        <link rel="icon" href="/pwa-icon.svg" type="image/svg+xml">
+        <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png">
+
+        {{-- PWA: vite-plugin-pwa emits the manifest into /build at build time. --}}
+        <link rel="manifest" href="/build/manifest.webmanifest">
+        <meta name="theme-color" content="#292524">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="default">
+        <meta name="apple-mobile-web-app-title" content="SGTE">
+        <meta name="mobile-web-app-capable" content="yes">
 
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />

@@ -47,3 +47,34 @@ createInertiaApp({
 
 // This will set light / dark mode on load...
 initializeTheme();
+
+// PWA service worker registration. Only runs in production builds — the dev
+// server never ships a SW (see `devOptions.enabled` in vite.config.ts).
+if (import.meta.env.PROD) {
+    // The `virtual:pwa-register` module is provided at build time by
+    // `vite-plugin-pwa`. We import it lazily so the dev bundle never tries
+    // to resolve it.
+    import('virtual:pwa-register')
+        .then(({ registerSW }) => {
+            registerSW({
+                immediate: true,
+                onNeedRefresh() {
+                    // TODO(pwa-phase-2): replace this console log with an
+                    // in-app toast that offers the user a "Recargar" action,
+                    // calling `updateSW(true)` to activate the new SW.
+                    // For now we just surface that an update is available
+                    // so developers can confirm the SW lifecycle works.
+                    // eslint-disable-next-line no-console
+                    console.info('[PWA] New content available, refresh to update.');
+                },
+                onOfflineReady() {
+                    // eslint-disable-next-line no-console
+                    console.info('[PWA] App shell cached for offline use.');
+                },
+            });
+        })
+        .catch((error) => {
+            // eslint-disable-next-line no-console
+            console.warn('[PWA] Failed to register service worker', error);
+        });
+}
