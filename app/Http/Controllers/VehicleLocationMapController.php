@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\Permission;
 use App\Enums\ServiceStatus;
 use App\Models\Service;
-use App\Models\VehicleLocation;
+use App\Support\VehicleLocationResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
@@ -51,7 +51,10 @@ class VehicleLocationMapController extends Controller
             ]);
 
         $activeServices = $services->map(function (Service $service): array {
-            $location = $this->resolveLatestLocation($service);
+            $location = VehicleLocationResolver::latestForVehicle(
+                vehicleId: $service->vehicle_id,
+                serviceId: $service->id,
+            );
 
             return [
                 'service_id' => $service->id,
@@ -77,28 +80,6 @@ class VehicleLocationMapController extends Controller
         return Inertia::render('gps/map', [
             'activeServices' => $activeServices,
         ]);
-    }
-
-    /**
-     * Service-scoped location first; fall back to any location for
-     * this vehicle within the last 24 hours.
-     */
-    protected function resolveLatestLocation(Service $service): ?VehicleLocation
-    {
-        $scoped = VehicleLocation::query()
-            ->where('service_id', $service->id)
-            ->orderByDesc('recorded_at')
-            ->first();
-
-        if ($scoped) {
-            return $scoped;
-        }
-
-        return VehicleLocation::query()
-            ->where('vehicle_id', $service->vehicle_id)
-            ->where('recorded_at', '>=', now()->subDay())
-            ->orderByDesc('recorded_at')
-            ->first();
     }
 
     /**
