@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
+import type { ReactNode } from 'react';
 
 /**
  * Hides its text below the `@md` container breakpoint (~448px) so the
@@ -20,7 +20,7 @@ export function ToolbarLabel({
     className?: string;
 }) {
     return (
-        <span className={cn('hidden @md:ml-2 @md:inline', className)}>
+        <span className={cn('hidden @lg:inline', className)}>
             {children}
         </span>
     );
