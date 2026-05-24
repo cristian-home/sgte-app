@@ -50,46 +50,54 @@ export function DataTableToolbar<TData>({
 }: DataTableToolbarProps<TData>) {
     const hasActiveFilters =
         activeFilters && Object.values(activeFilters).some((v) => v.length > 0);
+    const hasFilterRow =
+        (filters?.length ?? 0) > 0 || extraFilters !== undefined;
 
     return (
-        <div className="flex items-center justify-between gap-4">
-            <div className="flex flex-1 flex-wrap items-center gap-2">
-                <Input
-                    placeholder={searchPlaceholder}
-                    value={search}
-                    onChange={(e) => onSearchChange(e.target.value)}
-                    className="h-8 w-37.5 lg:w-62.5"
-                />
-                {filters?.map((filter) => (
-                    <DataTableFacetedFilter
-                        key={filter.name}
-                        name={filter.name}
-                        label={filter.label}
-                        options={filter.options}
-                        selected={activeFilters?.[filter.name] ?? []}
-                        onSelectionChange={(values) =>
-                            onFilterChange?.(filter.name, values)
-                        }
+        <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between gap-4">
+                <div className="flex flex-1 flex-wrap items-center gap-2">
+                    <Input
+                        placeholder={searchPlaceholder}
+                        value={search}
+                        onChange={(e) => onSearchChange(e.target.value)}
+                        className="h-8 w-37.5 lg:w-62.5"
                     />
-                ))}
-                {extraFilters}
-                {leadingActions}
-                {hasActiveFilters && (
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 px-2 lg:px-3"
-                        onClick={onClearFilters}
-                    >
-                        Limpiar
-                        <X className="ml-2 size-4" />
-                    </Button>
-                )}
+                    {leadingActions}
+                </div>
+                <div className="flex items-center gap-2">
+                    <DataTableViewOptions table={table} />
+                    {actions}
+                </div>
             </div>
-            <div className="flex items-center gap-2">
-                <DataTableViewOptions table={table} />
-                {actions}
-            </div>
+            {hasFilterRow && (
+                <div className="flex flex-wrap items-center gap-2">
+                    {filters?.map((filter) => (
+                        <DataTableFacetedFilter
+                            key={filter.name}
+                            name={filter.name}
+                            label={filter.label}
+                            options={filter.options}
+                            selected={activeFilters?.[filter.name] ?? []}
+                            onSelectionChange={(values) =>
+                                onFilterChange?.(filter.name, values)
+                            }
+                        />
+                    ))}
+                    {extraFilters}
+                    {hasActiveFilters && (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 px-2 lg:px-3"
+                            onClick={onClearFilters}
+                        >
+                            Limpiar
+                            <X className="ml-2 size-4" />
+                        </Button>
+                    )}
+                </div>
+            )}
         </div>
     );
 }
