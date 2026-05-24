@@ -73,7 +73,7 @@ export function VehicleDocumentPills({
     ];
 
     return (
-        <div className="flex flex-wrap items-center gap-1">
+        <div className="flex flex-nowrap items-center gap-1">
             {slots.map((slot) => (
                 <Badge
                     key={slot.label}
