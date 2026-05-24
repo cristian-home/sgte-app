@@ -74,33 +74,42 @@ export default function DriverDashboard({
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Mis Servicios" />
-            <div className="flex h-full flex-1 flex-col gap-4 p-4">
-                <div className="space-y-2">
-                    <h1 className="text-2xl font-bold tracking-tight">
-                        Mis Servicios
-                    </h1>
-                    <p className="text-sm text-muted-foreground capitalize">
-                        {headerDate}
-                    </p>
-                    {showViewerHint && (
-                        <p className="text-xs text-muted-foreground">
-                            Operación en <strong>{operationTz}</strong>; tu
-                            navegador está en <strong>{viewerTz}</strong>.
+            <div
+                className="flex flex-col gap-3 p-4"
+                // Cap the driver page at the viewport minus the
+                // breadcrumb header (h-16). The inner DayTimeline
+                // then absorbs the remaining height via `flex-1` and
+                // becomes its own scroll container, so the hour rail
+                // never spills past the window even on a 24h-tall day.
+                style={{ height: 'calc(100svh - 4rem)' }}
+            >
+                {/* Compact header: title + date on the left, date
+                    navigator on the right. Wraps on narrow widths. */}
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="min-w-0">
+                        <h1 className="text-xl leading-tight font-bold tracking-tight sm:text-2xl">
+                            Mis Servicios
+                        </h1>
+                        <p className="text-xs text-muted-foreground capitalize sm:text-sm">
+                            {headerDate}
+                            {!isToday && (
+                                <span className="ml-2 normal-case text-muted-foreground/80">
+                                    · acciones limitadas
+                                </span>
+                            )}
+                            {showViewerHint && (
+                                <span className="ml-2 normal-case text-muted-foreground/80">
+                                    · {operationTz} (tu nav: {viewerTz})
+                                </span>
+                            )}
                         </p>
-                    )}
+                    </div>
                     <DateNavigator
                         date={selectedDate}
                         operationTz={operationTz}
                         onDateChange={navigateToDate}
                         showFormattedLabel={false}
                     />
-                    {!isToday && (
-                        <p className="text-xs text-muted-foreground">
-                            Estás viendo otro día. Las acciones de inicio, fin y
-                            rechazo solo están disponibles para los servicios de
-                            hoy.
-                        </p>
-                    )}
                 </div>
 
                 {!driver && (
