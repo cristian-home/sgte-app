@@ -9,6 +9,10 @@ function hourLabel(h: number): string {
     return `${String(h).padStart(2, '0')}h`;
 }
 
+function nowLabel(now: { hour: number; minute: number }): string {
+    return `${String(now.hour).padStart(2, '0')}:${String(now.minute).padStart(2, '0')}`;
+}
+
 function plannedHourInTz(at: string, tz: string): number {
     const parts = new Intl.DateTimeFormat('en-US', {
         timeZone: tz,
@@ -124,7 +128,16 @@ export function DayTimeline({
                                         : 'text-muted-foreground',
                                 )}
                             >
-                                {hourLabel(h)}
+                                {isCurrentHour ? (
+                                    <div className="flex flex-col leading-tight">
+                                        <span className="text-[9px] font-semibold tracking-wider uppercase">
+                                            Ahora
+                                        </span>
+                                        <span>{nowLabel(now)}</span>
+                                    </div>
+                                ) : (
+                                    hourLabel(h)
+                                )}
                             </div>
                             <div
                                 ref={
@@ -144,23 +157,22 @@ export function DayTimeline({
                             </div>
 
                             {/* AHORA line — positioned by minute fraction
-                                inside the current hour row. The line is
-                                rendered first in DOM order and the cards
-                                container is z-elevated below, so the line
-                                runs through the empty gutter and behind any
-                                card that happens to land at the same row. */}
+                                inside the current hour row. The label
+                                ("Ahora HH:MM") lives in the rail cell so
+                                the line itself only needs to draw the
+                                hairline through the cards area, starting
+                                after the rail (left-14). The cards column
+                                is z-elevated, so the line stays behind any
+                                card that lands at the same row. */}
                             {isCurrentHour && (
                                 <div
                                     ref={nowRef}
-                                    className="pointer-events-none absolute right-0 left-0 flex items-center"
+                                    className="pointer-events-none absolute right-0 left-14 flex items-center"
                                     style={{
                                         top: `${(now.minute / 60) * 100}%`,
                                     }}
                                     aria-hidden="true"
                                 >
-                                    <div className="w-14 pl-3 text-[10px] font-semibold tracking-wide text-destructive uppercase">
-                                        Ahora
-                                    </div>
                                     <div className="h-px flex-1 bg-destructive/60" />
                                 </div>
                             )}
