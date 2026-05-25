@@ -1,5 +1,8 @@
-export const GANTT_START_HOUR = 5;
-export const GANTT_END_HOUR = 23;
+// Full calendar day (00:00 inclusive → 24:00 exclusive) so late-night
+// services like a 23:00 start render in the bar. The previous 05–23
+// window dropped any service starting at or after 23:00.
+export const GANTT_START_HOUR = 0;
+export const GANTT_END_HOUR = 24;
 export const TOTAL_HOURS = GANTT_END_HOUR - GANTT_START_HOUR;
 
 export const HOUR_LABELS = Array.from({ length: TOTAL_HOURS }, (_, i) => {
