@@ -1,5 +1,6 @@
 import { Head, router } from '@inertiajs/react';
 import { PlusIcon } from 'lucide-react';
+import { useState } from 'react';
 import { DataTable } from '@/components/data-table';
 import { ToolbarLabel } from '@/components/data-table/toolbar-label';
 import { Button } from '@/components/ui/button';
@@ -50,6 +51,12 @@ export default function ServiceIncidentsIndex({
     filteredBillingTotal?: number;
 }) {
     'use no memo';
+    // Mirrors the controller prop so subsequent filter changes (which
+    // refetch via fetch() inside useServerTable, not a full Inertia
+    // re-render) can update the footer total via the onResponse hook.
+    const [billingTotal, setBillingTotal] = useState<number>(
+        filteredBillingTotal ?? 0,
+    );
     const {
         table,
         paginatedData,
@@ -64,6 +71,10 @@ export default function ServiceIncidentsIndex({
     } = useServerTable<ServiceIncidentRow>({
         data: paginatedIncidents,
         columns,
+        onResponse: (json) => {
+            const value = json.filtered_billing_total;
+            setBillingTotal(typeof value === 'number' ? value : Number(value) || 0);
+        },
     });
 
     const incidentFilters: FilterDefinition[] = [
@@ -133,13 +144,13 @@ export default function ServiceIncidentsIndex({
                         </Button>
                     }
                 />
-                {(filteredBillingTotal ?? 0) > 0 && (
+                {billingTotal > 0 && (
                     <div className="flex items-center justify-end gap-3 rounded-md border bg-muted/30 px-4 py-2 text-sm">
                         <span className="text-muted-foreground">
                             Total recargo de novedades en el filtro actual:
                         </span>
                         <span className="font-bold tabular-nums">
-                            {currencyFormatter.format(filteredBillingTotal ?? 0)}
+                            {currencyFormatter.format(billingTotal)}
                         </span>
                     </div>
                 )}
