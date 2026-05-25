@@ -93,12 +93,12 @@ export default function HourlyGrid({
     // refuses to shrink past its content min-width while the body's
     // flex-1 timeline (empty + absolute children) keeps shrinking —
     // so the bars end up at the wrong hour and a gap opens on the
-    // right. Keep this ≥ 180 + 24 × 36 ≈ 1044px with margin.
+    // right. Keep this ≥ w-28 (112px) + 24 × 36 ≈ 976px with margin.
     return (
-        <div className="min-w-[1100px]">
+        <div className="min-w-[1020px]">
             {/* Header row */}
             <div className="flex border-b bg-muted/50">
-                <div className="sticky left-0 z-10 flex w-45 shrink-0 items-center border-r bg-background px-2 py-1.5">
+                <div className="sticky left-0 z-10 flex w-28 shrink-0 items-center border-r bg-background px-2 py-1.5">
                     <span className="text-xs font-medium text-muted-foreground">
                         Vehículo
                     </span>
@@ -138,7 +138,7 @@ export default function HourlyGrid({
                         )}
                     >
                         {/* Sidebar cell */}
-                        <div className="sticky left-0 z-10 flex w-45 shrink-0 items-center border-r bg-background">
+                        <div className="sticky left-0 z-10 flex w-28 shrink-0 items-center border-r bg-background">
                             <VehicleSidebarItem
                                 vehicle={vehicle}
                                 isBlocked={status?.isBlocked ?? false}
