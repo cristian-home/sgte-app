@@ -65,6 +65,27 @@ FROM base AS build
 
 WORKDIR /app
 
+# Vite build-time env vars: these are baked into the JS bundle at build time
+# and cannot be changed at container start. Set them in Dokploy via "Build
+# Args" (or `docker build --build-arg VITE_X=…`). Defaults match .env.example
+# so a build with no overrides still produces a working bundle for local dev.
+ARG VITE_APP_NAME=SGTE
+ARG VITE_APP_DEBUG=false
+ARG VITE_REVERB_APP_KEY=
+ARG VITE_REVERB_HOST=
+ARG VITE_REVERB_PORT=
+ARG VITE_REVERB_SCHEME=
+ARG VITE_GOOGLE_MAPS_BROWSER_KEY=
+ARG VITE_GOOGLE_MAPS_MAP_ID=
+ENV VITE_APP_NAME=$VITE_APP_NAME \
+    VITE_APP_DEBUG=$VITE_APP_DEBUG \
+    VITE_REVERB_APP_KEY=$VITE_REVERB_APP_KEY \
+    VITE_REVERB_HOST=$VITE_REVERB_HOST \
+    VITE_REVERB_PORT=$VITE_REVERB_PORT \
+    VITE_REVERB_SCHEME=$VITE_REVERB_SCHEME \
+    VITE_GOOGLE_MAPS_BROWSER_KEY=$VITE_GOOGLE_MAPS_BROWSER_KEY \
+    VITE_GOOGLE_MAPS_MAP_ID=$VITE_GOOGLE_MAPS_MAP_ID
+
 # Copy application source code and PHP dependencies
 COPY . .
 COPY --from=composer /app/vendor ./vendor
