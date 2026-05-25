@@ -44,7 +44,16 @@ export default function GanttIndex({
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Planificador Gantt" />
-            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
+            <div
+                className="flex flex-col gap-4 p-4"
+                // Cap the Gantt page at the viewport minus the breadcrumb
+                // header (h-16 + empirical 1rem of breathing room, same
+                // value as the driver page). The inner scroll container
+                // then absorbs the remaining height via `flex-1 min-h-0`
+                // and the grid scrolls inside the box instead of pushing
+                // the document scrollbar.
+                style={{ height: 'calc(100svh - 5rem)' }}
+            >
                 <GanttHeader
                     date={date}
                     municipalityId={municipalityId}
@@ -52,7 +61,7 @@ export default function GanttIndex({
                     dayStatus={dayStatus}
                     canCreateServices={canCreateServices}
                 />
-                <div className="overflow-x-auto rounded-lg border">
+                <div className="min-h-0 flex-1 overflow-auto rounded-lg border">
                     <HourlyGrid
                         vehicles={vehicles}
                         servicesByVehicle={servicesByVehicle}
