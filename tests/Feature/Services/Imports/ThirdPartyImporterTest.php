@@ -2,11 +2,15 @@
 
 namespace Tests\Feature\Services\Imports;
 
+use App\Enums\BillingUnitType;
+use App\Enums\ContractObject;
+use App\Models\Contract;
 use App\Models\DataImport;
 use App\Models\DocumentType;
 use App\Models\Municipality;
 use App\Models\ThirdParty;
 use App\Services\Imports\ThirdPartyImporter;
+use App\Support\Tz;
 use Spatie\SimpleExcel\SimpleExcelReader;
 use Spatie\SimpleExcel\SimpleExcelWriter;
 
@@ -103,4 +107,89 @@ test('municipality_code resolves to municipality_id when valid', function (): vo
     expect($result['counters']['created'])->toBe(1);
     expect(ThirdParty::query()->where('identification_number', '900555555')->first()->municipality_id)
         ->not->toBeNull();
+});
+
+test('importing a customer auto-creates a generic contract through 2026-12-31', function (): void {
+    $csv = header3p().
+        'NIT,900700001,0,,,,,Cliente Uno SA,CU,Cra 7,3001000001,c1@x.co,1,0,'."\n";
+
+    runThirdPartyImporter($csv);
+
+    $tp = ThirdParty::query()->where('identification_number', '900700001')->firstOrFail();
+    $contract = Contract::query()->where('third_party_id', $tp->id)->firstOrFail();
+
+    expect($contract->is_generic)->toBeTrue();
+    expect($contract->active)->toBeTrue();
+    expect($contract->contract_object)->toBe(ContractObject::Occasional);
+    expect($contract->billing_unit_type)->toBe(BillingUnitType::Viaje);
+    expect($contract->contract_number)->toMatch('/^GEN-\d{4}-\d{4}$/');
+    expect($contract->end_date)->toBe('2026-12-31');
+    expect($contract->timezone)->toBe(Tz::operation());
+    expect($contract->route_description)->toContain('Cliente Uno SA');
+});
+
+test('provider-only third party does NOT receive an auto contract', function (): void {
+    $csv = header3p().
+        'NIT,900800001,0,,,,,Proveedor SA,PV,Cra 8,3002000001,p1@x.co,0,1,'."\n";
+
+    runThirdPartyImporter($csv);
+
+    $tp = ThirdParty::query()->where('identification_number', '900800001')->firstOrFail();
+    expect(Contract::query()->where('third_party_id', $tp->id)->count())->toBe(0);
+});
+
+test('rerunning the import does not duplicate the auto contract', function (): void {
+    $csv = header3p().
+        'NIT,900900001,0,,,,,Cliente Bis,CB,Cra 9,3003000001,cb@x.co,1,0,'."\n";
+
+    runThirdPartyImporter($csv);
+    // Second run: by default update_existing=false, so the existing third
+    // party is skipped — persistNew never fires again. Guards against
+    // duplicate contracts via the natural skipped-path.
+    runThirdPartyImporter($csv);
+
+    $tp = ThirdParty::query()->where('identification_number', '900900001')->firstOrFail();
+    expect(Contract::query()->where('third_party_id', $tp->id)->count())->toBe(1);
+});
+
+test('updating an existing third party does NOT create a contract', function (): void {
+    // Seed an existing third party without any contract.
+    $existing = ThirdParty::factory()->create([
+        'identification_number' => '901100001',
+        'is_customer' => true,
+        'is_provider' => false,
+    ]);
+    expect(Contract::query()->where('third_party_id', $existing->id)->count())->toBe(0);
+
+    // Same identifier + update_existing=true → applyUpdate path, NOT persistNew.
+    $import = DataImport::factory()->create(['update_existing' => true]);
+    $csv = header3p().
+        'NIT,901100001,0,,,,,Cliente Actualizado,CA,Cra 1,3004000001,ca@x.co,1,0,'."\n";
+
+    runThirdPartyImporter($csv, $import);
+
+    expect(Contract::query()->where('third_party_id', $existing->id)->count())->toBe(0);
+});
+
+test('generic contract numbering increments across multiple customers in one import', function (): void {
+    $csv = header3p().
+        'NIT,901200001,0,,,,,Cliente A,A,Cra 1,3005000001,a@x.co,1,0,'."\n".
+        'NIT,901200002,0,,,,,Cliente B,B,Cra 2,3005000002,b@x.co,1,0,'."\n".
+        'NIT,901200003,0,,,,,Cliente C,C,Cra 3,3005000003,c@x.co,1,0,'."\n";
+
+    runThirdPartyImporter($csv);
+
+    $year = now()->year;
+    $numbers = Contract::query()
+        ->whereIn('third_party_id', ThirdParty::query()
+            ->whereIn('identification_number', ['901200001', '901200002', '901200003'])
+            ->pluck('id'))
+        ->orderBy('contract_number')
+        ->pluck('contract_number')
+        ->all();
+
+    expect($numbers)->toHaveCount(3);
+    expect($numbers[0])->toBe(sprintf('GEN-%04d-%d', 1, $year));
+    expect($numbers[1])->toBe(sprintf('GEN-%04d-%d', 2, $year));
+    expect($numbers[2])->toBe(sprintf('GEN-%04d-%d', 3, $year));
 });
