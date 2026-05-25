@@ -42,7 +42,9 @@ export const columns: ColumnDef<Service, unknown>[] = [
             const vehicle = row.original.vehicle;
             return (
                 <div className="flex items-center gap-1.5">
-                    <span className="font-medium">{vehicle?.plate ?? '—'}</span>
+                    <span className="font-mono font-medium">
+                        {vehicle?.plate ?? '—'}
+                    </span>
                     {vehicle?.is_third_party && (
                         <Badge
                             variant="outline"
