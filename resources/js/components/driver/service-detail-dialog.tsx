@@ -108,7 +108,7 @@ export function ServiceDetailDialog({
                                         <Truck className="size-5 text-muted-foreground sm:size-6" />
                                     </div>
                                     <div className="min-w-0">
-                                        <DialogTitle className="text-lg/tight sm:text-xl">
+                                        <DialogTitle className="font-mono text-lg/tight sm:text-xl">
                                             {service.vehicle?.plate ?? '—'}
                                         </DialogTitle>
                                         <DialogDescription className="mt-0.5 line-clamp-1">

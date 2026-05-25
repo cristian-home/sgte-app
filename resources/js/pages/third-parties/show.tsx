@@ -341,7 +341,7 @@ export default function ThirdPartiesShow({
                                                             vehicles.show(v.id)
                                                                 .url
                                                         }
-                                                        className="text-primary hover:underline"
+                                                        className="font-mono text-primary hover:underline"
                                                     >
                                                         {v.plate}
                                                     </Link>

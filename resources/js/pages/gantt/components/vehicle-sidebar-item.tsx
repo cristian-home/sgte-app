@@ -45,7 +45,9 @@ export default function VehicleSidebarItem({
                 isBlocked && 'opacity-60',
             )}
         >
-            <span className="text-sm font-semibold">{vehicle.plate}</span>
+            <span className="font-mono text-sm font-semibold">
+                {vehicle.plate}
+            </span>
             {isBlocked && (
                 <TooltipProvider>
                     <Tooltip>

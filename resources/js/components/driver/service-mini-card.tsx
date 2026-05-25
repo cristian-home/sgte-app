@@ -60,7 +60,7 @@ export function ServiceMiniCard({
             )}
         >
             <div className="flex items-center justify-between gap-2">
-                <span className="flex items-center gap-1.5 text-sm font-semibold">
+                <span className="flex items-center gap-1.5 font-mono text-sm font-semibold">
                     <Truck className="size-3.5" />
                     {service.vehicle?.plate ?? '—'}
                 </span>

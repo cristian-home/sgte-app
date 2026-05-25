@@ -105,7 +105,7 @@ export default function DayServicesTable({
                                             </div>
                                         </Link>
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="font-mono">
                                         {service.vehicle?.plate ?? '—'}
                                     </TableCell>
                                     <TableCell>
