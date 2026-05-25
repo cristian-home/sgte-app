@@ -36,6 +36,15 @@ class DaySummaryController extends Controller
                 'contract.thirdParty:id,company_name,first_name,first_lastname,is_natural_person',
             ])
             ->withCount('serviceIncidents')
+            // Two extra aggregates for the "Recargo novedades" column:
+            // count + sum of additional_value across billing-affecting
+            // incidents only. Uses Eloquent's withCount / withSum
+            // sub-selects so it stays one round-trip.
+            ->withCount(['serviceIncidents as billing_incidents_count' => fn ($q) => $q->where('affects_billing', true)])
+            ->withSum(
+                ['serviceIncidents as billing_impact_amount' => fn ($q) => $q->where('affects_billing', true)],
+                'additional_value',
+            )
             ->orderBy('planned_start_at')
             ->get();
 
@@ -50,6 +59,7 @@ class DaySummaryController extends Controller
             'pending_reassignment' => $services->filter(
                 fn ($s) => $s->driver_declined_at !== null && $s->service_status === ServiceStatus::Open,
             )->count(),
+            'billing_impact_total' => (float) $services->sum(fn ($s) => (float) ($s->billing_impact_amount ?? 0)),
         ];
 
         return Inertia::render('day-summary/index', [

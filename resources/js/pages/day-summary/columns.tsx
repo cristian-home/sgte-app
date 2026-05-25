@@ -4,6 +4,12 @@ import { formatEventTime } from '@/lib/datetime';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { Service } from '@/types';
 
+const currencyFormatter = new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    maximumFractionDigits: 0,
+});
+
 function addMinutes(time: string, minutes: number): string {
     const [h, m] = time.split(':').map(Number);
     const total = h * 60 + m + minutes;
@@ -154,6 +160,29 @@ export const columns: ColumnDef<Service, unknown>[] = [
                 );
             }
             return <span className="text-muted-foreground">—</span>;
+        },
+    },
+    {
+        id: 'billing_impact',
+        meta: { label: 'Recargo novedades' },
+        header: () => <span className="block text-right">Recargo nov.</span>,
+        cell: ({ row }) => {
+            const amount = Number(
+                (row.original as Service & { billing_impact_amount?: string | number | null })
+                    .billing_impact_amount ?? 0,
+            );
+            if (!amount) {
+                return (
+                    <span className="block text-right text-muted-foreground">
+                        —
+                    </span>
+                );
+            }
+            return (
+                <span className="block text-right font-medium tabular-nums text-amber-700 dark:text-amber-400">
+                    {currencyFormatter.format(amount)}
+                </span>
+            );
         },
     },
 ];

@@ -9,6 +9,7 @@ use App\Models\Contract;
 use App\Models\DocumentType;
 use App\Models\Municipality;
 use App\Models\Service;
+use App\Models\ServiceIncident;
 use App\Models\ThirdParty;
 use App\Support\Tz;
 use Carbon\CarbonImmutable;
@@ -196,9 +197,24 @@ class ContractController extends Controller
             ->limit(5)
             ->get(['id', 'service_date_local', 'planned_start_at', 'timezone', 'service_status', 'vehicle_id', 'driver_id', 'contract_id']);
 
+        // Aggregate billing-affecting incidents across every service of
+        // the contract — gives a "is this contract bleeding money via
+        // recurring novedades?" indicator without listing each one.
+        $incidentsRow = ServiceIncident::query()
+            ->whereHas('service', fn ($q) => $q->where('contract_id', $contract->id))
+            ->where('affects_billing', true)
+            ->selectRaw('COUNT(*) AS count, COALESCE(SUM(additional_value), 0) AS amount')
+            ->first();
+
+        $incidentsBillingImpact = [
+            'count' => (int) ($incidentsRow->count ?? 0),
+            'amount' => (float) ($incidentsRow->amount ?? 0),
+        ];
+
         return Inertia::render('contracts/show', [
             'contract' => $contract,
             'recentServices' => $recentServices,
+            'incidentsBillingImpact' => $incidentsBillingImpact,
             ...$this->modalReferenceData(),
         ]);
     }

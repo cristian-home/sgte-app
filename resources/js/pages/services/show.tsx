@@ -16,6 +16,10 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import ServiceIncidentController from '@/actions/App/Http/Controllers/ServiceIncidentController';
+import {
+    type BillingIncidentRow,
+    IncidentsBillingBreakdown,
+} from '@/components/billing/incidents-billing-breakdown';
 import { Can } from '@/components/can';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { IncidentSeverityPill } from '@/components/incidents/incident-severity-pill';
@@ -155,10 +159,12 @@ export default function ServicesShow({
     service,
     dayStatus,
     recentIncidents,
+    billingIncidents,
 }: {
     service: Service;
     dayStatus?: DayStatusWithExecutor | null;
     recentIncidents?: RecentIncidentRow[];
+    billingIncidents?: BillingIncidentRow[];
 }) {
     const clientName = service.contract?.third_party
         ? service.contract.third_party.company_name ||
@@ -420,7 +426,25 @@ export default function ServicesShow({
                     </Card>
                 </div>
 
-                {/* Row 3: Novedades */}
+                {/* Row 3 (conditional): Impacto de novedades en facturación */}
+                {billingIncidents && billingIncidents.length > 0 && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>
+                                Impacto de novedades en facturación
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <IncidentsBillingBreakdown
+                                unitValue={service.unit_value}
+                                quantity={service.quantity}
+                                incidents={billingIncidents}
+                            />
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* Row 4: Novedades */}
                 <Card>
                     <CardHeader>
                         <div className="flex items-center justify-between">

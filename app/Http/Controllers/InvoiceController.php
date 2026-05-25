@@ -110,6 +110,11 @@ class InvoiceController extends Controller
                 'vehicle:id,plate',
                 'driver:id,first_name,first_lastname',
                 'contract:id,contract_number',
+                // Mirrors what the PDF builder loads (see ::pdf()) so the
+                // web breakdown table is fed from the same shape and the
+                // numbers cannot drift from what the client downloads.
+                'serviceIncidents' => fn ($q) => $q->where('affects_billing', true),
+                'serviceIncidents.incidentType:id,name',
             ])
             ->orderByDesc('service_date_local')
             ->orderByDesc('planned_start_at')
@@ -135,10 +140,29 @@ class InvoiceController extends Controller
                 ->isNotEmpty(),
         );
 
+        // Same accumulators the PDF builder uses (see ::pdf() block
+        // around line 320-335). Keeping them server-side guarantees the
+        // web breakdown footer and the downloaded PDF agree to the cent
+        // for the same invoice.
+        $invoice->loadMissing('services.serviceIncidents');
+        $subtotalServices = (float) $invoice->services->sum(
+            fn ($service) => (float) $service->unit_value * (int) $service->quantity,
+        );
+        $subtotalIncidents = (float) $invoice->services->sum(
+            fn ($service) => $service->serviceIncidents
+                ->where('affects_billing', true)
+                ->sum(fn ($incident) => (float) ($incident->additional_value ?? 0)),
+        );
+
         return Inertia::render('invoices/show', [
             'invoice' => $invoice,
             'recentServices' => $recentServices,
             'computedTotal' => $calculator->computeFor($invoice),
+            'billingTotals' => [
+                'subtotal_services' => $subtotalServices,
+                'subtotal_incidents' => $subtotalIncidents,
+                'grand_total' => $subtotalServices + $subtotalIncidents,
+            ],
             'candidateServices' => $cleanCandidates->values(),
             'blockedCandidateServices' => $blockedCandidates->values(),
             'thirdParties' => $this->customerOptions(),

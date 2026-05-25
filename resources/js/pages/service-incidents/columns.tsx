@@ -54,6 +54,12 @@ function formatServiceDate(date: string | null | undefined): string {
     return dateFormatter.format(parsed);
 }
 
+const currencyFormatter = new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    maximumFractionDigits: 0,
+});
+
 function formatReportedAt(reportedAt: string | null | undefined): string {
     if (!reportedAt) return '—';
     // Phase 1: `reported_at` is now an ISO string (cast switched from
@@ -151,6 +157,33 @@ export const columns: ColumnDef<ServiceIncidentRow, unknown>[] = [
             ) : (
                 <span className="text-muted-foreground">—</span>
             ),
+    },
+    {
+        id: 'valor',
+        meta: { label: 'Valor' },
+        header: () => <span className="block text-right">Valor</span>,
+        cell: ({ row }) => {
+            if (!row.original.affects_billing) {
+                return (
+                    <span className="block text-right text-muted-foreground">
+                        —
+                    </span>
+                );
+            }
+            const value = row.original.additional_value;
+            if (value === null || value === undefined || value === '') {
+                return (
+                    <span className="block text-right text-muted-foreground">
+                        —
+                    </span>
+                );
+            }
+            return (
+                <span className="block text-right font-medium tabular-nums">
+                    {currencyFormatter.format(Number(value))}
+                </span>
+            );
+        },
     },
     {
         id: 'actions',

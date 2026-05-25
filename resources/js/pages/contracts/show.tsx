@@ -1,5 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import { FileText, Pencil } from 'lucide-react';
+import { AlertTriangle, FileText, Pencil } from 'lucide-react';
 import { useState } from 'react';
 import ContractDialog from '@/components/contracts/contract-dialog';
 import { ContractPeriodPill } from '@/components/contracts/contract-period-pill';
@@ -139,15 +139,28 @@ function Field({
     );
 }
 
+interface IncidentsBillingImpact {
+    count: number;
+    amount: number;
+}
+
+const currencyFormatter = new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    maximumFractionDigits: 0,
+});
+
 export default function ContractsShow({
     contract,
     recentServices,
+    incidentsBillingImpact,
     thirdParties,
     documentTypes,
     municipalities,
 }: {
     contract: ShowContract;
     recentServices: RecentServiceRow[];
+    incidentsBillingImpact?: IncidentsBillingImpact;
     thirdParties: ThirdPartyOption[];
     documentTypes: DocumentTypeOption[];
     municipalities: MunicipalityOption[];
@@ -312,6 +325,47 @@ export default function ContractsShow({
                         </div>
                     </CardContent>
                 </Card>
+
+                {/* Novedades facturables del contrato (conditional) */}
+                {incidentsBillingImpact &&
+                    incidentsBillingImpact.count > 0 && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <AlertTriangle className="size-5 text-amber-600 dark:text-amber-400" />
+                                    Novedades que afectan facturación
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="grid gap-6 md:grid-cols-2">
+                                    <div>
+                                        <p className="text-xs tracking-wide text-muted-foreground uppercase">
+                                            Total de novedades
+                                        </p>
+                                        <p className="text-3xl font-bold tabular-nums">
+                                            {incidentsBillingImpact.count}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs tracking-wide text-muted-foreground uppercase">
+                                            Recargo acumulado
+                                        </p>
+                                        <p className="text-3xl font-bold tabular-nums text-amber-700 dark:text-amber-400">
+                                            {currencyFormatter.format(
+                                                incidentsBillingImpact.amount,
+                                            )}
+                                        </p>
+                                    </div>
+                                </div>
+                                <p className="mt-4 text-xs text-muted-foreground">
+                                    Suma de las novedades marcadas como
+                                    facturables en todos los servicios del
+                                    contrato. Se refleja en el total de cada
+                                    factura asociada.
+                                </p>
+                            </CardContent>
+                        </Card>
+                    )}
 
                 {/* Servicios Recientes */}
                 <Card>

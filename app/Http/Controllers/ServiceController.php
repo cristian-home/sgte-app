@@ -264,10 +264,28 @@ class ServiceController extends Controller
                 'affects_billing',
             ]);
 
+        // Billing-affecting incidents projected to the shape the
+        // <IncidentsBillingBreakdown> table consumes. The Service model
+        // already eager-loads `serviceIncidents.incidentType` above, so
+        // this is just a filtered projection — no extra query.
+        $billingIncidents = $service->serviceIncidents
+            ->where('affects_billing', true)
+            ->values()
+            ->map(fn ($incident) => [
+                'id' => $incident->id,
+                'additional_value' => $incident->additional_value,
+                'description' => $incident->description,
+                'reported_at' => $incident->reported_at?->toIso8601String(),
+                'incident_type' => $incident->incidentType
+                    ? ['id' => $incident->incidentType->id, 'name' => $incident->incidentType->name]
+                    : null,
+            ]);
+
         return Inertia::render('services/show', [
             'service' => $service,
             'dayStatus' => $dayStatus,
             'recentIncidents' => $recentIncidents,
+            'billingIncidents' => $billingIncidents,
         ]);
     }
 
