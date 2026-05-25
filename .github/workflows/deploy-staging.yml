@@ -1,0 +1,21 @@
+name: deploy-staging
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Motivo del deploy (ej. demo cliente, fix urgente)'
+        required: false
+        default: 'manual'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger Dokploy deployment
+        run: |
+          curl -sSf -X POST "${{ secrets.DOKPLOY_URL }}/api/application.redeploy" \
+            -H "Authorization: Bearer ${{ secrets.DOKPLOY_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"applicationId": "${{ secrets.DOKPLOY_APP_ID }}"}'

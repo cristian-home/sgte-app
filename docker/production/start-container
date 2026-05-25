@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+set -e
+
+# Cache config and routes (must run at startup with runtime env vars)
+php artisan config:cache --no-interaction
+php artisan route:cache --no-interaction
+
+# Run storage link (idempotent)
+php artisan storage:link --no-interaction 2>/dev/null || true
+
+# Run migrations (includes data migrations for reference data + default users)
+php artisan migrate --force --no-interaction
+
+# Start Supervisor (manages octane, horizon, reverb, ssr)
+exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf

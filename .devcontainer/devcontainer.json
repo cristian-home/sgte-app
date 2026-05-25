@@ -1,0 +1,41 @@
+// https://aka.ms/devcontainer.json
+{
+	"name": "Existing Docker Compose (Extend)",
+	"dockerComposeFile": [
+		"../compose.yaml"
+	],
+	"service": "laravel.test",
+	"workspaceFolder": "/var/www/html",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+                "mhutchie.git-graph",
+                "Serhioromano.vscode-gitflow",
+                "tamasfe.even-better-toml",
+                "redhat.vscode-xml",
+                "redhat.vscode-yaml",
+                "esbenp.prettier-vscode",
+                "DEVSENSE.phptools-vscode",
+                "DEVSENSE.profiler-php-vscode",
+                "bmewburn.vscode-intelephense-client",
+                "onecentlin.laravel-extension-pack",
+                "laravel.vscode-laravel",
+                "bradlc.vscode-tailwindcss",
+                "dbaeumer.vscode-eslint",
+                "yoavbls.pretty-ts-errors",
+                "jebbs.plantuml",
+                "bierner.markdown-mermaid",
+                "kilocode.kilo-code"
+			],
+			"settings": {
+                "plantuml.render": "PlantUMLServer",
+                "plantuml.server": "https://www.plantuml.com/plantuml"
+            }
+		}
+	},
+	"remoteUser": "sail",
+	"postCreateCommand": "chown -R 1000:1000 /var/www/html 2>/dev/null || true"
+	// "forwardPorts": [],
+	// "runServices": [],
+	// "shutdownAction": "none",
+}
