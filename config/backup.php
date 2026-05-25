@@ -243,8 +243,9 @@ return [
         'mail' => [
             // Must always be a valid address — Spatie rejects null/empty.
             // Set BACKUP_NOTIFICATION_MAIL in production; otherwise the
-            // MAIL_FROM_ADDRESS is used as a sane fallback.
-            'to' => env('BACKUP_NOTIFICATION_MAIL', env('MAIL_FROM_ADDRESS', 'hello@example.com')),
+            // MAIL_FROM_ADDRESS is used as a sane fallback. The `?:` chain
+            // collapses empty strings (not just missing keys) to the fallback.
+            'to' => env('BACKUP_NOTIFICATION_MAIL') ?: env('MAIL_FROM_ADDRESS') ?: 'hello@example.com',
 
             'from' => [
                 'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
