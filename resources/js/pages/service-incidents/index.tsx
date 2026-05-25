@@ -34,12 +34,20 @@ function rowTintFor(row: Row<ServiceIncidentRow>): string | undefined {
     );
 }
 
+const currencyFormatter = new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    maximumFractionDigits: 0,
+});
+
 export default function ServiceIncidentsIndex({
     serviceIncidents: paginatedIncidents,
     incidentTypes,
+    filteredBillingTotal,
 }: {
     serviceIncidents: PaginatedData<ServiceIncidentRow>;
     incidentTypes: IncidentTypeOption[];
+    filteredBillingTotal?: number;
 }) {
     'use no memo';
     const {
@@ -125,6 +133,16 @@ export default function ServiceIncidentsIndex({
                         </Button>
                     }
                 />
+                {(filteredBillingTotal ?? 0) > 0 && (
+                    <div className="flex items-center justify-end gap-3 rounded-md border bg-muted/30 px-4 py-2 text-sm">
+                        <span className="text-muted-foreground">
+                            Total recargo de novedades en el filtro actual:
+                        </span>
+                        <span className="font-bold tabular-nums">
+                            {currencyFormatter.format(filteredBillingTotal ?? 0)}
+                        </span>
+                    </div>
+                )}
             </div>
         </AppLayout>
     );

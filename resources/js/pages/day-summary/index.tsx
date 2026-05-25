@@ -32,6 +32,7 @@ import {
     Table,
     TableBody,
     TableCell,
+    TableFooter,
     TableHead,
     TableHeader,
     TableRow,
@@ -60,10 +61,17 @@ interface Props {
         with_incidents: number;
         third_party: number;
         pending_reassignment: number;
+        billing_impact_total: number;
     };
     date: string;
     canExecuteDay: boolean;
 }
+
+const currencyFormatter = new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    maximumFractionDigits: 0,
+});
 
 function addDays(dateStr: string, days: number): string {
     const d = new Date(dateStr + 'T12:00:00');
@@ -388,6 +396,23 @@ export default function DaySummaryIndex({
                                 </TableRow>
                             )}
                         </TableBody>
+                        {summary.billing_impact_total > 0 && (
+                            <TableFooter>
+                                <TableRow>
+                                    <TableCell
+                                        colSpan={columns.length - 1}
+                                        className="text-right text-xs tracking-wide text-muted-foreground uppercase"
+                                    >
+                                        Total recargo novedades del día
+                                    </TableCell>
+                                    <TableCell className="text-right tabular-nums font-bold text-amber-700 dark:text-amber-400">
+                                        {currencyFormatter.format(
+                                            summary.billing_impact_total,
+                                        )}
+                                    </TableCell>
+                                </TableRow>
+                            </TableFooter>
+                        )}
                     </Table>
                 </div>
 
