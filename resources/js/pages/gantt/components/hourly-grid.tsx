@@ -96,9 +96,14 @@ export default function HourlyGrid({
     // right. Keep this ≥ w-28 (112px) + 24 × 36 ≈ 976px with margin.
     return (
         <div className="min-w-[1020px]">
-            {/* Header row */}
-            <div className="flex border-b bg-muted/50">
-                <div className="sticky left-0 z-10 flex w-28 shrink-0 items-center border-r bg-background px-2 py-1.5">
+            {/* Header row — sticky top so labels stay visible while
+                the body rows scroll vertically inside the parent
+                overflow-auto wrapper. The corner cell ("Vehículo") sits
+                at the intersection of the two stickys and needs z-30 to
+                stay above both the header row (z-20) and the body-row
+                sidebars (z-10). */}
+            <div className="sticky top-0 z-20 flex border-b bg-muted/50">
+                <div className="sticky left-0 z-30 flex w-28 shrink-0 items-center border-r bg-background px-2 py-1.5">
                     <span className="text-xs font-medium text-muted-foreground">
                         Vehículo
                     </span>
