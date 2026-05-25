@@ -337,8 +337,8 @@ export default function ContractsShow({
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="grid gap-6 md:grid-cols-2">
-                                    <div>
+                                <div className="grid items-center gap-6 md:grid-cols-2">
+                                    <div className="flex flex-col items-center justify-center gap-1 text-center">
                                         <p className="text-xs tracking-wide text-muted-foreground uppercase">
                                             Total de novedades
                                         </p>
@@ -346,7 +346,7 @@ export default function ContractsShow({
                                             {incidentsBillingImpact.count}
                                         </p>
                                     </div>
-                                    <div>
+                                    <div className="flex flex-col items-center justify-center gap-1 text-center">
                                         <p className="text-xs tracking-wide text-muted-foreground uppercase">
                                             Recargo acumulado
                                         </p>
@@ -357,7 +357,7 @@ export default function ContractsShow({
                                         </p>
                                     </div>
                                 </div>
-                                <p className="mt-4 text-xs text-muted-foreground">
+                                <p className="mt-4 text-left text-xs text-muted-foreground">
                                     Suma de las novedades marcadas como
                                     facturables en todos los servicios del
                                     contrato. Se refleja en el total de cada
