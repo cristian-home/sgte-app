@@ -87,8 +87,15 @@ export default function HourlyGrid({
         return ((currentHour - GANTT_START_HOUR) / TOTAL_HOURS) * 100;
     }, [date, today]);
 
+    // Outer min-width has to hold the sidebar PLUS the intrinsic
+    // min-width of the 24 hour-label cells (~36px each at text-[10px]
+    // px-1). With anything smaller, the header's flex-1 timeline
+    // refuses to shrink past its content min-width while the body's
+    // flex-1 timeline (empty + absolute children) keeps shrinking —
+    // so the bars end up at the wrong hour and a gap opens on the
+    // right. Keep this ≥ 180 + 24 × 36 ≈ 1044px with margin.
     return (
-        <div className="min-w-225">
+        <div className="min-w-[1100px]">
             {/* Header row */}
             <div className="flex border-b bg-muted/50">
                 <div className="sticky left-0 z-10 flex w-45 shrink-0 items-center border-r bg-background px-2 py-1.5">
