@@ -75,7 +75,15 @@ class ServiceIncidentController extends Controller
             ->withQueryString();
 
         if ($request->wantsJson()) {
-            return response()->json($serviceIncidents);
+            // useServerTable refetches via fetch() + Accept: application/json
+            // when a filter changes, which hits this branch instead of the
+            // full Inertia re-render. Merging the extra meta key keeps the
+            // paginator shape intact (data, current_page, …) so the hook
+            // still consumes it, and exposes the recomputed total so the
+            // page can update its footer in lockstep with the filters.
+            return response()->json(
+                $serviceIncidents->toArray() + ['filtered_billing_total' => $filteredBillingTotal],
+            );
         }
 
         return Inertia::render('service-incidents/index', [

@@ -242,6 +242,37 @@ test('service incidents index filteredBillingTotal honors the affects_billing fi
     );
 });
 
+test('service incidents JSON endpoint returns filtered_billing_total alongside paginator', function (): void {
+    $incident = ServiceIncident::factory()->create([
+        'affects_billing' => true,
+        'additional_value' => 22000,
+    ]);
+    ServiceIncident::factory()->create([
+        'service_id' => $incident->service_id,
+        'affects_billing' => true,
+        'additional_value' => 3000,
+    ]);
+    ServiceIncident::factory()->create([
+        'service_id' => $incident->service_id,
+        'affects_billing' => false,
+        'additional_value' => 9999,
+    ]);
+
+    // useServerTable refetches via fetch(... Accept: application/json),
+    // not Inertia partial-reload. The JSON shape must preserve the
+    // paginator keys AND expose the filter-aware total so the page can
+    // update its footer in lockstep with the filter UI.
+    $unfiltered = $this->getJson(route('service-incidents.index'));
+    $unfiltered->assertOk()
+        ->assertJsonStructure(['data', 'current_page', 'last_page', 'filtered_billing_total'])
+        ->assertJsonPath('filtered_billing_total', 25000);
+
+    $filtered = $this->getJson(route('service-incidents.index', ['filter[affects_billing]' => 1]));
+    $filtered->assertOk()
+        ->assertJsonPath('filtered_billing_total', 25000)
+        ->assertJsonCount(2, 'data');
+});
+
 test('contract show aggregates billing-affecting incidents across its services', function (): void {
     $contract = Contract::factory()->create();
     $serviceA = Service::factory()->create(['contract_id' => $contract->id]);
