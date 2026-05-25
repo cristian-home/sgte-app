@@ -1,0 +1,32 @@
+name: deploy-production
+
+# Production deploys are tied to release tags (vX.Y.Z) — every tag push
+# fires a deploy at the client's Dokploy. The workflow_dispatch trigger
+# is the manual escape hatch for re-deploys without code changes (e.g.,
+# after updating an env var in Dokploy).
+#
+# Dokploy autoDeploy on push to main is DISABLED on this app so commits
+# that land on main outside of a release do not reach production.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Motivo del deploy (ej. re-deploy tras cambio de env, hotfix manual)'
+        required: false
+        default: 'manual'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger Dokploy production deployment
+        run: |
+          curl -sSf -X POST "${{ secrets.DOKPLOY_PROD_URL }}/api/application.redeploy" \
+            -H "x-api-key: ${{ secrets.DOKPLOY_PROD_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"applicationId": "${{ secrets.DOKPLOY_PROD_APP_ID }}"}'
