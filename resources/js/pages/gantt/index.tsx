@@ -3,7 +3,6 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { index as ganttIndex } from '@/actions/App/Http/Controllers/GanttController';
 import { type MunicipalityOption } from '@/components/municipality-combobox';
 import AppLayout from '@/layouts/app-layout';
-import ExecutedDayBanner from './components/executed-day-banner';
 import GanttHeader from './components/gantt-header';
 import GanttLegend from './components/gantt-legend';
 import HourlyGrid, {
@@ -173,7 +172,6 @@ export default function GanttIndex({
         [isExpanding, epoch, numDays, performSwap],
     );
 
-    const centeredDayStatus = cache.get(centerDate)?.dayStatus ?? null;
     const dimmedDuringSwap = isExpanding !== null;
 
     return (
@@ -190,9 +188,6 @@ export default function GanttIndex({
                     canCreateServices={canCreateServices}
                     onJumpToDate={handleJumpToDate}
                 />
-                {centeredDayStatus?.status === 'executed' && (
-                    <ExecutedDayBanner dayStatus={centeredDayStatus} />
-                )}
                 <GanttLegend />
                 <div
                     className={
