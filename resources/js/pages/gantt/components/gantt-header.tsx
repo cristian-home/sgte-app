@@ -1,4 +1,4 @@
-import { router, usePage } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { index as daySummaryIndex } from '@/actions/App/Http/Controllers/DaySummaryController';
 import { index as ganttIndex } from '@/actions/App/Http/Controllers/GanttController';
@@ -126,9 +126,9 @@ export default function GanttHeader({
                     toolbar. */}
                 <div className="flex flex-1 flex-wrap items-center justify-end gap-2 sm:gap-3">
                     <Button variant="outline" size="sm" className="h-8" asChild>
-                        <a href={daySummaryIndex({ query: { date } }).url}>
+                        <Link href={daySummaryIndex({ query: { date } }).url}>
                             Resumen
-                        </a>
+                        </Link>
                     </Button>
                     <MunicipalityCombobox
                         municipalities={municipalities}
