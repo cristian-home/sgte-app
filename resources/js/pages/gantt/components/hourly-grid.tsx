@@ -21,8 +21,8 @@ import {
     serviceBarAbsolutePosition,
     type Ymd,
 } from '../utils/coordinates';
-import DayLoadingOverlay from './day-loading-overlay';
 import DaySeparator from './day-separator';
+import GanttFetchingBar from './gantt-fetching-bar';
 import NowIndicator from './now-indicator';
 import ServiceBar from './service-bar';
 import VehicleSidebarItem from './vehicle-sidebar-item';
@@ -93,7 +93,7 @@ export default function HourlyGrid({
     onMount,
 }: HourlyGridProps) {
     const scrollerRef = useRef<HTMLDivElement | null>(null);
-    const { cache, ensureDay } = useGanttDays({
+    const { cache, ensureDay, isFetching } = useGanttDays({
         seed: [initialDay],
     });
 
@@ -240,12 +240,17 @@ export default function HourlyGrid({
     const bodyHeightPx = vehicles.length * ROW_HEIGHT_PX;
 
     return (
-        <div ref={setScroller} className="size-full overflow-auto">
-            {/* Outer canvas: sidebar (sticky) + timeline canvas side by side. */}
-            <div
-                className="relative"
-                style={{ width: SIDEBAR_PX + totalTimelineWidth }}
-            >
+        <div className="relative size-full">
+            {/* Top-of-grid fetching indicator. Lives OUTSIDE the
+                scroller so it stays anchored horizontally across the
+                visible width regardless of scroll position. */}
+            <GanttFetchingBar isFetching={isFetching} />
+            <div ref={setScroller} className="size-full overflow-auto">
+                {/* Outer canvas: sidebar (sticky) + timeline canvas side by side. */}
+                <div
+                    className="relative"
+                    style={{ width: SIDEBAR_PX + totalTimelineWidth }}
+                >
                 {/* Header strip: sticky top. Sidebar corner z-30, timeline header z-20. */}
                 <div
                     className="sticky top-0 z-20 flex border-b bg-muted/50"
@@ -378,27 +383,6 @@ export default function HourlyGrid({
                     );
                 })}
 
-                {/* Per-day loading overlays. Rendered at the canvas level
-                    so a single overlay covers ALL vehicle rows for that
-                    day. The 200ms delay inside the component hides them
-                    for fast fetches (~80% case). */}
-                {visibleDays.map((item) => {
-                    const date = addDays(epoch, item.index);
-                    const entry = cache[date];
-                    if (entry?.status === 'ready' || entry?.status === 'error') {
-                        return null;
-                    }
-                    return (
-                        <DayLoadingOverlay
-                            key={`loading-${item.key}`}
-                            leftPx={SIDEBAR_PX + item.start}
-                            widthPx={PX_PER_DAY}
-                            topPx={HEADER_HEIGHT_PX}
-                            heightPx={bodyHeightPx}
-                        />
-                    );
-                })}
-
                 {/* NOW indicator spans the body height; sits over all rows.
                     `leftOffsetPx` accounts for the sticky sidebar that
                     pushes the timeline canvas SIDEBAR_PX to the right
@@ -418,6 +402,7 @@ export default function HourlyGrid({
                         No hay vehículos activos para mostrar.
                     </div>
                 )}
+                </div>
             </div>
         </div>
     );

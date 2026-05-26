@@ -188,6 +188,20 @@
 }
 
 /*
+ * Indeterminate linear progress bar — a thin segment that slides across
+ * a fixed track. Used by the Gantt timeline as a top-of-grid "fetching"
+ * indicator when adjacent days are being requested.
+ */
+@keyframes indeterminate-bar {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(400%);
+    }
+}
+
+/*
  * Google Maps InfoWindow — Google keeps the bubble white regardless of
  * the map's `colorScheme`. Paint the bubble and its tail with the app's
  * popover colour so the InfoWindow tracks light/dark mode like every
