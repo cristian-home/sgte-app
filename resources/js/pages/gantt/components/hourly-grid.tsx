@@ -1,6 +1,12 @@
 import { router } from '@inertiajs/react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import {
+    useCallback,
+    useEffect,
+    useLayoutEffect,
+    useMemo,
+    useRef,
+} from 'react';
 import {
     create as servicesCreate,
     edit as servicesEdit,
@@ -39,8 +45,10 @@ interface HourlyGridProps {
     initialDay: InitialDay;
     /**
      * Anchor date for the continuous timeline; pixel 0 = 00:00 of
-     * `epoch` in operation TZ. The page passes a stable epoch (e.g.
-     * 6 months before today) so dayOffset() values stay reasonable.
+     * `epoch` in operation TZ. Mutable across renders — when the page
+     * shifts the epoch (edge expansion or out-of-range date pick), the
+     * grid re-anchors `scrollLeft` synchronously in a useLayoutEffect
+     * so the user sees a clean swap, not a 30-day jump for a frame.
      */
     epoch: Ymd;
     operationTz: string;
@@ -55,6 +63,36 @@ interface HourlyGridProps {
      * in the header can drive horizontal scroll.
      */
     onMount?: (jumpToDate: (date: Ymd) => void) => void;
+    /**
+     * Non-null while the page is performing an epoch swap. The grid
+     * uses this to (a) lock scroll via a defensive listener, (b) dim
+     * the canvas + cursor-wait, and (c) suppress the URL sync from
+     * `useGanttScroll` so the imperative scrollLeft adjustment doesn't
+     * propagate a bogus centered date.
+     */
+    isExpanding?: 'left' | 'right' | 'jump' | null;
+    /**
+     * Fires when the scroll position has settled within the trigger
+     * threshold of either edge. `centerDateAtTrigger` is the date the
+     * grid believes the viewport is centered on RIGHT NOW (computed
+     * from live `scrollLeft` + current `epoch`) — we pass it explicit
+     * because the page's `centerDate` state may lag behind by a frame
+     * due to debounced URL-sync.
+     */
+    onRequestEpochShift?: (
+        side: 'left' | 'right',
+        centerDateAtTrigger: Ymd,
+    ) => void;
+    /**
+     * Date to re-anchor the viewport on after a state update. When
+     * non-null, the grid sets `scrollLeft` so that this date lands at
+     * the horizontal center of the timeline area — using the CURRENT
+     * value of `epoch` and the live `scroller.clientWidth`. The page
+     * bumps this together with a new `epoch` to coordinate an
+     * out-of-range jump or edge expansion; clears it back to null
+     * once the swap is settled.
+     */
+    anchorDate?: Ymd | null;
 }
 
 const SIDEBAR_PX = 112; // w-28
@@ -91,6 +129,9 @@ export default function HourlyGrid({
     numDays,
     onCenterDateChange,
     onMount,
+    isExpanding = null,
+    onRequestEpochShift,
+    anchorDate = null,
 }: HourlyGridProps) {
     const scrollerRef = useRef<HTMLDivElement | null>(null);
     const { cache, ensureDay, isFetching } = useGanttDays({
@@ -144,43 +185,134 @@ export default function HourlyGrid({
     // Index services by date+vehicle for O(1) lookup inside each row.
     const servicesByDateVehicle = useMemo(() => {
         const map = new Map<Ymd, Map<number, Service[]>>();
-        for (const [date, entry] of Object.entries(cache)) {
-            if (!entry || entry.status !== 'ready') continue;
+        for (const [date, entry] of cache.entries()) {
+            if (entry.status !== 'ready') continue;
             const byVehicle = new Map<number, Service[]>();
             for (const s of entry.services) {
                 const list = byVehicle.get(s.vehicle_id) ?? [];
                 list.push(s);
                 byVehicle.set(s.vehicle_id, list);
             }
-            map.set(date as Ymd, byVehicle);
+            map.set(date, byVehicle);
         }
         return map;
     }, [cache]);
 
-    // URL sync via debounce-on-scroll.
+    // URL sync via debounce-on-scroll. Paused during an epoch swap so
+    // the imperative scrollLeft adjustment doesn't propagate a bogus
+    // centered date to the URL.
     useGanttScroll({
         scrollerRef,
         epoch,
         onCenterDateChange,
         debounceMs: 400,
+        pauseScrollSync: isExpanding !== null,
     });
+
+    // Edge watcher: when scrolling settles within 5% of either edge,
+    // ask the page to expand the window. The page gates re-entry with
+    // its own `isExpanding` state, but we also guard here so we don't
+    // spam the callback inside a single settle.
+    const lastEdgeFireRef = useRef<'left' | 'right' | null>(null);
+    useEffect(() => {
+        const scroller = scrollerRef.current;
+        if (!scroller || !onRequestEpochShift) return;
+
+        let timeoutId: ReturnType<typeof setTimeout> | null = null;
+        function checkEdge() {
+            if (!scroller) return;
+            if (isExpanding) return;
+            const { scrollLeft, scrollWidth, clientWidth } = scroller;
+            const rightEdge = scrollLeft + clientWidth;
+            const rightThreshold = scrollWidth * 0.95;
+            const leftThreshold = scrollWidth * 0.05;
+
+            // Compute the date the viewport is centered on RIGHT NOW
+            // (independent of the page's debounced centerDate state).
+            const centerPx = scrollLeft + clientWidth / 2;
+            const dayIndex = Math.round(centerPx / PX_PER_DAY - 0.5);
+            const liveCenterDate = addDays(epochRef.current, dayIndex);
+
+            if (rightEdge > rightThreshold) {
+                if (lastEdgeFireRef.current === 'right') return;
+                lastEdgeFireRef.current = 'right';
+                onRequestEpochShift?.('right', liveCenterDate);
+            } else if (scrollLeft < leftThreshold) {
+                if (lastEdgeFireRef.current === 'left') return;
+                lastEdgeFireRef.current = 'left';
+                onRequestEpochShift?.('left', liveCenterDate);
+            } else {
+                // Out of edge zones — reset so a future re-entry fires again.
+                lastEdgeFireRef.current = null;
+            }
+        }
+
+        function onScroll() {
+            if (timeoutId) clearTimeout(timeoutId);
+            timeoutId = setTimeout(checkEdge, 400);
+        }
+
+        scroller.addEventListener('scroll', onScroll, { passive: true });
+        return () => {
+            scroller.removeEventListener('scroll', onScroll);
+            if (timeoutId) clearTimeout(timeoutId);
+        };
+    }, [isExpanding, onRequestEpochShift]);
+
+    // Defensive scroll lock during expansion: snap scrollLeft back to
+    // wherever it was when the lock engaged. Prevents the user from
+    // continuing to scroll into the void while the swap is in flight.
+    const lockedScrollLeftRef = useRef<number | null>(null);
+    useEffect(() => {
+        const scroller = scrollerRef.current;
+        if (!scroller) return;
+        if (isExpanding) {
+            lockedScrollLeftRef.current = scroller.scrollLeft;
+            const snap = () => {
+                if (lockedScrollLeftRef.current !== null) {
+                    scroller.scrollLeft = lockedScrollLeftRef.current;
+                }
+            };
+            scroller.addEventListener('scroll', snap);
+            return () => {
+                scroller.removeEventListener('scroll', snap);
+                lockedScrollLeftRef.current = null;
+            };
+        }
+    }, [isExpanding]);
+
+    // Imperative re-anchor of scrollLeft after the page swaps the
+    // epoch. useLayoutEffect runs synchronously after DOM mutation but
+    // BEFORE the browser paints, so the user never sees the "old
+    // scrollLeft + new epoch" frame. Math lives here (not in the
+    // page) so we can use the LIVE scroller.clientWidth — the page's
+    // captured-once value drifts on resize.
+    useLayoutEffect(() => {
+        if (!anchorDate) return;
+        const scroller = scrollerRef.current;
+        if (!scroller) return;
+        const offset = dayOffset(anchorDate, epoch);
+        const dayCenterPx = (offset + 0.5) * PX_PER_DAY;
+        const timelineWidth = scroller.clientWidth - SIDEBAR_PX;
+        const left = Math.max(0, Math.round(dayCenterPx - timelineWidth / 2));
+        scroller.scrollLeft = left;
+    }, [anchorDate, epoch]);
 
     // Expose jumpToDate to the page so the header controls can drive
     // horizontal scroll. The page sees this in its first render via
-    // the onMount callback.
-    const jumpToDate = useCallback(
-        (date: Ymd) => {
-            const scroller = scrollerRef.current;
-            if (!scroller) return;
-            const left = scrollLeftForDateCenter(
-                date,
-                epoch,
-                scroller.clientWidth - SIDEBAR_PX,
-            );
-            scroller.scrollTo({ left, behavior: 'smooth' });
-        },
-        [epoch],
-    );
+    // the onMount callback. Reads epoch through a ref so the function
+    // identity stays stable across renders — see comment on
+    // setScroller below for why that matters.
+    const jumpToDate = useCallback((date: Ymd) => {
+        const scroller = scrollerRef.current;
+        if (!scroller) return;
+        const left = scrollLeftForDateCenter(
+            date,
+            epochRef.current,
+            scroller.clientWidth - SIDEBAR_PX,
+        );
+        scroller.scrollTo({ left, behavior: 'smooth' });
+    }, []);
 
     // Mount callback identity may change every page render — read it
     // through a ref so the scroller ref-callback below stays stable.
@@ -188,6 +320,17 @@ export default function HourlyGrid({
     useEffect(() => {
         onMountRef.current = onMount;
     }, [onMount]);
+    // Same trick for the live epoch: setScroller MUST stay stable
+    // (no `epoch` in deps) otherwise React unbind+rebinds the ref on
+    // every epoch change, which races with our useLayoutEffect anchor.
+    const epochRef = useRef(epoch);
+    useEffect(() => {
+        epochRef.current = epoch;
+    }, [epoch]);
+    const initialDayRef = useRef(initialDay);
+    useEffect(() => {
+        initialDayRef.current = initialDay;
+    }, [initialDay]);
 
     // Initial scroll-anchor: when the scroller is first mounted, center
     // on the initial day. Wraps in a microtask so layout is settled.
@@ -199,8 +342,8 @@ export default function HourlyGrid({
                 didInitialScrollRef.current = true;
                 queueMicrotask(() => {
                     const left = scrollLeftForDateCenter(
-                        initialDay.date,
-                        epoch,
+                        initialDayRef.current.date,
+                        epochRef.current,
                         node.clientWidth - SIDEBAR_PX,
                     );
                     node.scrollLeft = left;
@@ -208,7 +351,7 @@ export default function HourlyGrid({
                 onMountRef.current?.(jumpToDate);
             }
         },
-        [epoch, initialDay.date, jumpToDate],
+        [jumpToDate],
     );
 
     function handleEmptyCellClick(
