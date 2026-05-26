@@ -4,6 +4,7 @@ import { index as ganttIndex } from '@/actions/App/Http/Controllers/GanttControl
 import { type MunicipalityOption } from '@/components/municipality-combobox';
 import AppLayout from '@/layouts/app-layout';
 import GanttHeader from './components/gantt-header';
+import GanttLegend from './components/gantt-legend';
 import HourlyGrid, {
     defaultEpochFor,
     defaultNumDays,
@@ -183,6 +184,7 @@ export default function GanttIndex({
                     canCreateServices={canCreateServices}
                     onJumpToDate={handleJumpToDate}
                 />
+                <GanttLegend />
                 <div
                     className={
                         'min-h-0 flex-1 overflow-hidden rounded-lg border transition-opacity duration-150 ' +
