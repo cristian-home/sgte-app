@@ -5,10 +5,12 @@ interface Props {
     epoch: Ymd;
     operationTz: string;
     /**
-     * Total pixel height of the timeline body — used to size the
-     * absolute line so it spans every visible vehicle row.
+     * Vertical offset from the canvas top — typically the header strip
+     * height, so the red line only spans the body rows and doesn't
+     * cross the day banner + hour-labels strip (those aren't timeline
+     * data and the line through them is visual noise).
      */
-    contentHeightPx: number;
+    topOffsetPx?: number;
     /**
      * Pixel offset to add to the computed left, accounting for the
      * sticky sidebar that pushes the timeline canvas to the right of
@@ -26,7 +28,7 @@ interface Props {
 export default function NowIndicator({
     epoch,
     operationTz,
-    contentHeightPx,
+    topOffsetPx = 0,
     leftOffsetPx = 0,
 }: Props) {
     const [tick, setTick] = useState(0);
@@ -40,19 +42,19 @@ export default function NowIndicator({
     void tick;
     const leftPx =
         leftOffsetPx +
-        instantToPxFromEpoch(
-            new Date().toISOString(),
-            operationTz,
-            epoch,
-        );
+        instantToPxFromEpoch(new Date().toISOString(), operationTz, epoch);
 
+    // Use top + bottom (no height) so the line auto-stretches to the
+    // canvas bottom regardless of how many borders the rows add. The
+    // previous fixed-height computation undercounted ~1px per row.
     return (
         <div
             aria-hidden
-            className="pointer-events-none absolute top-0 z-10 w-px bg-red-500"
+            className="pointer-events-none absolute z-10 w-px bg-red-500"
             style={{
                 left: `${leftPx}px`,
-                height: `${contentHeightPx}px`,
+                top: `${topOffsetPx}px`,
+                bottom: 0,
             }}
         />
     );

@@ -564,7 +564,7 @@ export default function HourlyGrid({
                         <NowIndicator
                             epoch={epoch}
                             operationTz={operationTz}
-                            contentHeightPx={HEADER_HEIGHT_PX + bodyHeightPx}
+                            topOffsetPx={HEADER_HEIGHT_PX}
                             leftOffsetPx={SIDEBAR_PX}
                         />
                     );
