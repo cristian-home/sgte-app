@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import {
     Tooltip,
     TooltipContent,
@@ -18,20 +17,6 @@ interface ServiceBarProps {
      */
     position: { left: number; width: number; unit?: '%' | 'px' };
     onClick: (serviceId: number) => void;
-    /**
-     * Whether to play the fade-in entrance animation on mount.
-     * Multi-day Gantt sets this to false for services the virtualizer
-     * has already mounted before, so re-entering the viewport doesn't
-     * flash them. Defaults to true so the dashboard mini-Gantt (which
-     * never remounts) keeps its polish.
-     */
-    animateOnMount?: boolean;
-    /**
-     * Callback fired once after mount. The Gantt page uses it to mark
-     * the service id as "seen" so subsequent remounts skip the
-     * entrance animation.
-     */
-    onMounted?: (serviceId: number) => void;
 }
 
 function getClientName(service: Service): string {
@@ -58,23 +43,11 @@ export default function ServiceBar({
     service,
     position,
     onClick,
-    animateOnMount = true,
-    onMounted,
 }: ServiceBarProps) {
     const isOpen = service.service_status === 'open';
     const isDeclined = !!service.driver_declined_at;
     const isBlocked = service.blocked === true;
     const blockedReasons = service.blocked_reasons ?? [];
-
-    // Freeze the entrance-animation decision at first render. Parent
-    // re-renders (scroll debounce, cache mutations) would otherwise
-    // toggle animateOnMount → false mid-animation and strip the
-    // animate-in class before the 300ms keyframe finished.
-    const [playEntranceAnimation] = useState(animateOnMount);
-
-    useEffect(() => {
-        onMounted?.(service.id);
-    }, [onMounted, service.id]);
 
     return (
         <TooltipProvider>
@@ -84,14 +57,17 @@ export default function ServiceBar({
                         type="button"
                         data-service-blocked={isBlocked ? 'true' : 'false'}
                         className={cn(
-                            'absolute inset-y-0.5 cursor-pointer overflow-hidden rounded px-1.5 py-0.5 text-left text-white shadow-sm transition-colors',
-                            // First-mount fade-in. Skipped (via
-                            // animateOnMount=false) for bars the
-                            // virtualizer has already shown — re-entering
-                            // the viewport on scroll must not flash an
-                            // already-cached service back to opacity 0.
-                            playEntranceAnimation &&
-                                'animate-in fade-in-0 duration-300 ease-out',
+                            // animate-in fade-in fires on every mount —
+                            // intentional. The bar mounts whenever
+                            // useGanttDays cache populates a new day
+                            // (initial SSR, post-jump fetch, scroll into
+                            // view), so the effect feels like "content
+                            // landing" right after the swap dimmer
+                            // releases or when scrolling reveals a new
+                            // day. 300ms keeps it polished without
+                            // dragging.
+                            'absolute inset-y-0.5 animate-in cursor-pointer overflow-hidden rounded px-1.5 py-0.5 text-left text-white shadow-sm fade-in-0 duration-300 ease-out',
+                            'transition-colors',
                             isBlocked
                                 ? 'bg-zinc-400 opacity-70 ring-2 ring-zinc-500 hover:bg-zinc-500 dark:bg-zinc-600 dark:ring-zinc-400 dark:hover:bg-zinc-500'
                                 : isDeclined
