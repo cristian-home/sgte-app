@@ -5,54 +5,33 @@ namespace Database\Seeders;
 use App\Enums\DayStatusEnum;
 use App\Models\DayStatus;
 use App\Models\User;
+use Database\Seeders\Support\SeedClock;
 use Illuminate\Database\Seeder;
 
 class DayStatusSeeder extends Seeder
 {
     /**
      * Run the database seeds.
+     *
+     * Fills ±7 days around today: past days are Executed (with the admin
+     * as executor, closed at 20:00 operation time), today and future days
+     * are Projected. Mirrors the curated ServiceSeeder window.
      */
     public function run(): void
     {
-        $executor = User::first();
+        $executor = User::query()->where('email', 'admin@sgte.app')->first()
+            ?? User::first();
 
-        $dayStatuses = [
-            [
-                'date' => '2026-02-24',
-                'status' => DayStatusEnum::Executed->value,
-                'executor_id' => $executor?->id,
-                'executed_at' => '2026-02-24 18:00:00',
-            ],
-            [
-                'date' => '2026-02-25',
-                'status' => DayStatusEnum::Executed->value,
-                'executor_id' => $executor?->id,
-                'executed_at' => '2026-02-25 17:30:00',
-            ],
-            [
-                'date' => '2026-02-26',
-                'status' => DayStatusEnum::Executed->value,
-                'executor_id' => $executor?->id,
-                'executed_at' => '2026-02-26 18:15:00',
-            ],
-            [
-                'date' => '2026-02-27',
-                'status' => DayStatusEnum::Projected->value,
-                'executor_id' => null,
-                'executed_at' => null,
-            ],
-            [
-                'date' => '2026-02-28',
-                'status' => DayStatusEnum::Projected->value,
-                'executor_id' => null,
-                'executed_at' => null,
-            ],
-        ];
+        for ($offset = -7; $offset <= 7; $offset++) {
+            $isPast = $offset < 0;
 
-        foreach ($dayStatuses as $ds) {
             DayStatus::firstOrCreate(
-                ['date' => $ds['date']],
-                $ds,
+                ['date' => SeedClock::dateString($offset)],
+                [
+                    'status' => ($isPast ? DayStatusEnum::Executed : DayStatusEnum::Projected)->value,
+                    'executor_id' => $isPast ? $executor?->id : null,
+                    'executed_at' => $isPast ? SeedClock::at($offset, '20:00') : null,
+                ],
             );
         }
     }
