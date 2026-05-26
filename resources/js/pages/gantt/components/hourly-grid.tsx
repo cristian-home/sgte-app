@@ -325,12 +325,12 @@ export default function HourlyGrid({
                             // free Y-virtualization. The intrinsic-size
                             // hint keeps the scroll height stable so the
                             // skip doesn't cause layout shifts when rows
-                            // enter/exit the viewport. Combined with the
-                            // 91-day canvas (vs 365) this keeps mobile
-                            // composite costs in check on real flotas.
+                            // enter/exit the viewport. CSS expects width
+                            // then height; the row is the timeline wide
+                            // and one row-height tall.
                             style={{
                                 contentVisibility: 'auto',
-                                containIntrinsicSize: `${ROW_HEIGHT_PX}px ${SIDEBAR_PX + totalTimelineWidth}px`,
+                                containIntrinsicSize: `${SIDEBAR_PX + totalTimelineWidth}px ${ROW_HEIGHT_PX}px`,
                             }}
                         >
                             <div
@@ -432,22 +432,22 @@ export default function HourlyGrid({
 /**
  * Convenience re-export for the page-level epoch computation.
  *
- * The half-window of 45 yields a 91-day canvas (1.5 months each
+ * The half-window of 30 yields a 61-day canvas (1 month each
  * direction). Tradeoff vs. the original 182 (365 days):
  *
- * - Canvas width 333k → 83k px. Stays within composite limits on
- *   most mobile GPUs (iPhone 8+ tiles cleanly; mid-tier Android no
- *   longer falls back to CPU paint).
- * - "Continuous scroll" goes from 6 months each way to ~1.5 months.
+ * - Canvas width 333k → 56k px. Comfortably within composite limits
+ *   for desktop dGPUs, iPhone 8+, and most Android mid-tier (tiles
+ *   cleanly; entry-level rarely falls back to CPU paint).
+ * - "Continuous scroll" goes from 6 months each way to ~1 month.
  *   Further dates need a date-picker jump — the URL re-anchors the
  *   epoch automatically, so the UX is "scroll for context, jump for
  *   distance".
  */
-export function defaultEpochFor(today: Ymd, halfWindow = 45): Ymd {
+export function defaultEpochFor(today: Ymd, halfWindow = 30): Ymd {
     return addDays(today, -halfWindow);
 }
 
-export function defaultNumDays(halfWindow = 45): number {
+export function defaultNumDays(halfWindow = 30): number {
     return halfWindow * 2 + 1;
 }
 
