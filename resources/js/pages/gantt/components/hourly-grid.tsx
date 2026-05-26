@@ -172,6 +172,16 @@ export default function HourlyGrid({
 }: HourlyGridProps) {
     const scrollerRef = useRef<HTMLDivElement | null>(null);
     const sidebarPx = useSidebarWidthPx();
+    // Service ids that have been mounted at least once during this
+    // page lifetime. Used to gate the ServiceBar fade-in animation so
+    // bars re-entering the viewport via the horizontal virtualizer
+    // don't flash back to opacity 0 (which read as a distracting
+    // "blink" while scrolling). First mount runs the animation; every
+    // subsequent mount of the same id skips it.
+    const seenServiceIdsRef = useRef<Set<number>>(new Set());
+    const markServiceSeen = useCallback((id: number) => {
+        seenServiceIdsRef.current.add(id);
+    }, []);
     // Mirror in a ref so stable callbacks (jumpToDate, setScroller) can
     // read the latest viewport-driven value without re-binding on every
     // breakpoint change — re-binding the scroller ref races with the
@@ -607,6 +617,12 @@ export default function HourlyGrid({
                                                         unit: 'px',
                                                     }}
                                                     onClick={handleServiceClick}
+                                                    animateOnMount={
+                                                        !seenServiceIdsRef.current.has(
+                                                            service.id,
+                                                        )
+                                                    }
+                                                    onMounted={markServiceSeen}
                                                 />
                                             );
                                         });
