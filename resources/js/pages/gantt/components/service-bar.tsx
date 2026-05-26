@@ -120,7 +120,7 @@ export default function ServiceBar({
                         )}
                         <p>Estado: {isOpen ? 'Abierto' : 'Cerrado'}</p>
                         {isBlocked && (
-                            <div className="space-y-0.5 border-t border-white/20 pt-1 text-yellow-200">
+                            <div className="space-y-0.5 border-t border-primary-foreground/20 pt-1">
                                 <p className="font-semibold">
                                     Documentos vencidos:
                                 </p>
@@ -130,7 +130,7 @@ export default function ServiceBar({
                             </div>
                         )}
                         {isDeclined && (
-                            <p className="text-red-300">
+                            <p className="border-t border-primary-foreground/20 pt-1 font-semibold">
                                 Declinado por el conductor — pendiente de
                                 reasignación
                             </p>
