@@ -178,8 +178,7 @@ export default function GanttIndex({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Planificador Gantt" />
             <div
-                className="flex flex-col gap-4 p-4"
-                style={{ height: 'calc(100svh - 5rem)' }}
+                className="flex flex-col gap-4 p-4 h-[calc(100svh-4rem)] md:h-[calc(100svh-5rem)]"
             >
                 <GanttHeader
                     date={centerDate}
