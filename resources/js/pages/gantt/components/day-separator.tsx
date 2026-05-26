@@ -1,3 +1,4 @@
+import { Lock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { DayStatus } from '@/types/models';
@@ -66,6 +67,15 @@ export default function DaySeparator({
                     )}
                 >
                     {isExecuted ? 'Ejecutado' : 'Proyectado'}
+                </Badge>
+            )}
+            {isExecuted && (
+                <Badge
+                    title="No se pueden crear nuevos servicios en este día"
+                    className="h-4 gap-1 truncate border border-green-200 bg-transparent px-1.5 text-[10px] font-normal text-green-700 dark:border-green-800 dark:text-green-300"
+                >
+                    <Lock className="size-2.5" aria-hidden />
+                    Bloqueado para nuevos servicios
                 </Badge>
             )}
         </div>
