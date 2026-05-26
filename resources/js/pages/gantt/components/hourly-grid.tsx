@@ -319,6 +319,19 @@ export default function HourlyGrid({
                                 status?.isBlocked &&
                                     'bg-neutral-100 dark:bg-neutral-800/50',
                             )}
+                            // `content-visibility: auto` lets the browser
+                            // skip layout/paint/composite for rows that
+                            // are off-screen vertically — effectively a
+                            // free Y-virtualization. The intrinsic-size
+                            // hint keeps the scroll height stable so the
+                            // skip doesn't cause layout shifts when rows
+                            // enter/exit the viewport. Combined with the
+                            // 91-day canvas (vs 365) this keeps mobile
+                            // composite costs in check on real flotas.
+                            style={{
+                                contentVisibility: 'auto',
+                                containIntrinsicSize: `${ROW_HEIGHT_PX}px ${SIDEBAR_PX + totalTimelineWidth}px`,
+                            }}
                         >
                             <div
                                 className="sticky left-0 z-10 flex shrink-0 items-center border-r bg-background"
@@ -344,6 +357,14 @@ export default function HourlyGrid({
                                 style={{
                                     width: totalTimelineWidth,
                                     height: ROW_HEIGHT_PX,
+                                    // contain: strict (= size + layout +
+                                    // paint + style) lets the compositor
+                                    // clip aggressively at this box and
+                                    // avoids style/layout side-effects
+                                    // bleeding out. Most noticeable on
+                                    // mobile GPUs that tile the wide
+                                    // background gradient.
+                                    contain: 'strict',
                                     ...GRID_BG_STYLE,
                                 }}
                                 onClick={(e) =>
@@ -408,15 +429,25 @@ export default function HourlyGrid({
     );
 }
 
-/** Convenience re-export for the page-level epoch computation. */
-export function defaultEpochFor(today: Ymd, halfWindow = 182): Ymd {
-    // The epoch is the LEFT-most day the timeline can show. So if
-    // today is centered with `halfWindow` days on each side, the
-    // epoch is `halfWindow` days BEFORE today.
+/**
+ * Convenience re-export for the page-level epoch computation.
+ *
+ * The half-window of 45 yields a 91-day canvas (1.5 months each
+ * direction). Tradeoff vs. the original 182 (365 days):
+ *
+ * - Canvas width 333k → 83k px. Stays within composite limits on
+ *   most mobile GPUs (iPhone 8+ tiles cleanly; mid-tier Android no
+ *   longer falls back to CPU paint).
+ * - "Continuous scroll" goes from 6 months each way to ~1.5 months.
+ *   Further dates need a date-picker jump — the URL re-anchors the
+ *   epoch automatically, so the UX is "scroll for context, jump for
+ *   distance".
+ */
+export function defaultEpochFor(today: Ymd, halfWindow = 45): Ymd {
     return addDays(today, -halfWindow);
 }
 
-export function defaultNumDays(halfWindow = 182): number {
+export function defaultNumDays(halfWindow = 45): number {
     return halfWindow * 2 + 1;
 }
 
