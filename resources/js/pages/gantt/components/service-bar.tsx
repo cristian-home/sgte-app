@@ -57,7 +57,17 @@ export default function ServiceBar({
                         type="button"
                         data-service-blocked={isBlocked ? 'true' : 'false'}
                         className={cn(
-                            'absolute inset-y-0.5 cursor-pointer overflow-hidden rounded px-1.5 py-0.5 text-left text-white shadow-sm transition-colors',
+                            // animate-in fade-in fires on every mount —
+                            // intentional. The bar mounts whenever
+                            // useGanttDays cache populates a new day
+                            // (initial SSR, post-jump fetch, scroll into
+                            // view), so the effect feels like "content
+                            // landing" right after the swap dimmer
+                            // releases or when scrolling reveals a new
+                            // day. 300ms keeps it polished without
+                            // dragging.
+                            'absolute inset-y-0.5 animate-in cursor-pointer overflow-hidden rounded px-1.5 py-0.5 text-left text-white shadow-sm fade-in-0 duration-300 ease-out',
+                            'transition-colors',
                             isBlocked
                                 ? 'bg-zinc-400 opacity-70 ring-2 ring-zinc-500 hover:bg-zinc-500 dark:bg-zinc-600 dark:ring-zinc-400 dark:hover:bg-zinc-500'
                                 : isDeclined
