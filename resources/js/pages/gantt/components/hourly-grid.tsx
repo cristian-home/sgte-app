@@ -470,15 +470,28 @@ export default function HourlyGrid({
                                             width: PX_PER_DAY,
                                         }}
                                     >
+                                        {/* Day-column header background.
+                                            Separate from DaySeparator so
+                                            the sticky label inside can
+                                            shrink to content while the
+                                            full-width muted strip stays
+                                            put. */}
+                                        <div
+                                            className={cn(
+                                                'absolute inset-x-0 top-0 h-6 border-x border-border',
+                                                isToday
+                                                    ? 'bg-primary/10'
+                                                    : 'bg-muted/80',
+                                            )}
+                                        />
                                         <DaySeparator
                                             date={date}
-                                            leftPx={0}
-                                            widthPx={PX_PER_DAY}
                                             isToday={isToday}
                                             dayStatus={
                                                 cache.get(date)?.dayStatus ??
                                                 null
                                             }
+                                            sidebarPx={sidebarPx}
                                         />
                                         {/* Hour ticks below the day banner. */}
                                         <div
