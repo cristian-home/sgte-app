@@ -31,6 +31,8 @@ export interface UseGanttDaysReturn {
      * left/right scroll has its neighbours ready.
      */
     ensureDay: (date: Ymd) => void;
+    /** True when at least one day request is currently in flight. */
+    isFetching: boolean;
 }
 
 /**
@@ -141,5 +143,11 @@ export function useGanttDays({ seed }: UseGanttDaysOptions = {}): UseGanttDaysRe
         [doFetch],
     );
 
-    return { cache, ensureDay };
+    // Cheap O(n) on cache keys but n stays small in practice (<= 90
+    // distinct days even after a full year of scrolling).
+    const isFetching = Object.values(cache).some(
+        (entry) => entry?.status === 'loading',
+    );
+
+    return { cache, ensureDay, isFetching };
 }
