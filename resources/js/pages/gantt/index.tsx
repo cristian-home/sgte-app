@@ -3,12 +3,14 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { index as ganttIndex } from '@/actions/App/Http/Controllers/GanttController';
 import { type MunicipalityOption } from '@/components/municipality-combobox';
 import AppLayout from '@/layouts/app-layout';
+import ExecutedDayBanner from './components/executed-day-banner';
 import GanttHeader from './components/gantt-header';
 import GanttLegend from './components/gantt-legend';
 import HourlyGrid, {
     defaultEpochFor,
     defaultNumDays,
 } from './components/hourly-grid';
+import { useGanttDays } from './hooks/use-gantt-days';
 import { addDays, dayOffset, type Ymd } from './utils/coordinates';
 
 import type { BreadcrumbItem } from '@/types';
@@ -60,9 +62,18 @@ export default function GanttIndex({
     const numDays = useMemo(() => defaultNumDays(), []);
 
     const initialDay = useMemo(
-        () => ({ date: date as Ymd, services }),
-        [date, services],
+        () => ({ date: date as Ymd, services, dayStatus }),
+        [date, services, dayStatus],
     );
+
+    // Per-day cache lives at the page so the floating
+    // ExecutedDayBanner above the timeline can react to the centered
+    // day's status. HourlyGrid reads it for the inline DaySeparator
+    // badges and the per-day Executed gate at click time.
+    const initialSeed = useMemo(() => [initialDay], [initialDay]);
+    const { cache, ensureDay, isFetching } = useGanttDays({
+        seed: initialSeed,
+    });
 
     // `centerDate` mirrors what the timeline reports as "currently
     // centered". Used to keep the header date picker and URL in sync.
@@ -107,11 +118,7 @@ export default function GanttIndex({
      *   4. Flip isExpanding OFF — scroll unlocks, URL sync resumes.
      */
     const performSwap = useCallback(
-        async (
-            kind: 'left' | 'right' | 'jump',
-            newEpoch: Ymd,
-            anchor: Ymd,
-        ) => {
+        async (kind: 'left' | 'right' | 'jump', newEpoch: Ymd, anchor: Ymd) => {
             setIsExpanding(kind);
             setEpoch(newEpoch);
             setAnchorDate(anchor);
@@ -166,7 +173,7 @@ export default function GanttIndex({
         [isExpanding, epoch, numDays, performSwap],
     );
 
-    const isExecuted = dayStatus?.status === 'executed';
+    const centeredDayStatus = cache.get(centerDate)?.dayStatus ?? null;
     const dimmedDuringSwap = isExpanding !== null;
 
     return (
@@ -180,10 +187,12 @@ export default function GanttIndex({
                     date={centerDate}
                     municipalityId={municipalityId}
                     municipalities={municipalities}
-                    dayStatus={dayStatus}
                     canCreateServices={canCreateServices}
                     onJumpToDate={handleJumpToDate}
                 />
+                {centeredDayStatus?.status === 'executed' && (
+                    <ExecutedDayBanner dayStatus={centeredDayStatus} />
+                )}
                 <GanttLegend />
                 <div
                     className={
@@ -197,7 +206,9 @@ export default function GanttIndex({
                         epoch={epoch}
                         operationTz={operationTz}
                         canCreateServices={canCreateServices}
-                        isExecuted={isExecuted}
+                        cache={cache}
+                        ensureDay={ensureDay}
+                        isFetching={isFetching}
                         numDays={numDays}
                         onCenterDateChange={handleCenterDateChange}
                         onMount={(jump) => {

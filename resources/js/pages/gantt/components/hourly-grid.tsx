@@ -13,7 +13,6 @@ import {
 } from '@/actions/App/Http/Controllers/ServiceController';
 import { cn } from '@/lib/utils';
 import { computeVehicleDocStatus, HOUR_LABELS } from '../gantt-utils';
-import { useGanttDays } from '../hooks/use-gantt-days';
 import {
     scrollLeftForDateCenter,
     useGanttScroll,
@@ -34,6 +33,7 @@ import ServiceBar from './service-bar';
 import VehicleSidebarItem from './vehicle-sidebar-item';
 
 import type { Service, Vehicle } from '@/types/models';
+import type { DayCache } from '../hooks/use-gantt-days';
 
 interface InitialDay {
     date: Ymd;
@@ -53,7 +53,14 @@ interface HourlyGridProps {
     epoch: Ymd;
     operationTz: string;
     canCreateServices: boolean;
-    isExecuted: boolean;
+    /**
+     * Per-day cache owned by the page (via useGanttDays). The grid
+     * reads services + dayStatus from it; `isExecuted` is no longer a
+     * global prop — service creation is gated per-day at click time.
+     */
+    cache: DayCache;
+    ensureDay: (date: Ymd) => void;
+    isFetching: boolean;
     /** Total days the virtualizer can show (centered roughly on hoy). */
     numDays: number;
     /** Called when the centered day changes (for URL sync). */
@@ -125,7 +132,9 @@ export default function HourlyGrid({
     epoch,
     operationTz,
     canCreateServices,
-    isExecuted,
+    cache,
+    ensureDay,
+    isFetching,
     numDays,
     onCenterDateChange,
     onMount,
@@ -134,9 +143,6 @@ export default function HourlyGrid({
     anchorDate = null,
 }: HourlyGridProps) {
     const scrollerRef = useRef<HTMLDivElement | null>(null);
-    const { cache, ensureDay, isFetching } = useGanttDays({
-        seed: [initialDay],
-    });
 
     const today = useMemo(
         () =>
@@ -359,7 +365,7 @@ export default function HourlyGrid({
         e: React.MouseEvent<HTMLDivElement>,
     ) {
         const status = vehicleStatuses[vehicle.id];
-        if (status?.isBlocked || isExecuted || !canCreateServices) return;
+        if (status?.isBlocked || !canCreateServices) return;
         const target = e.currentTarget;
         const rect = target.getBoundingClientRect();
         // clientX − rect.left is the click position INSIDE the timeline
@@ -368,6 +374,11 @@ export default function HourlyGrid({
         // absolute pixel on the timeline canvas.
         const absPx = e.clientX - rect.left;
         const { date, timeHHMM } = pixelToDateTime(absPx, epoch);
+        // Per-day gate: services can't be created on a day already
+        // marked Executed. Checked here at click time (rather than as a
+        // row-level prop) because a single row spans the full 61-day
+        // canvas, in which any subset of days may be Executed.
+        if (cache.get(date)?.dayStatus?.status === 'executed') return;
         router.get(servicesCreate().url, {
             vehicle_id: vehicle.id,
             planned_start_time: timeHHMM,
@@ -380,7 +391,6 @@ export default function HourlyGrid({
     }
 
     const totalTimelineWidth = numDays * PX_PER_DAY;
-    const bodyHeightPx = vehicles.length * ROW_HEIGHT_PX;
 
     return (
         <div className="relative size-full">
@@ -394,160 +404,169 @@ export default function HourlyGrid({
                     className="relative"
                     style={{ width: SIDEBAR_PX + totalTimelineWidth }}
                 >
-                {/* Header strip: sticky top. Sidebar corner z-30, timeline header z-20. */}
-                <div
-                    className="sticky top-0 z-20 flex border-b bg-muted/50"
-                    style={{ height: HEADER_HEIGHT_PX }}
-                >
+                    {/* Header strip: sticky top. Sidebar corner z-30, timeline header z-20. */}
                     <div
-                        className="sticky left-0 z-30 flex shrink-0 items-center border-r bg-background px-2"
-                        style={{ width: SIDEBAR_PX }}
+                        className="sticky top-0 z-20 flex border-b bg-muted/50"
+                        style={{ height: HEADER_HEIGHT_PX }}
                     >
-                        <span className="text-xs font-medium text-muted-foreground">
-                            Vehículo
-                        </span>
+                        <div
+                            className="sticky left-0 z-30 flex shrink-0 items-center border-r bg-background px-2"
+                            style={{ width: SIDEBAR_PX }}
+                        >
+                            <span className="text-xs font-medium text-muted-foreground">
+                                Vehículo
+                            </span>
+                        </div>
+                        <div
+                            className="relative"
+                            style={{ width: totalTimelineWidth }}
+                        >
+                            {visibleDays.map((item) => {
+                                const date = addDays(epoch, item.index);
+                                const isToday = date === today;
+                                return (
+                                    <div
+                                        key={item.key}
+                                        className="absolute inset-y-0"
+                                        style={{
+                                            left: item.start,
+                                            width: PX_PER_DAY,
+                                        }}
+                                    >
+                                        <DaySeparator
+                                            date={date}
+                                            leftPx={0}
+                                            widthPx={PX_PER_DAY}
+                                            isToday={isToday}
+                                            dayStatus={
+                                                cache.get(date)?.dayStatus ??
+                                                null
+                                            }
+                                        />
+                                        {/* Hour ticks below the day banner. */}
+                                        <div
+                                            className="absolute inset-x-0 bottom-0 flex"
+                                            style={{ top: 24 }}
+                                        >
+                                            {HOUR_LABELS.map((label) => (
+                                                <div
+                                                    key={label}
+                                                    className="flex-1 border-l border-border/50 p-1 text-center text-[10px] text-muted-foreground"
+                                                >
+                                                    {label}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
                     </div>
-                    <div
-                        className="relative"
-                        style={{ width: totalTimelineWidth }}
-                    >
-                        {visibleDays.map((item) => {
-                            const date = addDays(epoch, item.index);
-                            const isToday = date === today;
-                            return (
+
+                    {/* Body rows. */}
+                    {vehicles.map((vehicle) => {
+                        const status = vehicleStatuses[vehicle.id];
+                        // Cursor affordance at the row level reflects vehicle
+                        // eligibility only. The per-day Executed gate fires
+                        // inside `handleEmptyCellClick` because a single row
+                        // spans many days with mixed statuses.
+                        const clickable =
+                            canCreateServices && !status?.isBlocked;
+                        return (
+                            <div
+                                key={vehicle.id}
+                                className={cn(
+                                    'flex border-b',
+                                    status?.isBlocked &&
+                                        'bg-neutral-100 dark:bg-neutral-800/50',
+                                )}
+                                // `content-visibility: auto` lets the browser
+                                // skip layout/paint/composite for rows that
+                                // are off-screen vertically — effectively a
+                                // free Y-virtualization. The intrinsic-size
+                                // hint keeps the scroll height stable so the
+                                // skip doesn't cause layout shifts when rows
+                                // enter/exit the viewport. CSS expects width
+                                // then height; the row is the timeline wide
+                                // and one row-height tall.
+                                style={{
+                                    contentVisibility: 'auto',
+                                    containIntrinsicSize: `${SIDEBAR_PX + totalTimelineWidth}px ${ROW_HEIGHT_PX}px`,
+                                }}
+                            >
                                 <div
-                                    key={item.key}
-                                    className="absolute inset-y-0"
+                                    className="sticky left-0 z-10 flex shrink-0 items-center border-r bg-background"
                                     style={{
-                                        left: item.start,
-                                        width: PX_PER_DAY,
+                                        width: SIDEBAR_PX,
+                                        height: ROW_HEIGHT_PX,
                                     }}
                                 >
-                                    <DaySeparator
-                                        date={date}
-                                        leftPx={0}
-                                        widthPx={PX_PER_DAY}
-                                        isToday={isToday}
+                                    <VehicleSidebarItem
+                                        vehicle={vehicle}
+                                        isBlocked={status?.isBlocked ?? false}
+                                        hasWarning={status?.hasWarning ?? false}
+                                        expiredDocs={status?.expiredDocs ?? []}
                                     />
-                                    {/* Hour ticks below the day banner. */}
-                                    <div
-                                        className="absolute inset-x-0 bottom-0 flex"
-                                        style={{ top: 24 }}
-                                    >
-                                        {HOUR_LABELS.map((label) => (
-                                            <div
-                                                key={label}
-                                                className="flex-1 border-l border-border/50 p-1 text-center text-[10px] text-muted-foreground"
-                                            >
-                                                {label}
-                                            </div>
-                                        ))}
-                                    </div>
                                 </div>
-                            );
-                        })}
-                    </div>
-                </div>
-
-                {/* Body rows. */}
-                {vehicles.map((vehicle) => {
-                    const status = vehicleStatuses[vehicle.id];
-                    const clickable =
-                        canCreateServices && !status?.isBlocked && !isExecuted;
-                    return (
-                        <div
-                            key={vehicle.id}
-                            className={cn(
-                                'flex border-b',
-                                status?.isBlocked &&
-                                    'bg-neutral-100 dark:bg-neutral-800/50',
-                            )}
-                            // `content-visibility: auto` lets the browser
-                            // skip layout/paint/composite for rows that
-                            // are off-screen vertically — effectively a
-                            // free Y-virtualization. The intrinsic-size
-                            // hint keeps the scroll height stable so the
-                            // skip doesn't cause layout shifts when rows
-                            // enter/exit the viewport. CSS expects width
-                            // then height; the row is the timeline wide
-                            // and one row-height tall.
-                            style={{
-                                contentVisibility: 'auto',
-                                containIntrinsicSize: `${SIDEBAR_PX + totalTimelineWidth}px ${ROW_HEIGHT_PX}px`,
-                            }}
-                        >
-                            <div
-                                className="sticky left-0 z-10 flex shrink-0 items-center border-r bg-background"
-                                style={{
-                                    width: SIDEBAR_PX,
-                                    height: ROW_HEIGHT_PX,
-                                }}
-                            >
-                                <VehicleSidebarItem
-                                    vehicle={vehicle}
-                                    isBlocked={status?.isBlocked ?? false}
-                                    hasWarning={status?.hasWarning ?? false}
-                                    expiredDocs={status?.expiredDocs ?? []}
-                                />
+                                <div
+                                    className={cn(
+                                        'relative',
+                                        clickable
+                                            ? 'cursor-cell'
+                                            : 'cursor-default',
+                                    )}
+                                    style={{
+                                        width: totalTimelineWidth,
+                                        height: ROW_HEIGHT_PX,
+                                        // contain: strict (= size + layout +
+                                        // paint + style) lets the compositor
+                                        // clip aggressively at this box and
+                                        // avoids style/layout side-effects
+                                        // bleeding out. Most noticeable on
+                                        // mobile GPUs that tile the wide
+                                        // background gradient.
+                                        contain: 'strict',
+                                        ...GRID_BG_STYLE,
+                                    }}
+                                    onClick={(e) =>
+                                        handleEmptyCellClick(vehicle, e)
+                                    }
+                                >
+                                    {visibleDays.map((item) => {
+                                        const date = addDays(epoch, item.index);
+                                        const services =
+                                            servicesByDateVehicle
+                                                .get(date)
+                                                ?.get(vehicle.id) ?? [];
+                                        return services.map((service) => {
+                                            const pos =
+                                                serviceBarAbsolutePosition(
+                                                    service.planned_start_at,
+                                                    service.planned_duration,
+                                                    service.timezone,
+                                                    epoch,
+                                                );
+                                            if (!pos) return null;
+                                            return (
+                                                <ServiceBar
+                                                    key={service.id}
+                                                    service={service}
+                                                    position={{
+                                                        left: pos.left,
+                                                        width: pos.width,
+                                                        unit: 'px',
+                                                    }}
+                                                    onClick={handleServiceClick}
+                                                />
+                                            );
+                                        });
+                                    })}
+                                </div>
                             </div>
-                            <div
-                                className={cn(
-                                    'relative',
-                                    clickable
-                                        ? 'cursor-cell'
-                                        : 'cursor-default',
-                                )}
-                                style={{
-                                    width: totalTimelineWidth,
-                                    height: ROW_HEIGHT_PX,
-                                    // contain: strict (= size + layout +
-                                    // paint + style) lets the compositor
-                                    // clip aggressively at this box and
-                                    // avoids style/layout side-effects
-                                    // bleeding out. Most noticeable on
-                                    // mobile GPUs that tile the wide
-                                    // background gradient.
-                                    contain: 'strict',
-                                    ...GRID_BG_STYLE,
-                                }}
-                                onClick={(e) =>
-                                    handleEmptyCellClick(vehicle, e)
-                                }
-                            >
-                                {visibleDays.map((item) => {
-                                    const date = addDays(epoch, item.index);
-                                    const services =
-                                        servicesByDateVehicle
-                                            .get(date)
-                                            ?.get(vehicle.id) ?? [];
-                                    return services.map((service) => {
-                                        const pos = serviceBarAbsolutePosition(
-                                            service.planned_start_at,
-                                            service.planned_duration,
-                                            service.timezone,
-                                            epoch,
-                                        );
-                                        if (!pos) return null;
-                                        return (
-                                            <ServiceBar
-                                                key={service.id}
-                                                service={service}
-                                                position={{
-                                                    left: pos.left,
-                                                    width: pos.width,
-                                                    unit: 'px',
-                                                }}
-                                                onClick={handleServiceClick}
-                                            />
-                                        );
-                                    });
-                                })}
-                            </div>
-                        </div>
-                    );
-                })}
+                        );
+                    })}
 
-                {/* NOW indicator spans the body height; sits over all
+                    {/* NOW indicator spans the body height; sits over all
                     rows. Only mounted when "today" falls within the
                     current window — otherwise its absolute `left`
                     would extend hundreds of thousands of px past the
@@ -555,28 +574,28 @@ export default function HourlyGrid({
                     on /gantt?date=2022-09-01 where today was 1.36k
                     days from epoch and scrollWidth was 1.3M px).
                     `leftOffsetPx` accounts for the sticky sidebar. */}
-                {(() => {
-                    const todayOffset = dayOffset(today, epoch);
-                    if (todayOffset < 0 || todayOffset >= numDays) {
-                        return null;
-                    }
-                    return (
-                        <NowIndicator
-                            epoch={epoch}
-                            operationTz={operationTz}
-                            topOffsetPx={HEADER_HEIGHT_PX}
-                            leftOffsetPx={SIDEBAR_PX}
-                        />
-                    );
-                })()}
+                    {(() => {
+                        const todayOffset = dayOffset(today, epoch);
+                        if (todayOffset < 0 || todayOffset >= numDays) {
+                            return null;
+                        }
+                        return (
+                            <NowIndicator
+                                epoch={epoch}
+                                operationTz={operationTz}
+                                topOffsetPx={HEADER_HEIGHT_PX}
+                                leftOffsetPx={SIDEBAR_PX}
+                            />
+                        );
+                    })()}
 
-                {/* Reserve the canvas height so vertical scroll inside the
+                    {/* Reserve the canvas height so vertical scroll inside the
                     page wrapper is predictable even when no vehicles. */}
-                {vehicles.length === 0 && (
-                    <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
-                        No hay vehículos activos para mostrar.
-                    </div>
-                )}
+                    {vehicles.length === 0 && (
+                        <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
+                            No hay vehículos activos para mostrar.
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
