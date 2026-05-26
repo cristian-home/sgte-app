@@ -60,16 +60,22 @@ const SIDEBAR_PX = 112; // w-28
 const ROW_HEIGHT_PX = 36; // matches existing minHeight
 const HEADER_HEIGHT_PX = 48; // day banner + hour labels strip
 
-/** Pre-baked grid-line background: 23 dim borders + 1 brighter midnight. */
+/**
+ * Pre-baked grid-line background: 23 dim borders per day + 1 brighter
+ * midnight. Lines sit at the START of each block (positions 0, 38, 76…
+ * for hours, 0, 912, 1824… for days) so they align pixel-perfect with
+ * the header cells, which use `border-l` (border on the LEFT of each
+ * cell). Putting them at the end would offset everything by 1px.
+ */
 const GRID_BG_STYLE: React.CSSProperties = {
     backgroundImage: `repeating-linear-gradient(
         to right,
-        transparent 0 ${PX_PER_HOUR - 1}px,
-        rgba(120, 120, 120, 0.18) ${PX_PER_HOUR - 1}px ${PX_PER_HOUR}px
+        rgba(120, 120, 120, 0.18) 0 1px,
+        transparent 1px ${PX_PER_HOUR}px
     ), repeating-linear-gradient(
         to right,
-        transparent 0 ${PX_PER_DAY - 2}px,
-        rgba(120, 120, 120, 0.45) ${PX_PER_DAY - 2}px ${PX_PER_DAY}px
+        rgba(120, 120, 120, 0.45) 0 1px,
+        transparent 1px ${PX_PER_DAY}px
     )`,
     backgroundSize: `${PX_PER_HOUR}px 100%, ${PX_PER_DAY}px 100%`,
 };
