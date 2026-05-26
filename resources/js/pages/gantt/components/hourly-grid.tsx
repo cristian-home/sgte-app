@@ -103,8 +103,8 @@ interface HourlyGridProps {
     anchorDate?: Ymd | null;
 }
 
-const SIDEBAR_PX_MOBILE = 80; // w-20 — fits 6-char plate + small badges
-const SIDEBAR_PX_DESKTOP = 112; // w-28 — original, more breathing room
+const SIDEBAR_PX_MOBILE = 96; // w-24 — plate + 2 abbreviated badges
+const SIDEBAR_PX_DESKTOP = 112; // w-28 — original, fits full badge text
 const SIDEBAR_BREAKPOINT_PX = 640; // Tailwind `sm`
 const ROW_HEIGHT_PX = 36; // matches existing minHeight
 const HEADER_HEIGHT_PX = 48; // day banner + hour labels strip

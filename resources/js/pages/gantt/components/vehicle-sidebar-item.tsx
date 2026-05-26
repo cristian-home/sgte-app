@@ -48,33 +48,55 @@ export default function VehicleSidebarItem({
             <span className="font-mono text-sm font-semibold">
                 {vehicle.plate}
             </span>
-            {isBlocked && (
-                <TooltipProvider>
+            {/* Status badges. Each shows abbreviated single-char text on
+                mobile (sidebar w-24 = 96px) and the full label on sm+ so
+                three badges + plate never overflow the narrow column. */}
+            <TooltipProvider>
+                {isBlocked && (
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <Badge
                                 variant="destructive"
                                 className="px-1 py-0 text-[10px] leading-tight"
                             >
-                                BLOQ.
+                                <span className="sm:hidden">B</span>
+                                <span className="hidden sm:inline">BLOQ.</span>
                             </Badge>
                         </TooltipTrigger>
                         <TooltipContent side="right">
                             <p className="text-xs">{expiredDetails}</p>
                         </TooltipContent>
                     </Tooltip>
-                </TooltipProvider>
-            )}
-            {hasWarning && (
-                <Badge className="bg-yellow-100 px-1 py-0 text-[10px] leading-tight text-yellow-700 hover:bg-yellow-100 dark:bg-yellow-900 dark:text-yellow-300">
-                    Prec.
-                </Badge>
-            )}
-            {vehicle.is_third_party && (
-                <Badge className="bg-blue-100 px-1 py-0 text-[10px] leading-tight text-blue-700 hover:bg-blue-100 dark:bg-blue-900 dark:text-blue-300">
-                    3ro
-                </Badge>
-            )}
+                )}
+                {hasWarning && (
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Badge className="bg-yellow-100 px-1 py-0 text-[10px] leading-tight text-yellow-700 hover:bg-yellow-100 dark:bg-yellow-900 dark:text-yellow-300">
+                                <span className="sm:hidden">P</span>
+                                <span className="hidden sm:inline">Prec.</span>
+                            </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent side="right">
+                            <p className="text-xs">
+                                Precaución — documentos próximos a vencer
+                            </p>
+                        </TooltipContent>
+                    </Tooltip>
+                )}
+                {vehicle.is_third_party && (
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Badge className="bg-blue-100 px-1 py-0 text-[10px] leading-tight text-blue-700 hover:bg-blue-100 dark:bg-blue-900 dark:text-blue-300">
+                                <span className="sm:hidden">3</span>
+                                <span className="hidden sm:inline">3ro</span>
+                            </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent side="right">
+                            <p className="text-xs">Vehículo de tercero</p>
+                        </TooltipContent>
+                    </Tooltip>
+                )}
+            </TooltipProvider>
         </div>
     );
 }
