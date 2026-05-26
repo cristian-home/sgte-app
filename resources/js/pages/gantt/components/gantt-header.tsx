@@ -13,11 +13,18 @@ import { cn } from '@/lib/utils';
 import type { DayStatus } from '@/types/models';
 
 interface GanttHeaderProps {
+    /** Currently centered date in the timeline (controlled by the page). */
     date: string;
     municipalityId: number | null;
     municipalities: MunicipalityOption[];
     dayStatus: DayStatus | null;
     canCreateServices: boolean;
+    /**
+     * Page-level callback that scrolls the timeline so `date` lands at
+     * the center. Replaces the previous `router.get` Inertia
+     * navigation — date changes are now pure scroll, no SSR reload.
+     */
+    onJumpToDate: (date: string) => void;
 }
 
 function addDays(dateStr: string, days: number): string {
@@ -45,6 +52,7 @@ export default function GanttHeader({
     municipalityId,
     municipalities,
     dayStatus,
+    onJumpToDate,
 }: GanttHeaderProps) {
     const isExecuted = dayStatus?.status === 'executed';
     const sharedConfig = usePage().props.config as
@@ -52,14 +60,15 @@ export default function GanttHeader({
         | undefined;
     const operationTz = sharedConfig?.operation_tz ?? 'America/Bogota';
 
-    function navigate(newDate: string, newMunicipalityId?: number | null) {
-        const params: Record<string, string | number> = { date: newDate };
-        const mId =
-            newMunicipalityId !== undefined
-                ? newMunicipalityId
-                : municipalityId;
-        if (mId) {
-            params.municipality_id = mId;
+    // Municipality change is a structural filter (different vehicle
+    // list) so it still does a full Inertia navigate to re-render the
+    // SSR payload. Date changes are purely visual — the page handles
+    // them via `onJumpToDate` and the new day is fetched via the JSON
+    // branch of the same endpoint.
+    function navigateMunicipality(newMunicipalityId: number | null) {
+        const params: Record<string, string | number> = { date };
+        if (newMunicipalityId) {
+            params.municipality_id = newMunicipalityId;
         }
         router.get(ganttIndex().url, params, {
             preserveState: true,
@@ -75,7 +84,7 @@ export default function GanttHeader({
                         variant="outline"
                         size="icon"
                         className="size-8"
-                        onClick={() => navigate(addDays(date, -1))}
+                        onClick={() => onJumpToDate(addDays(date, -1))}
                     >
                         <ChevronLeft className="size-4" />
                     </Button>
@@ -83,7 +92,7 @@ export default function GanttHeader({
                         variant="outline"
                         size="icon"
                         className="size-8"
-                        onClick={() => navigate(addDays(date, 1))}
+                        onClick={() => onJumpToDate(addDays(date, 1))}
                     >
                         <ChevronRight className="size-4" />
                     </Button>
@@ -93,7 +102,7 @@ export default function GanttHeader({
                     type="date"
                     value={date}
                     onChange={(e) => {
-                        if (e.target.value) navigate(e.target.value);
+                        if (e.target.value) onJumpToDate(e.target.value);
                     }}
                     className="h-8 w-auto"
                 />
@@ -103,7 +112,7 @@ export default function GanttHeader({
                         variant="outline"
                         size="sm"
                         className="h-8"
-                        onClick={() => navigate(viewerToday(operationTz))}
+                        onClick={() => onJumpToDate(viewerToday(operationTz))}
                     >
                         Hoy
                     </Button>
@@ -123,7 +132,7 @@ export default function GanttHeader({
                         municipalities={municipalities}
                         value={municipalityId}
                         onChange={(val) =>
-                            navigate(date, val ? Number(val) : null)
+                            navigateMunicipality(val ? Number(val) : null)
                         }
                         placeholder="Todos los municipios"
                         className="w-60"

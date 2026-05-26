@@ -290,6 +290,50 @@ test('services.blocked fires on expired driver license (REQ-005 regression)', fu
     );
 });
 
+test('index returns JSON shape when Accept application/json (infinite scroll fetch)', function (): void {
+    $vehicle = Vehicle::factory()->create(['status' => VehicleStatus::Active]);
+    $contract = Contract::factory()->create();
+    Service::factory()->create([
+        'vehicle_id' => $vehicle->id,
+        'contract_id' => $contract->id,
+        'service_date' => '2026-03-10',
+    ]);
+
+    // The page Inertia branch carries vehicles, services, municipalities,
+    // etc. The JSON branch (used by `useGanttDays` to lazily fetch
+    // adjacent days during horizontal scroll) only needs the per-day
+    // payload — vehicles + municipalities are client-cached from SSR.
+    $response = $this->getJson(route('gantt.index', ['date' => '2026-03-10']));
+
+    $response->assertOk()
+        ->assertJsonStructure(['date', 'services', 'dayStatus'])
+        ->assertJsonMissing(['vehicles' => []])
+        ->assertJsonMissing(['municipalities' => []])
+        ->assertJsonPath('date', '2026-03-10')
+        ->assertJsonCount(1, 'services');
+});
+
+test('JSON branch respects date filter', function (): void {
+    $vehicle = Vehicle::factory()->create(['status' => VehicleStatus::Active]);
+    $contract = Contract::factory()->create();
+    Service::factory()->create([
+        'vehicle_id' => $vehicle->id,
+        'contract_id' => $contract->id,
+        'service_date' => '2026-03-10',
+    ]);
+    Service::factory()->create([
+        'vehicle_id' => $vehicle->id,
+        'contract_id' => $contract->id,
+        'service_date' => '2026-03-11',
+    ]);
+
+    $response = $this->getJson(route('gantt.index', ['date' => '2026-03-11']));
+
+    $response->assertOk()
+        ->assertJsonPath('date', '2026-03-11')
+        ->assertJsonCount(1, 'services');
+});
+
 test('index filters vehicles by municipality', function (): void {
     $municipality = Municipality::factory()->create();
     $otherMunicipality = Municipality::factory()->create();
