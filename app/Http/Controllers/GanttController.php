@@ -9,6 +9,7 @@ use App\Models\Municipality;
 use App\Models\Service;
 use App\Models\Vehicle;
 use App\Support\ServiceDocumentChecks;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
@@ -17,7 +18,7 @@ use Inertia\Response;
 
 class GanttController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request): Response|JsonResponse
     {
         Gate::authorize(Permission::VIEW_SERVICES->value);
 
@@ -127,6 +128,18 @@ class GanttController extends Controller
         $dayStatus = DayStatus::whereDate('date', $date)
             ->with('executor:id,name')
             ->first();
+
+        // Infinite-scroll fetch path: the client `useGanttDays` hook
+        // pulls services for adjacent days as the operator scrolls.
+        // Vehicles + municipalities stay client-cached from the SSR
+        // payload — only the date-scoped services need to refresh.
+        if ($request->wantsJson()) {
+            return response()->json([
+                'date' => $date,
+                'services' => $services,
+                'dayStatus' => $dayStatus,
+            ]);
+        }
 
         $municipalities = Municipality::query()
             ->with('department:id,name')

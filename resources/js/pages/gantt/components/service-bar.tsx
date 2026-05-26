@@ -10,7 +10,12 @@ import type { Service } from '@/types/models';
 
 interface ServiceBarProps {
     service: Service;
-    position: { left: number; width: number };
+    /**
+     * Position on the timeline. `unit` chooses how `left` and `width`
+     * are interpreted — `%` for the single-day mini-Gantt (dashboard)
+     * and `px` for the continuous multi-day timeline (/gantt).
+     */
+    position: { left: number; width: number; unit?: '%' | 'px' };
     onClick: (serviceId: number) => void;
 }
 
@@ -62,8 +67,8 @@ export default function ServiceBar({
                                     : 'bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700',
                         )}
                         style={{
-                            left: `${position.left}%`,
-                            width: `${position.width}%`,
+                            left: `${position.left}${position.unit ?? '%'}`,
+                            width: `${position.width}${position.unit ?? '%'}`,
                             minWidth: '24px',
                         }}
                         onClick={(e) => {
