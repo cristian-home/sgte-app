@@ -6,6 +6,8 @@ use App\Jobs\FetchServiceRoute;
 use App\Models\Service;
 use App\Models\Vehicle;
 use App\Models\VehicleLocation;
+use Carbon\CarbonImmutable;
+use Database\Seeders\Support\Locations;
 use Database\Seeders\VehicleLocationSeeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Bus;
@@ -15,60 +17,112 @@ use Illuminate\Support\Facades\Bus;
 // `route_geometry` is still null when VehicleLocationSeeder executes.
 beforeEach(fn () => Bus::fake());
 
-test('service-scoped locations land on the origin-to-destination chord', function (): void {
-    // Four open services for today, each with a known origin/destination
-    // and no fetched route_geometry — the realistic state at seed time.
-    $coords = [
-        ['4.60971,-74.08175', '4.65000,-74.05000'],
-        ['6.25184,-75.56359', '6.30000,-75.50000'],
-        ['3.45160,-76.53200', '4.71099,-74.07210'],
-        ['7.11935,-73.12270', '6.25184,-75.56359'],
-    ];
+test('in-progress services place their marker on the origin-to-destination chord', function (): void {
+    // Open service started 30 min ago with a 60-min planned duration —
+    // i.e. roughly half-way through, so the seeder should interpolate a
+    // point along the chord (no route_geometry → straight-line fallback).
+    $startedAt = CarbonImmutable::now('UTC')->subMinutes(30);
 
-    $services = collect($coords)->map(fn (array $pair): Service => Service::factory()->create([
-        'vehicle_id' => Vehicle::factory()->create(['status' => VehicleStatus::Active]),
-        'service_status' => ServiceStatus::Open,
-        'service_date' => Carbon::today()->toDateString(),
-        'origin_coordinates' => $pair[0],
-        'destination_coordinates' => $pair[1],
-    ]));
-
-    expect(VehicleLocation::query()->count())->toBe(0);
-
-    $this->seed(VehicleLocationSeeder::class);
-
-    // The seeder fetches each service's route inline so markers can be
-    // placed on the real polyline (faked here, hence the chord fallback).
-    Bus::assertDispatchedSync(FetchServiceRoute::class);
-
-    foreach ($services as $service) {
-        $location = VehicleLocation::query()
-            ->where('service_id', $service->id)
-            ->first();
-
-        expect($location)->not->toBeNull();
-
-        [$oLat, $oLng] = array_map('floatval', explode(',', $service->origin_coordinates));
-        [$dLat, $dLng] = array_map('floatval', explode(',', $service->destination_coordinates));
-
-        // A point interpolated on the origin→destination chord always
-        // falls inside their lat/lng bounding box.
-        expect((float) $location->latitude)
-            ->toBeGreaterThanOrEqual(min($oLat, $dLat) - 1e-6)
-            ->toBeLessThanOrEqual(max($oLat, $dLat) + 1e-6);
-        expect((float) $location->longitude)
-            ->toBeGreaterThanOrEqual(min($oLng, $dLng) - 1e-6)
-            ->toBeLessThanOrEqual(max($oLng, $dLng) + 1e-6);
-    }
-});
-
-test('service-scoped location snaps to a vertex of the fetched route polyline', function (): void {
     $service = Service::factory()->create([
         'vehicle_id' => Vehicle::factory()->create(['status' => VehicleStatus::Active]),
         'service_status' => ServiceStatus::Open,
         'service_date' => Carbon::today()->toDateString(),
         'origin_coordinates' => '4.60971,-74.08175',
         'destination_coordinates' => '4.71099,-74.07210',
+        'planned_start_at' => $startedAt,
+        'planned_duration' => 60,
+        'actual_start_at' => $startedAt,
+    ]);
+
+    $this->seed(VehicleLocationSeeder::class);
+
+    Bus::assertDispatchedSync(FetchServiceRoute::class);
+
+    $location = VehicleLocation::query()
+        ->where('service_id', $service->id)
+        ->first();
+
+    expect($location)->not->toBeNull();
+
+    [$oLat, $oLng] = array_map('floatval', explode(',', $service->origin_coordinates));
+    [$dLat, $dLng] = array_map('floatval', explode(',', $service->destination_coordinates));
+
+    expect((float) $location->latitude)
+        ->toBeGreaterThanOrEqual(min($oLat, $dLat) - 1e-6)
+        ->toBeLessThanOrEqual(max($oLat, $dLat) + 1e-6);
+    expect((float) $location->longitude)
+        ->toBeGreaterThanOrEqual(min($oLng, $dLng) - 1e-6)
+        ->toBeLessThanOrEqual(max($oLng, $dLng) + 1e-6);
+});
+
+test('services that have not departed yet are pinned at the bodega anchor', function (): void {
+    // Open service planned for later today, with no `actual_start_at` —
+    // a vehicle that hasn't left the warehouse yet. The seeder should
+    // place its current location at BODEGA_BOGOTA rather than on a route
+    // the vehicle isn't actually driving yet.
+    $service = Service::factory()->create([
+        'vehicle_id' => Vehicle::factory()->create(['status' => VehicleStatus::Active]),
+        'service_status' => ServiceStatus::Open,
+        'service_date' => Carbon::today()->toDateString(),
+        'origin_coordinates' => '4.60971,-74.08175',
+        'destination_coordinates' => '4.71099,-74.07210',
+        'planned_start_at' => CarbonImmutable::now('UTC')->addHours(2),
+        'planned_duration' => 60,
+        'actual_start_at' => null,
+    ]);
+
+    $this->seed(VehicleLocationSeeder::class);
+
+    $location = VehicleLocation::query()
+        ->where('service_id', $service->id)
+        ->first();
+
+    expect($location)->not->toBeNull();
+
+    $bodega = Locations::bodegaCoordinates();
+
+    expect((float) $location->latitude)->toEqualWithDelta($bodega['lat'], 1e-6);
+    expect((float) $location->longitude)->toEqualWithDelta($bodega['lng'], 1e-6);
+});
+
+test('closed services place the marker at the destination', function (): void {
+    $start = CarbonImmutable::now('UTC')->subHours(3);
+
+    $service = Service::factory()->create([
+        'vehicle_id' => Vehicle::factory()->create(['status' => VehicleStatus::Active]),
+        'service_status' => ServiceStatus::Closed,
+        'service_date' => Carbon::today()->toDateString(),
+        'origin_coordinates' => '4.60971,-74.08175',
+        'destination_coordinates' => '4.71099,-74.07210',
+        'planned_start_at' => $start,
+        'planned_duration' => 60,
+        'actual_start_at' => $start,
+        'actual_end_at' => $start->addHour(),
+    ]);
+
+    $this->seed(VehicleLocationSeeder::class);
+
+    $location = VehicleLocation::query()
+        ->where('service_id', $service->id)
+        ->first();
+
+    expect($location)->not->toBeNull();
+    expect((float) $location->latitude)->toEqualWithDelta(4.71099, 1e-4);
+    expect((float) $location->longitude)->toEqualWithDelta(-74.07210, 1e-4);
+});
+
+test('service-scoped location snaps to a vertex of the fetched route polyline', function (): void {
+    $start = CarbonImmutable::now('UTC')->subMinutes(15);
+
+    $service = Service::factory()->create([
+        'vehicle_id' => Vehicle::factory()->create(['status' => VehicleStatus::Active]),
+        'service_status' => ServiceStatus::Open,
+        'service_date' => Carbon::today()->toDateString(),
+        'origin_coordinates' => '4.60971,-74.08175',
+        'destination_coordinates' => '4.71099,-74.07210',
+        'planned_start_at' => $start,
+        'planned_duration' => 60,
+        'actual_start_at' => $start,
     ]);
 
     // route_geometry must be written past the model's saving hook, which
