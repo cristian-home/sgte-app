@@ -547,17 +547,28 @@ export default function HourlyGrid({
                     );
                 })}
 
-                {/* NOW indicator spans the body height; sits over all rows.
-                    `leftOffsetPx` accounts for the sticky sidebar that
-                    pushes the timeline canvas SIDEBAR_PX to the right
-                    of the canvas root — without it the red line lands
-                    ~3h to the left of real "now". */}
-                <NowIndicator
-                    epoch={epoch}
-                    operationTz={operationTz}
-                    contentHeightPx={HEADER_HEIGHT_PX + bodyHeightPx}
-                    leftOffsetPx={SIDEBAR_PX}
-                />
+                {/* NOW indicator spans the body height; sits over all
+                    rows. Only mounted when "today" falls within the
+                    current window — otherwise its absolute `left`
+                    would extend hundreds of thousands of px past the
+                    canvas and balloon scrollWidth (regression caught
+                    on /gantt?date=2022-09-01 where today was 1.36k
+                    days from epoch and scrollWidth was 1.3M px).
+                    `leftOffsetPx` accounts for the sticky sidebar. */}
+                {(() => {
+                    const todayOffset = dayOffset(today, epoch);
+                    if (todayOffset < 0 || todayOffset >= numDays) {
+                        return null;
+                    }
+                    return (
+                        <NowIndicator
+                            epoch={epoch}
+                            operationTz={operationTz}
+                            contentHeightPx={HEADER_HEIGHT_PX + bodyHeightPx}
+                            leftOffsetPx={SIDEBAR_PX}
+                        />
+                    );
+                })()}
 
                 {/* Reserve the canvas height so vertical scroll inside the
                     page wrapper is predictable even when no vehicles. */}
