@@ -21,6 +21,7 @@ import {
     serviceBarAbsolutePosition,
     type Ymd,
 } from '../utils/coordinates';
+import DayLoadingOverlay from './day-loading-overlay';
 import DaySeparator from './day-separator';
 import NowIndicator from './now-indicator';
 import ServiceBar from './service-bar';
@@ -377,11 +378,37 @@ export default function HourlyGrid({
                     );
                 })}
 
-                {/* NOW indicator spans the body height; sits over all rows. */}
+                {/* Per-day loading overlays. Rendered at the canvas level
+                    so a single overlay covers ALL vehicle rows for that
+                    day. The 200ms delay inside the component hides them
+                    for fast fetches (~80% case). */}
+                {visibleDays.map((item) => {
+                    const date = addDays(epoch, item.index);
+                    const entry = cache[date];
+                    if (entry?.status === 'ready' || entry?.status === 'error') {
+                        return null;
+                    }
+                    return (
+                        <DayLoadingOverlay
+                            key={`loading-${item.key}`}
+                            leftPx={SIDEBAR_PX + item.start}
+                            widthPx={PX_PER_DAY}
+                            topPx={HEADER_HEIGHT_PX}
+                            heightPx={bodyHeightPx}
+                        />
+                    );
+                })}
+
+                {/* NOW indicator spans the body height; sits over all rows.
+                    `leftOffsetPx` accounts for the sticky sidebar that
+                    pushes the timeline canvas SIDEBAR_PX to the right
+                    of the canvas root — without it the red line lands
+                    ~3h to the left of real "now". */}
                 <NowIndicator
                     epoch={epoch}
                     operationTz={operationTz}
                     contentHeightPx={HEADER_HEIGHT_PX + bodyHeightPx}
+                    leftOffsetPx={SIDEBAR_PX}
                 />
 
                 {/* Reserve the canvas height so vertical scroll inside the

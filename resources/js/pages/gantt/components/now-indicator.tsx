@@ -9,6 +9,13 @@ interface Props {
      * absolute line so it spans every visible vehicle row.
      */
     contentHeightPx: number;
+    /**
+     * Pixel offset to add to the computed left, accounting for the
+     * sticky sidebar that pushes the timeline canvas to the right of
+     * the absolute-positioning parent. Defaults to 0 so the component
+     * still works in single-day contexts.
+     */
+    leftOffsetPx?: number;
 }
 
 /**
@@ -20,6 +27,7 @@ export default function NowIndicator({
     epoch,
     operationTz,
     contentHeightPx,
+    leftOffsetPx = 0,
 }: Props) {
     const [tick, setTick] = useState(0);
     useEffect(() => {
@@ -30,11 +38,13 @@ export default function NowIndicator({
     // Recompute every tick. Using `useState` + interval is enough since
     // the position changes once per minute.
     void tick;
-    const leftPx = instantToPxFromEpoch(
-        new Date().toISOString(),
-        operationTz,
-        epoch,
-    );
+    const leftPx =
+        leftOffsetPx +
+        instantToPxFromEpoch(
+            new Date().toISOString(),
+            operationTz,
+            epoch,
+        );
 
     return (
         <div
