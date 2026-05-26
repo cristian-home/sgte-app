@@ -6,6 +6,7 @@ import {
     useLayoutEffect,
     useMemo,
     useRef,
+    useState,
 } from 'react';
 import {
     create as servicesCreate,
@@ -102,9 +103,36 @@ interface HourlyGridProps {
     anchorDate?: Ymd | null;
 }
 
-const SIDEBAR_PX = 112; // w-28
+const SIDEBAR_PX_MOBILE = 80; // w-20 — fits 6-char plate + small badges
+const SIDEBAR_PX_DESKTOP = 112; // w-28 — original, more breathing room
+const SIDEBAR_BREAKPOINT_PX = 640; // Tailwind `sm`
 const ROW_HEIGHT_PX = 36; // matches existing minHeight
 const HEADER_HEIGHT_PX = 48; // day banner + hour labels strip
+
+/**
+ * Sidebar width follows the Tailwind `sm` breakpoint: narrower on
+ * mobile so the timeline reclaims ~30px of viewport, full width on
+ * tablet+ where horizontal real estate is plentiful. SSR-safe — picks
+ * the desktop value first, then upgrades after hydration if the
+ * viewport reports otherwise.
+ */
+function useSidebarWidthPx(): number {
+    const [px, setPx] = useState<number>(SIDEBAR_PX_DESKTOP);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const mq = window.matchMedia(
+            `(min-width: ${SIDEBAR_BREAKPOINT_PX}px)`,
+        );
+        const update = () =>
+            setPx(mq.matches ? SIDEBAR_PX_DESKTOP : SIDEBAR_PX_MOBILE);
+        update();
+        mq.addEventListener('change', update);
+        return () => mq.removeEventListener('change', update);
+    }, []);
+
+    return px;
+}
 
 /**
  * Pre-baked grid-line background: 23 dim borders per day + 1 brighter
@@ -143,6 +171,15 @@ export default function HourlyGrid({
     anchorDate = null,
 }: HourlyGridProps) {
     const scrollerRef = useRef<HTMLDivElement | null>(null);
+    const sidebarPx = useSidebarWidthPx();
+    // Mirror in a ref so stable callbacks (jumpToDate, setScroller) can
+    // read the latest viewport-driven value without re-binding on every
+    // breakpoint change — re-binding the scroller ref races with the
+    // useLayoutEffect that anchors scrollLeft after an epoch swap.
+    const sidebarPxRef = useRef(sidebarPx);
+    useEffect(() => {
+        sidebarPxRef.current = sidebarPx;
+    }, [sidebarPx]);
 
     const today = useMemo(
         () =>
@@ -299,7 +336,7 @@ export default function HourlyGrid({
         if (!scroller) return;
         const offset = dayOffset(anchorDate, epoch);
         const dayCenterPx = (offset + 0.5) * PX_PER_DAY;
-        const timelineWidth = scroller.clientWidth - SIDEBAR_PX;
+        const timelineWidth = scroller.clientWidth - sidebarPxRef.current;
         const left = Math.max(0, Math.round(dayCenterPx - timelineWidth / 2));
         scroller.scrollLeft = left;
     }, [anchorDate, epoch]);
@@ -315,7 +352,7 @@ export default function HourlyGrid({
         const left = scrollLeftForDateCenter(
             date,
             epochRef.current,
-            scroller.clientWidth - SIDEBAR_PX,
+            scroller.clientWidth - sidebarPxRef.current,
         );
         scroller.scrollTo({ left, behavior: 'smooth' });
     }, []);
@@ -350,7 +387,7 @@ export default function HourlyGrid({
                     const left = scrollLeftForDateCenter(
                         initialDayRef.current.date,
                         epochRef.current,
-                        node.clientWidth - SIDEBAR_PX,
+                        node.clientWidth - sidebarPxRef.current,
                     );
                     node.scrollLeft = left;
                 });
@@ -402,7 +439,7 @@ export default function HourlyGrid({
                 {/* Outer canvas: sidebar (sticky) + timeline canvas side by side. */}
                 <div
                     className="relative"
-                    style={{ width: SIDEBAR_PX + totalTimelineWidth }}
+                    style={{ width: sidebarPx + totalTimelineWidth }}
                 >
                     {/* Header strip: sticky top. Sidebar corner z-30, timeline header z-20. */}
                     <div
@@ -411,7 +448,7 @@ export default function HourlyGrid({
                     >
                         <div
                             className="sticky left-0 z-30 flex shrink-0 items-center border-r bg-background px-2"
-                            style={{ width: SIDEBAR_PX }}
+                            style={{ width: sidebarPx }}
                         >
                             <span className="text-xs font-medium text-muted-foreground">
                                 Vehículo
@@ -491,13 +528,13 @@ export default function HourlyGrid({
                                 // and one row-height tall.
                                 style={{
                                     contentVisibility: 'auto',
-                                    containIntrinsicSize: `${SIDEBAR_PX + totalTimelineWidth}px ${ROW_HEIGHT_PX}px`,
+                                    containIntrinsicSize: `${sidebarPx + totalTimelineWidth}px ${ROW_HEIGHT_PX}px`,
                                 }}
                             >
                                 <div
                                     className="sticky left-0 z-10 flex shrink-0 items-center border-r bg-background"
                                     style={{
-                                        width: SIDEBAR_PX,
+                                        width: sidebarPx,
                                         height: ROW_HEIGHT_PX,
                                     }}
                                 >
@@ -584,7 +621,7 @@ export default function HourlyGrid({
                                 epoch={epoch}
                                 operationTz={operationTz}
                                 topOffsetPx={HEADER_HEIGHT_PX}
-                                leftOffsetPx={SIDEBAR_PX}
+                                leftOffsetPx={sidebarPx}
                             />
                         );
                     })()}
