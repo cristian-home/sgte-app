@@ -118,11 +118,20 @@ export default function GanttHeader({
                     </Button>
                 )}
 
-                <span className="text-sm font-medium capitalize">
+                {/* Date label — hidden on mobile because the date
+                    picker already shows DD/MM/YYYY, and on a 375px
+                    viewport the verbose "martes, 26 de mayo de 2026"
+                    would push every other control off-screen. */}
+                <span className="hidden text-sm font-medium capitalize sm:inline">
                     {formatDateEs(date)}
                 </span>
 
-                <div className="ml-auto flex items-center gap-3">
+                {/* Right-side cluster. flex-wrap is critical: without
+                    it the badge gets clipped on narrow viewports
+                    because the combo's fixed width starves it. With
+                    flex-wrap the badge falls to its own row instead
+                    of disappearing. */}
+                <div className="flex flex-1 flex-wrap items-center justify-end gap-2 sm:gap-3">
                     <Button variant="outline" size="sm" className="h-8" asChild>
                         <a href={daySummaryIndex({ query: { date } }).url}>
                             Resumen
@@ -135,7 +144,10 @@ export default function GanttHeader({
                             navigateMunicipality(val ? Number(val) : null)
                         }
                         placeholder="Todos los municipios"
-                        className="w-60"
+                        // Mobile: take whatever horizontal space is
+                        // left in the row (min-w-0 lets it shrink).
+                        // Tablet+: pin to 240px so it doesn't sprawl.
+                        className="min-w-0 max-w-full flex-1 sm:w-60 sm:flex-none"
                     />
 
                     {dayStatus && (
