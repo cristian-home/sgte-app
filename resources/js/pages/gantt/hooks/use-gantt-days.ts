@@ -2,13 +2,20 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { index as ganttIndex } from '@/actions/App/Http/Controllers/GanttController';
 import { addDays, type Ymd } from '../utils/coordinates';
 
-import type { Service } from '@/types/models';
+import type { DayStatus, Service } from '@/types/models';
 
-export type DayStatus = 'loading' | 'ready' | 'error';
+export type DayFetchStatus = 'loading' | 'ready' | 'error';
 
 export interface DayEntry {
-    status: DayStatus;
+    status: DayFetchStatus;
     services: Service[];
+    /**
+     * Operational day-status row for this date (Projected / Executed /
+     * Blocked). Populated by both the SSR seed and the per-day JSON
+     * fetch. Drives the per-day badge in DaySeparator and the
+     * centered-day banner above the timeline.
+     */
+    dayStatus: DayStatus | null;
     error?: string;
 }
 
@@ -20,7 +27,11 @@ export interface UseGanttDaysOptions {
      * cache so the first paint never shows a "loading" placeholder for
      * the day the user landed on.
      */
-    seed?: Array<{ date: Ymd; services: Service[] }>;
+    seed?: Array<{
+        date: Ymd;
+        services: Service[];
+        dayStatus: DayStatus | null;
+    }>;
     /**
      * LRU cap. When the cache exceeds this count, the least-recently-
      * touched entries are evicted. With ~30 services/day average and
@@ -66,8 +77,8 @@ export function useGanttDays({
 }: UseGanttDaysOptions = {}): UseGanttDaysReturn {
     const [cache, setCache] = useState<DayCache>(() => {
         const initial: DayCache = new Map();
-        for (const { date, services } of seed ?? []) {
-            initial.set(date, { status: 'ready', services });
+        for (const { date, services, dayStatus } of seed ?? []) {
+            initial.set(date, { status: 'ready', services, dayStatus });
         }
         return initial;
     });
@@ -100,11 +111,7 @@ export function useGanttDays({
      * calling `setCache` with the result.
      */
     const buildNextCache = useCallback(
-        (
-            prev: DayCache,
-            date: Ymd,
-            entry: DayEntry,
-        ): DayCache => {
+        (prev: DayCache, date: Ymd, entry: DayEntry): DayCache => {
             const next = new Map(prev);
             // Touch — delete first so re-set puts the entry at the end.
             next.delete(date);
@@ -138,8 +145,16 @@ export function useGanttDays({
                 }
                 return;
             }
-            const loadingEntry: DayEntry = { status: 'loading', services: [] };
-            cacheRef.current = buildNextCache(cacheRef.current, date, loadingEntry);
+            const loadingEntry: DayEntry = {
+                status: 'loading',
+                services: [],
+                dayStatus: null,
+            };
+            cacheRef.current = buildNextCache(
+                cacheRef.current,
+                date,
+                loadingEntry,
+            );
             setCache(cacheRef.current);
 
             const aborter = new AbortController();
@@ -154,13 +169,18 @@ export function useGanttDays({
                     if (!r.ok) {
                         throw new Error(`HTTP ${r.status}`);
                     }
-                    return r.json() as Promise<{ date: Ymd; services: Service[] }>;
+                    return r.json() as Promise<{
+                        date: Ymd;
+                        services: Service[];
+                        dayStatus: DayStatus | null;
+                    }>;
                 })
                 .then((json) => {
                     abortersRef.current.delete(date);
                     const readyEntry: DayEntry = {
                         status: 'ready',
                         services: json.services,
+                        dayStatus: json.dayStatus,
                     };
                     cacheRef.current = buildNextCache(
                         cacheRef.current,
@@ -170,13 +190,17 @@ export function useGanttDays({
                     setCache(cacheRef.current);
                 })
                 .catch((err) => {
-                    if (err instanceof DOMException && err.name === 'AbortError') {
+                    if (
+                        err instanceof DOMException &&
+                        err.name === 'AbortError'
+                    ) {
                         return;
                     }
                     abortersRef.current.delete(date);
                     const errorEntry: DayEntry = {
                         status: 'error',
                         services: [],
+                        dayStatus: null,
                         error: err instanceof Error ? err.message : String(err),
                     };
                     cacheRef.current = buildNextCache(
@@ -214,17 +238,14 @@ export function useGanttDays({
         }
     }
 
-    const areAllReady = useCallback(
-        (dates: Ymd[]) => {
-            for (const date of dates) {
-                if (cacheRef.current.get(date)?.status !== 'ready') {
-                    return false;
-                }
+    const areAllReady = useCallback((dates: Ymd[]) => {
+        for (const date of dates) {
+            if (cacheRef.current.get(date)?.status !== 'ready') {
+                return false;
             }
-            return true;
-        },
-        [],
-    );
+        }
+        return true;
+    }, []);
 
     return { cache, ensureDay, isFetching, areAllReady };
 }
