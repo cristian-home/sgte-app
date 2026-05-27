@@ -1,5 +1,5 @@
-import { router, useForm } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
+import { useForm } from '@inertiajs/react';
+import { useEffect, useRef, useState } from 'react';
 import InvoiceController from '@/actions/App/Http/Controllers/InvoiceController';
 import InvoiceForm, {
     type EligibleServicesPayload,
@@ -40,7 +40,6 @@ interface InvoiceDialogProps {
     mode: 'create' | 'edit';
     invoice?: EditableInvoice | null;
     thirdParties: ThirdPartyOption[];
-    eligibleServices?: EligibleServicesPayload | null;
 }
 
 const emptyData: InvoiceFormData = {
@@ -85,17 +84,28 @@ export default function InvoiceDialog({
     mode,
     invoice,
     thirdParties,
-    eligibleServices = null,
 }: InvoiceDialogProps) {
     const { data, setData, post, put, processing, errors, clearErrors } =
         useForm<InvoiceFormData>({ ...emptyData });
     const [loadingEligible, setLoadingEligible] = useState(false);
+    const [eligibleServices, setEligibleServices] =
+        useState<EligibleServicesPayload | null>(null);
+    // Track the in-flight request so a quick customer-switch cancels the
+    // older fetch and the stale response can't overwrite the newer one.
+    const abortRef = useRef<AbortController | null>(null);
 
     // Re-seed the form whenever the dialog identity changes. Inertia's
     // `setData`/`clearErrors` aren't React state setters, so this effect
     // is not flagged by the React Compiler (same pattern as UserDialog).
     useEffect(() => {
         if (!open) {
+            // Cancel any in-flight eligible-services request when the
+            // dialog closes so its response doesn't reach an unmounted
+            // dialog (and to be a good network citizen on rapid
+            // open/close).
+            abortRef.current?.abort();
+            setEligibleServices(null);
+            setLoadingEligible(false);
             return;
         }
         if (mode === 'edit' && invoice) {
@@ -103,6 +113,7 @@ export default function InvoiceDialog({
         } else {
             setData({ ...emptyData });
         }
+        setEligibleServices(null);
         clearErrors();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open, mode, invoice?.id]);
@@ -117,13 +128,52 @@ export default function InvoiceDialog({
 
     function handleThirdPartyChange(id: string) {
         if (mode !== 'create') return;
-        if (!id) return;
+        if (!id) {
+            abortRef.current?.abort();
+            setEligibleServices(null);
+            return;
+        }
+        // Cancel any older in-flight request — if the operator switches
+        // customer quickly, only the latest answer wins.
+        abortRef.current?.abort();
+        const controller = new AbortController();
+        abortRef.current = controller;
         setLoadingEligible(true);
-        router.reload({
-            only: ['eligibleServices'],
-            data: { eligible_for: id },
-            onFinish: () => setLoadingEligible(false),
-        });
+        const url = InvoiceController.eligibleServices({
+            query: { customer_id: id },
+        }).url;
+        fetch(url, {
+            headers: { Accept: 'application/json' },
+            credentials: 'same-origin',
+            signal: controller.signal,
+        })
+            .then((res) => {
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return res.json();
+            })
+            .then((payload: EligibleServicesPayload) => {
+                setEligibleServices(payload);
+            })
+            .catch((err) => {
+                if (
+                    err &&
+                    typeof err === 'object' &&
+                    'name' in err &&
+                    (err as { name?: string }).name === 'AbortError'
+                ) {
+                    return; // intentional cancellation
+                }
+                setEligibleServices({
+                    cleanCandidates: [],
+                    blockedCandidates: [],
+                });
+            })
+            .finally(() => {
+                if (abortRef.current === controller) {
+                    setLoadingEligible(false);
+                    abortRef.current = null;
+                }
+            });
     }
 
     function submit(e: React.FormEvent<HTMLFormElement>) {

@@ -53,32 +53,39 @@ class InvoiceController extends Controller
             return response()->json($invoices);
         }
 
-        // When the create dialog is asking for eligible services for a
-        // specific customer, partition the candidates clean/blocked the
-        // same way the show page does so the inline picker can be
-        // hydrated without a follow-up round-trip.
-        $eligibleServices = null;
-        $eligibleFor = $request->query('eligible_for');
-        if (
-            is_numeric($eligibleFor) &&
-            Gate::allows(Permission::ASSIGN_SERVICES_TO_INVOICES->value)
-        ) {
-            $candidates = $this->candidatesForCustomer((int) $eligibleFor);
-            [$clean, $blocked] = $candidates->partition(
-                fn (Service $service) => ! $service->serviceIncidents
-                    ->where('affects_billing', true)
-                    ->isNotEmpty(),
-            );
-            $eligibleServices = [
-                'cleanCandidates' => $clean->values(),
-                'blockedCandidates' => $blocked->values(),
-            ];
-        }
-
         return Inertia::render('invoices/index', [
             'invoices' => $invoices,
             'thirdParties' => $this->customerOptions(),
-            'eligibleServices' => $eligibleServices,
+        ]);
+    }
+
+    /**
+     * JSON endpoint consumed by the create-invoice dialog. Returns the
+     * services eligible for billing under the given customer, partitioned
+     * into clean/blocked the same way the show page hydrates the picker.
+     *
+     * Lives on its own route (instead of as an `?eligible_for=` branch
+     * on index) so the create dialog can fetch it with a plain HTTP
+     * request — no Inertia visit, no URL mutation, no view transition.
+     */
+    public function eligibleServices(Request $request): JsonResponse
+    {
+        Gate::authorize(Permission::ASSIGN_SERVICES_TO_INVOICES->value);
+
+        $validated = $request->validate([
+            'customer_id' => ['required', 'integer', 'exists:third_parties,id'],
+        ]);
+
+        $candidates = $this->candidatesForCustomer((int) $validated['customer_id']);
+        [$clean, $blocked] = $candidates->partition(
+            fn (Service $service) => ! $service->serviceIncidents
+                ->where('affects_billing', true)
+                ->isNotEmpty(),
+        );
+
+        return response()->json([
+            'cleanCandidates' => $clean->values(),
+            'blockedCandidates' => $blocked->values(),
         ]);
     }
 

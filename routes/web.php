@@ -97,6 +97,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('invoices/{invoice}/services', [App\Http\Controllers\InvoiceController::class, 'attachServices'])->middleware('can:'.App\Enums\Permission::ASSIGN_SERVICES_TO_INVOICES->value)->name('invoices.services.attach');
     Route::delete('invoices/{invoice}/services/{service}', [App\Http\Controllers\InvoiceController::class, 'detachService'])->middleware('can:'.App\Enums\Permission::ASSIGN_SERVICES_TO_INVOICES->value)->name('invoices.services.detach');
     Route::post('invoices/{invoice}/recompute-total', [App\Http\Controllers\InvoiceController::class, 'recomputeTotal'])->middleware('can:'.App\Enums\Permission::ASSIGN_SERVICES_TO_INVOICES->value)->name('invoices.recompute-total');
+    Route::get('invoices-eligible-services', [App\Http\Controllers\InvoiceController::class, 'eligibleServices'])
+        ->middleware('can:'.App\Enums\Permission::ASSIGN_SERVICES_TO_INVOICES->value)
+        ->name('invoices.eligible-services');
     Route::resource('invoices', App\Http\Controllers\InvoiceController::class)
         ->except(['create', 'edit'])
         ->middleware('can:'.App\Enums\Permission::VIEW_INVOICES->value);
