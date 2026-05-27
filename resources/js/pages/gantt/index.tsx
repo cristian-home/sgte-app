@@ -9,6 +9,7 @@ import HourlyGrid, {
     defaultNumDays,
 } from './components/hourly-grid';
 import { useGanttDays } from './hooks/use-gantt-days';
+import { viewerToday } from '@/lib/datetime';
 import { addDays, dayOffset, type Ymd } from './utils/coordinates';
 
 import type { BreadcrumbItem } from '@/types';
@@ -63,12 +64,20 @@ export default function GanttIndex({
     // after epoch changes. Stored here so HourlyGrid's useLayoutEffect
     // can consume it on the next commit. Cleared after one render so
     // re-renders for unrelated reasons don't snap the scroll back.
-    const [recenterTarget, setRecenterTarget] = useState<Ymd | null>(null);
+    // `mode`: 'noon' for date-picker jumps (lands on midday of the
+    // date), 'now' for the Hoy button (lands on the current instant
+    // so the Now indicator sits centered).
+    const [recenterTo, setRecenterTo] = useState<{
+        date: Ymd;
+        mode: 'noon' | 'now';
+    } | null>(null);
 
-    // jumpToDate (smooth-scroll callback exposed by HourlyGrid via
-    // onMount) — used for in-range targets where we just want the
-    // browser to ease over to the date.
+    // Smooth-scroll callbacks exposed by HourlyGrid via onMount —
+    // used for in-range targets where we just want the browser to
+    // ease over to the destination (vs. the instant snap of an
+    // out-of-range jump that goes through setEpoch + recenterTo).
     const jumpToDateRef = useRef<((date: Ymd) => void) | null>(null);
+    const jumpToNowRef = useRef<(() => void) | null>(null);
 
     const handleCenterDateChange = useCallback((newDate: Ymd) => {
         setCenterDate(newDate);
@@ -87,17 +96,17 @@ export default function GanttIndex({
                 return;
             }
             // Out-of-range: re-center the window on the picked date.
-            // Setting recenterTarget AND epoch in the same render lets
+            // Setting recenterTo + epoch in the same render lets
             // HourlyGrid's useLayoutEffect run once, snap scrollLeft to
             // the new center, and update the URL via the next scroll
             // tick. No lock, no dim — just a discrete jump.
             const newEpoch = addDays(target, -Math.floor(numDays / 2));
             setEpoch(newEpoch);
             setCenterDate(target);
-            setRecenterTarget(target);
+            setRecenterTo({ date: target, mode: 'noon' });
             // Clear on next microtask so subsequent re-renders for
             // other reasons don't keep snapping scrollLeft back.
-            queueMicrotask(() => setRecenterTarget(null));
+            queueMicrotask(() => setRecenterTo(null));
             const url = new URL(window.location.href);
             url.searchParams.set('date', target);
             window.history.replaceState(
@@ -109,6 +118,29 @@ export default function GanttIndex({
         [epoch, numDays],
     );
 
+    const handleJumpToNow = useCallback(() => {
+        const target = viewerToday(operationTz) as Ymd;
+        const offset = dayOffset(target, epoch);
+        const inRange = offset >= 0 && offset < numDays;
+        if (inRange) {
+            // Today already in the window — smooth-scroll the viewport
+            // so the Now line lands at center.
+            jumpToNowRef.current?.();
+            return;
+        }
+        // Out-of-range: snap epoch back to today + center on now
+        // instant in one render. Same flow as the date-picker out-of-
+        // range case, but recenterTo.mode = 'now'.
+        const newEpoch = addDays(target, -Math.floor(numDays / 2));
+        setEpoch(newEpoch);
+        setCenterDate(target);
+        setRecenterTo({ date: target, mode: 'now' });
+        queueMicrotask(() => setRecenterTo(null));
+        const url = new URL(window.location.href);
+        url.searchParams.set('date', target);
+        window.history.replaceState(window.history.state, '', url.toString());
+    }, [epoch, numDays, operationTz]);
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Planificador Gantt" />
@@ -119,6 +151,7 @@ export default function GanttIndex({
                     date={centerDate}
                     canCreateServices={canCreateServices}
                     onJumpToDate={handleJumpToDate}
+                    onJumpToNow={handleJumpToNow}
                 />
                 <GanttLegend />
                 <div className="min-h-0 flex-1 overflow-hidden rounded-lg border">
@@ -134,10 +167,11 @@ export default function GanttIndex({
                         isFetching={isFetching}
                         numDays={numDays}
                         onCenterDateChange={handleCenterDateChange}
-                        onMount={(jump) => {
-                            jumpToDateRef.current = jump;
+                        onMount={({ jumpToDate, jumpToNow }) => {
+                            jumpToDateRef.current = jumpToDate;
+                            jumpToNowRef.current = jumpToNow;
                         }}
-                        recenterTarget={recenterTarget}
+                        recenterTo={recenterTo}
                     />
                 </div>
             </div>

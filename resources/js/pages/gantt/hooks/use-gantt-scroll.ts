@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import {
     addDays,
     dayOffset,
+    instantToPxFromEpoch,
     PX_PER_DAY,
     type Ymd,
 } from '../utils/coordinates';
@@ -88,4 +89,20 @@ export function scrollLeftForDateCenter(
     const dayStartPx = dayOffset(date, epoch) * PX_PER_DAY;
     const dayCenterPx = dayStartPx + PX_PER_DAY / 2;
     return Math.max(0, Math.round(dayCenterPx - clientWidth / 2));
+}
+
+/**
+ * Compute the pixel position to `scrollTo` so a specific instant
+ * lands at the horizontal center of `clientWidth`. Used by the "Hoy"
+ * shortcut to center the viewport on the Now indicator (not on
+ * noon of today, which is what scrollLeftForDateCenter would do).
+ */
+export function scrollLeftForInstantCenter(
+    iso: string,
+    tz: string,
+    epoch: Ymd,
+    clientWidth: number,
+): number {
+    const px = instantToPxFromEpoch(iso, tz, epoch);
+    return Math.max(0, Math.round(px - clientWidth / 2));
 }
