@@ -616,7 +616,7 @@ export default function LocationField({
                         onFocus={handleInputFocus}
                         placeholder={placeholder}
                         disabled={disabled || committing}
-                        className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed"
+                        className="min-w-0 flex-1 truncate bg-transparent text-sm outline-none placeholder:text-muted-foreground focus:text-clip disabled:cursor-not-allowed"
                     />
                     {(loadingSuggest || committing) && (
                         <Loader2 className="size-4 shrink-0 animate-spin text-muted-foreground" />
