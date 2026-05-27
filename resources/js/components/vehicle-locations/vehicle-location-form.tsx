@@ -1,7 +1,7 @@
 import { APIProvider } from '@vis.gl/react-google-maps';
 import { ChevronDown, Crosshair, MapPin } from 'lucide-react';
 import { useState } from 'react';
-import InputError from '@/components/input-error';
+import FieldFooter from '@/components/field-footer';
 import MapPickerModal from '@/components/map-picker-modal';
 import { Button } from '@/components/ui/button';
 import {
@@ -112,7 +112,7 @@ export function VehicleLocationForm({
                         onChange={(value) => setData('vehicle_id', value ?? '')}
                         invalid={Boolean(errors.vehicle_id)}
                     />
-                    <InputError message={errors.vehicle_id} />
+                    <FieldFooter error={errors.vehicle_id} />
                 </div>
 
                 <div className="space-y-1 md:col-span-2">
@@ -124,7 +124,7 @@ export function VehicleLocationForm({
                         onChange={(e) => setData('recorded_at', e.target.value)}
                         aria-invalid={Boolean(errors.recorded_at)}
                     />
-                    <InputError message={errors.recorded_at} />
+                    <FieldFooter error={errors.recorded_at} />
                 </div>
 
                 <div className="space-y-2 md:col-span-2">
@@ -170,8 +170,8 @@ export function VehicleLocationForm({
                     {geoError && (
                         <p className="text-sm text-destructive">{geoError}</p>
                     )}
-                    <InputError message={errors.latitude} />
-                    <InputError message={errors.longitude} />
+                    <FieldFooter error={errors.latitude} />
+                    <FieldFooter error={errors.longitude} />
                 </div>
 
                 <Collapsible
@@ -236,7 +236,7 @@ export function VehicleLocationForm({
                                 }
                                 aria-invalid={Boolean(errors.accuracy)}
                             />
-                            <InputError message={errors.accuracy} />
+                            <FieldFooter error={errors.accuracy} />
                         </div>
                     </CollapsibleContent>
                 </Collapsible>

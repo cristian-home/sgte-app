@@ -2,7 +2,7 @@ import { useForm } from '@inertiajs/react';
 import { AlertOctagon, AlertTriangle, Info } from 'lucide-react';
 import { useEffect } from 'react';
 import IncidentTypeController from '@/actions/App/Http/Controllers/IncidentTypeController';
-import InputError from '@/components/input-error';
+import FieldFooter from '@/components/field-footer';
 import {
     Choicebox,
     ChoiceboxIndicator,
@@ -140,7 +140,7 @@ export default function IncidentTypeDialog({
                                 className="uppercase"
                                 autoCapitalize="characters"
                             />
-                            <InputError message={errors.code} />
+                            <FieldFooter error={errors.code} />
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="incident-type-name">
@@ -156,7 +156,7 @@ export default function IncidentTypeDialog({
                                     setData('name', e.target.value)
                                 }
                             />
-                            <InputError message={errors.name} />
+                            <FieldFooter error={errors.name} />
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="incident-type-severity">
@@ -200,7 +200,7 @@ export default function IncidentTypeDialog({
                                     },
                                 )}
                             </Choicebox>
-                            <InputError message={errors.severity} />
+                            <FieldFooter error={errors.severity} />
                         </div>
                         <div className="flex items-center gap-3 self-end">
                             <Switch
@@ -228,7 +228,7 @@ export default function IncidentTypeDialog({
                                 setData('description', e.target.value)
                             }
                         />
-                        <InputError message={errors.description} />
+                        <FieldFooter error={errors.description} />
                     </div>
 
                     <DialogFooter className="gap-2">
