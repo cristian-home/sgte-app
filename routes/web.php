@@ -100,6 +100,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('invoices-eligible-services', [App\Http\Controllers\InvoiceController::class, 'eligibleServices'])
         ->middleware('can:'.App\Enums\Permission::ASSIGN_SERVICES_TO_INVOICES->value)
         ->name('invoices.eligible-services');
+    Route::get('invoices/{invoice}/attached-services', [App\Http\Controllers\InvoiceController::class, 'attachedServices'])
+        ->middleware('can:'.App\Enums\Permission::VIEW_INVOICES->value)
+        ->name('invoices.attached-services');
     Route::resource('invoices', App\Http\Controllers\InvoiceController::class)
         ->except(['create', 'edit'])
         ->middleware('can:'.App\Enums\Permission::VIEW_INVOICES->value);

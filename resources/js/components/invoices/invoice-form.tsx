@@ -69,6 +69,12 @@ interface InvoiceFormProps {
     loadingEligible?: boolean;
     /** Called when the customer combobox changes (create mode only). */
     onThirdPartyChange?: (id: string) => void;
+    /** Preview del próximo número de factura (create-mode, readonly). */
+    nextInvoiceNumberPreview?: string;
+    /** Permite editar el número de factura en edit mode (solo super admin). */
+    canEditInvoiceNumber?: boolean;
+    /** Servicios ya asociados a esta factura (solo edit mode). */
+    attachedServices?: ServicePickerRow[];
 }
 
 function RequiredMarker() {
@@ -97,6 +103,9 @@ export default function InvoiceForm({
     eligibleServices = null,
     loadingEligible = false,
     onThirdPartyChange,
+    nextInvoiceNumberPreview,
+    canEditInvoiceNumber = false,
+    attachedServices = [],
 }: InvoiceFormProps) {
     const id = (name: string) => (idPrefix ? `${idPrefix}_${name}` : name);
     const invalid = (field: keyof InvoiceFormData) =>
@@ -105,12 +114,24 @@ export default function InvoiceForm({
     const [pickerSearch, setPickerSearch] = useState('');
     const [showBlocked, setShowBlocked] = useState(false);
 
-    const showPicker =
+    const showPickerCreate =
         mode === 'create' && Boolean(data.third_party_id) && !isTotalLocked;
+    const showPickerEdit = mode === 'edit' && Boolean(data.third_party_id);
+    const showPicker = showPickerCreate || showPickerEdit;
+    const isCustomerLocked = mode === 'edit' && servicesCount > 0;
+    const isInvoiceNumberReadOnly =
+        mode === 'create' || (mode === 'edit' && !canEditInvoiceNumber);
 
     function handleThirdPartyChange(value: string) {
+        if (isCustomerLocked) return;
         setData('third_party_id', value);
-        setData('service_ids', []);
+        // En create reseteamos el set de seleccionados; en edit el
+        // parent ya re-hidrata data.service_ids con los attached cuando
+        // cambia el invoice, y aquí no aplicaría porque el combobox
+        // está bloqueado cuando hay servicios.
+        if (mode === 'create') {
+            setData('service_ids', []);
+        }
         setData('override_justification', '');
         setShowBlocked(false);
         setPickerSearch('');
@@ -122,16 +143,17 @@ export default function InvoiceForm({
     // suggestion, but the server reconciles after attach so the final
     // persisted value still reflects the actual services.
     const selectedTotal = useMemo(() => {
-        if (!showPicker || !eligibleServices) return 0;
+        if (!showPicker) return 0;
         const idSet = new Set(data.service_ids);
         const rows: ServicePickerRow[] = [
-            ...eligibleServices.cleanCandidates,
-            ...eligibleServices.blockedCandidates,
+            ...(eligibleServices?.cleanCandidates ?? []),
+            ...(eligibleServices?.blockedCandidates ?? []),
+            ...attachedServices,
         ];
         return rows
             .filter((row) => idSet.has(row.id))
             .reduce((acc, row) => acc + rowBillableTotal(row), 0);
-    }, [showPicker, eligibleServices, data.service_ids]);
+    }, [showPicker, eligibleServices, attachedServices, data.service_ids]);
 
     useEffect(() => {
         if (!showPicker) return;
@@ -153,12 +175,33 @@ export default function InvoiceForm({
                     </Label>
                     <Input
                         id={id('invoice_number')}
-                        value={data.invoice_number}
+                        value={
+                            mode === 'create'
+                                ? (nextInvoiceNumberPreview ?? '')
+                                : data.invoice_number
+                        }
+                        readOnly={isInvoiceNumberReadOnly}
                         aria-invalid={invalid('invoice_number')}
                         onChange={(e) =>
                             setData('invoice_number', e.target.value)
                         }
+                        className={
+                            isInvoiceNumberReadOnly
+                                ? 'bg-muted/40 font-mono'
+                                : 'font-mono'
+                        }
                     />
+                    {mode === 'create' && (
+                        <p className="text-xs text-muted-foreground italic">
+                            Se asigna automáticamente al guardar — el server
+                            reserva el siguiente disponible.
+                        </p>
+                    )}
+                    {mode === 'edit' && !canEditInvoiceNumber && (
+                        <p className="text-xs text-muted-foreground italic">
+                            El número no se edita una vez creada la factura.
+                        </p>
+                    )}
                     <InputError message={errors.invoice_number} />
                 </div>
 
@@ -176,7 +219,13 @@ export default function InvoiceForm({
                         onChange={handleThirdPartyChange}
                         invalid={invalid('third_party_id')}
                         placeholder="Selecciona un cliente"
+                        disabled={isCustomerLocked}
                     />
+                    {isCustomerLocked && (
+                        <p className="text-xs text-muted-foreground italic">
+                            (no editable mientras haya servicios asociados)
+                        </p>
+                    )}
                     <InputError message={errors.third_party_id} />
                 </div>
             </div>
@@ -191,11 +240,12 @@ export default function InvoiceForm({
                         </div>
                     ) : eligibleServices ? (
                         eligibleServices.cleanCandidates.length === 0 &&
-                        eligibleServices.blockedCandidates.length === 0 ? (
+                        eligibleServices.blockedCandidates.length === 0 &&
+                        attachedServices.length === 0 ? (
                             <div className="rounded-md border border-dashed bg-muted/30 p-6 text-sm text-muted-foreground">
-                                No hay servicios elegibles para este cliente.
-                                Puedes crear la factura igual y asociar
-                                servicios después desde su detalle.
+                                {mode === 'create'
+                                    ? 'No hay servicios elegibles para este cliente. Puedes crear la factura igual y asociar servicios después desde su detalle.'
+                                    : 'No hay servicios asociados ni elegibles para este cliente.'}
                             </div>
                         ) : (
                             <ServicePickerTable
@@ -203,6 +253,7 @@ export default function InvoiceForm({
                                 blockedCandidates={
                                     eligibleServices.blockedCandidates
                                 }
+                                attachedCandidates={attachedServices}
                                 selectedIds={data.service_ids}
                                 onSelectedIdsChange={(ids) =>
                                     setData('service_ids', ids)

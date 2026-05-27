@@ -56,6 +56,7 @@ class InvoiceController extends Controller
         return Inertia::render('invoices/index', [
             'invoices' => $invoices,
             'thirdParties' => $this->customerOptions(),
+            'nextInvoiceNumberPreview' => Invoice::nextInvoiceNumber(),
         ]);
     }
 
@@ -87,6 +88,42 @@ class InvoiceController extends Controller
             'cleanCandidates' => $clean->values(),
             'blockedCandidates' => $blocked->values(),
         ]);
+    }
+
+    /**
+     * JSON list of services already attached to the given invoice,
+     * shaped like ServicePickerRow so the edit dialog can render them
+     * in the same picker component as the eligible (clean / blocked)
+     * candidates.
+     */
+    public function attachedServices(Request $request, Invoice $invoice): JsonResponse
+    {
+        Gate::authorize(Permission::VIEW_INVOICES->value);
+
+        $services = Service::query()
+            ->where('invoice_id', $invoice->id)
+            ->with([
+                'vehicle:id,plate',
+                'driver:id,first_name,first_lastname',
+                'contract:id,contract_number',
+                'serviceIncidents:id,service_id,affects_billing,additional_value',
+            ])
+            ->orderByDesc('service_date_local')
+            ->orderByDesc('id')
+            ->get([
+                'id',
+                'service_date_local',
+                'planned_start_at',
+                'timezone',
+                'vehicle_id',
+                'driver_id',
+                'contract_id',
+                'unit_value',
+                'quantity',
+                'service_status',
+            ]);
+
+        return response()->json(['attachedCandidates' => $services]);
     }
 
     /**
@@ -135,22 +172,41 @@ class InvoiceController extends Controller
             ]);
         }
 
-        $invoice = DB::transaction(function () use ($request, $serviceIds, $justification, $calculator) {
-            $invoice = Invoice::create($request->validated());
+        // Auto-numeración con red de seguridad a tres capas: cómputo
+        // monotónico en el server, UNIQUE constraint en la BD, y retry
+        // ante choque de concurrencia. El invoice_number que llegue del
+        // cliente se ignora deliberadamente.
+        $invoice = null;
+        $attempts = 0;
+        while ($attempts < 3) {
+            try {
+                $invoice = DB::transaction(function () use ($request, $serviceIds, $justification, $calculator) {
+                    $data = $request->validated();
+                    $data['invoice_number'] = Invoice::nextInvoiceNumber();
 
-            if (count($serviceIds) > 0) {
-                $this->validateAttachableServices($invoice, $serviceIds, $justification);
-                $this->attachServiceIdsToInvoice(
-                    $invoice,
-                    $serviceIds,
-                    $justification,
-                    $request->user()?->id,
-                );
-                $calculator->recomputeFor($invoice->fresh());
+                    $created = Invoice::create($data);
+
+                    if (count($serviceIds) > 0) {
+                        $this->validateAttachableServices($created, $serviceIds, $justification);
+                        $this->attachServiceIdsToInvoice(
+                            $created,
+                            $serviceIds,
+                            $justification,
+                            $request->user()?->id,
+                        );
+                        $calculator->recomputeFor($created->fresh());
+                    }
+
+                    return $created;
+                });
+                break;
+            } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
+                $attempts++;
+                if ($attempts >= 3) {
+                    throw $e;
+                }
             }
-
-            return $invoice;
-        });
+        }
 
         return redirect()
             ->route('invoices.show', $invoice)
@@ -232,10 +288,78 @@ class InvoiceController extends Controller
         ]);
     }
 
-    public function update(InvoiceUpdateRequest $request, Invoice $invoice): RedirectResponse
-    {
+    public function update(
+        InvoiceUpdateRequest $request,
+        Invoice $invoice,
+        InvoiceTotalCalculator $calculator,
+    ): RedirectResponse {
         Gate::authorize(Permission::UPDATE_INVOICES->value);
-        $invoice->update($request->validated());
+
+        $data = $request->validated();
+        $serviceIdsProvided = $request->has('service_ids');
+        $desiredIds = $serviceIdsProvided
+            ? array_map('intval', $request->input('service_ids') ?? [])
+            : null;
+        $justification = trim((string) $request->input('override_justification'));
+
+        // El cliente no se puede cambiar mientras la factura tenga
+        // servicios asociados — los servicios pertenecen al tercero, y
+        // moverla de cliente dejaría las relaciones inconsistentes.
+        if (
+            isset($data['third_party_id']) &&
+            (int) $data['third_party_id'] !== (int) $invoice->third_party_id &&
+            $invoice->services()->exists()
+        ) {
+            throw ValidationException::withMessages([
+                'third_party_id' => 'No puedes cambiar el cliente mientras la factura tenga servicios asociados.',
+            ]);
+        }
+
+        // Pre-condición del flujo con servicios: si llegan service_ids
+        // (incluso un set vacío que detacha todo), el usuario necesita
+        // el permiso de asignación.
+        if (
+            $serviceIdsProvided &&
+            ! Gate::allows(Permission::ASSIGN_SERVICES_TO_INVOICES->value)
+        ) {
+            throw ValidationException::withMessages([
+                'service_ids' => 'No tienes permiso para asociar o desvincular servicios.',
+            ]);
+        }
+
+        // Quitar service_ids/override_justification del array de datos
+        // que se pasa a `$invoice->update()` — esos campos no son
+        // mass-assignable y se manejan aparte.
+        unset($data['service_ids'], $data['override_justification']);
+
+        DB::transaction(function () use ($invoice, $data, $desiredIds, $justification, $calculator, $request) {
+            $invoice->update($data);
+
+            if ($desiredIds !== null) {
+                $currentIds = $invoice->services()->pluck('id')->map(fn ($id) => (int) $id)->all();
+                $toAttach = array_values(array_diff($desiredIds, $currentIds));
+                $toDetach = array_values(array_diff($currentIds, $desiredIds));
+
+                if (! empty($toAttach)) {
+                    $this->validateAttachableServices($invoice, $toAttach, $justification);
+                    $this->attachServiceIdsToInvoice(
+                        $invoice,
+                        $toAttach,
+                        $justification,
+                        $request->user()?->id,
+                    );
+                }
+
+                if (! empty($toDetach)) {
+                    Service::query()
+                        ->whereIn('id', $toDetach)
+                        ->where('invoice_id', $invoice->id)
+                        ->update(['invoice_id' => null]);
+                }
+
+                $calculator->recomputeFor($invoice->fresh());
+            }
+        });
 
         return back()->with('success', 'Factura actualizada.');
     }
