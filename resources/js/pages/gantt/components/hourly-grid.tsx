@@ -47,18 +47,25 @@ interface HourlyGridProps {
     initialDay: InitialDay;
     /**
      * Anchor date for the continuous timeline; pixel 0 = 00:00 of
-     * `epoch` in operation TZ. Mutable across renders — when the page
-     * shifts the epoch (edge expansion or out-of-range date pick), the
-     * grid re-anchors `scrollLeft` synchronously in a useLayoutEffect
-     * so the user sees a clean swap, not a 30-day jump for a frame.
+     * `epoch` in operation TZ. Owned by the page so the URL / Hoy /
+     * date-picker can drive it; updated INTERNALLY here too when the
+     * user scrolls into an edge buffer zone (seamless sliding window).
      */
     epoch: Ymd;
+    /**
+     * Page-level setter so the grid can shift the window itself when
+     * the user approaches an edge. Pure state update — no lock, no
+     * dim, no fetch coupling. The grid uses a useLayoutEffect to
+     * compensate `scrollLeft` synchronously after each shift so the
+     * visible content never jumps.
+     */
+    onEpochChange: (next: Ymd | ((prev: Ymd) => Ymd)) => void;
     operationTz: string;
     canCreateServices: boolean;
     /**
      * Per-day cache owned by the page (via useGanttDays). The grid
-     * reads services + dayStatus from it; `isExecuted` is no longer a
-     * global prop — service creation is gated per-day at click time.
+     * reads services + dayStatus from it; service creation is gated
+     * per-day at click time using `dayStatus.status === 'executed'`.
      */
     cache: DayCache;
     ensureDay: (date: Ymd) => void;
@@ -73,35 +80,14 @@ interface HourlyGridProps {
      */
     onMount?: (jumpToDate: (date: Ymd) => void) => void;
     /**
-     * Non-null while the page is performing an epoch swap. The grid
-     * uses this to (a) lock scroll via a defensive listener, (b) dim
-     * the canvas + cursor-wait, and (c) suppress the URL sync from
-     * `useGanttScroll` so the imperative scrollLeft adjustment doesn't
-     * propagate a bogus centered date.
+     * When non-null, the grid scrolls so this date lands at the
+     * horizontal center of the viewport — using the CURRENT value of
+     * `epoch` and the live `scroller.clientWidth`. The page sets this
+     * together with a new epoch when the user picks a date outside
+     * the current window (out-of-range jump); useLayoutEffect handles
+     * the scroll adjustment before paint so the swap is invisible.
      */
-    isExpanding?: 'left' | 'right' | 'jump' | null;
-    /**
-     * Fires when the scroll position has settled within the trigger
-     * threshold of either edge. `centerDateAtTrigger` is the date the
-     * grid believes the viewport is centered on RIGHT NOW (computed
-     * from live `scrollLeft` + current `epoch`) — we pass it explicit
-     * because the page's `centerDate` state may lag behind by a frame
-     * due to debounced URL-sync.
-     */
-    onRequestEpochShift?: (
-        side: 'left' | 'right',
-        centerDateAtTrigger: Ymd,
-    ) => void;
-    /**
-     * Date to re-anchor the viewport on after a state update. When
-     * non-null, the grid sets `scrollLeft` so that this date lands at
-     * the horizontal center of the timeline area — using the CURRENT
-     * value of `epoch` and the live `scroller.clientWidth`. The page
-     * bumps this together with a new `epoch` to coordinate an
-     * out-of-range jump or edge expansion; clears it back to null
-     * once the swap is settled.
-     */
-    anchorDate?: Ymd | null;
+    recenterTarget?: Ymd | null;
 }
 
 const SIDEBAR_PX_MOBILE = 96; // w-24 — plate + 2 abbreviated badges
@@ -109,6 +95,10 @@ const SIDEBAR_PX_DESKTOP = 112; // w-28 — original, fits full badge text
 const SIDEBAR_BREAKPOINT_PX = 640; // Tailwind `sm`
 const ROW_HEIGHT_PX = 36; // matches existing minHeight
 const HEADER_HEIGHT_PX = 48; // day banner + hour labels strip
+// Scroll-position buffer around the canvas edges that triggers a
+// single-day slide. One day's worth means the user can't see "past
+// the end" of the window before the next day silently shifts in.
+const EDGE_SLIDE_BUFFER_PX = PX_PER_DAY;
 
 /**
  * Sidebar width follows the Tailwind `sm` breakpoint: narrower on
@@ -159,6 +149,7 @@ export default function HourlyGrid({
     vehicles,
     initialDay,
     epoch,
+    onEpochChange,
     operationTz,
     canCreateServices,
     cache,
@@ -167,16 +158,12 @@ export default function HourlyGrid({
     numDays,
     onCenterDateChange,
     onMount,
-    isExpanding = null,
-    onRequestEpochShift,
-    anchorDate = null,
+    recenterTarget = null,
 }: HourlyGridProps) {
     const scrollerRef = useRef<HTMLDivElement | null>(null);
     const sidebarPx = useSidebarWidthPx();
-    // Mirror in a ref so stable callbacks (jumpToDate, setScroller) can
-    // read the latest viewport-driven value without re-binding on every
-    // breakpoint change — re-binding the scroller ref races with the
-    // useLayoutEffect that anchors scrollLeft after an epoch swap.
+    // Mirror in a ref so stable callbacks read the latest value without
+    // re-binding on every breakpoint change.
     const sidebarPxRef = useRef(sidebarPx);
     useEffect(() => {
         sidebarPxRef.current = sidebarPx;
@@ -207,8 +194,6 @@ export default function HourlyGrid({
     const virtualizer = useVirtualizer({
         horizontal: true,
         count: numDays,
-        // Subtract sidebar so the viewport that drives "which days are
-        // visible" matches the actual timeline region.
         getScrollElement,
         estimateSize,
         overscan: 1,
@@ -218,8 +203,6 @@ export default function HourlyGrid({
 
     // Trigger fetches for visible (+ overscan) days. ensureDay is
     // idempotent — second-and-later calls for the same date are no-ops.
-    // Runs in an effect (NOT during render) so we don't trip React's
-    // "setState during render" guard (#301 loop).
     useEffect(() => {
         for (const item of visibleDays) {
             ensureDay(addDays(epoch, item.index));
@@ -244,10 +227,8 @@ export default function HourlyGrid({
 
     // Pre-compute absolute pixel positions per service id. Memoizing
     // by (cache, epoch) keeps the position object identities stable
-    // across re-renders (e.g. ResizeObserver-driven virtualizer
-    // updates during a window drag), which lets the memo() wrapper
-    // around ServiceBar short-circuit cheaply instead of re-running
-    // 50+ Radix Tooltip subtrees per resize frame.
+    // across re-renders so the memo() wrapper around ServiceBar can
+    // skip work during resize / scroll-driven parent re-renders.
     const positionsByServiceId = useMemo(() => {
         const map = new Map<
             number,
@@ -273,111 +254,126 @@ export default function HourlyGrid({
         return map;
     }, [cache, epoch]);
 
-    // URL sync via debounce-on-scroll. Paused during an epoch swap so
-    // the imperative scrollLeft adjustment doesn't propagate a bogus
-    // centered date to the URL.
+    // URL sync via debounced scroll — independent of the sliding
+    // mechanism (sliding compensates scrollLeft synchronously before
+    // paint, so the centered-date computation downstream is always
+    // self-consistent and never reports a bogus value).
     useGanttScroll({
         scrollerRef,
         epoch,
         onCenterDateChange,
         debounceMs: 400,
-        pauseScrollSync: isExpanding !== null,
     });
 
-    // Edge watcher: when scrolling settles within 5% of either edge,
-    // ask the page to expand the window. The page gates re-entry with
-    // its own `isExpanding` state, but we also guard here so we don't
-    // spam the callback inside a single settle.
-    const lastEdgeFireRef = useRef<'left' | 'right' | null>(null);
+    // ─── Seamless edge sliding ─────────────────────────────────────
+    //
+    // When the user scrolls within `EDGE_SLIDE_BUFFER_PX` (one day) of
+    // either edge, shift `epoch` by N days and compensate `scrollLeft`
+    // sync in a useLayoutEffect so the visible content stays put.
+    // The browser's momentum scroll keeps going; the user sees more
+    // days appear seamlessly without any pause, lock, or dim.
+    //
+    // Math: if epoch moves +K days, every existing day's
+    // canvasPosition drops by K × PX_PER_DAY. To keep the viewport
+    // showing the same content, scrollLeft must drop by the same.
+    // `pendingScrollAdjustRef` accumulates the compensation across
+    // multiple slide() calls before a single commit, then the
+    // useLayoutEffect drains it in one DOM write.
+
+    const pendingScrollAdjustRef = useRef(0);
+    const recenterTargetRef = useRef(recenterTarget);
+    useEffect(() => {
+        recenterTargetRef.current = recenterTarget;
+    }, [recenterTarget]);
+
+    const slide = useCallback(
+        (deltaDays: number) => {
+            if (deltaDays === 0) return;
+            pendingScrollAdjustRef.current -= deltaDays * PX_PER_DAY;
+            onEpochChange((prev) => addDays(prev, deltaDays));
+        },
+        [onEpochChange],
+    );
+
     useEffect(() => {
         const scroller = scrollerRef.current;
-        if (!scroller || !onRequestEpochShift) return;
-
-        let timeoutId: ReturnType<typeof setTimeout> | null = null;
-        function checkEdge() {
-            if (!scroller) return;
-            if (isExpanding) return;
-            const { scrollLeft, scrollWidth, clientWidth } = scroller;
-            const rightEdge = scrollLeft + clientWidth;
-            const rightThreshold = scrollWidth * 0.95;
-            const leftThreshold = scrollWidth * 0.05;
-
-            // Compute the date the viewport is centered on RIGHT NOW
-            // (independent of the page's debounced centerDate state).
-            const centerPx = scrollLeft + clientWidth / 2;
-            const dayIndex = Math.round(centerPx / PX_PER_DAY - 0.5);
-            const liveCenterDate = addDays(epochRef.current, dayIndex);
-
-            if (rightEdge > rightThreshold) {
-                if (lastEdgeFireRef.current === 'right') return;
-                lastEdgeFireRef.current = 'right';
-                onRequestEpochShift?.('right', liveCenterDate);
-            } else if (scrollLeft < leftThreshold) {
-                if (lastEdgeFireRef.current === 'left') return;
-                lastEdgeFireRef.current = 'left';
-                onRequestEpochShift?.('left', liveCenterDate);
-            } else {
-                // Out of edge zones — reset so a future re-entry fires again.
-                lastEdgeFireRef.current = null;
-            }
-        }
+        if (!scroller) return;
 
         function onScroll() {
-            if (timeoutId) clearTimeout(timeoutId);
-            timeoutId = setTimeout(checkEdge, 400);
+            if (!scroller) return;
+            // Pause sliding while the page is performing a re-center
+            // (out-of-range date picker jump) — that flow owns the
+            // scroll position until React commits.
+            if (recenterTargetRef.current) return;
+
+            const { scrollLeft, scrollWidth, clientWidth } = scroller;
+            const distFromLeft = scrollLeft;
+            const distFromRight = scrollWidth - scrollLeft - clientWidth;
+
+            if (distFromLeft < EDGE_SLIDE_BUFFER_PX) {
+                // How many full PX_PER_DAY units the user is past the
+                // trigger. Ceil so any incursion always slides ≥1 day;
+                // a fast flick that lands past the absolute edge
+                // (distFromLeft ≈ 0) gets a 1-day shift per scroll
+                // event, which the momentum naturally continues.
+                const daysOver = Math.max(
+                    1,
+                    Math.ceil(
+                        (EDGE_SLIDE_BUFFER_PX - distFromLeft) / PX_PER_DAY,
+                    ),
+                );
+                slide(-daysOver);
+            } else if (distFromRight < EDGE_SLIDE_BUFFER_PX) {
+                const daysOver = Math.max(
+                    1,
+                    Math.ceil(
+                        (EDGE_SLIDE_BUFFER_PX - distFromRight) / PX_PER_DAY,
+                    ),
+                );
+                slide(daysOver);
+            }
         }
 
         scroller.addEventListener('scroll', onScroll, { passive: true });
         return () => {
             scroller.removeEventListener('scroll', onScroll);
-            if (timeoutId) clearTimeout(timeoutId);
         };
-    }, [isExpanding, onRequestEpochShift]);
+    }, [slide]);
 
-    // Defensive scroll lock during expansion: snap scrollLeft back to
-    // wherever it was when the lock engaged. Prevents the user from
-    // continuing to scroll into the void while the swap is in flight.
-    const lockedScrollLeftRef = useRef<number | null>(null);
-    useEffect(() => {
-        const scroller = scrollerRef.current;
-        if (!scroller) return;
-        if (isExpanding) {
-            lockedScrollLeftRef.current = scroller.scrollLeft;
-            const snap = () => {
-                if (lockedScrollLeftRef.current !== null) {
-                    scroller.scrollLeft = lockedScrollLeftRef.current;
-                }
-            };
-            scroller.addEventListener('scroll', snap);
-            return () => {
-                scroller.removeEventListener('scroll', snap);
-                lockedScrollLeftRef.current = null;
-            };
-        }
-    }, [isExpanding]);
-
-    // Imperative re-anchor of scrollLeft after the page swaps the
-    // epoch. useLayoutEffect runs synchronously after DOM mutation but
-    // BEFORE the browser paints, so the user never sees the "old
-    // scrollLeft + new epoch" frame. Math lives here (not in the
-    // page) so we can use the LIVE scroller.clientWidth — the page's
-    // captured-once value drifts on resize.
+    // Compensation: drain pendingScrollAdjustRef after each epoch
+    // commit (set by slide() above). Runs synchronously before paint
+    // so the user never sees an intermediate frame.
     useLayoutEffect(() => {
-        if (!anchorDate) return;
+        if (pendingScrollAdjustRef.current === 0) return;
         const scroller = scrollerRef.current;
         if (!scroller) return;
-        const offset = dayOffset(anchorDate, epoch);
+        scroller.scrollLeft += pendingScrollAdjustRef.current;
+        pendingScrollAdjustRef.current = 0;
+    }, [epoch]);
+
+    // External re-center: page-driven jump to a date outside the
+    // current window. Page sets `recenterTarget` alongside `setEpoch`;
+    // this effect centers the viewport on that target after commit.
+    useLayoutEffect(() => {
+        if (!recenterTarget) return;
+        const scroller = scrollerRef.current;
+        if (!scroller) return;
+        const offset = dayOffset(recenterTarget, epoch);
         const dayCenterPx = (offset + 0.5) * PX_PER_DAY;
         const timelineWidth = scroller.clientWidth - sidebarPxRef.current;
-        const left = Math.max(0, Math.round(dayCenterPx - timelineWidth / 2));
-        scroller.scrollLeft = left;
-    }, [anchorDate, epoch]);
+        scroller.scrollLeft = Math.max(
+            0,
+            Math.round(dayCenterPx - timelineWidth / 2),
+        );
+    }, [recenterTarget, epoch]);
 
     // Expose jumpToDate to the page so the header controls can drive
-    // horizontal scroll. The page sees this in its first render via
-    // the onMount callback. Reads epoch through a ref so the function
-    // identity stays stable across renders — see comment on
-    // setScroller below for why that matters.
+    // horizontal scroll. Smooth scroll for in-range targets; the page
+    // handles out-of-range via setEpoch + recenterTarget separately.
+    const epochRef = useRef(epoch);
+    useEffect(() => {
+        epochRef.current = epoch;
+    }, [epoch]);
     const jumpToDate = useCallback((date: Ymd) => {
         const scroller = scrollerRef.current;
         if (!scroller) return;
@@ -389,26 +385,17 @@ export default function HourlyGrid({
         scroller.scrollTo({ left, behavior: 'smooth' });
     }, []);
 
-    // Mount callback identity may change every page render — read it
-    // through a ref so the scroller ref-callback below stays stable.
     const onMountRef = useRef(onMount);
     useEffect(() => {
         onMountRef.current = onMount;
     }, [onMount]);
-    // Same trick for the live epoch: setScroller MUST stay stable
-    // (no `epoch` in deps) otherwise React unbind+rebinds the ref on
-    // every epoch change, which races with our useLayoutEffect anchor.
-    const epochRef = useRef(epoch);
-    useEffect(() => {
-        epochRef.current = epoch;
-    }, [epoch]);
     const initialDayRef = useRef(initialDay);
     useEffect(() => {
         initialDayRef.current = initialDay;
     }, [initialDay]);
 
     // Initial scroll-anchor: when the scroller is first mounted, center
-    // on the initial day. Wraps in a microtask so layout is settled.
+    // on the initial day.
     const didInitialScrollRef = useRef(false);
     const setScroller = useCallback(
         (node: HTMLDivElement | null) => {
@@ -443,10 +430,6 @@ export default function HourlyGrid({
             const rect = target.getBoundingClientRect();
             const absPx = e.clientX - rect.left;
             const { date, timeHHMM } = pixelToDateTime(absPx, epoch);
-            // Per-day gate: services can't be created on a day already
-            // marked Executed. Checked here at click time (rather than
-            // as a row-level prop) because a single row spans the full
-            // window in which any subset of days may be Executed.
             if (cache.get(date)?.dayStatus?.status === 'executed') return;
             router.get(servicesCreate().url, {
                 vehicle_id: vehicle.id,
@@ -460,223 +443,194 @@ export default function HourlyGrid({
     const totalTimelineWidth = numDays * PX_PER_DAY;
 
     return (
-        // Single TooltipProvider for the whole grid. Without this every
-        // ServiceBar (~50) and VehicleSidebarItem (~10) wraps its own
-        // provider, which adds Radix context overhead and prevents
-        // tooltip delay coordination.
+        // Single TooltipProvider for the whole grid so we don't pay
+        // for 50+ provider instances and tooltip delay stays unified.
         <TooltipProvider delayDuration={300}>
-        <div className="relative size-full">
-            {/* Top-of-grid fetching indicator. Lives OUTSIDE the
-                scroller so it stays anchored horizontally across the
-                visible width regardless of scroll position. */}
-            <GanttFetchingBar isFetching={isFetching} />
-            <div ref={setScroller} className="size-full overflow-auto">
-                {/* Outer canvas: sidebar (sticky) + timeline canvas side by side. */}
-                <div
-                    className="relative"
-                    style={{ width: sidebarPx + totalTimelineWidth }}
-                >
-                    {/* Header strip: sticky top. Sidebar corner z-30, timeline header z-20. */}
+            <div className="relative size-full">
+                <GanttFetchingBar isFetching={isFetching} />
+                <div ref={setScroller} className="size-full overflow-auto">
                     <div
-                        className="sticky top-0 z-20 flex border-b bg-muted/50"
-                        style={{ height: HEADER_HEIGHT_PX }}
+                        className="relative"
+                        style={{ width: sidebarPx + totalTimelineWidth }}
                     >
+                        {/* Header strip: sticky top. Sidebar corner z-30, timeline header z-20. */}
                         <div
-                            className="sticky left-0 z-30 flex shrink-0 items-center border-r bg-background px-2"
-                            style={{ width: sidebarPx }}
+                            className="sticky top-0 z-20 flex border-b bg-muted/50"
+                            style={{ height: HEADER_HEIGHT_PX }}
                         >
-                            <span className="text-xs font-medium text-muted-foreground">
-                                Vehículo
-                            </span>
-                        </div>
-                        <div
-                            className="relative"
-                            style={{ width: totalTimelineWidth }}
-                        >
-                            {visibleDays.map((item) => {
-                                const date = addDays(epoch, item.index);
-                                const isToday = date === today;
-                                return (
-                                    <div
-                                        key={item.key}
-                                        className="absolute inset-y-0"
-                                        style={{
-                                            left: item.start,
-                                            width: PX_PER_DAY,
-                                        }}
-                                    >
-                                        {/* Day-column header background.
-                                            Separate from DaySeparator so
-                                            the sticky label inside can
-                                            shrink to content while the
-                                            full-width muted strip stays
-                                            put. */}
-                                        <div
-                                            className={cn(
-                                                'absolute inset-x-0 top-0 h-6 border-x border-border',
-                                                isToday
-                                                    ? 'bg-primary/10'
-                                                    : 'bg-muted/80',
-                                            )}
-                                        />
-                                        <DaySeparator
-                                            date={date}
-                                            isToday={isToday}
-                                            dayStatus={
-                                                cache.get(date)?.dayStatus ??
-                                                null
-                                            }
-                                            sidebarPx={sidebarPx}
-                                        />
-                                        {/* Hour ticks below the day banner. */}
-                                        <div
-                                            className="absolute inset-x-0 bottom-0 flex"
-                                            style={{ top: 24 }}
-                                        >
-                                            {HOUR_LABELS.map((label) => (
-                                                <div
-                                                    key={label}
-                                                    className="flex-1 border-l border-border/50 p-1 text-center text-[10px] text-muted-foreground"
-                                                >
-                                                    {label}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    {/* Body rows. */}
-                    {vehicles.map((vehicle) => {
-                        const status = vehicleStatuses[vehicle.id];
-                        // Cursor affordance at the row level reflects vehicle
-                        // eligibility only. The per-day Executed gate fires
-                        // inside `handleEmptyCellClick` because a single row
-                        // spans many days with mixed statuses.
-                        const clickable =
-                            canCreateServices && !status?.isBlocked;
-                        return (
                             <div
-                                key={vehicle.id}
-                                className={cn(
-                                    'flex border-b',
-                                    status?.isBlocked &&
-                                        'bg-neutral-100 dark:bg-neutral-800/50',
-                                )}
-                                // `content-visibility: auto` lets the browser
-                                // skip layout/paint/composite for rows that
-                                // are off-screen vertically — effectively a
-                                // free Y-virtualization. The intrinsic-size
-                                // hint keeps the scroll height stable so the
-                                // skip doesn't cause layout shifts when rows
-                                // enter/exit the viewport. CSS expects width
-                                // then height; the row is the timeline wide
-                                // and one row-height tall.
-                                style={{
-                                    contentVisibility: 'auto',
-                                    containIntrinsicSize: `${sidebarPx + totalTimelineWidth}px ${ROW_HEIGHT_PX}px`,
-                                }}
+                                className="sticky left-0 z-30 flex shrink-0 items-center border-r bg-background px-2"
+                                style={{ width: sidebarPx }}
                             >
+                                <span className="text-xs font-medium text-muted-foreground">
+                                    Vehículo
+                                </span>
+                            </div>
+                            <div
+                                className="relative"
+                                style={{ width: totalTimelineWidth }}
+                            >
+                                {visibleDays.map((item) => {
+                                    const date = addDays(epoch, item.index);
+                                    const isToday = date === today;
+                                    return (
+                                        // key by date so the same day reuses
+                                        // its DOM node when its virtual index
+                                        // shifts during a slide.
+                                        <div
+                                            key={date}
+                                            className="absolute inset-y-0"
+                                            style={{
+                                                left: item.start,
+                                                width: PX_PER_DAY,
+                                            }}
+                                        >
+                                            <div
+                                                className={cn(
+                                                    'absolute inset-x-0 top-0 h-6 border-x border-border',
+                                                    isToday
+                                                        ? 'bg-primary/10'
+                                                        : 'bg-muted/80',
+                                                )}
+                                            />
+                                            <DaySeparator
+                                                date={date}
+                                                isToday={isToday}
+                                                dayStatus={
+                                                    cache.get(date)
+                                                        ?.dayStatus ?? null
+                                                }
+                                                sidebarPx={sidebarPx}
+                                            />
+                                            <div
+                                                className="absolute inset-x-0 bottom-0 flex"
+                                                style={{ top: 24 }}
+                                            >
+                                                {HOUR_LABELS.map((label) => (
+                                                    <div
+                                                        key={label}
+                                                        className="flex-1 border-l border-border/50 p-1 text-center text-[10px] text-muted-foreground"
+                                                    >
+                                                        {label}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Body rows. */}
+                        {vehicles.map((vehicle) => {
+                            const status = vehicleStatuses[vehicle.id];
+                            const clickable =
+                                canCreateServices && !status?.isBlocked;
+                            return (
                                 <div
-                                    className="sticky left-0 z-10 flex shrink-0 items-center border-r bg-background"
-                                    style={{
-                                        width: sidebarPx,
-                                        height: ROW_HEIGHT_PX,
-                                    }}
-                                >
-                                    <VehicleSidebarItem
-                                        vehicle={vehicle}
-                                        isBlocked={status?.isBlocked ?? false}
-                                        hasWarning={status?.hasWarning ?? false}
-                                        expiredDocs={status?.expiredDocs ?? []}
-                                    />
-                                </div>
-                                <div
+                                    key={vehicle.id}
                                     className={cn(
-                                        'relative',
-                                        clickable
-                                            ? 'cursor-cell'
-                                            : 'cursor-default',
+                                        'flex border-b',
+                                        status?.isBlocked &&
+                                            'bg-neutral-100 dark:bg-neutral-800/50',
                                     )}
                                     style={{
-                                        width: totalTimelineWidth,
-                                        height: ROW_HEIGHT_PX,
-                                        // contain: strict (= size + layout +
-                                        // paint + style) lets the compositor
-                                        // clip aggressively at this box and
-                                        // avoids style/layout side-effects
-                                        // bleeding out. Most noticeable on
-                                        // mobile GPUs that tile the wide
-                                        // background gradient.
-                                        contain: 'strict',
-                                        ...GRID_BG_STYLE,
+                                        contentVisibility: 'auto',
+                                        containIntrinsicSize: `${sidebarPx + totalTimelineWidth}px ${ROW_HEIGHT_PX}px`,
                                     }}
-                                    onClick={(e) =>
-                                        handleEmptyCellClick(vehicle, e)
-                                    }
                                 >
-                                    {visibleDays.map((item) => {
-                                        const date = addDays(epoch, item.index);
-                                        const services =
-                                            servicesByDateVehicle
-                                                .get(date)
-                                                ?.get(vehicle.id) ?? [];
-                                        return services.map((service) => {
-                                            const position =
-                                                positionsByServiceId.get(
-                                                    service.id,
-                                                );
-                                            if (!position) return null;
-                                            return (
-                                                <ServiceBar
-                                                    key={service.id}
-                                                    service={service}
-                                                    position={position}
-                                                    onClick={handleServiceClick}
-                                                />
+                                    <div
+                                        className="sticky left-0 z-10 flex shrink-0 items-center border-r bg-background"
+                                        style={{
+                                            width: sidebarPx,
+                                            height: ROW_HEIGHT_PX,
+                                        }}
+                                    >
+                                        <VehicleSidebarItem
+                                            vehicle={vehicle}
+                                            isBlocked={
+                                                status?.isBlocked ?? false
+                                            }
+                                            hasWarning={
+                                                status?.hasWarning ?? false
+                                            }
+                                            expiredDocs={
+                                                status?.expiredDocs ?? []
+                                            }
+                                        />
+                                    </div>
+                                    <div
+                                        className={cn(
+                                            'relative',
+                                            clickable
+                                                ? 'cursor-cell'
+                                                : 'cursor-default',
+                                        )}
+                                        style={{
+                                            width: totalTimelineWidth,
+                                            height: ROW_HEIGHT_PX,
+                                            contain: 'strict',
+                                            ...GRID_BG_STYLE,
+                                        }}
+                                        onClick={(e) =>
+                                            handleEmptyCellClick(vehicle, e)
+                                        }
+                                    >
+                                        {visibleDays.map((item) => {
+                                            const date = addDays(
+                                                epoch,
+                                                item.index,
                                             );
-                                        });
-                                    })}
+                                            const services =
+                                                servicesByDateVehicle
+                                                    .get(date)
+                                                    ?.get(vehicle.id) ?? [];
+                                            return services.map((service) => {
+                                                const position =
+                                                    positionsByServiceId.get(
+                                                        service.id,
+                                                    );
+                                                if (!position) return null;
+                                                return (
+                                                    <ServiceBar
+                                                        key={service.id}
+                                                        service={service}
+                                                        position={position}
+                                                        onClick={
+                                                            handleServiceClick
+                                                        }
+                                                    />
+                                                );
+                                            });
+                                        })}
+                                    </div>
                                 </div>
+                            );
+                        })}
+
+                        {(() => {
+                            const todayOffset = dayOffset(today, epoch);
+                            if (todayOffset < 0 || todayOffset >= numDays) {
+                                return null;
+                            }
+                            return (
+                                <NowIndicator
+                                    epoch={epoch}
+                                    operationTz={operationTz}
+                                    topOffsetPx={HEADER_HEIGHT_PX}
+                                    leftOffsetPx={sidebarPx}
+                                />
+                            );
+                        })()}
+
+                        {vehicles.length === 0 && (
+                            <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
+                                No hay vehículos activos para mostrar.
                             </div>
-                        );
-                    })}
-
-                    {/* NOW indicator spans the body height; sits over all
-                    rows. Only mounted when "today" falls within the
-                    current window — otherwise its absolute `left`
-                    would extend hundreds of thousands of px past the
-                    canvas and balloon scrollWidth (regression caught
-                    on /gantt?date=2022-09-01 where today was 1.36k
-                    days from epoch and scrollWidth was 1.3M px).
-                    `leftOffsetPx` accounts for the sticky sidebar. */}
-                    {(() => {
-                        const todayOffset = dayOffset(today, epoch);
-                        if (todayOffset < 0 || todayOffset >= numDays) {
-                            return null;
-                        }
-                        return (
-                            <NowIndicator
-                                epoch={epoch}
-                                operationTz={operationTz}
-                                topOffsetPx={HEADER_HEIGHT_PX}
-                                leftOffsetPx={sidebarPx}
-                            />
-                        );
-                    })()}
-
-                    {/* Reserve the canvas height so vertical scroll inside the
-                    page wrapper is predictable even when no vehicles. */}
-                    {vehicles.length === 0 && (
-                        <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
-                            No hay vehículos activos para mostrar.
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
             </div>
-        </div>
         </TooltipProvider>
     );
 }
@@ -684,20 +638,12 @@ export default function HourlyGrid({
 /**
  * Convenience re-export for the page-level epoch computation.
  *
- * The half-window of 7 yields a 15-day canvas (1 week each direction).
- * Earlier iterations tried 30 (61 days, ~56k px) and 91 (183 days,
- * ~167k px) — both worked but blew the React tree size for content
- * the operator almost never scrolls through. A week each way matches
- * the operational rhythm (planning the week ahead, reviewing the
- * week behind); jumping further uses the date picker, which
- * re-anchors the epoch on the new date.
- *
- * Canvas math at 38 px/hour:
- * - width  ≈ 15 × 24 × 38 = 13,680 px (cheap to composite even on
- *   low-end mobile GPUs that struggle past ~50k px).
- * - DOM   ≈ 15 visible-or-overscanned day columns × ~10 vehicles
- *   × ~2 bars/day ≈ 300 ServiceBar instances peak, vs. ~1,200 on
- *   the previous 61-day window.
+ * Half-window of 7 → 15-day canvas (week each direction). The Gantt
+ * now slides this window forward / backward indefinitely as the user
+ * scrolls past either edge (see the slide() flow inside HourlyGrid),
+ * so this constant only sizes the initial render — not the total
+ * navigable range. Operationally: ~13.7k px canvas, ~300 ServiceBar
+ * peak instances; cheap to composite on low-end mobile GPUs.
  */
 export function defaultEpochFor(today: Ymd, halfWindow = 7): Ymd {
     return addDays(today, -halfWindow);
