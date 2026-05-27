@@ -8,7 +8,6 @@ import ServiceForm, {
     type VehicleOption,
 } from '@/components/services/service-form';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
 import services from '@/routes/services';
 import { type BreadcrumbItem } from '@/types';
@@ -119,61 +118,53 @@ export default function ServicesEdit({
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Editar Servicio" />
-            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Editar Servicio</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <form onSubmit={submit} className="space-y-6">
-                            <ServiceForm
-                                data={data}
-                                setData={setData}
-                                errors={errors}
-                                vehicles={vehicles}
-                                drivers={drivers}
-                                contracts={contracts}
-                                municipalities={municipalities}
-                                incidentCount={service.service_incidents_count}
-                                mode="edit"
-                                dayStatus={dayStatus}
-                                canEditExecuted={canEditExecuted}
-                                isAdmin={isAdmin}
-                                onAddressCommitInFlight={
-                                    setAddressCommitInFlight
+            <div className="flex h-full flex-1 flex-col gap-4 p-4">
+                <h1 className="text-xl font-semibold">Editar Servicio</h1>
+                <form onSubmit={submit} className="space-y-6">
+                    <ServiceForm
+                        data={data}
+                        setData={setData}
+                        errors={errors}
+                        vehicles={vehicles}
+                        drivers={drivers}
+                        contracts={contracts}
+                        municipalities={municipalities}
+                        incidentCount={service.service_incidents_count}
+                        mode="edit"
+                        dayStatus={dayStatus}
+                        canEditExecuted={canEditExecuted}
+                        isAdmin={isAdmin}
+                        onAddressCommitInFlight={setAddressCommitInFlight}
+                    />
+
+                    {!isFullyLocked && (
+                        <div className="flex items-center gap-4">
+                            <Button
+                                type="submit"
+                                disabled={
+                                    processing || addressCommitInFlight
                                 }
-                            />
+                            >
+                                Actualizar
+                            </Button>
+                            <Link href={services.index().url}>
+                                <Button type="button" variant="outline">
+                                    Cancelar
+                                </Button>
+                            </Link>
+                        </div>
+                    )}
 
-                            {!isFullyLocked && (
-                                <div className="flex items-center gap-4">
-                                    <Button
-                                        type="submit"
-                                        disabled={
-                                            processing || addressCommitInFlight
-                                        }
-                                    >
-                                        Actualizar
-                                    </Button>
-                                    <Link href={services.index().url}>
-                                        <Button type="button" variant="outline">
-                                            Cancelar
-                                        </Button>
-                                    </Link>
-                                </div>
-                            )}
-
-                            {isFullyLocked && (
-                                <div className="flex items-center gap-4">
-                                    <Link href={services.index().url}>
-                                        <Button type="button" variant="outline">
-                                            Volver
-                                        </Button>
-                                    </Link>
-                                </div>
-                            )}
-                        </form>
-                    </CardContent>
-                </Card>
+                    {isFullyLocked && (
+                        <div className="flex items-center gap-4">
+                            <Link href={services.index().url}>
+                                <Button type="button" variant="outline">
+                                    Volver
+                                </Button>
+                            </Link>
+                        </div>
+                    )}
+                </form>
             </div>
         </AppLayout>
     );
