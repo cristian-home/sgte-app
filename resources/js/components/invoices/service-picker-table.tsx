@@ -99,6 +99,13 @@ export function rowBillableTotal(row: ServicePickerRow): number {
 interface ServicePickerTableProps {
     candidates: ServicePickerRow[];
     blockedCandidates?: ServicePickerRow[];
+    /**
+     * Services already linked to the parent record (e.g. invoice
+     * being edited). Rendered in a top section with pre-ticked
+     * checkboxes; un-ticking translates into a detach on submit when
+     * the parent uses set-final semantics.
+     */
+    attachedCandidates?: ServicePickerRow[];
     selectedIds: number[];
     onSelectedIdsChange: (ids: number[]) => void;
     showBlocked: boolean;
@@ -116,6 +123,7 @@ interface ServicePickerTableProps {
 export default function ServicePickerTable({
     candidates,
     blockedCandidates = [],
+    attachedCandidates = [],
     selectedIds,
     onSelectedIdsChange,
     showBlocked,
@@ -168,6 +176,11 @@ export default function ServicePickerTable({
         () => filter(blockedCandidates),
         // eslint-disable-next-line react-hooks/exhaustive-deps
         [blockedCandidates, search],
+    );
+    const filteredAttached = useMemo(
+        () => filter(attachedCandidates),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [attachedCandidates, search],
     );
 
     const allCleanSelected =
@@ -237,7 +250,9 @@ export default function ServicePickerTable({
             </div>
 
             <div className="rounded-md border">
-                {filteredClean.length === 0 && !showBlocked ? (
+                {filteredAttached.length === 0 &&
+                filteredClean.length === 0 &&
+                !showBlocked ? (
                     <p className="py-8 text-center text-sm text-muted-foreground">
                         Sin servicios candidatos.
                     </p>
@@ -265,6 +280,82 @@ export default function ServicePickerTable({
                             </TableRow>
                         </TableHeader>
                         <TableBody>
+                            {filteredAttached.length > 0 && (
+                                <>
+                                    <TableRow className="bg-muted/60 hover:bg-muted/60">
+                                        <TableCell
+                                            colSpan={7}
+                                            className="text-xs font-semibold tracking-wider text-muted-foreground uppercase"
+                                        >
+                                            Asociados actualmente — destilda
+                                            para desvincular al guardar
+                                        </TableCell>
+                                    </TableRow>
+                                    {filteredAttached.map((row) => {
+                                        const incidents =
+                                            billingIncidentCount(row);
+                                        return (
+                                            <TableRow
+                                                key={`attached-${row.id}`}
+                                                className="bg-emerald-500/5"
+                                            >
+                                                <TableCell>
+                                                    <Checkbox
+                                                        checked={selectedIds.includes(
+                                                            row.id,
+                                                        )}
+                                                        onCheckedChange={() =>
+                                                            toggleOne(row.id)
+                                                        }
+                                                        aria-label={`Mantener servicio ${row.id} asociado`}
+                                                    />
+                                                </TableCell>
+                                                <TableCell>
+                                                    {formatDate(
+                                                        row.service_date,
+                                                    )}
+                                                </TableCell>
+                                                <TableCell className="font-mono">
+                                                    {row.vehicle?.plate ?? '—'}
+                                                </TableCell>
+                                                <TableCell>
+                                                    {driverName(row.driver)}
+                                                </TableCell>
+                                                <TableCell className="font-mono text-sm">
+                                                    {row.contract
+                                                        ?.contract_number ??
+                                                        '—'}
+                                                </TableCell>
+                                                <TableCell className="text-right tabular-nums">
+                                                    {estimatedValue(row)}
+                                                </TableCell>
+                                                <TableCell className="text-center">
+                                                    {incidents > 0 ? (
+                                                        <Badge variant="secondary">
+                                                            {incidents}
+                                                        </Badge>
+                                                    ) : (
+                                                        <span className="text-muted-foreground">
+                                                            —
+                                                        </span>
+                                                    )}
+                                                </TableCell>
+                                            </TableRow>
+                                        );
+                                    })}
+                                </>
+                            )}
+                            {filteredAttached.length > 0 &&
+                                filteredClean.length > 0 && (
+                                    <TableRow className="bg-muted/60 hover:bg-muted/60">
+                                        <TableCell
+                                            colSpan={7}
+                                            className="text-xs font-semibold tracking-wider text-muted-foreground uppercase"
+                                        >
+                                            Disponibles para asociar
+                                        </TableCell>
+                                    </TableRow>
+                                )}
                             {filteredClean.map((row) => {
                                 const incidents = billingIncidentCount(row);
                                 return (

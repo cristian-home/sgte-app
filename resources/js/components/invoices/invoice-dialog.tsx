@@ -5,8 +5,10 @@ import InvoiceForm, {
     type EligibleServicesPayload,
     type InvoiceFormData,
 } from '@/components/invoices/invoice-form';
+import { type ServicePickerRow } from '@/components/invoices/service-picker-table';
 import { type ThirdPartyOption } from '@/components/third-parties/third-party-combobox';
 import { Button } from '@/components/ui/button';
+import { usePermissions } from '@/hooks/use-permissions';
 import {
     Dialog,
     DialogClose,
@@ -40,6 +42,8 @@ interface InvoiceDialogProps {
     mode: 'create' | 'edit';
     invoice?: EditableInvoice | null;
     thirdParties: ThirdPartyOption[];
+    /** Preview del próximo número en create-mode. */
+    nextInvoiceNumberPreview?: string;
 }
 
 const emptyData: InvoiceFormData = {
@@ -84,63 +88,99 @@ export default function InvoiceDialog({
     mode,
     invoice,
     thirdParties,
+    nextInvoiceNumberPreview,
 }: InvoiceDialogProps) {
+    const { isSuperAdmin } = usePermissions();
     const { data, setData, post, put, processing, errors, clearErrors } =
         useForm<InvoiceFormData>({ ...emptyData });
     const [loadingEligible, setLoadingEligible] = useState(false);
     const [eligibleServices, setEligibleServices] =
         useState<EligibleServicesPayload | null>(null);
+    const [attachedServices, setAttachedServices] = useState<
+        ServicePickerRow[]
+    >([]);
     // Track the in-flight request so a quick customer-switch cancels the
     // older fetch and the stale response can't overwrite the newer one.
     const abortRef = useRef<AbortController | null>(null);
+    const attachedAbortRef = useRef<AbortController | null>(null);
 
     // Re-seed the form whenever the dialog identity changes. Inertia's
     // `setData`/`clearErrors` aren't React state setters, so this effect
     // is not flagged by the React Compiler (same pattern as UserDialog).
     useEffect(() => {
         if (!open) {
-            // Cancel any in-flight eligible-services request when the
-            // dialog closes so its response doesn't reach an unmounted
-            // dialog (and to be a good network citizen on rapid
-            // open/close).
+            // Cancel any in-flight requests when the dialog closes so
+            // their responses don't reach an unmounted dialog (and to
+            // be a good network citizen on rapid open/close).
             abortRef.current?.abort();
+            attachedAbortRef.current?.abort();
             setEligibleServices(null);
+            setAttachedServices([]);
             setLoadingEligible(false);
             return;
         }
         if (mode === 'edit' && invoice) {
             setData(dataFromInvoice(invoice));
+            // En edit mode: pre-cargar attached + elegibles del cliente
+            // para que el picker se hidrate desde el inicio. Los IDs
+            // attached entran al data.service_ids como set inicial.
+            fetchAttached(invoice.id);
+            fetchEligible(String(invoice.third_party_id));
         } else {
             setData({ ...emptyData });
+            setEligibleServices(null);
+            setAttachedServices([]);
         }
-        setEligibleServices(null);
         clearErrors();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open, mode, invoice?.id]);
 
-    // An invoice with attached services has a calculated total that the
-    // form must not overwrite — lock the field when editing such a row.
-    const servicesCount = invoice?.services_count ?? 0;
-    const forceIncludeCustomer =
-        mode === 'edit' && invoice?.third_party
-            ? [invoice.third_party]
-            : undefined;
+    function fetchAttached(invoiceId: number) {
+        attachedAbortRef.current?.abort();
+        const controller = new AbortController();
+        attachedAbortRef.current = controller;
+        const url = InvoiceController.attachedServices(invoiceId).url;
+        fetch(url, {
+            headers: { Accept: 'application/json' },
+            credentials: 'same-origin',
+            signal: controller.signal,
+        })
+            .then((res) => {
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                return res.json();
+            })
+            .then((payload: { attachedCandidates: ServicePickerRow[] }) => {
+                setAttachedServices(payload.attachedCandidates ?? []);
+                // Set inicial de service_ids = los actualmente atachados.
+                setData(
+                    'service_ids',
+                    (payload.attachedCandidates ?? []).map((r) => r.id),
+                );
+            })
+            .catch((err) => {
+                if (
+                    err &&
+                    typeof err === 'object' &&
+                    'name' in err &&
+                    (err as { name?: string }).name === 'AbortError'
+                ) {
+                    return;
+                }
+                setAttachedServices([]);
+            });
+    }
 
-    function handleThirdPartyChange(id: string) {
-        if (mode !== 'create') return;
-        if (!id) {
-            abortRef.current?.abort();
+    function fetchEligible(customerId: string) {
+        if (!customerId) {
             setEligibleServices(null);
             return;
         }
-        // Cancel any older in-flight request — if the operator switches
-        // customer quickly, only the latest answer wins.
         abortRef.current?.abort();
         const controller = new AbortController();
         abortRef.current = controller;
         setLoadingEligible(true);
         const url = InvoiceController.eligibleServices({
-            query: { customer_id: id },
+            query: { customer_id: customerId },
         }).url;
         fetch(url, {
             headers: { Accept: 'application/json' },
@@ -161,7 +201,7 @@ export default function InvoiceDialog({
                     'name' in err &&
                     (err as { name?: string }).name === 'AbortError'
                 ) {
-                    return; // intentional cancellation
+                    return;
                 }
                 setEligibleServices({
                     cleanCandidates: [],
@@ -174,6 +214,24 @@ export default function InvoiceDialog({
                     abortRef.current = null;
                 }
             });
+    }
+
+    // An invoice with attached services has a calculated total that the
+    // form must not overwrite — lock the field when editing such a row.
+    const servicesCount = invoice?.services_count ?? 0;
+    const forceIncludeCustomer =
+        mode === 'edit' && invoice?.third_party
+            ? [invoice.third_party]
+            : undefined;
+
+    function handleThirdPartyChange(id: string) {
+        if (mode !== 'create') return;
+        if (!id) {
+            abortRef.current?.abort();
+            setEligibleServices(null);
+            return;
+        }
+        fetchEligible(id);
     }
 
     function submit(e: React.FormEvent<HTMLFormElement>) {
@@ -226,6 +284,9 @@ export default function InvoiceDialog({
                             eligibleServices={eligibleServices}
                             loadingEligible={loadingEligible}
                             onThirdPartyChange={handleThirdPartyChange}
+                            nextInvoiceNumberPreview={nextInvoiceNumberPreview}
+                            canEditInvoiceNumber={isSuperAdmin}
+                            attachedServices={attachedServices}
                         />
                     </div>
 

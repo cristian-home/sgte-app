@@ -41,9 +41,11 @@ function rowTintFor(row: Row<InvoiceRow>): string | undefined {
 export default function InvoicesIndex({
     invoices: paginatedInvoices,
     thirdParties,
+    nextInvoiceNumberPreview,
 }: {
     invoices: PaginatedData<InvoiceRow>;
     thirdParties: ThirdPartyOption[];
+    nextInvoiceNumberPreview?: string;
 }) {
     'use no memo';
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -143,6 +145,7 @@ export default function InvoicesIndex({
                 mode={dialogMode}
                 invoice={selectedInvoice}
                 thirdParties={thirdParties}
+                nextInvoiceNumberPreview={nextInvoiceNumberPreview}
             />
         </AppLayout>
     );

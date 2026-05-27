@@ -92,6 +92,26 @@ class Invoice extends Model
     }
 
     /**
+     * Compute the next monotonic invoice number for the given calendar
+     * year, formatted as `FAC-####-YYYY`. The value is a *preview hint*
+     * — the controller's store() loop re-computes inside a transaction
+     * and the UNIQUE constraint on the column is the final guarantee
+     * that two concurrent stores can't take the same number.
+     *
+     * Defaults the year to the current year in the operation timezone
+     * so fiscal-period rollovers don't depend on the server's UTC date.
+     */
+    public static function nextInvoiceNumber(?int $year = null): string
+    {
+        $year ??= (int) \Illuminate\Support\Carbon::now(\App\Support\Tz::operation())->format('Y');
+        $sequence = static::query()
+            ->where('invoice_number', 'like', "FAC-%-{$year}")
+            ->count() + 1;
+
+        return sprintf('FAC-%04d-%d', $sequence, $year);
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function toSearchableArray(): array

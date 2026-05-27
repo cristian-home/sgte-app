@@ -28,7 +28,11 @@ class InvoiceStoreRequest extends FormRequest
 
         return [
             'third_party_id' => ['required', 'integer', 'exists:third_parties,id'],
-            'invoice_number' => ['required', 'string', 'max:50', 'unique:invoices,invoice_number'],
+            // El número de factura lo asigna el server (FAC-####-YYYY)
+            // dentro de InvoiceController::store. El cliente puede
+            // mandar un placeholder pero se ignora — la regla queda
+            // como nullable para no romper requests anteriores.
+            'invoice_number' => ['nullable', 'string', 'max:50'],
             // When the request carries service_ids[], the server
             // recomputes the total from those services after attach.
             // The form may still send a placeholder value (e.g. 0) so
