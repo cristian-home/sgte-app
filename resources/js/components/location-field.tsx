@@ -567,7 +567,7 @@ export default function LocationField({
         invalid || invalidMunicipality || invalidAddress || false;
 
     return (
-        <div ref={containerRef} className="space-y-1">
+        <div ref={containerRef} className="min-w-0 space-y-1">
             <ButtonGroup className="w-full">
                 {/* Inner shell that holds prefix icon + chip + native input
                     + right-side icons. Carries the visual border so the
@@ -575,7 +575,7 @@ export default function LocationField({
                     right edge stays flat to seam against the map button. */}
                 <div
                     className={cn(
-                        'relative flex flex-1 items-center gap-1 rounded-l-md border bg-background px-2 py-1 text-sm',
+                        'relative flex min-w-0 flex-1 items-center gap-1 rounded-l-md border bg-background px-2 py-1 text-sm',
                         'focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20',
                         wrapperInvalid &&
                             'border-destructive focus-within:ring-destructive/20',
