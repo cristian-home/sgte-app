@@ -1,6 +1,6 @@
 import { useForm } from '@inertiajs/react';
 import { useEffect } from 'react';
-import InputError from '@/components/input-error';
+import FieldFooter from '@/components/field-footer';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -122,7 +122,7 @@ export default function CatalogCodeNameDialog({
                                 className="uppercase"
                                 autoCapitalize="characters"
                             />
-                            <InputError message={errors.code} />
+                            <FieldFooter error={errors.code} />
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="catalog-name">
@@ -138,7 +138,7 @@ export default function CatalogCodeNameDialog({
                                     setData('name', e.target.value)
                                 }
                             />
-                            <InputError message={errors.name} />
+                            <FieldFooter error={errors.name} />
                         </div>
                     </div>
 

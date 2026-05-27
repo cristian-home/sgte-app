@@ -1,7 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import { useEffect } from 'react';
 import DocumentTypeController from '@/actions/App/Http/Controllers/DocumentTypeController';
-import InputError from '@/components/input-error';
+import FieldFooter from '@/components/field-footer';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -114,7 +114,7 @@ export default function DocumentTypeDialog({
                                 className="uppercase"
                                 autoCapitalize="characters"
                             />
-                            <InputError message={errors.code} />
+                            <FieldFooter error={errors.code} />
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="document-type-name">
@@ -130,7 +130,7 @@ export default function DocumentTypeDialog({
                                     setData('name', e.target.value)
                                 }
                             />
-                            <InputError message={errors.name} />
+                            <FieldFooter error={errors.name} />
                         </div>
                         <div className="flex items-center gap-3">
                             <Switch
@@ -157,8 +157,8 @@ export default function DocumentTypeDialog({
                             </Label>
                         </div>
                     </div>
-                    <InputError message={errors.is_natural_person} />
-                    <InputError message={errors.is_legal_person} />
+                    <FieldFooter error={errors.is_natural_person} />
+                    <FieldFooter error={errors.is_legal_person} />
 
                     <DialogFooter className="gap-2">
                         <DialogClose asChild>

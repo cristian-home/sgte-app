@@ -1,4 +1,4 @@
-import InputError from '@/components/input-error';
+import FieldFooter from '@/components/field-footer';
 import ServiceCombobox, {
     type ServiceOption,
 } from '@/components/services/service-combobox';
@@ -183,7 +183,7 @@ export default function ServiceIncidentForm({
                     <p className="text-xs text-muted-foreground italic">
                         Preseleccionado desde el servicio.
                     </p>
-                    <InputError message={errors.service_id} />
+                    <FieldFooter error={errors.service_id} />
                 </div>
             ) : (
                 <div className="grid gap-2">
@@ -198,12 +198,12 @@ export default function ServiceIncidentForm({
                         onChange={(value) => setData('service_id', value)}
                         invalid={invalid('service_id')}
                     />
-                    <InputError message={errors.service_id} />
+                    <FieldFooter error={errors.service_id} />
                 </div>
             )}
 
-            <div className="grid gap-4 md:grid-cols-2">
-                <div className="grid gap-2">
+            <div className="grid gap-x-4 gap-y-2 md:grid-cols-2 md:grid-rows-[auto_auto_auto]">
+                <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                     <Label htmlFor={id('incident_type_id')}>
                         Tipo de Novedad
                         <RequiredMarker />
@@ -247,10 +247,10 @@ export default function ServiceIncidentForm({
                             ))}
                         </SelectContent>
                     </Select>
-                    <InputError message={errors.incident_type_id} />
+                    <FieldFooter error={errors.incident_type_id} />
                 </div>
 
-                <div className="grid gap-2">
+                <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                     <Label htmlFor={id('additional_value')}>
                         Valor Adicional
                     </Label>
@@ -263,7 +263,7 @@ export default function ServiceIncidentForm({
                         invalid={invalid('additional_value')}
                         className="tabular-nums"
                     />
-                    <InputError message={errors.additional_value} />
+                    <FieldFooter error={errors.additional_value} />
                 </div>
             </div>
 
@@ -280,7 +280,7 @@ export default function ServiceIncidentForm({
                     onChange={(e) => setData('description', e.target.value)}
                     className="flex min-h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive"
                 />
-                <InputError message={errors.description} />
+                <FieldFooter error={errors.description} />
             </div>
 
             <div className="flex items-center gap-3">
@@ -295,7 +295,7 @@ export default function ServiceIncidentForm({
                     Afecta facturación
                 </Label>
             </div>
-            <InputError message={errors.affects_billing} />
+            <FieldFooter error={errors.affects_billing} />
         </div>
     );
 }
