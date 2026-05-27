@@ -190,6 +190,30 @@ test('store auto-generates contract number for generic contracts', function (): 
     expect($contract->is_generic)->toBeTrue();
 });
 
+test('store fills defensive defaults when only third_party_id is sent in generic mode', function (): void {
+    $third_party = ThirdParty::factory()->create();
+    $operationTz = \App\Support\Tz::operation();
+    $today = \App\Support\Tz::nowIn($operationTz)->format('Y-m-d');
+    $year = (int) substr($today, 0, 4);
+
+    $response = post(route('contracts.store'), [
+        'third_party_id' => $third_party->id,
+        'is_generic' => true,
+        'active' => true,
+    ]);
+
+    $response->assertRedirect();
+    $contract = Contract::query()->latest('id')->first();
+    expect($contract->is_generic)->toBeTrue();
+    expect($contract->contract_number)->toMatch('/^GEN-\d{4}-\d{4}$/');
+    expect($contract->contract_object->value)->toBe('business');
+    expect($contract->route_description)->toBe('Genérico');
+    expect($contract->billing_unit_type?->value)->toBe('viaje');
+    expect($contract->timezone)->toBe($operationTz);
+    expect($contract->start_date)->toBe($today);
+    expect($contract->end_date)->toBe("{$year}-12-31");
+});
+
 test('store fails when end_date is before start_date', function (): void {
     $response = post(route('contracts.store'), [
         'contract_number' => 'CT-FAIL-001',
