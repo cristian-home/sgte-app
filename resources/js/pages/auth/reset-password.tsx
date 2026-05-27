@@ -1,5 +1,5 @@
 import { Form, Head } from '@inertiajs/react';
-import InputError from '@/components/input-error';
+import FieldFooter from '@/components/field-footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -38,10 +38,7 @@ export default function ResetPassword({ token, email }: Props) {
                                 className="mt-1 block w-full"
                                 readOnly
                             />
-                            <InputError
-                                message={errors.email}
-                                className="mt-2"
-                            />
+                            <FieldFooter error={errors.email} />
                         </div>
 
                         <div className="grid gap-2">
@@ -55,7 +52,7 @@ export default function ResetPassword({ token, email }: Props) {
                                 autoFocus
                                 placeholder="Contraseña"
                             />
-                            <InputError message={errors.password} />
+                            <FieldFooter error={errors.password} />
                         </div>
 
                         <div className="grid gap-2">
@@ -70,10 +67,7 @@ export default function ResetPassword({ token, email }: Props) {
                                 className="mt-1 block w-full"
                                 placeholder="Confirmar contraseña"
                             />
-                            <InputError
-                                message={errors.password_confirmation}
-                                className="mt-2"
-                            />
+                            <FieldFooter error={errors.password_confirmation} />
                         </div>
 
                         <Button

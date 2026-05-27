@@ -2,7 +2,7 @@ import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import ServiceController from '@/actions/App/Http/Controllers/ServiceController';
 import ContractDialog from '@/components/contracts/contract-dialog';
-import InputError from '@/components/input-error';
+import FieldFooter from '@/components/field-footer';
 import { type MunicipalityOption } from '@/components/municipality-combobox';
 import ServiceForm, {
     type ContractOption,
@@ -151,9 +151,7 @@ export default function ServicesCreate({
                         <div className="grid gap-2">
                             <Label htmlFor="justification">
                                 Justificación
-                                <span className="text-destructive">
-                                    {' *'}
-                                </span>
+                                <span className="text-destructive">{' *'}</span>
                             </Label>
                             <textarea
                                 id="justification"
@@ -166,7 +164,7 @@ export default function ServicesCreate({
                                 minLength={10}
                                 placeholder="Motivo del registro tardío en día ejecutado (mínimo 10 caracteres)."
                             />
-                            <InputError message={errors.justification} />
+                            <FieldFooter error={errors.justification} />
                         </div>
                     )}
 

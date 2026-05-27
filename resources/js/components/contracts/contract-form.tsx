@@ -12,7 +12,6 @@ import {
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import FieldFooter from '@/components/field-footer';
-import InputError from '@/components/input-error';
 import {
     Choicebox,
     ChoiceboxIndicator,
@@ -227,7 +226,7 @@ export default function ContractForm({
                         ? 'Crea el contrato solo con el cliente — el resto se completa con valores por defecto.'
                         : 'El número se autogenera con el patrón GEN-####-YYYY.'}
                 </p>
-                <InputError message={errors.is_generic} />
+                <FieldFooter error={errors.is_generic} />
             </div>
         </div>
     );
@@ -242,7 +241,7 @@ export default function ContractForm({
                 />
                 <Label htmlFor={id('active')}>Activo</Label>
             </div>
-            <InputError message={errors.active} />
+            <FieldFooter error={errors.active} />
         </>
     );
 
@@ -353,7 +352,7 @@ export default function ContractForm({
                         );
                     })}
                 </Choicebox>
-                <InputError message={errors.contract_object} />
+                <FieldFooter error={errors.contract_object} />
             </div>
 
             <div className="grid gap-x-4 gap-y-2 md:grid-cols-2 md:grid-rows-[auto_auto_auto]">
@@ -402,7 +401,7 @@ export default function ContractForm({
                     <strong>{timezoneLabel}</strong>. Por defecto:{' '}
                     <code>{operationTz}</code>.
                 </p>
-                <InputError message={errors.timezone} />
+                <FieldFooter error={errors.timezone} />
             </div>
 
             <div className="grid gap-2">
@@ -420,7 +419,7 @@ export default function ContractForm({
                     }
                     className="flex min-h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive"
                 />
-                <InputError message={errors.route_description} />
+                <FieldFooter error={errors.route_description} />
             </div>
 
             <div className="grid gap-2">
@@ -464,7 +463,7 @@ export default function ContractForm({
                     hora). Aparece como "Cantidad (…)" en el formulario de
                     servicios.
                 </p>
-                <InputError message={errors.billing_unit_type} />
+                <FieldFooter error={errors.billing_unit_type} />
             </div>
 
             {activeSwitchRow}
