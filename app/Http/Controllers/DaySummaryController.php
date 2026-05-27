@@ -91,13 +91,17 @@ class DaySummaryController extends Controller
                 'contract.thirdParty:id,company_name,first_name,first_lastname,is_natural_person',
             ])
             ->withCount('serviceIncidents')
+            ->withSum(
+                ['serviceIncidents as billing_impact_amount' => fn ($q) => $q->where('affects_billing', true)],
+                'additional_value',
+            )
             ->orderBy('planned_start_at')
             ->get();
 
         return response()->streamDownload(function () use ($services) {
             $handle = fopen('php://output', 'w');
             fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
-            fputcsv($handle, ['Placa', 'Conductor/Proveedor', 'Hora Inicio', 'Hora Fin', 'Duración (min)', 'Cliente', 'Estado', 'Novedades', 'Valor Unitario', 'Cantidad', 'Forma de Pago', 'Grupo Facturación']);
+            fputcsv($handle, ['Placa', 'Conductor/Proveedor', 'Hora Inicio', 'Hora Fin', 'Duración (min)', 'Cliente', 'Estado', 'Valor del servicio', 'Novedades', 'Valor Unitario', 'Cantidad', 'Forma de Pago', 'Grupo Facturación', 'Total']);
             foreach ($services as $service) {
                 $driverOrProvider = $service->vehicle?->is_third_party
                     ? ($service->vehicle?->thirdParty?->company_name ?? $service->vehicle?->thirdParty?->first_name.' '.$service->vehicle?->thirdParty?->first_lastname)
@@ -105,6 +109,10 @@ class DaySummaryController extends Controller
 
                 $client = $service->contract?->thirdParty?->company_name
                     ?? ($service->contract?->thirdParty?->first_name.' '.$service->contract?->thirdParty?->first_lastname);
+
+                $serviceValue = (float) $service->unit_value * (int) $service->quantity;
+                $billingImpact = (float) ($service->billing_impact_amount ?? 0);
+                $total = $serviceValue + $billingImpact;
 
                 fputcsv($handle, [
                     $service->vehicle?->plate ?? '',
@@ -114,6 +122,7 @@ class DaySummaryController extends Controller
                     $service->planned_duration,
                     $client ?? '',
                     $service->service_status->value === 'closed' ? 'Cerrado' : 'Abierto',
+                    number_format($serviceValue, 2, '.', ''),
                     $service->service_incidents_count,
                     $service->unit_value,
                     $service->quantity,
@@ -121,6 +130,7 @@ class DaySummaryController extends Controller
                     collect($service->billing_groups ?? [])
                         ->map(fn ($group) => $group->label())
                         ->implode(', '),
+                    number_format($total, 2, '.', ''),
                 ]);
             }
             fclose($handle);

@@ -5,7 +5,7 @@ import {
     useReactTable,
 } from '@tanstack/react-table';
 import { Download, PlayCircle } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { execute as dayStatusExecute } from '@/actions/App/Http/Controllers/DayStatusController';
 import {
     index as daySummaryIndex,
@@ -119,6 +119,19 @@ export default function DaySummaryIndex({
         columns,
         getCoreRowModel: getCoreRowModel(),
     });
+
+    const serviceValueTotal = useMemo(
+        () =>
+            services.reduce(
+                (acc, s) =>
+                    acc + Number(s.unit_value ?? 0) * Number(s.quantity ?? 0),
+                0,
+            ),
+        [services],
+    );
+    const grandTotal = serviceValueTotal + summary.billing_impact_total;
+    const showFooter =
+        serviceValueTotal > 0 || summary.billing_impact_total > 0;
 
     function navigate(newDate: string) {
         router.get(
@@ -389,19 +402,36 @@ export default function DaySummaryIndex({
                                 </TableRow>
                             )}
                         </TableBody>
-                        {summary.billing_impact_total > 0 && (
+                        {showFooter && (
                             <TableFooter>
                                 <TableRow>
                                     <TableCell
-                                        colSpan={columns.length - 1}
+                                        colSpan={5}
                                         className="text-right text-xs tracking-wide text-muted-foreground uppercase"
                                     >
-                                        Total recargo novedades del día
+                                        Totales del día
                                     </TableCell>
-                                    <TableCell className="text-right tabular-nums font-bold text-amber-700 dark:text-amber-400">
-                                        {currencyFormatter.format(
-                                            summary.billing_impact_total,
-                                        )}
+                                    <TableCell className="text-right font-bold tabular-nums">
+                                        {serviceValueTotal > 0
+                                            ? currencyFormatter.format(
+                                                  serviceValueTotal,
+                                              )
+                                            : '—'}
+                                    </TableCell>
+                                    <TableCell />
+                                    <TableCell className="text-right font-bold text-amber-700 tabular-nums dark:text-amber-400">
+                                        {summary.billing_impact_total > 0
+                                            ? currencyFormatter.format(
+                                                  summary.billing_impact_total,
+                                              )
+                                            : '—'}
+                                    </TableCell>
+                                    <TableCell className="text-right font-bold tabular-nums">
+                                        {grandTotal > 0
+                                            ? currencyFormatter.format(
+                                                  grandTotal,
+                                              )
+                                            : '—'}
                                     </TableCell>
                                 </TableRow>
                             </TableFooter>

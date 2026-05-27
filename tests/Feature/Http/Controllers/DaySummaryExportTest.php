@@ -95,6 +95,58 @@ test('user without VIEW_DAY_SUMMARY permission gets 403', function (): void {
     $response->assertForbidden();
 });
 
+test('export CSV header includes Valor del servicio before Novedades and Total at the end', function (): void {
+    $response = get(route('day-summary.export', ['date' => '2026-03-10']));
+
+    $content = $response->streamedContent();
+    $bom = chr(0xEF).chr(0xBB).chr(0xBF);
+    $content = str_replace($bom, '', $content);
+    $headerLine = explode("\n", trim($content))[0];
+    $headers = str_getcsv($headerLine);
+
+    $valorIdx = array_search('Valor del servicio', $headers, true);
+    $novedadesIdx = array_search('Novedades', $headers, true);
+
+    expect($valorIdx)->not->toBeFalse();
+    expect($novedadesIdx)->not->toBeFalse();
+    expect($valorIdx)->toBeLessThan($novedadesIdx);
+    expect($headers[count($headers) - 1])->toBe('Total');
+});
+
+test('export emits Valor del servicio and Total per row with billing-affecting incidents', function (): void {
+    $service = Service::factory()->create([
+        'service_date' => '2026-03-10',
+        'service_status' => ServiceStatus::Closed,
+        'unit_value' => 50000,
+        'quantity' => 2,
+    ]);
+    \App\Models\ServiceIncident::factory()->create([
+        'service_id' => $service->id,
+        'affects_billing' => true,
+        'additional_value' => 15000,
+    ]);
+    \App\Models\ServiceIncident::factory()->create([
+        'service_id' => $service->id,
+        'affects_billing' => false,
+        'additional_value' => 999,
+    ]);
+
+    $response = get(route('day-summary.export', ['date' => '2026-03-10']));
+
+    $content = $response->streamedContent();
+    $bom = chr(0xEF).chr(0xBB).chr(0xBF);
+    $content = str_replace($bom, '', $content);
+    $lines = array_filter(explode("\n", trim($content)));
+    $headers = str_getcsv($lines[0]);
+    $row = str_getcsv($lines[1]);
+
+    $valorIdx = array_search('Valor del servicio', $headers, true);
+    $totalIdx = array_search('Total', $headers, true);
+
+    expect($row[$valorIdx])->toBe('100000.00');
+    expect($row[$totalIdx])->toBe('115000.00');
+});
+
 test('export without date param returns validation error', function (): void {
     $response = get(route('day-summary.export'));
 
