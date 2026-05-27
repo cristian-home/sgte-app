@@ -292,9 +292,11 @@ export default function ServicesShow({
                                     {driverName}
                                 </IconField>
                                 <IconField icon={MapPin} label="Origen">
-                                    {municipalityDisplay(
-                                        service.origin_municipality,
-                                    )}
+                                    <span className="capitalize">
+                                        {municipalityDisplay(
+                                            service.origin_municipality,
+                                        )}
+                                    </span>
                                 </IconField>
                                 <IconField icon={CircleDot} label="Estado">
                                     <Badge

@@ -190,6 +190,7 @@ export default function ServicesIndex({
                     value: String(m.id),
                     label: municipalityFilterLabel(m),
                 })),
+                capitalizeOptions: true,
             },
             {
                 name: 'destination_municipality_id',
@@ -198,6 +199,7 @@ export default function ServicesIndex({
                     value: String(m.id),
                     label: municipalityFilterLabel(m),
                 })),
+                capitalizeOptions: true,
             },
         ],
         [filterContracts, filterDrivers, filterVehicles, filterMunicipalities],

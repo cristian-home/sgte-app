@@ -152,7 +152,7 @@ export function ServiceDetailDialog({
                                 <span className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
                                     A
                                 </span>
-                                <span className="truncate text-sm font-medium">
+                                <span className="truncate text-sm font-medium capitalize">
                                     {municipalityName(
                                         service.origin_municipality,
                                     )}
@@ -167,7 +167,7 @@ export function ServiceDetailDialog({
                                 <span className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
                                     B
                                 </span>
-                                <span className="truncate text-sm font-medium">
+                                <span className="truncate text-sm font-medium capitalize">
                                     {municipalityName(
                                         service.destination_municipality,
                                     )}

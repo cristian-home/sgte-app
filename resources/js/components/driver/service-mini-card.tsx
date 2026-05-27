@@ -84,8 +84,13 @@ export function ServiceMiniCard({
             <div className="flex min-w-0 items-center gap-1.5">
                 <MapPin className="size-3.5 shrink-0 text-muted-foreground" />
                 <span className="min-w-0 flex-1 truncate">
-                    {municipalityName(service.origin_municipality)} &rarr;{' '}
-                    {municipalityName(service.destination_municipality)}
+                    <span className="capitalize">
+                        {municipalityName(service.origin_municipality)}
+                    </span>{' '}
+                    &rarr;{' '}
+                    <span className="capitalize">
+                        {municipalityName(service.destination_municipality)}
+                    </span>
                     <span className="text-muted-foreground">
                         {' '}
                         &middot;{' '}

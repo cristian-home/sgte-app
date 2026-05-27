@@ -742,7 +742,7 @@ function CityChip({
     return (
         <span
             className={cn(
-                'inline-flex shrink-0 items-center gap-1 rounded-md bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground shadow-sm',
+                'inline-flex shrink-0 items-center gap-1 rounded-md bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground capitalize shadow-sm',
                 disabled && 'pointer-events-none opacity-60',
             )}
         >
@@ -754,7 +754,7 @@ function CityChip({
                 }}
                 aria-label={`Cambiar ciudad seleccionada: ${label}`}
                 disabled={disabled}
-                className="cursor-pointer rounded-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed"
+                className="cursor-pointer rounded-sm capitalize focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed"
             >
                 {label}
             </button>
@@ -844,7 +844,7 @@ function CityDropdown({
                                     )}
                                     aria-hidden
                                 />
-                                <span className="flex-1 truncate">
+                                <span className="flex-1 truncate capitalize">
                                     {m.name}
                                 </span>
                                 <span className="text-xs text-muted-foreground">
