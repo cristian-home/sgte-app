@@ -1,10 +1,10 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
     flexRender,
     getCoreRowModel,
     useReactTable,
 } from '@tanstack/react-table';
-import { ChevronLeft, ChevronRight, Download, PlayCircle } from 'lucide-react';
+import { Download, PlayCircle } from 'lucide-react';
 import { useState } from 'react';
 import { execute as dayStatusExecute } from '@/actions/App/Http/Controllers/DayStatusController';
 import {
@@ -13,6 +13,7 @@ import {
 } from '@/actions/App/Http/Controllers/DaySummaryController';
 import { index as ganttIndex } from '@/actions/App/Http/Controllers/GanttController';
 import { show as serviceShow } from '@/actions/App/Http/Controllers/ServiceController';
+import DateStepper from '@/components/date-stepper';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -27,7 +28,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { viewerToday } from '@/lib/datetime';
 import {
     Table,
     TableBody,
@@ -73,12 +74,6 @@ const currencyFormatter = new Intl.NumberFormat('es-CO', {
     maximumFractionDigits: 0,
 });
 
-function addDays(dateStr: string, days: number): string {
-    const d = new Date(dateStr + 'T12:00:00');
-    d.setDate(d.getDate() + days);
-    return d.toISOString().slice(0, 10);
-}
-
 function formatDateEs(dateStr: string): string {
     const d = new Date(dateStr + 'T12:00:00');
     return d.toLocaleDateString('es-CO', {
@@ -111,6 +106,12 @@ export default function DaySummaryIndex({
     'use no memo';
     const [executing, setExecuting] = useState(false);
     const isExecuted = dayStatus?.status === 'executed';
+    const sharedConfig = usePage().props.config as
+        | { operation_tz?: string }
+        | undefined;
+    const operationTz = sharedConfig?.operation_tz ?? 'America/Bogota';
+    const today = viewerToday(operationTz);
+    const isCurrentDay = date === today;
 
     // eslint-disable-next-line react-hooks/incompatible-library
     const table = useReactTable({
@@ -158,66 +159,58 @@ export default function DaySummaryIndex({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Resumen del Día" />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
-                {/* Header */}
-                <div className="flex flex-wrap items-center gap-3">
-                    <div className="flex items-center gap-1">
+                {/* Toolbar — date stepper + Hoy on the left, Ver Gantt
+                    on the right. Mirrors the Gantt toolbar so jumping
+                    between the two views feels like the same shell. */}
+                <div className="flex flex-wrap items-center gap-2">
+                    <DateStepper value={date} onChange={navigate} />
+
+                    {!isCurrentDay && (
                         <Button
                             variant="outline"
-                            size="icon"
-                            className="size-8"
-                            onClick={() => navigate(addDays(date, -1))}
+                            size="sm"
+                            className="h-8"
+                            onClick={() => navigate(today)}
                         >
-                            <ChevronLeft className="size-4" />
+                            Hoy
                         </Button>
-                        <Button
-                            variant="outline"
-                            size="icon"
-                            className="size-8"
-                            onClick={() => navigate(addDays(date, 1))}
-                        >
-                            <ChevronRight className="size-4" />
-                        </Button>
-                    </div>
+                    )}
 
-                    <Input
-                        type="date"
-                        value={date}
-                        onChange={(e) => {
-                            if (e.target.value) navigate(e.target.value);
-                        }}
-                        className="h-8 w-auto"
-                    />
-
-                    <span className="text-sm font-medium capitalize">
-                        {formatDateEs(date)}
-                    </span>
-
-                    <div className="ml-auto flex items-center gap-2">
+                    <div className="ml-auto">
                         <Button
                             variant="outline"
                             size="sm"
                             className="h-8"
                             asChild
                         >
-                            <a href={ganttIndex({ query: { date } }).url}>
+                            <Link href={ganttIndex({ query: { date } }).url}>
                                 Ver Gantt
-                            </a>
+                            </Link>
                         </Button>
-
-                        {dayStatus ? (
-                            <Badge
-                                className={
-                                    isExecuted
-                                        ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
-                                        : 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300'
-                                }
-                            >
-                                {isExecuted ? 'Ejecutado' : 'Proyectado'}
-                            </Badge>
-                        ) : (
-                            <Badge variant="secondary">Sin Datos</Badge>
-                        )}
                     </div>
+                </div>
+
+                {/* Sub-header: date label + day-status badge sit just
+                    above the summary card. Mirrors Gantt's per-day
+                    timeline header (which carries the same info inline
+                    with each day's column). */}
+                <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-medium capitalize">
+                        {formatDateEs(date)}
+                    </span>
+                    {dayStatus ? (
+                        <Badge
+                            className={
+                                isExecuted
+                                    ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
+                                    : 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300'
+                            }
+                        >
+                            {isExecuted ? 'Ejecutado' : 'Proyectado'}
+                        </Badge>
+                    ) : (
+                        <Badge variant="secondary">Sin Datos</Badge>
+                    )}
                 </div>
 
                 {/* Executed banner */}
