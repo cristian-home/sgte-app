@@ -11,7 +11,7 @@ import {
     ShieldAlert,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import InputError from '@/components/input-error';
+import FieldFooter from '@/components/field-footer';
 import {
     Choicebox,
     ChoiceboxIndicator,
@@ -663,7 +663,7 @@ export default function ServiceForm({
                                     setData('service_date', e.target.value)
                                 }
                             />
-                            <InputError message={errors.service_date} />
+                            <FieldFooter error={errors.service_date} />
                         </div>
                         <div
                             className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
@@ -761,7 +761,7 @@ export default function ServiceForm({
                                     </Button>
                                 )}
                             </div>
-                            <InputError message={errors.contract_id} />
+                            <FieldFooter error={errors.contract_id} />
                         </div>
                         <div
                             className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
@@ -809,7 +809,7 @@ export default function ServiceForm({
                                     ),
                                 )}
                             </ToggleGroup>
-                            <InputError message={errors.service_status} />
+                            <FieldFooter error={errors.service_status} />
                         </div>
                     </div>
 
@@ -893,7 +893,7 @@ export default function ServiceForm({
                                 disabled={isFieldDisabled('vehicle_id')}
                                 invalid={invalid('vehicle_id')}
                             />
-                            <InputError message={errors.vehicle_id} />
+                            <FieldFooter error={errors.vehicle_id} />
                         </div>
 
                         {selectedVehicle?.is_third_party ? (
@@ -1019,7 +1019,7 @@ export default function ServiceForm({
                                     disabled={isFieldDisabled('driver_id')}
                                     invalid={invalid('driver_id')}
                                 />
-                                <InputError message={errors.driver_id} />
+                                <FieldFooter error={errors.driver_id} />
                             </div>
                         )}
                     </div>
@@ -1095,8 +1095,8 @@ export default function ServiceForm({
                                     isFieldDisabled('origin_municipality_id')
                                 }
                             />
-                            <InputError
-                                message={
+                            <FieldFooter
+                                error={
                                     errors.origin_municipality_id ||
                                     errors.origin_address ||
                                     errors.origin_coordinates
@@ -1223,8 +1223,8 @@ export default function ServiceForm({
                                     )
                                 }
                             />
-                            <InputError
-                                message={
+                            <FieldFooter
+                                error={
                                     errors.destination_municipality_id ||
                                     errors.destination_address ||
                                     errors.destination_coordinates
@@ -1332,7 +1332,7 @@ export default function ServiceForm({
                                     )
                                 }
                             />
-                            <InputError message={errors.planned_start_time} />
+                            <FieldFooter error={errors.planned_start_time} />
                         </div>
                         <div
                             className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
@@ -1352,7 +1352,7 @@ export default function ServiceForm({
                                 }
                                 className="text-right tabular-nums"
                             />
-                            <InputError message={errors.planned_duration} />
+                            <FieldFooter error={errors.planned_duration} />
                         </div>
                     </div>
 
@@ -1380,9 +1380,7 @@ export default function ServiceForm({
                                         )
                                     }
                                 />
-                                <InputError
-                                    message={errors.actual_start_time}
-                                />
+                                <FieldFooter error={errors.actual_start_time} />
                             </div>
                             <div
                                 className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
@@ -1406,7 +1404,7 @@ export default function ServiceForm({
                                         )
                                     }
                                 />
-                                <InputError message={errors.actual_end_time} />
+                                <FieldFooter error={errors.actual_end_time} />
                             </div>
                             <div className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                                 <Label>Duración Real</Label>
@@ -1443,7 +1441,7 @@ export default function ServiceForm({
                                 invalid={invalid('billing_groups')}
                                 disabled={isFieldDisabled('billing_groups')}
                             />
-                            <InputError message={errors.billing_groups} />
+                            <FieldFooter error={errors.billing_groups} />
                         </div>
                         <div
                             className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
@@ -1463,7 +1461,7 @@ export default function ServiceForm({
                                 disabled={isFieldDisabled('unit_value')}
                                 className="text-right tabular-nums"
                             />
-                            <InputError message={errors.unit_value} />
+                            <FieldFooter error={errors.unit_value} />
                         </div>
                         <div
                             className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
@@ -1486,7 +1484,7 @@ export default function ServiceForm({
                             <p className="text-xs text-muted-foreground">
                                 {billingUnitHint}
                             </p>
-                            <InputError message={errors.quantity} />
+                            <FieldFooter error={errors.quantity} />
                         </div>
                     </div>
                     <div
@@ -1531,7 +1529,7 @@ export default function ServiceForm({
                                 },
                             )}
                         </Choicebox>
-                        <InputError message={errors.payment_method} />
+                        <FieldFooter error={errors.payment_method} />
                     </div>
                 </CardContent>
             </Card>
@@ -1559,7 +1557,7 @@ export default function ServiceForm({
                             )
                         }
                     />
-                    <InputError message={errors.manual_entry_justification} />
+                    <FieldFooter error={errors.manual_entry_justification} />
                 </div>
             )}
 
@@ -1585,7 +1583,7 @@ export default function ServiceForm({
                                     setData('justification', e.target.value)
                                 }
                             />
-                            <InputError message={errors.justification} />
+                            <FieldFooter error={errors.justification} />
                         </div>
                     </CardContent>
                 </Card>

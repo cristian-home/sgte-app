@@ -11,6 +11,7 @@ import {
     Users,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import FieldFooter from '@/components/field-footer';
 import InputError from '@/components/input-error';
 import {
     Choicebox,
@@ -202,7 +203,7 @@ export default function ContractForm({
                     </Button>
                 )}
             </div>
-            <InputError message={errors.third_party_id} />
+            <FieldFooter error={errors.third_party_id} />
         </div>
     );
 
@@ -299,22 +300,21 @@ export default function ContractForm({
                         Número de Contrato
                         {!data.is_generic && <RequiredMarker />}
                     </Label>
-                    {data.is_generic ? (
-                        <p className="text-sm text-muted-foreground">
-                            Se generará automáticamente al guardar
-                            (GEN-####-YYYY).
-                        </p>
-                    ) : (
-                        <Input
-                            id={id('contract_number')}
-                            value={data.contract_number}
-                            aria-invalid={invalid('contract_number')}
-                            onChange={(e) =>
-                                setData('contract_number', e.target.value)
-                            }
-                        />
-                    )}
-                    <InputError message={errors.contract_number} />
+                    <Input
+                        id={id('contract_number')}
+                        value={data.contract_number}
+                        readOnly={data.is_generic}
+                        aria-invalid={invalid('contract_number')}
+                        onChange={(e) =>
+                            setData('contract_number', e.target.value)
+                        }
+                        className={data.is_generic ? 'bg-muted/40' : undefined}
+                    />
+                    <FieldFooter error={errors.contract_number}>
+                        {data.is_generic
+                            ? 'Se generará al guardar (GEN-####-YYYY).'
+                            : null}
+                    </FieldFooter>
                 </div>
 
                 {customerField}
@@ -369,7 +369,7 @@ export default function ContractForm({
                         aria-invalid={invalid('start_date')}
                         onChange={(e) => setData('start_date', e.target.value)}
                     />
-                    <InputError message={errors.start_date} />
+                    <FieldFooter error={errors.start_date} />
                 </div>
 
                 <div className="grid gap-2">
@@ -384,7 +384,7 @@ export default function ContractForm({
                         aria-invalid={invalid('end_date')}
                         onChange={(e) => setData('end_date', e.target.value)}
                     />
-                    <InputError message={errors.end_date} />
+                    <FieldFooter error={errors.end_date} />
                 </div>
             </div>
 

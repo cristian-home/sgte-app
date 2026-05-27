@@ -1,5 +1,6 @@
 import { Loader2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import FieldFooter from '@/components/field-footer';
 import ServicePickerTable, {
     rowBillableTotal,
     type ServicePickerRow,
@@ -78,37 +79,6 @@ interface InvoiceFormProps {
 
 function RequiredMarker() {
     return <span className="text-destructive"> *</span>;
-}
-
-/**
- * Slot único bajo cada input que SIEMPRE reserva una línea de alto
- * (≈20px). Renderiza con prioridad: error > hint > vacío (espaciador
- * invisible). Sirve para que las celdas vecinas en la misma row de
- * grid tengan exactamente la misma altura aunque solo una tenga error
- * o texto de ayuda. Mantén copy/errores a una línea — si la validación
- * podría producir mensajes largos, mejora el `messages()` del
- * FormRequest correspondiente.
- */
-function FieldFooter({
-    error,
-    children,
-}: {
-    error?: string;
-    children?: React.ReactNode;
-}) {
-    if (error) {
-        return (
-            <p className="min-h-[1.25rem] text-sm text-destructive">{error}</p>
-        );
-    }
-    return (
-        <p
-            className="min-h-[1.25rem] text-xs text-muted-foreground italic"
-            aria-hidden={children ? undefined : true}
-        >
-            {children ?? ' '}
-        </p>
-    );
 }
 
 export const PAYMENT_STATUS_OPTIONS: Array<{
