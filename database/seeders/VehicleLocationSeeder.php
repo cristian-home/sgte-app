@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Enums\ServiceStatus;
-use App\Jobs\FetchServiceRoute;
 use App\Models\Service;
 use App\Models\User;
 use App\Models\VehicleLocation;
@@ -11,26 +10,24 @@ use Carbon\CarbonImmutable;
 use Database\Seeders\Support\Locations;
 use Database\Seeders\Support\SeedClock;
 use Illuminate\Database\Seeder;
-use Throwable;
 
 /**
  * Seeds vehicle GPS data deterministically so /gps/map and the 24h
  * fallback view both have meaningful markers right after
  * `migrate:fresh --seed` — no randomness.
  *
+ * Services arrive with `route_geometry` already populated by
+ * ServiceSeeder (from CuratedRoutes cache), so this seeder is pure
+ * client-side geometry math — zero network calls.
+ *
  * Strategy:
- *   1. Take today's services (ServiceSeeder already guarantees four).
- *      Ensure each has `route_geometry` cached so markers can sit on
- *      the real driving polyline; missing geometry falls back to the
- *      straight origin→destination chord (or the warehouse when the
- *      service has no coordinates).
- *   2. Service-scoped current location per today service:
+ *   1. Service-scoped current location per today service:
  *        - Closed                 → at destination
  *        - In progress (actual_start_at set, end not reached)
  *                                 → fraction = elapsed / planned_duration
  *        - Open / future          → at the BODEGA_BOGOTA anchor
  *        - Every 3rd row (idx % 3 == 2) → forced to bodega + is_manual=true
- *   3. Historical vehicle-scoped rows (no service_id) for yesterday's
+ *   2. Historical vehicle-scoped rows (no service_id) for yesterday's
  *      and the day-before-yesterday's services, placed at the midpoint
  *      of their route — populates the 24h fallback list with realistic
  *      tracks.
@@ -55,8 +52,6 @@ class VehicleLocationSeeder extends Seeder
         if ($todayServices->isEmpty()) {
             return;
         }
-
-        $this->ensureRoutes($todayServices);
 
         $now = CarbonImmutable::now('UTC');
 
@@ -95,8 +90,6 @@ class VehicleLocationSeeder extends Seeder
             ->orderBy('planned_start_at')
             ->get();
 
-        $this->ensureRoutes($historicalServices);
-
         foreach ($historicalServices as $service) {
             $point = $this->pointAlongService($service, 0.5);
             if ($point === null) {
@@ -118,29 +111,6 @@ class VehicleLocationSeeder extends Seeder
                 'is_manual' => false,
                 'captured_by' => $admin?->id,
             ]);
-        }
-    }
-
-    /**
-     * Inline FetchServiceRoute for any service still missing geometry,
-     * so subsequent marker placement uses the real polyline. Degrades
-     * gracefully when Google is unreachable (no key / offline).
-     */
-    private function ensureRoutes(iterable $services): void
-    {
-        foreach ($services as $service) {
-            if (! empty($service->route_geometry)
-                || empty($service->origin_coordinates)
-                || empty($service->destination_coordinates)) {
-                continue;
-            }
-
-            try {
-                FetchServiceRoute::dispatchSync($service);
-                $service->refresh();
-            } catch (Throwable $e) {
-                report($e);
-            }
         }
     }
 

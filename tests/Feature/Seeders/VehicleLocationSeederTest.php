@@ -2,7 +2,6 @@
 
 use App\Enums\ServiceStatus;
 use App\Enums\VehicleStatus;
-use App\Jobs\FetchServiceRoute;
 use App\Models\Service;
 use App\Models\Vehicle;
 use App\Models\VehicleLocation;
@@ -12,9 +11,11 @@ use Database\Seeders\VehicleLocationSeeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Bus;
 
-// Fake the bus so creating a service doesn't run FetchServiceRoute — at
-// real `migrate:fresh --seed` time that job is queued (not run), so
-// `route_geometry` is still null when VehicleLocationSeeder executes.
+// Fake the bus so the Service::booted() created-hook doesn't actually
+// dispatch FetchServiceRoute during test setup. The seeder itself no
+// longer calls the job — route geometry comes pre-populated from the
+// CuratedRoutes cache (ServiceSeeder) or stays null for tests that
+// exercise the straight-line fallback.
 beforeEach(fn () => Bus::fake());
 
 test('in-progress services place their marker on the origin-to-destination chord', function (): void {
@@ -35,8 +36,6 @@ test('in-progress services place their marker on the origin-to-destination chord
     ]);
 
     $this->seed(VehicleLocationSeeder::class);
-
-    Bus::assertDispatchedSync(FetchServiceRoute::class);
 
     $location = VehicleLocation::query()
         ->where('service_id', $service->id)
