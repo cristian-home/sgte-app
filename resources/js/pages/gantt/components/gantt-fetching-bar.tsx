@@ -38,7 +38,7 @@ export default function GanttFetchingBar({
     return (
         <div
             aria-hidden
-            className="pointer-events-none absolute top-0 right-0 left-0 z-50 h-0.5 overflow-hidden bg-primary/10"
+            className="pointer-events-none absolute top-0 inset-x-0 z-50 h-0.5 overflow-hidden bg-primary/10"
         >
             <div
                 className="h-full w-1/4 bg-primary"

@@ -1,12 +1,12 @@
 import { Link, router } from '@inertiajs/react';
 import { Eye, Trash2 } from 'lucide-react';
-import type { ColumnDef } from '@tanstack/react-table';
 import { Can } from '@/components/can';
 import { DataTableColumnHeader } from '@/components/data-table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Permission } from '@/enums/Permission';
 import { formatTimestampInViewerTz } from '@/lib/datetime';
+import type { ColumnDef } from '@tanstack/react-table';
 
 
 export interface VehicleLocationRow {
