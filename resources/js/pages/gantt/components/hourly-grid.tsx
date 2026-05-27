@@ -274,6 +274,7 @@ export default function HourlyGrid({
         scrollerRef,
         epoch,
         onCenterDateChange,
+        sidebarPx,
         debounceMs: 400,
     });
 
