@@ -17,11 +17,13 @@ import { cn } from '@/lib/utils';
 import { computeVehicleDocStatus, HOUR_LABELS } from '../gantt-utils';
 import {
     scrollLeftForDateCenter,
+    scrollLeftForInstantCenter,
     useGanttScroll,
 } from '../hooks/use-gantt-scroll';
 import {
     addDays,
     dayOffset,
+    instantToPxFromEpoch,
     pixelToDateTime,
     PX_PER_DAY,
     PX_PER_HOUR,
@@ -75,19 +77,29 @@ interface HourlyGridProps {
     /** Called when the centered day changes (for URL sync). */
     onCenterDateChange: (date: Ymd) => void;
     /**
-     * Exposes a jumpToDate function back to the page so date controls
-     * in the header can drive horizontal scroll.
+     * Exposes scroll-driving handles back to the page so the header
+     * controls can drive horizontal scroll. `jumpToDate(date)` smooth-
+     * scrolls so the date lands centered (on noon); `jumpToNow()`
+     * smooth-scrolls so the current instant lands centered on the Now
+     * indicator's vertical red line.
      */
-    onMount?: (jumpToDate: (date: Ymd) => void) => void;
+    onMount?: (handles: {
+        jumpToDate: (date: Ymd) => void;
+        jumpToNow: () => void;
+    }) => void;
     /**
-     * When non-null, the grid scrolls so this date lands at the
+     * When non-null, the grid scrolls so this target lands at the
      * horizontal center of the viewport — using the CURRENT value of
      * `epoch` and the live `scroller.clientWidth`. The page sets this
-     * together with a new epoch when the user picks a date outside
+     * together with a new epoch when the user picks a target outside
      * the current window (out-of-range jump); useLayoutEffect handles
      * the scroll adjustment before paint so the swap is invisible.
+     *
+     * `mode = 'noon'`: centers on noon of `date` (date-picker default).
+     * `mode = 'now'`: centers on the current instant within `date`
+     *                 (Hoy button — aligns viewport with the Now line).
      */
-    recenterTarget?: Ymd | null;
+    recenterTo?: { date: Ymd; mode: 'noon' | 'now' } | null;
 }
 
 const SIDEBAR_PX_MOBILE = 96; // w-24 — plate + 2 abbreviated badges
@@ -158,7 +170,7 @@ export default function HourlyGrid({
     numDays,
     onCenterDateChange,
     onMount,
-    recenterTarget = null,
+    recenterTo = null,
 }: HourlyGridProps) {
     const scrollerRef = useRef<HTMLDivElement | null>(null);
     const sidebarPx = useSidebarWidthPx();
@@ -281,10 +293,10 @@ export default function HourlyGrid({
     // useLayoutEffect drains it in one DOM write.
 
     const pendingScrollAdjustRef = useRef(0);
-    const recenterTargetRef = useRef(recenterTarget);
+    const recenterToRef = useRef(recenterTo);
     useEffect(() => {
-        recenterTargetRef.current = recenterTarget;
-    }, [recenterTarget]);
+        recenterToRef.current = recenterTo;
+    }, [recenterTo]);
 
     const slide = useCallback(
         (deltaDays: number) => {
@@ -304,7 +316,7 @@ export default function HourlyGrid({
             // Pause sliding while the page is performing a re-center
             // (out-of-range date picker jump) — that flow owns the
             // scroll position until React commits.
-            if (recenterTargetRef.current) return;
+            if (recenterToRef.current) return;
 
             const { scrollLeft, scrollWidth, clientWidth } = scroller;
             const distFromLeft = scrollLeft;
@@ -351,34 +363,62 @@ export default function HourlyGrid({
         pendingScrollAdjustRef.current = 0;
     }, [epoch]);
 
-    // External re-center: page-driven jump to a date outside the
-    // current window. Page sets `recenterTarget` alongside `setEpoch`;
+    // External re-center: page-driven jump to a target outside the
+    // current window. Page sets `recenterTo` alongside `setEpoch`;
     // this effect centers the viewport on that target after commit.
     useLayoutEffect(() => {
-        if (!recenterTarget) return;
+        if (!recenterTo) return;
         const scroller = scrollerRef.current;
         if (!scroller) return;
-        const offset = dayOffset(recenterTarget, epoch);
-        const dayCenterPx = (offset + 0.5) * PX_PER_DAY;
         const timelineWidth = scroller.clientWidth - sidebarPxRef.current;
+        let centerPx: number;
+        if (recenterTo.mode === 'now') {
+            // Center on the current instant — visible Now line lands
+            // at the viewport's horizontal middle.
+            centerPx = instantToPxFromEpoch(
+                new Date().toISOString(),
+                operationTz,
+                epoch,
+            );
+        } else {
+            // Center on noon of the date.
+            const offset = dayOffset(recenterTo.date, epoch);
+            centerPx = (offset + 0.5) * PX_PER_DAY;
+        }
         scroller.scrollLeft = Math.max(
             0,
-            Math.round(dayCenterPx - timelineWidth / 2),
+            Math.round(centerPx - timelineWidth / 2),
         );
-    }, [recenterTarget, epoch]);
+    }, [recenterTo, epoch, operationTz]);
 
-    // Expose jumpToDate to the page so the header controls can drive
-    // horizontal scroll. Smooth scroll for in-range targets; the page
-    // handles out-of-range via setEpoch + recenterTarget separately.
+    // Expose jumpToDate / jumpToNow to the page so the header controls
+    // can drive horizontal scroll. Smooth scrolls for in-range targets;
+    // the page handles out-of-range via setEpoch + recenterTo
+    // separately (instant snap).
     const epochRef = useRef(epoch);
     useEffect(() => {
         epochRef.current = epoch;
     }, [epoch]);
+    const operationTzRef = useRef(operationTz);
+    useEffect(() => {
+        operationTzRef.current = operationTz;
+    }, [operationTz]);
     const jumpToDate = useCallback((date: Ymd) => {
         const scroller = scrollerRef.current;
         if (!scroller) return;
         const left = scrollLeftForDateCenter(
             date,
+            epochRef.current,
+            scroller.clientWidth - sidebarPxRef.current,
+        );
+        scroller.scrollTo({ left, behavior: 'smooth' });
+    }, []);
+    const jumpToNow = useCallback(() => {
+        const scroller = scrollerRef.current;
+        if (!scroller) return;
+        const left = scrollLeftForInstantCenter(
+            new Date().toISOString(),
+            operationTzRef.current,
             epochRef.current,
             scroller.clientWidth - sidebarPxRef.current,
         );
@@ -410,10 +450,10 @@ export default function HourlyGrid({
                     );
                     node.scrollLeft = left;
                 });
-                onMountRef.current?.(jumpToDate);
+                onMountRef.current?.({ jumpToDate, jumpToNow });
             }
         },
-        [jumpToDate],
+        [jumpToDate, jumpToNow],
     );
 
     // Stable handler refs so memo()'d ServiceBar / VehicleSidebarItem

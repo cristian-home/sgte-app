@@ -10,17 +10,28 @@ interface GanttHeaderProps {
     canCreateServices: boolean;
     /**
      * Page-level callback that scrolls the timeline so `date` lands at
-     * the center. Replaces the previous `router.get` Inertia
-     * navigation — date changes are now pure scroll, no SSR reload.
+     * the center (noon of the day). Used by the chevrons + date picker.
      */
     onJumpToDate: (date: string) => void;
+    /**
+     * Page-level callback that scrolls the timeline so the current
+     * instant lands at the center — the Now indicator's red vertical
+     * line ends up in the viewport's horizontal middle. Used by the
+     * Hoy button so "back to now" feels more precise than just
+     * "back to today midnight".
+     */
+    onJumpToNow: () => void;
 }
 
 function isToday(dateStr: string, operationTz: string): boolean {
     return dateStr === viewerToday(operationTz);
 }
 
-export default function GanttHeader({ date, onJumpToDate }: GanttHeaderProps) {
+export default function GanttHeader({
+    date,
+    onJumpToDate,
+    onJumpToNow,
+}: GanttHeaderProps) {
     const sharedConfig = usePage().props.config as
         | { operation_tz?: string }
         | undefined;
@@ -35,7 +46,7 @@ export default function GanttHeader({ date, onJumpToDate }: GanttHeaderProps) {
                     variant="outline"
                     size="sm"
                     className="h-8"
-                    onClick={() => onJumpToDate(viewerToday(operationTz))}
+                    onClick={onJumpToNow}
                 >
                     Hoy
                 </Button>
