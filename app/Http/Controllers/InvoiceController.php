@@ -702,6 +702,13 @@ class InvoiceController extends Controller
 
     private function candidateServices(Invoice $invoice): \Illuminate\Database\Eloquent\Collection
     {
+        // Defensive: invoices may have a null third_party_id (the FK is
+        // nullOnDelete in the migration). Skip the candidate query in
+        // that case — without a customer there's no useful filter.
+        if ($invoice->third_party_id === null) {
+            return new \Illuminate\Database\Eloquent\Collection;
+        }
+
         return $this->candidatesForCustomer($invoice->third_party_id);
     }
 

@@ -1676,6 +1676,20 @@ test('index passes billingGroups (active only) as a prop for the toolbar', funct
     expect($codes)->not->toContain('Inactivo-test');
 });
 
+test('show works for an invoice without third_party_id', function (): void {
+    $invoice = Invoice::factory()->create(['third_party_id' => null]);
+
+    $response = get(route('invoices.show', $invoice));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn ($page) => $page
+            ->component('invoices/show')
+            ->where('candidateServices', [])
+            ->where('blockedCandidateServices', []),
+    );
+});
+
 test('eligibleServices endpoint includes billing_groups on each row', function (): void {
     $customer = ThirdParty::factory()->create(['is_customer' => true]);
     $contract = Contract::factory()->create(['third_party_id' => $customer->id]);
