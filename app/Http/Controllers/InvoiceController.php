@@ -53,9 +53,32 @@ class InvoiceController extends Controller
             return response()->json($invoices);
         }
 
+        // When the create dialog is asking for eligible services for a
+        // specific customer, partition the candidates clean/blocked the
+        // same way the show page does so the inline picker can be
+        // hydrated without a follow-up round-trip.
+        $eligibleServices = null;
+        $eligibleFor = $request->query('eligible_for');
+        if (
+            is_numeric($eligibleFor) &&
+            Gate::allows(Permission::ASSIGN_SERVICES_TO_INVOICES->value)
+        ) {
+            $candidates = $this->candidatesForCustomer((int) $eligibleFor);
+            [$clean, $blocked] = $candidates->partition(
+                fn (Service $service) => ! $service->serviceIncidents
+                    ->where('affects_billing', true)
+                    ->isNotEmpty(),
+            );
+            $eligibleServices = [
+                'cleanCandidates' => $clean->values(),
+                'blockedCandidates' => $blocked->values(),
+            ];
+        }
+
         return Inertia::render('invoices/index', [
             'invoices' => $invoices,
             'thirdParties' => $this->customerOptions(),
+            'eligibleServices' => $eligibleServices,
         ]);
     }
 
@@ -86,12 +109,45 @@ class InvoiceController extends Controller
             ]);
     }
 
-    public function store(InvoiceStoreRequest $request): RedirectResponse
+    public function store(InvoiceStoreRequest $request, InvoiceTotalCalculator $calculator): RedirectResponse
     {
         Gate::authorize(Permission::CREATE_INVOICES->value);
-        Invoice::create($request->validated());
 
-        return back()->with('success', 'Factura creada.');
+        $serviceIds = $request->validated('service_ids') ?? [];
+        $justification = trim((string) $request->input('override_justification'));
+
+        // Guard: attaching services requires the dedicated permission.
+        // We fail loudly instead of silently dropping service_ids so the
+        // operator never thinks the assignment succeeded.
+        if (
+            count($serviceIds) > 0 &&
+            ! Gate::allows(Permission::ASSIGN_SERVICES_TO_INVOICES->value)
+        ) {
+            throw ValidationException::withMessages([
+                'service_ids' => 'No tienes permiso para asociar servicios a una factura.',
+            ]);
+        }
+
+        $invoice = DB::transaction(function () use ($request, $serviceIds, $justification, $calculator) {
+            $invoice = Invoice::create($request->validated());
+
+            if (count($serviceIds) > 0) {
+                $this->validateAttachableServices($invoice, $serviceIds, $justification);
+                $this->attachServiceIdsToInvoice(
+                    $invoice,
+                    $serviceIds,
+                    $justification,
+                    $request->user()?->id,
+                );
+                $calculator->recomputeFor($invoice->fresh());
+            }
+
+            return $invoice;
+        });
+
+        return redirect()
+            ->route('invoices.show', $invoice)
+            ->with('success', 'Factura creada'.(count($serviceIds) > 0 ? ' con '.count($serviceIds).' servicio(s) asociado(s).' : '.'));
     }
 
     public function show(Request $request, Invoice $invoice, InvoiceTotalCalculator $calculator): Response
@@ -223,16 +279,110 @@ class InvoiceController extends Controller
         $ids = $request->validated('service_ids');
         $justification = trim((string) $request->input('override_justification'));
 
-        // Identify the subset of services that carry a billing-
-        // affecting incident — these are the ones the justification is
-        // actually overriding. We log them explicitly so the audit
-        // trail answers "which services were force-attached" without
-        // requiring reviewers to replay the incident state at attach
-        // time.
+        DB::transaction(function () use ($invoice, $ids, $justification, $request) {
+            $this->attachServiceIdsToInvoice(
+                $invoice,
+                $ids,
+                $justification,
+                $request->user()?->id,
+            );
+        });
+
+        $calculator->recomputeFor($invoice->fresh());
+
+        return redirect()
+            ->route('invoices.show', $invoice)
+            ->with('success', count($ids).' servicio(s) asociado(s).');
+    }
+
+    /**
+     * Apply the same domain rules that InvoiceServiceAttachRequest::after()
+     * enforces. Used by store() (which bypasses the dedicated request
+     * since service_ids is optional there) so the inline create-flow
+     * cannot leak invalid attachments past validation.
+     *
+     * @param  array<int>  $serviceIds
+     *
+     * @throws ValidationException
+     */
+    private function validateAttachableServices(Invoice $invoice, array $serviceIds, string $justification): void
+    {
+        $services = Service::query()
+            ->with([
+                'contract:id,third_party_id',
+                'serviceIncidents' => fn ($q) => $q
+                    ->where('affects_billing', true)
+                    ->with('incidentType:id,name'),
+            ])
+            ->whereIn('id', $serviceIds)
+            ->get();
+
+        $errors = [];
+
+        foreach ($services as $service) {
+            if ($service->contract?->third_party_id !== $invoice->third_party_id) {
+                $errors['service_ids'] = 'Los servicios deben pertenecer al cliente de la factura.';
+                break;
+            }
+        }
+
+        foreach ($services as $service) {
+            if (! isset($errors['service_ids']) && $service->invoice_id !== null && $service->invoice_id !== $invoice->id) {
+                $errors['service_ids'] = 'Uno o más servicios ya están asociados a otra factura.';
+                break;
+            }
+        }
+
+        foreach ($services as $service) {
+            if (! isset($errors['service_ids'])) {
+                $status = $service->service_status;
+                $value = $status instanceof ServiceStatus ? $status->value : $status;
+                if ($value !== ServiceStatus::Closed->value) {
+                    $errors['service_ids'] = 'Solo servicios cerrados pueden facturarse.';
+                    break;
+                }
+            }
+        }
+
+        if (! isset($errors['service_ids'])) {
+            $blocked = $services->filter(
+                fn (Service $service) => $service->serviceIncidents->isNotEmpty(),
+            );
+            if ($blocked->isNotEmpty() && $justification === '') {
+                $names = $blocked
+                    ->map(function (Service $service): string {
+                        $firstIncidentType = $service->serviceIncidents->first()?->incidentType?->name ?? 'novedad';
+
+                        return "#{$service->id} ({$firstIncidentType})";
+                    })
+                    ->implode(', ');
+                $errors['service_ids'] = "Los siguientes servicios tienen novedades que afectan la facturación y requieren justificación: {$names}.";
+            }
+        }
+
+        if (! empty($errors)) {
+            throw ValidationException::withMessages($errors);
+        }
+    }
+
+    /**
+     * Update service.invoice_id for the given ids and log the override
+     * activity when blocked services are being force-attached with a
+     * justification. Centralized so store() and attachServices() share
+     * the same audit trail format.
+     *
+     * @param  array<int>  $serviceIds
+     */
+    private function attachServiceIdsToInvoice(
+        Invoice $invoice,
+        array $serviceIds,
+        string $justification,
+        ?int $userId,
+    ): void {
         $overriddenServiceIds = [];
         if ($justification !== '') {
             $overriddenServiceIds = Service::query()
-                ->whereIn('id', $ids)
+                ->whereIn('id', $serviceIds)
                 ->whereHas(
                     'serviceIncidents',
                     fn ($q) => $q->where('affects_billing', true),
@@ -241,29 +391,23 @@ class InvoiceController extends Controller
                 ->all();
         }
 
-        DB::transaction(function () use ($ids, $invoice) {
-            Service::query()
-                ->whereIn('id', $ids)
-                ->update(['invoice_id' => $invoice->id]);
-        });
+        Service::query()
+            ->whereIn('id', $serviceIds)
+            ->update(['invoice_id' => $invoice->id]);
 
         if ($justification !== '' && $overriddenServiceIds !== []) {
-            activity()
-                ->performedOn($invoice)
-                ->causedBy($request->user())
+            $log = activity()->performedOn($invoice);
+            if ($userId !== null) {
+                $log = $log->causedBy($userId);
+            }
+            $log
                 ->withProperties([
                     'override_justification' => $justification,
                     'overridden_service_ids' => $overriddenServiceIds,
-                    'attached_service_ids' => $ids,
+                    'attached_service_ids' => $serviceIds,
                 ])
                 ->log('Servicios con novedades facturables asociados con justificación');
         }
-
-        $calculator->recomputeFor($invoice->fresh());
-
-        return redirect()
-            ->route('invoices.show', $invoice)
-            ->with('success', count($ids).' servicio(s) asociado(s).');
     }
 
     /**
@@ -412,13 +556,24 @@ class InvoiceController extends Controller
 
     private function candidateServices(Invoice $invoice): \Illuminate\Database\Eloquent\Collection
     {
+        return $this->candidatesForCustomer($invoice->third_party_id);
+    }
+
+    /**
+     * Closed services in the last 90 days that belong to the given
+     * customer and aren't already invoiced. Used by the show page
+     * picker (via candidateServices) and by the create dialog inline
+     * picker (via index?eligible_for=...).
+     */
+    private function candidatesForCustomer(int $customerId): \Illuminate\Database\Eloquent\Collection
+    {
         $cutoff = Carbon::now((string) config('app.operation_tz'))->subDays(90)->toDateString();
 
         return Service::query()
             ->whereNull('invoice_id')
             ->where('service_status', ServiceStatus::Closed->value)
             ->whereDate('service_date_local', '>=', $cutoff)
-            ->whereHas('contract', fn ($q) => $q->where('third_party_id', $invoice->third_party_id))
+            ->whereHas('contract', fn ($q) => $q->where('third_party_id', $customerId))
             ->with([
                 'vehicle:id,plate',
                 'driver:id,first_name,first_lastname',

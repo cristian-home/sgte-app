@@ -6,6 +6,7 @@ import { ToolbarLabel } from '@/components/data-table/toolbar-label';
 import InvoiceDialog, {
     type EditableInvoice,
 } from '@/components/invoices/invoice-dialog';
+import { type EligibleServicesPayload } from '@/components/invoices/invoice-form';
 import { paymentStatusRowTint } from '@/components/invoices/payment-status-pill';
 import { type ThirdPartyOption } from '@/components/third-parties/third-party-combobox';
 import { Button } from '@/components/ui/button';
@@ -41,9 +42,11 @@ function rowTintFor(row: Row<InvoiceRow>): string | undefined {
 export default function InvoicesIndex({
     invoices: paginatedInvoices,
     thirdParties,
+    eligibleServices = null,
 }: {
     invoices: PaginatedData<InvoiceRow>;
     thirdParties: ThirdPartyOption[];
+    eligibleServices?: EligibleServicesPayload | null;
 }) {
     'use no memo';
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -143,6 +146,7 @@ export default function InvoicesIndex({
                 mode={dialogMode}
                 invoice={selectedInvoice}
                 thirdParties={thirdParties}
+                eligibleServices={eligibleServices}
             />
         </AppLayout>
     );
