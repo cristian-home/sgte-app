@@ -206,29 +206,41 @@ export default function ContractForm({
         </div>
     );
 
-    const switchesRow = (
-        <>
-            <div className="flex flex-wrap items-center gap-6">
-                <div className="flex items-center gap-3">
-                    <Switch
-                        id={id('is_generic')}
-                        checked={data.is_generic}
-                        onCheckedChange={handleGenericToggle}
-                    />
-                    <Label htmlFor={id('is_generic')}>Contrato Genérico</Label>
-                </div>
-                <div className="flex items-center gap-3">
-                    <Switch
-                        id={id('active')}
-                        checked={data.active}
-                        onCheckedChange={(checked) =>
-                            setData('active', checked)
-                        }
-                    />
-                    <Label htmlFor={id('active')}>Activo</Label>
-                </div>
+    const genericSwitchTop = (
+        <div className="flex items-start gap-3 rounded-md border border-dashed bg-muted/30 p-3">
+            <Switch
+                id={id('is_generic')}
+                checked={data.is_generic}
+                onCheckedChange={handleGenericToggle}
+                className="mt-0.5"
+            />
+            <div className="grid gap-0.5">
+                <Label
+                    htmlFor={id('is_generic')}
+                    className="cursor-pointer text-sm font-medium"
+                >
+                    Contrato Genérico
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                    {mode === 'create'
+                        ? 'Crea el contrato solo con el cliente — el resto se completa con valores por defecto.'
+                        : 'El número se autogenera con el patrón GEN-####-YYYY.'}
+                </p>
+                <InputError message={errors.is_generic} />
             </div>
-            <InputError message={errors.is_generic} />
+        </div>
+    );
+
+    const activeSwitchRow = (
+        <>
+            <div className="flex items-center gap-3">
+                <Switch
+                    id={id('active')}
+                    checked={data.active}
+                    onCheckedChange={(checked) => setData('active', checked)}
+                />
+                <Label htmlFor={id('active')}>Activo</Label>
+            </div>
             <InputError message={errors.active} />
         </>
     );
@@ -249,6 +261,7 @@ export default function ContractForm({
     if (isGenericQuickCreate) {
         return (
             <div className="space-y-6">
+                {genericSwitchTop}
                 {customerField}
                 {thirdPartyCreateDialog}
                 <div className="rounded-md border border-dashed bg-muted/40 p-4 text-sm text-muted-foreground">
@@ -272,13 +285,14 @@ export default function ContractForm({
                         <li>Unidad de facturación: Viaje</li>
                     </ul>
                 </div>
-                {switchesRow}
+                {activeSwitchRow}
             </div>
         );
     }
 
     return (
         <div className="space-y-6">
+            {genericSwitchTop}
             <div className="grid gap-4 md:grid-cols-2">
                 <div className="grid gap-2">
                     <Label htmlFor={id('contract_number')}>
@@ -453,7 +467,7 @@ export default function ContractForm({
                 <InputError message={errors.billing_unit_type} />
             </div>
 
-            {switchesRow}
+            {activeSwitchRow}
         </div>
     );
 }
