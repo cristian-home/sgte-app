@@ -16,7 +16,12 @@ import invoices from '@/routes/invoices';
 import { columns, type InvoiceRow, type InvoiceTableMeta } from './columns';
 
 import type { Row } from '@tanstack/react-table';
-import type { BreadcrumbItem, FilterDefinition, PaginatedData } from '@/types';
+import type {
+    BillingGroup,
+    BreadcrumbItem,
+    FilterDefinition,
+    PaginatedData,
+} from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Facturas', href: invoices.index().url },
@@ -41,10 +46,12 @@ function rowTintFor(row: Row<InvoiceRow>): string | undefined {
 export default function InvoicesIndex({
     invoices: paginatedInvoices,
     thirdParties,
+    billingGroups = [],
     nextInvoiceNumberPreview,
 }: {
     invoices: PaginatedData<InvoiceRow>;
     thirdParties: ThirdPartyOption[];
+    billingGroups?: Pick<BillingGroup, 'id' | 'name'>[];
     nextInvoiceNumberPreview?: string;
 }) {
     'use no memo';
@@ -87,8 +94,16 @@ export default function InvoicesIndex({
                             : (tp.company_name ?? '—'),
                     })),
             },
+            {
+                name: 'billing_group',
+                label: 'Grupo',
+                options: billingGroups.map((g) => ({
+                    value: String(g.id),
+                    label: g.name,
+                })),
+            },
         ],
-        [thirdParties],
+        [thirdParties, billingGroups],
     );
 
     const {

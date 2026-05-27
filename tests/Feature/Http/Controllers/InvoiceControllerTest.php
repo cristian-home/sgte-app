@@ -1625,3 +1625,75 @@ test('attachedServices endpoint devuelve los servicios actualmente asociados', f
     $response->assertJsonCount(1, 'attachedCandidates');
     $response->assertJsonPath('attachedCandidates.0.id', $attached->id);
 });
+
+// ================================================================
+// Filter by billing_group on /invoices index
+// ================================================================
+
+test('index filters invoices by billing_group', function (): void {
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    $contract = Contract::factory()->create(['third_party_id' => $customer->id]);
+
+    $salud = \App\Models\BillingGroup::firstWhere('code', 'salud');
+    $turismo = \App\Models\BillingGroup::firstWhere('code', 'turismo');
+
+    $invoiceSalud = Invoice::factory()->create(['third_party_id' => $customer->id]);
+    $invoiceTurismo = Invoice::factory()->create(['third_party_id' => $customer->id]);
+
+    $serviceSalud = Service::factory()->create([
+        'contract_id' => $contract->id,
+        'invoice_id' => $invoiceSalud->id,
+        'service_status' => ServiceStatus::Closed,
+    ]);
+    $serviceSalud->billingGroups()->sync([$salud->id]);
+
+    $serviceTurismo = Service::factory()->create([
+        'contract_id' => $contract->id,
+        'invoice_id' => $invoiceTurismo->id,
+        'service_status' => ServiceStatus::Closed,
+    ]);
+    $serviceTurismo->billingGroups()->sync([$turismo->id]);
+
+    $response = get(route('invoices.index', ['filter' => ['billing_group' => $salud->id]]));
+
+    $response->assertOk();
+    $rows = $response->viewData('page')['props']['invoices']['data'];
+    $ids = array_column($rows, 'id');
+    expect($ids)->toContain($invoiceSalud->id);
+    expect($ids)->not->toContain($invoiceTurismo->id);
+});
+
+test('index passes billingGroups (active only) as a prop for the toolbar', function (): void {
+    \App\Models\BillingGroup::factory()->create(['code' => 'inactivo-test', 'active' => false]);
+
+    $response = get(route('invoices.index'));
+
+    $response->assertOk();
+    $billingGroups = $response->viewData('page')['props']['billingGroups'];
+    $codes = collect($billingGroups)->pluck('name')->all();
+    // The 5 seeded defaults are active; the inactive one above should be filtered out.
+    expect(count($billingGroups))->toBeGreaterThanOrEqual(5);
+    expect($codes)->not->toContain('Inactivo-test');
+});
+
+test('eligibleServices endpoint includes billing_groups on each row', function (): void {
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    $contract = Contract::factory()->create(['third_party_id' => $customer->id]);
+
+    $salud = \App\Models\BillingGroup::firstWhere('code', 'salud');
+
+    $service = Service::factory()->create([
+        'contract_id' => $contract->id,
+        'service_status' => ServiceStatus::Closed,
+        'service_date' => Carbon::today()->subDays(5),
+        'invoice_id' => null,
+    ]);
+    $service->billingGroups()->sync([$salud->id]);
+
+    $response = $this->getJson(route('invoices.eligible-services', ['customer_id' => $customer->id]));
+
+    $response->assertOk();
+    $response->assertJsonPath('cleanCandidates.0.id', $service->id);
+    $response->assertJsonPath('cleanCandidates.0.billing_groups.0.id', $salud->id);
+    $response->assertJsonPath('cleanCandidates.0.billing_groups.0.name', 'Salud');
+});

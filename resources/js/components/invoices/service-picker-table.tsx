@@ -1,10 +1,17 @@
 import { AlertTriangle } from 'lucide-react';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import {
     Table,
@@ -34,6 +41,7 @@ export interface ServicePickerRow {
         affects_billing: boolean;
         additional_value: string | number | null;
     }>;
+    billing_groups?: Array<{ id: number; name: string }>;
 }
 
 export const JUSTIFICATION_MIN = 10;
@@ -138,6 +146,8 @@ export default function ServicePickerTable({
 }: ServicePickerTableProps) {
     const id = (name: string) => (idPrefix ? `${idPrefix}_${name}` : name);
 
+    const [groupFilterId, setGroupFilterId] = useState<string>('');
+
     const blockedIds = useMemo(
         () => new Set(blockedCandidates.map((r) => r.id)),
         [blockedCandidates],
@@ -148,10 +158,40 @@ export default function ServicePickerTable({
         [selectedIds, blockedIds],
     );
 
+    // Union of billing_group ids+names across all candidate buckets,
+    // used to populate the local "Grupo" filter. Derived from data so
+    // operators only see groups that actually apply to the visible
+    // services (no dead options).
+    const availableGroups = useMemo(() => {
+        const map = new Map<number, string>();
+        for (const row of [
+            ...candidates,
+            ...blockedCandidates,
+            ...attachedCandidates,
+        ]) {
+            for (const g of row.billing_groups ?? []) {
+                if (!map.has(g.id)) {
+                    map.set(g.id, g.name);
+                }
+            }
+        }
+        return Array.from(map.entries())
+            .map(([id, name]) => ({ id, name }))
+            .sort((a, b) => a.name.localeCompare(b.name));
+    }, [candidates, blockedCandidates, attachedCandidates]);
+
     const filter = (rows: ServicePickerRow[]) => {
         const term = search.trim().toLowerCase();
-        if (!term) return rows;
+        const groupId = groupFilterId === '' ? null : Number(groupFilterId);
+        if (!term && groupId === null) return rows;
         return rows.filter((row) => {
+            if (groupId !== null) {
+                const has = (row.billing_groups ?? []).some(
+                    (g) => g.id === groupId,
+                );
+                if (!has) return false;
+            }
+            if (!term) return true;
             const plate = (row.vehicle?.plate ?? '').toLowerCase();
             const contract = (
                 row.contract?.contract_number ?? ''
@@ -170,17 +210,17 @@ export default function ServicePickerTable({
     const filteredClean = useMemo(
         () => filter(candidates),
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        [candidates, search],
+        [candidates, search, groupFilterId],
     );
     const filteredBlocked = useMemo(
         () => filter(blockedCandidates),
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        [blockedCandidates, search],
+        [blockedCandidates, search, groupFilterId],
     );
     const filteredAttached = useMemo(
         () => filter(attachedCandidates),
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        [attachedCandidates, search],
+        [attachedCandidates, search, groupFilterId],
     );
 
     const allCleanSelected =
@@ -234,6 +274,31 @@ export default function ServicePickerTable({
                     onChange={(e) => onSearchChange(e.target.value)}
                     className="max-w-md"
                 />
+                {availableGroups.length > 0 && (
+                    <Select
+                        value={groupFilterId === '' ? 'all' : groupFilterId}
+                        onValueChange={(v) =>
+                            setGroupFilterId(v === 'all' ? '' : v)
+                        }
+                    >
+                        <SelectTrigger
+                            className="w-[200px]"
+                            aria-label="Filtrar por grupo de facturación"
+                        >
+                            <SelectValue placeholder="Grupo" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">
+                                Todos los grupos
+                            </SelectItem>
+                            {availableGroups.map((g) => (
+                                <SelectItem key={g.id} value={String(g.id)}>
+                                    {g.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                )}
                 {blockedCandidates.length > 0 && (
                     <Label className="ml-auto flex items-center gap-2 text-sm font-normal text-muted-foreground">
                         <Switch
