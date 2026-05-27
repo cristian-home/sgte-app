@@ -7,6 +7,7 @@ use App\Enums\ContractObject;
 use App\Enums\Permission;
 use App\Support\Tz;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
@@ -55,6 +56,27 @@ class ContractStoreRequest extends FormRequest
             $timezone = Tz::operation();
         }
         $this->merge(['timezone' => $timezone]);
+
+        // Quick-create defaults for generic contracts: operators only pick
+        // the customer; everything else falls back to sensible values so
+        // the request still satisfies the standard validation rules.
+        if ($this->boolean('is_generic')) {
+            $defaults = [
+                'contract_object' => ContractObject::Business->value,
+                'route_description' => 'Genérico',
+                'billing_unit_type' => BillingUnitType::Viaje->value,
+                'active' => true,
+            ];
+            $today = Tz::nowIn($timezone);
+            $defaults['start_date'] = $today->format('Y-m-d');
+            $defaults['end_date'] = Carbon::create((int) $today->format('Y'), 12, 31, 0, 0, 0, $timezone)->format('Y-m-d');
+
+            foreach ($defaults as $key => $value) {
+                if ($this->input($key) === null || $this->input($key) === '') {
+                    $this->merge([$key => $value]);
+                }
+            }
+        }
 
         $start = $this->normalizeYmd($this->input('start_date'));
         $end = $this->normalizeYmd($this->input('end_date'));

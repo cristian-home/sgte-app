@@ -194,6 +194,7 @@ export default function ContractDialog({
                             setData={setData}
                             errors={errors}
                             thirdParties={thirdParties}
+                            mode={mode}
                             forceIncludeCustomer={forceIncludeCustomer}
                             idPrefix="dlg"
                             allowCreateThirdParty={
