@@ -18,6 +18,15 @@ interface UseGanttScrollOptions {
      * cache so the centered day is guaranteed loaded).
      */
     onCenterDateChange: (date: Ymd) => void;
+    /**
+     * Width of the sticky Vehículo sidebar in px. Subtracted from
+     * clientWidth when locating the "centered day" so the calc
+     * reflects the TIMELINE midpoint (visually centered), not the
+     * scroller midpoint (which would be 56 px off, occasionally
+     * landing one column past where the user actually looks — see
+     * the URL-off-by-one report after pressing Hoy late at night).
+     */
+    sidebarPx: number;
     /** Milliseconds to wait without scroll motion before firing. */
     debounceMs?: number;
 }
@@ -36,10 +45,18 @@ export function useGanttScroll({
     scrollerRef,
     epoch,
     onCenterDateChange,
+    sidebarPx,
     debounceMs = 400,
 }: UseGanttScrollOptions): void {
     const lastReportedRef = useRef<Ymd | null>(null);
     const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // Mirror sidebarPx in a ref so the bound scroll listener always
+    // reads the latest value without re-attaching when the breakpoint
+    // crosses (mobile↔desktop), which would race with in-flight scrolls.
+    const sidebarPxRef = useRef(sidebarPx);
+    useEffect(() => {
+        sidebarPxRef.current = sidebarPx;
+    }, [sidebarPx]);
 
     useEffect(() => {
         const scroller = scrollerRef.current;
@@ -47,7 +64,14 @@ export function useGanttScroll({
 
         function compute() {
             if (!scroller) return;
-            const center = scroller.scrollLeft + scroller.clientWidth / 2;
+            // Center of the TIMELINE area (past the sticky sidebar) in
+            // canvas coordinates. The naive scroller midpoint
+            // (scrollLeft + clientWidth/2) is biased sidebarPx/2 to the
+            // left because the sidebar covers the leftmost slice of the
+            // viewport.
+            const visibleTimelineWidth =
+                scroller.clientWidth - sidebarPxRef.current;
+            const center = scroller.scrollLeft + visibleTimelineWidth / 2;
             const dayIndex = Math.round(center / PX_PER_DAY - 0.5);
             const date = addDays(epoch, dayIndex);
             if (date !== lastReportedRef.current) {
