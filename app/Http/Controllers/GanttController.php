@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Enums\Permission;
 use App\Enums\VehicleStatus;
 use App\Models\DayStatus;
-use App\Models\Municipality;
 use App\Models\Service;
 use App\Models\Vehicle;
 use App\Support\ServiceDocumentChecks;
@@ -24,7 +23,6 @@ class GanttController extends Controller
 
         $request->validate([
             'date' => ['sometimes', 'date_format:Y-m-d'],
-            'municipality_id' => ['sometimes', 'integer', 'exists:municipalities,id'],
         ]);
 
         // Default to "today" in the operation timezone, not UTC. Between
@@ -33,11 +31,9 @@ class GanttController extends Controller
         // Gantt at the end of the operator's shift.
         $operationTz = (string) config('app.operation_tz', 'America/Bogota');
         $date = $request->input('date', Carbon::now($operationTz)->toDateString());
-        $municipalityId = $request->input('municipality_id');
 
         $vehicles = Vehicle::query()
             ->where('status', VehicleStatus::Active)
-            ->when($municipalityId, fn ($q) => $q->where('municipality_id', $municipalityId))
             ->with([
                 'thirdParty:id,company_name,first_name,first_lastname,is_natural_person',
                 'municipality:id,name',
@@ -131,8 +127,8 @@ class GanttController extends Controller
 
         // Infinite-scroll fetch path: the client `useGanttDays` hook
         // pulls services for adjacent days as the operator scrolls.
-        // Vehicles + municipalities stay client-cached from the SSR
-        // payload — only the date-scoped services need to refresh.
+        // Vehicles stay client-cached from the SSR payload — only the
+        // date-scoped services need to refresh.
         if ($request->wantsJson()) {
             return response()->json([
                 'date' => $date,
@@ -141,18 +137,11 @@ class GanttController extends Controller
             ]);
         }
 
-        $municipalities = Municipality::query()
-            ->with('department:id,name')
-            ->orderBy('name')
-            ->get(['id', 'name', 'code', 'department_id']);
-
         return Inertia::render('gantt/index', [
             'vehicles' => $vehicles,
             'services' => $services,
             'dayStatus' => $dayStatus,
-            'municipalities' => $municipalities,
             'date' => $date,
-            'municipalityId' => $municipalityId ? (int) $municipalityId : null,
             'canCreateServices' => Gate::allows(Permission::CREATE_SERVICES->value),
         ]);
     }

@@ -1,10 +1,6 @@
-import { Link, router, usePage } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { index as daySummaryIndex } from '@/actions/App/Http/Controllers/DaySummaryController';
-import { index as ganttIndex } from '@/actions/App/Http/Controllers/GanttController';
-import MunicipalityCombobox, {
-    type MunicipalityOption,
-} from '@/components/municipality-combobox';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { viewerToday } from '@/lib/datetime';
@@ -12,8 +8,6 @@ import { viewerToday } from '@/lib/datetime';
 interface GanttHeaderProps {
     /** Currently centered date in the timeline (controlled by the page). */
     date: string;
-    municipalityId: number | null;
-    municipalities: MunicipalityOption[];
     canCreateServices: boolean;
     /**
      * Page-level callback that scrolls the timeline so `date` lands at
@@ -43,32 +37,11 @@ function isToday(dateStr: string, operationTz: string): boolean {
     return dateStr === viewerToday(operationTz);
 }
 
-export default function GanttHeader({
-    date,
-    municipalityId,
-    municipalities,
-    onJumpToDate,
-}: GanttHeaderProps) {
+export default function GanttHeader({ date, onJumpToDate }: GanttHeaderProps) {
     const sharedConfig = usePage().props.config as
         | { operation_tz?: string }
         | undefined;
     const operationTz = sharedConfig?.operation_tz ?? 'America/Bogota';
-
-    // Municipality change is a structural filter (different vehicle
-    // list) so it still does a full Inertia navigate to re-render the
-    // SSR payload. Date changes are purely visual — the page handles
-    // them via `onJumpToDate` and the new day is fetched via the JSON
-    // branch of the same endpoint.
-    function navigateMunicipality(newMunicipalityId: number | null) {
-        const params: Record<string, string | number> = { date };
-        if (newMunicipalityId) {
-            params.municipality_id = newMunicipalityId;
-        }
-        router.get(ganttIndex().url, params, {
-            preserveState: true,
-            preserveScroll: true,
-        });
-    }
 
     return (
         <div>
@@ -120,28 +93,12 @@ export default function GanttHeader({
                     {formatDateEs(date)}
                 </span>
 
-                {/* Right-side cluster. flex-wrap so the Resumen +
-                    municipalities combo can break to its own row on
-                    narrow viewports instead of overflowing the
-                    toolbar. */}
-                <div className="flex flex-1 flex-wrap items-center justify-end gap-2 sm:gap-3">
+                <div className="flex flex-1 items-center justify-end">
                     <Button variant="outline" size="sm" className="h-8" asChild>
                         <Link href={daySummaryIndex({ query: { date } }).url}>
                             Resumen
                         </Link>
                     </Button>
-                    <MunicipalityCombobox
-                        municipalities={municipalities}
-                        value={municipalityId}
-                        onChange={(val) =>
-                            navigateMunicipality(val ? Number(val) : null)
-                        }
-                        placeholder="Todos los municipios"
-                        // Mobile: take whatever horizontal space is
-                        // left in the row (min-w-0 lets it shrink).
-                        // Tablet+: pin to 240px so it doesn't sprawl.
-                        className="max-w-full min-w-0 flex-1 sm:w-60 sm:flex-none"
-                    />
                 </div>
             </div>
         </div>
