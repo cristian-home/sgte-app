@@ -1,7 +1,7 @@
 import { Form, Head } from '@inertiajs/react';
 import { REGEXP_ONLY_DIGITS } from 'input-otp';
 import { useMemo, useState } from 'react';
-import InputError from '@/components/input-error';
+import FieldFooter from '@/components/field-footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -73,9 +73,7 @@ export default function TwoFactorChallenge() {
                                         spellCheck={false}
                                         className="font-mono tracking-wider"
                                     />
-                                    <InputError
-                                        message={errors.recovery_code}
-                                    />
+                                    <FieldFooter error={errors.recovery_code} />
                                 </>
                             ) : (
                                 <div className="flex flex-col items-center justify-center space-y-3 text-center">
@@ -101,7 +99,7 @@ export default function TwoFactorChallenge() {
                                             </InputOTPGroup>
                                         </InputOTP>
                                     </div>
-                                    <InputError message={errors.code} />
+                                    <FieldFooter error={errors.code} />
                                 </div>
                             )}
 
