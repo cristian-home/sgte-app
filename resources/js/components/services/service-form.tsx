@@ -130,7 +130,7 @@ export interface ServiceFormData {
     actual_end_time: string;
     unit_value: string;
     quantity: string;
-    billing_groups: string[];
+    billing_groups: number[];
     payment_method: string;
     service_status: string;
     justification: string;
@@ -360,6 +360,7 @@ interface ServiceFormProps {
     drivers: DriverOption[];
     contracts: ContractOption[];
     municipalities: MunicipalityOption[];
+    billingGroups: import('@/components/services/billing-groups-tags').BillingGroupOption[];
     incidentCount?: number;
     mode: 'create' | 'edit';
     dayStatus?: DayStatus | null;
@@ -390,6 +391,7 @@ export default function ServiceForm({
     drivers,
     contracts,
     municipalities,
+    billingGroups,
     incidentCount,
     mode,
     dayStatus,
@@ -1438,6 +1440,7 @@ export default function ServiceForm({
                                 onChange={(next) =>
                                     setData('billing_groups', next)
                                 }
+                                options={billingGroups}
                                 invalid={invalid('billing_groups')}
                                 disabled={isFieldDisabled('billing_groups')}
                             />

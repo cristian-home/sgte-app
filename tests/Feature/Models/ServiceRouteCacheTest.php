@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\BillingGroup;
 use App\Jobs\FetchServiceRoute;
 use App\Models\Service;
 use Illuminate\Support\Facades\Bus;
@@ -72,7 +71,11 @@ test('updating an unrelated field does not dispatch the job', function (): void 
 
     Bus::assertDispatchedTimes(FetchServiceRoute::class, 1);
 
-    $service->update(['billing_groups' => [BillingGroup::Turismo->value]]);
+    // Changing a billing-group association should not re-fetch the
+    // route; the cache key is based on coordinates only.
+    $service->billingGroups()->sync(
+        [\App\Models\BillingGroup::firstWhere('code', 'turismo')->id],
+    );
 
     Bus::assertDispatchedTimes(FetchServiceRoute::class, 1);
 });

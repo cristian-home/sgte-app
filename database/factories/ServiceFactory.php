@@ -2,7 +2,6 @@
 
 namespace Database\Factories;
 
-use App\Enums\BillingGroup;
 use App\Enums\PaymentMethod;
 use App\Enums\ServiceStatus;
 use App\Models\Contract;
@@ -86,11 +85,6 @@ class ServiceFactory extends Factory
             'timezone' => $timezone,
             'unit_value' => fake()->randomFloat(2, 50000, 500000),
             'quantity' => fake()->numberBetween(1, 5),
-            'billing_groups' => fake()->boolean(60)
-                ? collect(fake()->randomElements(BillingGroup::cases(), fake()->numberBetween(1, 2)))
-                    ->map(fn (BillingGroup $g) => $g->value)
-                    ->all()
-                : null,
             'payment_method' => fake()->randomElement(PaymentMethod::cases()),
             // A freshly-created service is open (matches the DB column
             // default); tests needing a closed service set it explicitly.

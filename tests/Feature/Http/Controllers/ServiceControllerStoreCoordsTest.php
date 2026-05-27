@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Http\Controllers;
 
-use App\Enums\BillingGroup;
 use App\Models\Contract;
 use App\Models\Driver;
 use App\Models\Municipality;
@@ -62,7 +61,7 @@ function buildStoreCoordsPayload(array $overrides = []): array
         'planned_duration' => 120,
         'unit_value' => 250000,
         'quantity' => 1,
-        'billing_groups' => [BillingGroup::Salud->value],
+        'billing_groups' => [\App\Models\BillingGroup::firstWhere('code', 'salud')->id],
         'payment_method' => 'credit',
         'service_status' => 'open',
     ], $overrides);

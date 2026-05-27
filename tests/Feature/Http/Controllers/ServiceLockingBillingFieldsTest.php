@@ -1,8 +1,8 @@
 <?php
 
-use App\Enums\BillingGroup;
 use App\Enums\DayStatusEnum;
 use App\Enums\ServiceStatus;
+use App\Models\BillingGroup;
 use App\Models\Contract;
 use App\Models\DayStatus;
 use App\Models\Driver;
@@ -24,6 +24,9 @@ beforeEach(function (): void {
     $this->vehicle = Vehicle::factory()->create(['is_third_party' => false]);
     $this->driver = Driver::factory()->create(['license_due_date' => Carbon::now()->addYear()]);
 
+    $this->bgSaludId = BillingGroup::firstWhere('code', 'salud')->id;
+    $this->bgEmpresarialId = BillingGroup::firstWhere('code', 'empresarial')->id;
+
     $this->service = Service::factory()->create([
         'contract_id' => $this->contract->id,
         'vehicle_id' => $this->vehicle->id,
@@ -34,9 +37,9 @@ beforeEach(function (): void {
         'service_status' => ServiceStatus::Closed,
         'unit_value' => 100000,
         'quantity' => 1,
-        'billing_groups' => [BillingGroup::Salud->value],
         'payment_method' => 'credit',
     ]);
+    $this->service->billingGroups()->sync([$this->bgSaludId]);
 
     // Mark day as executed
     DayStatus::whereDate('date', $this->serviceDate)->update([
@@ -52,7 +55,7 @@ beforeEach(function (): void {
 
 test('accounting user can update billing_groups on executed day', function (): void {
     $response = put(route('services.update', $this->service), [
-        'billing_groups' => [BillingGroup::Empresarial->value],
+        'billing_groups' => [$this->bgEmpresarialId],
         'unit_value' => $this->service->unit_value,
         'quantity' => $this->service->quantity,
         'payment_method' => $this->service->payment_method->value,
@@ -61,12 +64,12 @@ test('accounting user can update billing_groups on executed day', function (): v
     $response->assertRedirect(route('services.index'));
 
     $this->service->refresh();
-    expect($this->service->billing_groups?->map->value->all())->toBe([BillingGroup::Empresarial->value]);
+    expect($this->service->billingGroups->pluck('id')->all())->toBe([$this->bgEmpresarialId]);
 });
 
 test('accounting user can update unit_value on executed day', function (): void {
     $response = put(route('services.update', $this->service), [
-        'billing_groups' => $this->service->billing_groups?->map->value->all(),
+        'billing_groups' => $this->service->billingGroups->pluck('id')->all(),
         'unit_value' => 250000,
         'quantity' => $this->service->quantity,
         'payment_method' => $this->service->payment_method->value,
@@ -80,7 +83,7 @@ test('accounting user can update unit_value on executed day', function (): void 
 
 test('accounting user can update quantity on executed day', function (): void {
     $response = put(route('services.update', $this->service), [
-        'billing_groups' => $this->service->billing_groups?->map->value->all(),
+        'billing_groups' => $this->service->billingGroups->pluck('id')->all(),
         'unit_value' => $this->service->unit_value,
         'quantity' => 5,
         'payment_method' => $this->service->payment_method->value,
@@ -94,7 +97,7 @@ test('accounting user can update quantity on executed day', function (): void {
 
 test('accounting user can update payment_method on executed day', function (): void {
     $response = put(route('services.update', $this->service), [
-        'billing_groups' => $this->service->billing_groups?->map->value->all(),
+        'billing_groups' => $this->service->billingGroups->pluck('id')->all(),
         'unit_value' => $this->service->unit_value,
         'quantity' => $this->service->quantity,
         'payment_method' => 'transfer',
@@ -110,7 +113,7 @@ test('accounting user cannot update vehicle_id on executed day', function (): vo
     $newVehicle = Vehicle::factory()->create();
 
     $response = put(route('services.update', $this->service), [
-        'billing_groups' => $this->service->billing_groups?->map->value->all(),
+        'billing_groups' => $this->service->billingGroups->pluck('id')->all(),
         'unit_value' => $this->service->unit_value,
         'quantity' => $this->service->quantity,
         'payment_method' => $this->service->payment_method->value,
@@ -127,7 +130,7 @@ test('accounting user cannot update driver_id on executed day', function (): voi
     $newDriver = Driver::factory()->create();
 
     $response = put(route('services.update', $this->service), [
-        'billing_groups' => $this->service->billing_groups?->map->value->all(),
+        'billing_groups' => $this->service->billingGroups->pluck('id')->all(),
         'unit_value' => $this->service->unit_value,
         'quantity' => $this->service->quantity,
         'payment_method' => $this->service->payment_method->value,
@@ -144,7 +147,7 @@ test('accounting user cannot update service_date on executed day', function (): 
     $newDate = Carbon::tomorrow()->toDateString();
 
     $response = put(route('services.update', $this->service), [
-        'billing_groups' => $this->service->billing_groups?->map->value->all(),
+        'billing_groups' => $this->service->billingGroups->pluck('id')->all(),
         'unit_value' => $this->service->unit_value,
         'quantity' => $this->service->quantity,
         'payment_method' => $this->service->payment_method->value,
