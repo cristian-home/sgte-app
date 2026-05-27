@@ -317,11 +317,16 @@ class InvoiceController extends Controller
             : null;
         $justification = trim((string) $request->input('override_justification'));
 
-        // El cliente no se puede cambiar mientras la factura tenga
+        // El cliente no se puede CAMBIAR mientras la factura tenga
         // servicios asociados — los servicios pertenecen al tercero, y
         // moverla de cliente dejaría las relaciones inconsistentes.
+        // Excepción: si current es null (factura legacy sin cliente),
+        // ASIGNAR uno por primera vez está permitido — no rompe
+        // relaciones porque cualquier service_id ya está validado por
+        // validateAttachableServices contra el nuevo customer.
         if (
             isset($data['third_party_id']) &&
+            $invoice->third_party_id !== null &&
             (int) $data['third_party_id'] !== (int) $invoice->third_party_id &&
             $invoice->services()->exists()
         ) {
@@ -453,6 +458,16 @@ class InvoiceController extends Controller
      */
     private function validateAttachableServices(Invoice $invoice, array $serviceIds, string $justification): void
     {
+        // Sin cliente no hay regla 'mismo cliente' que validar — y
+        // attachear servicios a una factura sin tercero deja
+        // inconsistente el reporte. Falla con mensaje explícito en vez
+        // del genérico 'no pertenecen al cliente'.
+        if ($invoice->third_party_id === null) {
+            throw ValidationException::withMessages([
+                'service_ids' => 'La factura no tiene cliente asignado. Asigna uno antes de asociar servicios.',
+            ]);
+        }
+
         $services = Service::query()
             ->with([
                 'contract:id,third_party_id',

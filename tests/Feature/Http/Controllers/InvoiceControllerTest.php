@@ -1690,6 +1690,38 @@ test('show works for an invoice without third_party_id', function (): void {
     );
 });
 
+test('attachServices fails fast when invoice has no customer', function (): void {
+    $invoice = Invoice::factory()->create(['third_party_id' => null]);
+    $service = Service::factory()->create([
+        'service_status' => ServiceStatus::Closed,
+        'invoice_id' => null,
+    ]);
+
+    $response = post(route('invoices.services.attach', $invoice), [
+        'service_ids' => [$service->id],
+    ]);
+
+    $response->assertSessionHasErrors('service_ids');
+    expect($service->fresh()->invoice_id)->toBeNull();
+});
+
+test('update can assign third_party_id when current is null', function (): void {
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    $invoice = Invoice::factory()->create(['third_party_id' => null]);
+
+    $response = put(route('invoices.update', $invoice), [
+        'third_party_id' => $customer->id,
+        'invoice_number' => $invoice->invoice_number,
+        'total_value' => $invoice->total_value,
+        'issue_date' => $invoice->issue_date,
+        'payment_status' => $invoice->payment_status->value,
+    ]);
+
+    $response->assertRedirect();
+    $response->assertSessionHasNoErrors();
+    expect($invoice->fresh()->third_party_id)->toBe($customer->id);
+});
+
 test('eligibleServices endpoint includes billing_groups on each row', function (): void {
     $customer = ThirdParty::factory()->create(['is_customer' => true]);
     $contract = Contract::factory()->create(['third_party_id' => $customer->id]);
