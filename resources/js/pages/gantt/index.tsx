@@ -2,6 +2,7 @@ import { Head, usePage } from '@inertiajs/react';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { index as ganttIndex } from '@/actions/App/Http/Controllers/GanttController';
 import AppLayout from '@/layouts/app-layout';
+import { viewerToday } from '@/lib/datetime';
 import GanttHeader from './components/gantt-header';
 import GanttLegend from './components/gantt-legend';
 import HourlyGrid, {
@@ -9,7 +10,6 @@ import HourlyGrid, {
     defaultNumDays,
 } from './components/hourly-grid';
 import { useGanttDays } from './hooks/use-gantt-days';
-import { viewerToday } from '@/lib/datetime';
 import { addDays, dayOffset, type Ymd } from './utils/coordinates';
 
 import type { BreadcrumbItem } from '@/types';
