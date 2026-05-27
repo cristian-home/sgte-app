@@ -1353,7 +1353,7 @@ test('store without service_ids still requires total_value', function (): void {
     $response->assertSessionHasErrors('total_value');
 });
 
-test('index with eligible_for returns partitioned candidates for that customer', function (): void {
+test('eligibleServices endpoint returns partitioned candidates for that customer', function (): void {
     $customer = ThirdParty::factory()->create(['is_customer' => true]);
     $contract = Contract::factory()->create(['third_party_id' => $customer->id]);
     $cleanService = Service::factory()->create([
@@ -1375,11 +1375,18 @@ test('index with eligible_for returns partitioned candidates for that customer',
         'affects_billing' => true,
     ]);
 
-    $response = get(route('invoices.index', ['eligible_for' => $customer->id]));
+    $response = $this->getJson(route('invoices.eligible-services', ['customer_id' => $customer->id]));
 
     $response->assertOk();
-    $response->assertInertia(function ($page) use ($cleanService, $blockedService) {
-        $page->has('eligibleServices.cleanCandidates', 1, fn ($row) => $row->where('id', $cleanService->id)->etc());
-        $page->has('eligibleServices.blockedCandidates', 1, fn ($row) => $row->where('id', $blockedService->id)->etc());
-    });
+    $response->assertJsonPath('cleanCandidates.0.id', $cleanService->id);
+    $response->assertJsonPath('blockedCandidates.0.id', $blockedService->id);
+    $response->assertJsonCount(1, 'cleanCandidates');
+    $response->assertJsonCount(1, 'blockedCandidates');
+});
+
+test('eligibleServices endpoint requires customer_id', function (): void {
+    $response = $this->getJson(route('invoices.eligible-services'));
+
+    $response->assertStatus(422);
+    $response->assertJsonValidationErrors(['customer_id']);
 });
