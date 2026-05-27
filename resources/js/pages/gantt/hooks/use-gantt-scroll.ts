@@ -19,40 +19,26 @@ interface UseGanttScrollOptions {
     onCenterDateChange: (date: Ymd) => void;
     /** Milliseconds to wait without scroll motion before firing. */
     debounceMs?: number;
-    /**
-     * When true, the debounced callback is suppressed. Used during
-     * page-level edge expansion: the setEpoch + scrollLeft
-     * re-anchoring fires a scroll event that would otherwise compute
-     * a bogus centered date. The page flips this to true before
-     * triggering the swap and back to false once the new content is
-     * ready.
-     */
-    pauseScrollSync?: boolean;
 }
 
 /**
  * Watches `scroller.scrollLeft` and reports the "centered day" — the
  * calendar day whose midpoint lies closest to the visual center of the
  * scroll viewport — debounced so we don't fire on every animation frame.
- * The page wires this to `history.replaceState` + `ensureDay`.
+ *
+ * Stays consistent during a seamless edge slide because the
+ * compensation (setEpoch + scrollLeft adjustment) is atomic before
+ * paint: when this listener fires, both values are already reconciled
+ * and the computed date matches the one the user was looking at.
  */
 export function useGanttScroll({
     scrollerRef,
     epoch,
     onCenterDateChange,
     debounceMs = 400,
-    pauseScrollSync = false,
 }: UseGanttScrollOptions): void {
     const lastReportedRef = useRef<Ymd | null>(null);
     const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    // Mirror the pause flag into a ref so the listener callback (which
-    // captures the value of `pauseScrollSync` at closure time) always
-    // reads the latest. Without this we'd have to recreate the listener
-    // each pause toggle and would miss in-flight scroll events.
-    const pausedRef = useRef(pauseScrollSync);
-    useEffect(() => {
-        pausedRef.current = pauseScrollSync;
-    }, [pauseScrollSync]);
 
     useEffect(() => {
         const scroller = scrollerRef.current;
@@ -60,7 +46,6 @@ export function useGanttScroll({
 
         function compute() {
             if (!scroller) return;
-            if (pausedRef.current) return;
             const center = scroller.scrollLeft + scroller.clientWidth / 2;
             const dayIndex = Math.round(center / PX_PER_DAY - 0.5);
             const date = addDays(epoch, dayIndex);
