@@ -261,13 +261,13 @@ export default function FuecShow({
                         </div>
                         <div>
                             <div className="text-muted-foreground">Origen</div>
-                            <div>
+                            <div className="capitalize">
                                 {service?.origin_municipality?.name ?? '—'}
                             </div>
                         </div>
                         <div>
                             <div className="text-muted-foreground">Destino</div>
-                            <div>
+                            <div className="capitalize">
                                 {service?.destination_municipality?.name ?? '—'}
                             </div>
                         </div>

@@ -126,6 +126,7 @@ export default function DriversIndex({
                         ? `${m.name} (${m.department.name})`
                         : m.name,
                 })),
+                capitalizeOptions: true,
             },
         ],
         [municipalities],

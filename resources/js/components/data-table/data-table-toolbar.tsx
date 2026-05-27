@@ -86,6 +86,7 @@ export function DataTableToolbar<TData>({
                             onSelectionChange={(values) =>
                                 onFilterChange?.(filter.name, values)
                             }
+                            capitalizeOptions={filter.capitalizeOptions}
                         />
                     ))}
                     {extraFilters}

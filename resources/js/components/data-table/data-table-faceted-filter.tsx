@@ -26,6 +26,7 @@ interface DataTableFacetedFilterProps {
     options: FilterOption[];
     selected: string[];
     onSelectionChange: (values: string[]) => void;
+    capitalizeOptions?: boolean;
 }
 
 export function DataTableFacetedFilter({
@@ -33,6 +34,7 @@ export function DataTableFacetedFilter({
     options,
     selected,
     onSelectionChange,
+    capitalizeOptions,
 }: DataTableFacetedFilterProps) {
     'use no memo';
     const selectedSet = new Set(selected);
@@ -103,7 +105,14 @@ export function DataTableFacetedFilter({
                                         {option.icon && (
                                             <option.icon className="mr-2 size-4 text-muted-foreground" />
                                         )}
-                                        <span>{option.label}</span>
+                                        <span
+                                            className={cn(
+                                                capitalizeOptions &&
+                                                    'capitalize',
+                                            )}
+                                        >
+                                            {option.label}
+                                        </span>
                                     </CommandItem>
                                 );
                             })}

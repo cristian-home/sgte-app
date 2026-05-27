@@ -108,6 +108,7 @@ export default function ThirdPartiesIndex({
                         ? `${m.name} (${m.department.name})`
                         : m.name,
                 })),
+                capitalizeOptions: true,
             },
         ],
         [municipalities],

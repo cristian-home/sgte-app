@@ -11,4 +11,6 @@ export type FilterDefinition = {
     label: string;
     /** Available options to choose from. */
     options: FilterOption[];
+    /** Capitalize each option's label (data stored lowercase, e.g. cities). */
+    capitalizeOptions?: boolean;
 };

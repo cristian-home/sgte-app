@@ -286,15 +286,17 @@ export default function ThirdPartiesShow({
                     <CardContent>
                         <div className="grid gap-4 md:grid-cols-2">
                             <Field label="Municipio">
-                                {thirdParty.municipality
-                                    ? `${thirdParty.municipality.name}${
-                                          thirdParty.municipality.department
-                                              ? ', ' +
-                                                thirdParty.municipality
-                                                    .department.name
-                                              : ''
-                                      }`
-                                    : '—'}
+                                <span className="capitalize">
+                                    {thirdParty.municipality
+                                        ? `${thirdParty.municipality.name}${
+                                              thirdParty.municipality.department
+                                                  ? ', ' +
+                                                    thirdParty.municipality
+                                                        .department.name
+                                                  : ''
+                                          }`
+                                        : '—'}
+                                </span>
                             </Field>
                             <Field label="Dirección">
                                 {thirdParty.address ?? '—'}

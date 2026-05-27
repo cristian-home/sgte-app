@@ -293,7 +293,9 @@ export default function VehiclesShow({
                                 {vehicle.chassis_number ?? '—'}
                             </Field>
                             <Field label="Municipio">
-                                {municipalityDisplay(vehicle)}
+                                <span className="capitalize">
+                                    {municipalityDisplay(vehicle)}
+                                </span>
                             </Field>
                         </div>
                     </CardContent>
