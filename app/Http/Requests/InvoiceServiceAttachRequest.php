@@ -57,6 +57,15 @@ class InvoiceServiceAttachRequest extends FormRequest
                     return;
                 }
 
+                if ($invoice->third_party_id === null) {
+                    $validator->errors()->add(
+                        'service_ids',
+                        'La factura no tiene cliente asignado. Asigna uno antes de asociar servicios.',
+                    );
+
+                    return;
+                }
+
                 /** @var array<int> $ids */
                 $ids = $this->validated('service_ids');
 

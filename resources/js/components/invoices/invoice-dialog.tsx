@@ -71,7 +71,13 @@ function toDateInput(value: string | null): string {
 
 function dataFromInvoice(invoice: EditableInvoice): InvoiceFormData {
     return {
-        third_party_id: String(invoice.third_party_id),
+        // third_party_id puede ser null en facturas legacy/seed; mantenerlo
+        // como '' para que el combobox arranque vacío y la validación
+        // 'required' del backend lo capture si el usuario guarda sin elegir.
+        third_party_id:
+            invoice.third_party_id == null
+                ? ''
+                : String(invoice.third_party_id),
         invoice_number: invoice.invoice_number,
         total_value: String(invoice.total_value),
         issue_date: toDateInput(invoice.issue_date),
@@ -125,7 +131,14 @@ export default function InvoiceDialog({
             // para que el picker se hidrate desde el inicio. Los IDs
             // attached entran al data.service_ids como set inicial.
             fetchAttached(invoice.id);
-            fetchEligible(String(invoice.third_party_id));
+            // Si la factura legacy no tiene cliente asignado, no
+            // intentar el fetch (el endpoint requiere customer_id);
+            // queda vacío hasta que el operador elija uno.
+            if (invoice.third_party_id != null) {
+                fetchEligible(String(invoice.third_party_id));
+            } else {
+                setEligibleServices(null);
+            }
         } else {
             setData({ ...emptyData });
             setEligibleServices(null);
