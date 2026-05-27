@@ -21,7 +21,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 // Days to add at each edge expansion. Half the window — keeps the
 // before/after symmetry intuitive (right shift moves us ~half-window
 // into the future content, left shift symmetric).
-const EDGE_SHIFT_DAYS = 30;
+const EDGE_SHIFT_DAYS = 7;
 // How long the lock waits before releasing. With normal network the
 // visible days resolve in <300ms; this is mostly a safety in case a
 // request stalls. After the lock releases, bars keep appearing async

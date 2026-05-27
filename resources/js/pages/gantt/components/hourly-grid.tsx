@@ -655,22 +655,26 @@ export default function HourlyGrid({
 /**
  * Convenience re-export for the page-level epoch computation.
  *
- * The half-window of 30 yields a 61-day canvas (1 month each
- * direction). Tradeoff vs. the original 182 (365 days):
+ * The half-window of 7 yields a 15-day canvas (1 week each direction).
+ * Earlier iterations tried 30 (61 days, ~56k px) and 91 (183 days,
+ * ~167k px) — both worked but blew the React tree size for content
+ * the operator almost never scrolls through. A week each way matches
+ * the operational rhythm (planning the week ahead, reviewing the
+ * week behind); jumping further uses the date picker, which
+ * re-anchors the epoch on the new date.
  *
- * - Canvas width 333k → 56k px. Comfortably within composite limits
- *   for desktop dGPUs, iPhone 8+, and most Android mid-tier (tiles
- *   cleanly; entry-level rarely falls back to CPU paint).
- * - "Continuous scroll" goes from 6 months each way to ~1 month.
- *   Further dates need a date-picker jump — the URL re-anchors the
- *   epoch automatically, so the UX is "scroll for context, jump for
- *   distance".
+ * Canvas math at 38 px/hour:
+ * - width  ≈ 15 × 24 × 38 = 13,680 px (cheap to composite even on
+ *   low-end mobile GPUs that struggle past ~50k px).
+ * - DOM   ≈ 15 visible-or-overscanned day columns × ~10 vehicles
+ *   × ~2 bars/day ≈ 300 ServiceBar instances peak, vs. ~1,200 on
+ *   the previous 61-day window.
  */
-export function defaultEpochFor(today: Ymd, halfWindow = 30): Ymd {
+export function defaultEpochFor(today: Ymd, halfWindow = 7): Ymd {
     return addDays(today, -halfWindow);
 }
 
-export function defaultNumDays(halfWindow = 30): number {
+export function defaultNumDays(halfWindow = 7): number {
     return halfWindow * 2 + 1;
 }
 
