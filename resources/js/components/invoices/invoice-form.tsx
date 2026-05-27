@@ -171,26 +171,32 @@ export default function InvoiceForm({
                 <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                     <Label htmlFor={id('invoice_number')}>
                         Número de Factura
-                        <RequiredMarker />
+                        {!isInvoiceNumberReadOnly && <RequiredMarker />}
                     </Label>
-                    <Input
-                        id={id('invoice_number')}
-                        value={
-                            mode === 'create'
-                                ? (nextInvoiceNumberPreview ?? '')
-                                : data.invoice_number
-                        }
-                        readOnly={isInvoiceNumberReadOnly}
-                        aria-invalid={invalid('invoice_number')}
-                        onChange={(e) =>
-                            setData('invoice_number', e.target.value)
-                        }
-                        className={
-                            isInvoiceNumberReadOnly
-                                ? 'bg-muted/40 font-mono'
-                                : 'font-mono'
-                        }
-                    />
+                    {isInvoiceNumberReadOnly ? (
+                        // Display read-only invoice numbers as a prominent
+                        // value tag, not an input. Removes the affordance
+                        // that suggests the field is editable.
+                        <div
+                            id={id('invoice_number')}
+                            className="flex h-9 items-center rounded-md bg-muted px-3 font-mono text-base font-semibold tracking-wide tabular-nums"
+                            aria-label="Número de factura asignado"
+                        >
+                            {mode === 'create'
+                                ? (nextInvoiceNumberPreview ?? '—')
+                                : data.invoice_number}
+                        </div>
+                    ) : (
+                        <Input
+                            id={id('invoice_number')}
+                            value={data.invoice_number}
+                            aria-invalid={invalid('invoice_number')}
+                            onChange={(e) =>
+                                setData('invoice_number', e.target.value)
+                            }
+                            className="font-mono"
+                        />
+                    )}
                     <FieldFooter error={errors.invoice_number}>
                         {mode === 'create'
                             ? 'Asignado automáticamente al guardar.'
