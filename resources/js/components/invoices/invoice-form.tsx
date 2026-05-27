@@ -1,6 +1,5 @@
 import { Loader2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import InputError from '@/components/input-error';
 import ServicePickerTable, {
     rowBillableTotal,
     type ServicePickerRow,
@@ -82,13 +81,26 @@ function RequiredMarker() {
 }
 
 /**
- * Slot de ayuda que SIEMPRE reserva una línea de alto (≈20px) bajo el
- * input, incluso vacío. Sirve para que las celdas vecinas en una row
- * de grid (`md:grid-cols-2/3`) tengan exactamente la misma altura
- * aunque solo una tenga texto de ayuda. Mantén el copy a una línea —
- * si necesitas más, replantea la información (ej. tooltip en el label).
+ * Slot único bajo cada input que SIEMPRE reserva una línea de alto
+ * (≈20px). Renderiza con prioridad: error > hint > vacío (espaciador
+ * invisible). Sirve para que las celdas vecinas en la misma row de
+ * grid tengan exactamente la misma altura aunque solo una tenga error
+ * o texto de ayuda. Mantén copy/errores a una línea — si la validación
+ * podría producir mensajes largos, mejora el `messages()` del
+ * FormRequest correspondiente.
  */
-function FieldHint({ children }: { children?: React.ReactNode }) {
+function FieldFooter({
+    error,
+    children,
+}: {
+    error?: string;
+    children?: React.ReactNode;
+}) {
+    if (error) {
+        return (
+            <p className="min-h-[1.25rem] text-sm text-destructive">{error}</p>
+        );
+    }
     return (
         <p
             className="min-h-[1.25rem] text-xs text-muted-foreground italic"
@@ -209,14 +221,13 @@ export default function InvoiceForm({
                                 : 'font-mono'
                         }
                     />
-                    <FieldHint>
+                    <FieldFooter error={errors.invoice_number}>
                         {mode === 'create'
                             ? 'Asignado automáticamente al guardar.'
                             : mode === 'edit' && !canEditInvoiceNumber
                               ? 'No editable una vez creada.'
                               : null}
-                    </FieldHint>
-                    <InputError message={errors.invoice_number} />
+                    </FieldFooter>
                 </div>
 
                 <div className="grid gap-2">
@@ -235,12 +246,11 @@ export default function InvoiceForm({
                         placeholder="Selecciona un cliente"
                         disabled={isCustomerLocked}
                     />
-                    <FieldHint>
+                    <FieldFooter error={errors.third_party_id}>
                         {isCustomerLocked
                             ? 'Bloqueado mientras haya servicios.'
                             : null}
-                    </FieldHint>
-                    <InputError message={errors.third_party_id} />
+                    </FieldFooter>
                 </div>
             </div>
 
@@ -304,8 +314,7 @@ export default function InvoiceForm({
                         aria-invalid={invalid('issue_date')}
                         onChange={(e) => setData('issue_date', e.target.value)}
                     />
-                    <FieldHint />
-                    <InputError message={errors.issue_date} />
+                    <FieldFooter error={errors.issue_date} />
                 </div>
 
                 <div className="grid gap-2">
@@ -321,14 +330,13 @@ export default function InvoiceForm({
                         invalid={invalid('total_value')}
                         className="tabular-nums"
                     />
-                    <FieldHint>
+                    <FieldFooter error={errors.total_value}>
                         {isTotalLocked
                             ? `Calculado de ${servicesCount} servicio${servicesCount === 1 ? '' : 's'}.`
                             : showPicker && data.service_ids.length > 0
                               ? 'Sugerido por servicios — editable.'
                               : null}
-                    </FieldHint>
-                    <InputError message={errors.total_value} />
+                    </FieldFooter>
                 </div>
 
                 <div className="grid gap-2">
@@ -356,8 +364,7 @@ export default function InvoiceForm({
                             ))}
                         </SelectContent>
                     </Select>
-                    <FieldHint />
-                    <InputError message={errors.payment_status} />
+                    <FieldFooter error={errors.payment_status} />
                 </div>
             </div>
 
@@ -371,7 +378,7 @@ export default function InvoiceForm({
                     onChange={(e) => setData('notes', e.target.value)}
                     className="flex min-h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive"
                 />
-                <InputError message={errors.notes} />
+                <FieldFooter error={errors.notes} />
             </div>
         </div>
     );
