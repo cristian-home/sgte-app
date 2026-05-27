@@ -596,8 +596,9 @@ export default function ServiceForm({
                     <ShieldAlert className="size-4" />
                     <AlertTitle>Día ejecutado</AlertTitle>
                     <AlertDescription>
-                        Está editando un servicio en un día ejecutado. Se
-                        requiere justificación.
+                        Está editando un servicio en un día ejecutado. La
+                        modificación requiere justificación obligatoria y
+                        quedará registrada en la auditoría.
                     </AlertDescription>
                 </Alert>
             )}
@@ -1563,42 +1564,31 @@ export default function ServiceForm({
             )}
 
             {isAdminEdit && (
-                <>
-                    <Alert variant="destructive">
-                        <AlertTriangle className="size-4" />
-                        <AlertTitle>Día ejecutado</AlertTitle>
-                        <AlertDescription>
-                            Este servicio pertenece a un día ejecutado. La
-                            modificación requiere justificación obligatoria y
-                            quedará registrada en la auditoría.
-                        </AlertDescription>
-                    </Alert>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Justificación del cambio</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div
-                                className="group/field grid gap-2"
-                                data-error={invalid('justification')}
-                            >
-                                <Label htmlFor="justification">
-                                    Justificación del cambio *
-                                </Label>
-                                <textarea
-                                    id="justification"
-                                    className="flex min-h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-                                    value={data.justification}
-                                    placeholder="Explique el motivo de la modificación..."
-                                    onChange={(e) =>
-                                        setData('justification', e.target.value)
-                                    }
-                                />
-                                <InputError message={errors.justification} />
-                            </div>
-                        </CardContent>
-                    </Card>
-                </>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Justificación del cambio</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div
+                            className="group/field grid gap-2"
+                            data-error={invalid('justification')}
+                        >
+                            <Label htmlFor="justification">
+                                Justificación del cambio *
+                            </Label>
+                            <textarea
+                                id="justification"
+                                className="flex min-h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                                value={data.justification}
+                                placeholder="Explique el motivo de la modificación..."
+                                onChange={(e) =>
+                                    setData('justification', e.target.value)
+                                }
+                            />
+                            <InputError message={errors.justification} />
+                        </div>
+                    </CardContent>
+                </Card>
             )}
         </APIProvider>
     );
