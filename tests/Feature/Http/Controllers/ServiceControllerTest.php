@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Http\Controllers;
 
-use App\Enums\BillingGroup;
 use App\Models\Contract;
 use App\Models\Driver;
 use App\Models\Invoice;
@@ -71,8 +70,8 @@ test('index caps per_page at 100', function (): void {
 });
 
 test('index filters by search term', function (): void {
-    Service::factory()->create(['origin_address' => 'Bogota', 'destination_address' => 'Cali', 'billing_groups' => [BillingGroup::Salud->value]]);
-    Service::factory()->create(['origin_address' => 'Medellin', 'destination_address' => 'Pereira', 'billing_groups' => [BillingGroup::Escolar->value]]);
+    Service::factory()->create(['origin_address' => 'Bogota', 'destination_address' => 'Cali']);
+    Service::factory()->create(['origin_address' => 'Medellin', 'destination_address' => 'Pereira']);
 
     $response = get(route('services.index', ['filter[search]' => 'Bogota']));
 
@@ -84,7 +83,7 @@ test('index filters by search term', function (): void {
 });
 
 test('index search is case insensitive', function (): void {
-    Service::factory()->create(['origin_address' => 'Bogota', 'destination_address' => 'Cali', 'billing_groups' => null]);
+    Service::factory()->create(['origin_address' => 'Bogota', 'destination_address' => 'Cali']);
 
     $response = get(route('services.index', ['filter[search]' => 'bogota']));
 
@@ -107,8 +106,8 @@ test('index search matches across multiple columns', function (): void {
 });
 
 test('index combines search with other filters', function (): void {
-    Service::factory()->create(['origin_address' => 'Bogota', 'destination_address' => 'Cali', 'billing_groups' => null, 'service_status' => 'open']);
-    Service::factory()->create(['origin_address' => 'Bogota', 'destination_address' => 'Cali', 'billing_groups' => null, 'service_status' => 'closed']);
+    Service::factory()->create(['origin_address' => 'Bogota', 'destination_address' => 'Cali', 'service_status' => 'open']);
+    Service::factory()->create(['origin_address' => 'Bogota', 'destination_address' => 'Cali', 'service_status' => 'closed']);
 
     $response = get(route('services.index', [
         'filter[search]' => 'Bogota',
@@ -139,8 +138,8 @@ test('index returns json when Accept header is application/json', function (): v
 });
 
 test('index json respects filters and sorting', function (): void {
-    Service::factory()->create(['origin_address' => 'Bogota', 'destination_address' => 'Cali', 'billing_groups' => null, 'service_status' => 'open']);
-    Service::factory()->create(['origin_address' => 'Medellin', 'destination_address' => 'Pereira', 'billing_groups' => null, 'service_status' => 'closed']);
+    Service::factory()->create(['origin_address' => 'Bogota', 'destination_address' => 'Cali', 'service_status' => 'open']);
+    Service::factory()->create(['origin_address' => 'Medellin', 'destination_address' => 'Pereira', 'service_status' => 'closed']);
 
     $response = getJson(route('services.index', [
         'filter[search]' => 'Bogota',
@@ -183,7 +182,7 @@ test('store saves and redirects', function (): void {
     $planned_duration = 120;
     $unit_value = fake()->randomFloat(2, 50000, 500000);
     $quantity = fake()->numberBetween(1, 5);
-    $billing_groups = [BillingGroup::Salud->value];
+    $billing_groups = [\App\Models\BillingGroup::firstWhere('code', 'salud')->id];
     $payment_method = fake()->randomElement(['cash', 'credit', 'transfer']);
 
     $response = post(route('services.store'), [
@@ -335,8 +334,8 @@ test('index can filter services by payment_method', function (): void {
 });
 
 test('index search returns results for partial terms', function (): void {
-    Service::factory()->create(['origin_address' => 'Barranquilla', 'destination_address' => 'Cali', 'billing_groups' => null]);
-    Service::factory()->create(['origin_address' => 'Bucaramanga', 'destination_address' => 'Medellin', 'billing_groups' => null]);
+    Service::factory()->create(['origin_address' => 'Barranquilla', 'destination_address' => 'Cali']);
+    Service::factory()->create(['origin_address' => 'Bucaramanga', 'destination_address' => 'Medellin']);
 
     $response = get(route('services.index', ['filter[search]' => 'Barran']));
 
@@ -350,8 +349,8 @@ test('index search returns results for partial terms', function (): void {
 test('index search matches related model fields via dot notation', function (): void {
     $driverCarlos = Driver::factory()->create(['first_name' => 'Carlos', 'first_lastname' => 'Gomez']);
     $driverMaria = Driver::factory()->create(['first_name' => 'Maria', 'first_lastname' => 'Lopez']);
-    Service::factory()->create(['driver_id' => $driverCarlos->id, 'origin_address' => 'Bogota', 'destination_address' => 'Cali', 'billing_groups' => null]);
-    Service::factory()->create(['driver_id' => $driverMaria->id, 'origin_address' => 'Cali', 'destination_address' => 'Pereira', 'billing_groups' => null]);
+    Service::factory()->create(['driver_id' => $driverCarlos->id, 'origin_address' => 'Bogota', 'destination_address' => 'Cali']);
+    Service::factory()->create(['driver_id' => $driverMaria->id, 'origin_address' => 'Cali', 'destination_address' => 'Pereira']);
 
     $response = get(route('services.index', ['filter[search]' => 'Carlos']));
 
@@ -365,8 +364,8 @@ test('index search matches related model fields via dot notation', function (): 
 test('index search matches composite related fields with full name', function (): void {
     $driverCarlos = Driver::factory()->create(['first_name' => 'Carlos', 'first_lastname' => 'Gomez']);
     $driverCarlosL = Driver::factory()->create(['first_name' => 'Carlos', 'first_lastname' => 'Lopez']);
-    Service::factory()->create(['driver_id' => $driverCarlos->id, 'origin_address' => 'Bogota', 'destination_address' => 'Cali', 'billing_groups' => null]);
-    Service::factory()->create(['driver_id' => $driverCarlosL->id, 'origin_address' => 'Medellin', 'destination_address' => 'Pereira', 'billing_groups' => null]);
+    Service::factory()->create(['driver_id' => $driverCarlos->id, 'origin_address' => 'Bogota', 'destination_address' => 'Cali']);
+    Service::factory()->create(['driver_id' => $driverCarlosL->id, 'origin_address' => 'Medellin', 'destination_address' => 'Pereira']);
 
     $response = get(route('services.index', ['filter[search]' => 'Carlos Gomez']));
 

@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\BillingGroup;
 use App\Enums\DayStatusEnum;
 use App\Enums\ServiceStatus;
 use App\Models\Contract;
@@ -99,7 +98,7 @@ test('accounting can update billing fields on an executed day', function (): voi
         'unit_value' => 200000,
         'quantity' => 3,
         'payment_method' => 'cash',
-        'billing_groups' => [BillingGroup::Salud->value],
+        'billing_groups' => [\App\Models\BillingGroup::firstWhere('code', 'salud')->id],
     ]);
 
     $response->assertRedirect(route('services.index'));

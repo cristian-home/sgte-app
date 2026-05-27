@@ -213,7 +213,8 @@ export type Service = {
     timezone: string;
     unit_value: string;
     quantity: number;
-    billing_groups: string[] | null;
+    /** Hydrated when `$service->load('billingGroups')` runs (snake-cased relation key). */
+    billing_groups?: BillingGroup[] | null;
     payment_method: string;
     service_status: string;
     manual_entry_justification: string | null;
@@ -256,6 +257,15 @@ export type IncidentType = {
     name: string;
     severity: string;
     affects_billing_default: boolean;
+    description: string | null;
+} & Timestamps &
+    SoftDeletes;
+
+export type BillingGroup = {
+    id: number;
+    code: string;
+    name: string;
+    active: boolean;
     description: string | null;
 } & Timestamps &
     SoftDeletes;

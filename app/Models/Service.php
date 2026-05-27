@@ -3,13 +3,12 @@
 namespace App\Models;
 
 use App\Concerns\HasTimezone;
-use App\Enums\BillingGroup;
 use App\Enums\PaymentMethod;
 use App\Enums\ServiceStatus;
-use Illuminate\Database\Eloquent\Casts\AsEnumCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -54,7 +53,6 @@ class Service extends Model
         'timezone',
         'unit_value',
         'quantity',
-        'billing_groups',
         'payment_method',
         'service_status',
         'manual_entry_justification',
@@ -107,7 +105,6 @@ class Service extends Model
             'actual_end_at' => 'immutable_datetime:Y-m-d H:i:sP',
             'timezone' => 'string',
             'unit_value' => 'decimal:2',
-            'billing_groups' => AsEnumCollection::of(BillingGroup::class),
             'payment_method' => PaymentMethod::class,
             'service_status' => ServiceStatus::class,
             'driver_declined_at' => 'immutable_datetime:Y-m-d H:i:sP',
@@ -333,6 +330,12 @@ class Service extends Model
         return $this->hasMany(ServiceIncident::class);
     }
 
+    public function billingGroups(): BelongsToMany
+    {
+        return $this->belongsToMany(BillingGroup::class, 'billing_group_service')
+            ->withTimestamps();
+    }
+
     public function fuec(): HasOne
     {
         return $this->hasOne(Fuec::class);
@@ -360,7 +363,7 @@ class Service extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['id', 'contract_id', 'vehicle_id', 'driver_id', 'invoice_id', 'service_date_local', 'origin_municipality_id', 'origin_address', 'origin_coordinates', 'origin_coordinates_source', 'origin_coordinates_accuracy', 'origin_place_id', 'destination_municipality_id', 'destination_address', 'destination_coordinates', 'destination_coordinates_source', 'destination_coordinates_accuracy', 'destination_place_id', 'planned_start_at', 'planned_duration', 'actual_start_at', 'actual_end_at', 'timezone', 'unit_value', 'quantity', 'billing_groups', 'payment_method', 'service_status', 'manual_entry_justification', 'driver_declined_at', 'driver_decline_reason']);
+            ->logOnly(['id', 'contract_id', 'vehicle_id', 'driver_id', 'invoice_id', 'service_date_local', 'origin_municipality_id', 'origin_address', 'origin_coordinates', 'origin_coordinates_source', 'origin_coordinates_accuracy', 'origin_place_id', 'destination_municipality_id', 'destination_address', 'destination_coordinates', 'destination_coordinates_source', 'destination_coordinates_accuracy', 'destination_place_id', 'planned_start_at', 'planned_duration', 'actual_start_at', 'actual_end_at', 'timezone', 'unit_value', 'quantity', 'payment_method', 'service_status', 'manual_entry_justification', 'driver_declined_at', 'driver_decline_reason']);
     }
 
     /**

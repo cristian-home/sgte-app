@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Enums\BillingGroup;
 use App\Enums\PaymentMethod;
 use App\Enums\ServiceStatus;
 use App\Enums\VehicleStatus;
@@ -65,6 +64,10 @@ class ServiceSeeder extends Seeder
 
         $now = CarbonImmutable::now('UTC');
 
+        // Map billing-group codes to IDs once. BillingGroupSeeder runs
+        // before this so the catalog is populated.
+        $billingGroupIds = \App\Models\BillingGroup::query()->pluck('id', 'code')->all();
+
         $invoiceCursor = 0;
 
         foreach (self::dataset() as $row) {
@@ -105,7 +108,7 @@ class ServiceSeeder extends Seeder
                 $row['off'], $plannedStart, $plannedEnd, $duration, $row['idx'], $now,
             );
 
-            Service::create([
+            $service = Service::create([
                 'contract_id' => $contract->id,
                 'vehicle_id' => $vehicle->id,
                 'driver_id' => $driver->id,
@@ -130,7 +133,6 @@ class ServiceSeeder extends Seeder
                 'timezone' => SeedClock::tz(),
                 'unit_value' => $row['unit'],
                 'quantity' => $row['qty'],
-                'billing_groups' => $row['bg'],
                 'payment_method' => $row['pm']->value,
                 'service_status' => $status,
                 // Route fields inlined from the cache — no async job,
@@ -144,6 +146,13 @@ class ServiceSeeder extends Seeder
                 'route_fetched_at' => $cachedRoute !== null ? $now : null,
                 'route_source' => $cachedRoute !== null ? 'google' : null,
             ]);
+
+            $service->billingGroups()->sync(
+                array_filter(array_map(
+                    fn (string $code) => $billingGroupIds[$code] ?? null,
+                    $row['bg'],
+                )),
+            );
         }
     }
 
@@ -197,87 +206,87 @@ class ServiceSeeder extends Seeder
     {
         return [
             // —— Pasados (Closed, derivados) ——
-            ['off' => -7, 'idx' => 0, 'cidx' => 0, 'vidx' => 0, 'didx' => 0, 'origin' => 'BOGOTA_NORTE_170', 'dest' => 'BOGOTA_CENTRO_7', 'start' => '06:00', 'unit' => 150000.00, 'qty' => 1, 'bg' => [BillingGroup::Salud->value], 'pm' => PaymentMethod::Credit],
-            ['off' => -7, 'idx' => 1, 'cidx' => 1, 'vidx' => 1, 'didx' => 1, 'origin' => 'BOGOTA_C100', 'dest' => 'BOGOTA_ACC26', 'start' => '09:00', 'unit' => 130000.00, 'qty' => 1, 'bg' => [BillingGroup::Escolar->value], 'pm' => PaymentMethod::Credit],
-            ['off' => -7, 'idx' => 2, 'cidx' => 2, 'vidx' => 2, 'didx' => 2, 'origin' => 'BOGOTA_ZONA_T', 'dest' => 'BOGOTA_AEROPUERTO', 'start' => '14:00', 'unit' => 200000.00, 'qty' => 1, 'bg' => [BillingGroup::Turismo->value], 'pm' => PaymentMethod::Cash],
-            ['off' => -7, 'idx' => 3, 'cidx' => 3, 'vidx' => 3, 'didx' => 3, 'origin' => 'BOGOTA_NQS', 'dest' => 'BOGOTA_SUR_41A', 'start' => '17:00', 'unit' => 140000.00, 'qty' => 1, 'bg' => [BillingGroup::Empresarial->value], 'pm' => PaymentMethod::Transfer],
+            ['off' => -7, 'idx' => 0, 'cidx' => 0, 'vidx' => 0, 'didx' => 0, 'origin' => 'BOGOTA_NORTE_170', 'dest' => 'BOGOTA_CENTRO_7', 'start' => '06:00', 'unit' => 150000.00, 'qty' => 1, 'bg' => ['salud'], 'pm' => PaymentMethod::Credit],
+            ['off' => -7, 'idx' => 1, 'cidx' => 1, 'vidx' => 1, 'didx' => 1, 'origin' => 'BOGOTA_C100', 'dest' => 'BOGOTA_ACC26', 'start' => '09:00', 'unit' => 130000.00, 'qty' => 1, 'bg' => ['escolar'], 'pm' => PaymentMethod::Credit],
+            ['off' => -7, 'idx' => 2, 'cidx' => 2, 'vidx' => 2, 'didx' => 2, 'origin' => 'BOGOTA_ZONA_T', 'dest' => 'BOGOTA_AEROPUERTO', 'start' => '14:00', 'unit' => 200000.00, 'qty' => 1, 'bg' => ['turismo'], 'pm' => PaymentMethod::Cash],
+            ['off' => -7, 'idx' => 3, 'cidx' => 3, 'vidx' => 3, 'didx' => 3, 'origin' => 'BOGOTA_NQS', 'dest' => 'BOGOTA_SUR_41A', 'start' => '17:00', 'unit' => 140000.00, 'qty' => 1, 'bg' => ['empresarial'], 'pm' => PaymentMethod::Transfer],
 
-            ['off' => -6, 'idx' => 0, 'cidx' => 0, 'vidx' => 4, 'didx' => 4, 'origin' => 'BOGOTA_C100', 'dest' => 'BOGOTA_C93', 'start' => '06:00', 'unit' => 170000.00, 'qty' => 1, 'bg' => [BillingGroup::Escolar->value], 'pm' => PaymentMethod::Credit],
-            ['off' => -6, 'idx' => 1, 'cidx' => 1, 'vidx' => 5, 'didx' => 0, 'origin' => 'BOGOTA_SUR_41A', 'dest' => 'BOGOTA_CENTRO_7', 'start' => '09:00', 'unit' => 145000.00, 'qty' => 1, 'bg' => [BillingGroup::Salud->value], 'pm' => PaymentMethod::Credit],
-            ['off' => -6, 'idx' => 2, 'cidx' => 2, 'vidx' => 6, 'didx' => 1, 'origin' => 'BOGOTA_AEROPUERTO', 'dest' => 'BOGOTA_ZONA_T', 'start' => '14:00', 'unit' => 200000.00, 'qty' => 1, 'bg' => [BillingGroup::Turismo->value], 'pm' => PaymentMethod::Cash],
-            ['off' => -6, 'idx' => 3, 'cidx' => 3, 'vidx' => 7, 'didx' => 2, 'origin' => 'BOGOTA_NORTE_170', 'dest' => 'BOGOTA_C100', 'start' => '17:00', 'unit' => 135000.00, 'qty' => 1, 'bg' => [BillingGroup::Salud->value], 'pm' => PaymentMethod::Credit],
+            ['off' => -6, 'idx' => 0, 'cidx' => 0, 'vidx' => 4, 'didx' => 4, 'origin' => 'BOGOTA_C100', 'dest' => 'BOGOTA_C93', 'start' => '06:00', 'unit' => 170000.00, 'qty' => 1, 'bg' => ['escolar'], 'pm' => PaymentMethod::Credit],
+            ['off' => -6, 'idx' => 1, 'cidx' => 1, 'vidx' => 5, 'didx' => 0, 'origin' => 'BOGOTA_SUR_41A', 'dest' => 'BOGOTA_CENTRO_7', 'start' => '09:00', 'unit' => 145000.00, 'qty' => 1, 'bg' => ['salud'], 'pm' => PaymentMethod::Credit],
+            ['off' => -6, 'idx' => 2, 'cidx' => 2, 'vidx' => 6, 'didx' => 1, 'origin' => 'BOGOTA_AEROPUERTO', 'dest' => 'BOGOTA_ZONA_T', 'start' => '14:00', 'unit' => 200000.00, 'qty' => 1, 'bg' => ['turismo'], 'pm' => PaymentMethod::Cash],
+            ['off' => -6, 'idx' => 3, 'cidx' => 3, 'vidx' => 7, 'didx' => 2, 'origin' => 'BOGOTA_NORTE_170', 'dest' => 'BOGOTA_C100', 'start' => '17:00', 'unit' => 135000.00, 'qty' => 1, 'bg' => ['salud'], 'pm' => PaymentMethod::Credit],
 
             // day -5: idx 0 carries the TRAFFIC incident
-            ['off' => -5, 'idx' => 0, 'cidx' => 0, 'vidx' => 0, 'didx' => 3, 'origin' => 'BOGOTA_NQS', 'dest' => 'BOGOTA_ACC26', 'start' => '06:00', 'unit' => 130000.00, 'qty' => 1, 'bg' => [BillingGroup::Empresarial->value], 'pm' => PaymentMethod::Transfer],
-            ['off' => -5, 'idx' => 1, 'cidx' => 1, 'vidx' => 1, 'didx' => 4, 'origin' => 'BOGOTA_SUR_41A', 'dest' => 'BOGOTA_CENTRO_8', 'start' => '09:00', 'unit' => 140000.00, 'qty' => 1, 'bg' => [BillingGroup::Salud->value], 'pm' => PaymentMethod::Credit],
-            ['off' => -5, 'idx' => 2, 'cidx' => 2, 'vidx' => 2, 'didx' => 0, 'origin' => 'BOGOTA_CENTRO_7', 'dest' => 'SOACHA', 'start' => '14:00', 'unit' => 220000.00, 'qty' => 1, 'bg' => [BillingGroup::Empresarial->value], 'pm' => PaymentMethod::Transfer],
-            ['off' => -5, 'idx' => 3, 'cidx' => 3, 'vidx' => 3, 'didx' => 1, 'origin' => 'BOGOTA_C100', 'dest' => 'BOGOTA_NORTE_170', 'start' => '17:00', 'unit' => 135000.00, 'qty' => 1, 'bg' => [BillingGroup::Escolar->value], 'pm' => PaymentMethod::Credit],
+            ['off' => -5, 'idx' => 0, 'cidx' => 0, 'vidx' => 0, 'didx' => 3, 'origin' => 'BOGOTA_NQS', 'dest' => 'BOGOTA_ACC26', 'start' => '06:00', 'unit' => 130000.00, 'qty' => 1, 'bg' => ['empresarial'], 'pm' => PaymentMethod::Transfer],
+            ['off' => -5, 'idx' => 1, 'cidx' => 1, 'vidx' => 1, 'didx' => 4, 'origin' => 'BOGOTA_SUR_41A', 'dest' => 'BOGOTA_CENTRO_8', 'start' => '09:00', 'unit' => 140000.00, 'qty' => 1, 'bg' => ['salud'], 'pm' => PaymentMethod::Credit],
+            ['off' => -5, 'idx' => 2, 'cidx' => 2, 'vidx' => 2, 'didx' => 0, 'origin' => 'BOGOTA_CENTRO_7', 'dest' => 'SOACHA', 'start' => '14:00', 'unit' => 220000.00, 'qty' => 1, 'bg' => ['empresarial'], 'pm' => PaymentMethod::Transfer],
+            ['off' => -5, 'idx' => 3, 'cidx' => 3, 'vidx' => 3, 'didx' => 1, 'origin' => 'BOGOTA_C100', 'dest' => 'BOGOTA_NORTE_170', 'start' => '17:00', 'unit' => 135000.00, 'qty' => 1, 'bg' => ['escolar'], 'pm' => PaymentMethod::Credit],
 
-            ['off' => -4, 'idx' => 0, 'cidx' => 0, 'vidx' => 4, 'didx' => 2, 'origin' => 'BOGOTA_CENTRO_8', 'dest' => 'BOGOTA_CENTRO_7', 'start' => '06:00', 'unit' => 120000.00, 'qty' => 1, 'bg' => [BillingGroup::Escolar->value], 'pm' => PaymentMethod::Credit],
-            ['off' => -4, 'idx' => 1, 'cidx' => 1, 'vidx' => 5, 'didx' => 3, 'origin' => 'BOGOTA_AEROPUERTO', 'dest' => 'BOGOTA_ZONA_T', 'start' => '09:00', 'unit' => 210000.00, 'qty' => 1, 'bg' => [BillingGroup::Turismo->value], 'pm' => PaymentMethod::Cash],
-            ['off' => -4, 'idx' => 2, 'cidx' => 2, 'vidx' => 6, 'didx' => 4, 'origin' => 'BOGOTA_C93', 'dest' => 'BOGOTA_SUR_41A', 'start' => '14:00', 'unit' => 150000.00, 'qty' => 1, 'bg' => [BillingGroup::Empresarial->value], 'pm' => PaymentMethod::Cash],
-            ['off' => -4, 'idx' => 3, 'cidx' => 3, 'vidx' => 7, 'didx' => 0, 'origin' => 'BOGOTA_NORTE_170', 'dest' => 'BOGOTA_NQS', 'start' => '17:00', 'unit' => 145000.00, 'qty' => 1, 'bg' => [BillingGroup::Salud->value], 'pm' => PaymentMethod::Credit],
+            ['off' => -4, 'idx' => 0, 'cidx' => 0, 'vidx' => 4, 'didx' => 2, 'origin' => 'BOGOTA_CENTRO_8', 'dest' => 'BOGOTA_CENTRO_7', 'start' => '06:00', 'unit' => 120000.00, 'qty' => 1, 'bg' => ['escolar'], 'pm' => PaymentMethod::Credit],
+            ['off' => -4, 'idx' => 1, 'cidx' => 1, 'vidx' => 5, 'didx' => 3, 'origin' => 'BOGOTA_AEROPUERTO', 'dest' => 'BOGOTA_ZONA_T', 'start' => '09:00', 'unit' => 210000.00, 'qty' => 1, 'bg' => ['turismo'], 'pm' => PaymentMethod::Cash],
+            ['off' => -4, 'idx' => 2, 'cidx' => 2, 'vidx' => 6, 'didx' => 4, 'origin' => 'BOGOTA_C93', 'dest' => 'BOGOTA_SUR_41A', 'start' => '14:00', 'unit' => 150000.00, 'qty' => 1, 'bg' => ['empresarial'], 'pm' => PaymentMethod::Cash],
+            ['off' => -4, 'idx' => 3, 'cidx' => 3, 'vidx' => 7, 'didx' => 0, 'origin' => 'BOGOTA_NORTE_170', 'dest' => 'BOGOTA_NQS', 'start' => '17:00', 'unit' => 145000.00, 'qty' => 1, 'bg' => ['salud'], 'pm' => PaymentMethod::Credit],
 
             // day -3: idx 1 carries the DELAY incident (long Zipaquirá route)
-            ['off' => -3, 'idx' => 0, 'cidx' => 0, 'vidx' => 0, 'didx' => 1, 'origin' => 'BOGOTA_NORTE_170', 'dest' => 'BOGOTA_C100', 'start' => '06:00', 'unit' => 150000.00, 'qty' => 1, 'bg' => [BillingGroup::Salud->value], 'pm' => PaymentMethod::Credit],
-            ['off' => -3, 'idx' => 1, 'cidx' => 2, 'vidx' => 1, 'didx' => 2, 'origin' => 'BOGOTA_CENTRO_7', 'dest' => 'ZIPAQUIRA', 'start' => '09:00', 'unit' => 450000.00, 'qty' => 1, 'bg' => [BillingGroup::Turismo->value], 'pm' => PaymentMethod::Transfer],
-            ['off' => -3, 'idx' => 2, 'cidx' => 1, 'vidx' => 2, 'didx' => 3, 'origin' => 'BOGOTA_C93', 'dest' => 'BOGOTA_NQS', 'start' => '14:00', 'unit' => 130000.00, 'qty' => 1, 'bg' => [BillingGroup::Escolar->value], 'pm' => PaymentMethod::Credit],
-            ['off' => -3, 'idx' => 3, 'cidx' => 3, 'vidx' => 3, 'didx' => 4, 'origin' => 'BOGOTA_ACC26', 'dest' => 'BOGOTA_CENTRO_8', 'start' => '17:00', 'unit' => 110000.00, 'qty' => 1, 'bg' => [BillingGroup::Empresarial->value], 'pm' => PaymentMethod::Cash],
+            ['off' => -3, 'idx' => 0, 'cidx' => 0, 'vidx' => 0, 'didx' => 1, 'origin' => 'BOGOTA_NORTE_170', 'dest' => 'BOGOTA_C100', 'start' => '06:00', 'unit' => 150000.00, 'qty' => 1, 'bg' => ['salud'], 'pm' => PaymentMethod::Credit],
+            ['off' => -3, 'idx' => 1, 'cidx' => 2, 'vidx' => 1, 'didx' => 2, 'origin' => 'BOGOTA_CENTRO_7', 'dest' => 'ZIPAQUIRA', 'start' => '09:00', 'unit' => 450000.00, 'qty' => 1, 'bg' => ['turismo'], 'pm' => PaymentMethod::Transfer],
+            ['off' => -3, 'idx' => 2, 'cidx' => 1, 'vidx' => 2, 'didx' => 3, 'origin' => 'BOGOTA_C93', 'dest' => 'BOGOTA_NQS', 'start' => '14:00', 'unit' => 130000.00, 'qty' => 1, 'bg' => ['escolar'], 'pm' => PaymentMethod::Credit],
+            ['off' => -3, 'idx' => 3, 'cidx' => 3, 'vidx' => 3, 'didx' => 4, 'origin' => 'BOGOTA_ACC26', 'dest' => 'BOGOTA_CENTRO_8', 'start' => '17:00', 'unit' => 110000.00, 'qty' => 1, 'bg' => ['empresarial'], 'pm' => PaymentMethod::Cash],
 
-            ['off' => -2, 'idx' => 0, 'cidx' => 3, 'vidx' => 4, 'didx' => 0, 'origin' => 'BOGOTA_CENTRO_7', 'dest' => 'SOACHA', 'start' => '06:00', 'unit' => 220000.00, 'qty' => 1, 'bg' => [BillingGroup::Empresarial->value], 'pm' => PaymentMethod::Transfer],
-            ['off' => -2, 'idx' => 1, 'cidx' => 1, 'vidx' => 5, 'didx' => 1, 'origin' => 'BOGOTA_ZONA_T', 'dest' => 'BOGOTA_C93', 'start' => '09:00', 'unit' => 110000.00, 'qty' => 1, 'bg' => [BillingGroup::Empresarial->value], 'pm' => PaymentMethod::Cash],
-            ['off' => -2, 'idx' => 2, 'cidx' => 0, 'vidx' => 6, 'didx' => 2, 'origin' => 'BOGOTA_C100', 'dest' => 'BOGOTA_SUR_41A', 'start' => '14:00', 'unit' => 145000.00, 'qty' => 1, 'bg' => [BillingGroup::Salud->value], 'pm' => PaymentMethod::Credit],
-            ['off' => -2, 'idx' => 3, 'cidx' => 2, 'vidx' => 7, 'didx' => 3, 'origin' => 'BOGOTA_NQS', 'dest' => 'BOGOTA_AEROPUERTO', 'start' => '17:00', 'unit' => 230000.00, 'qty' => 1, 'bg' => [BillingGroup::Turismo->value], 'pm' => PaymentMethod::Cash],
+            ['off' => -2, 'idx' => 0, 'cidx' => 3, 'vidx' => 4, 'didx' => 0, 'origin' => 'BOGOTA_CENTRO_7', 'dest' => 'SOACHA', 'start' => '06:00', 'unit' => 220000.00, 'qty' => 1, 'bg' => ['empresarial'], 'pm' => PaymentMethod::Transfer],
+            ['off' => -2, 'idx' => 1, 'cidx' => 1, 'vidx' => 5, 'didx' => 1, 'origin' => 'BOGOTA_ZONA_T', 'dest' => 'BOGOTA_C93', 'start' => '09:00', 'unit' => 110000.00, 'qty' => 1, 'bg' => ['empresarial'], 'pm' => PaymentMethod::Cash],
+            ['off' => -2, 'idx' => 2, 'cidx' => 0, 'vidx' => 6, 'didx' => 2, 'origin' => 'BOGOTA_C100', 'dest' => 'BOGOTA_SUR_41A', 'start' => '14:00', 'unit' => 145000.00, 'qty' => 1, 'bg' => ['salud'], 'pm' => PaymentMethod::Credit],
+            ['off' => -2, 'idx' => 3, 'cidx' => 2, 'vidx' => 7, 'didx' => 3, 'origin' => 'BOGOTA_NQS', 'dest' => 'BOGOTA_AEROPUERTO', 'start' => '17:00', 'unit' => 230000.00, 'qty' => 1, 'bg' => ['turismo'], 'pm' => PaymentMethod::Cash],
 
             // day -1: idx 0 carries the WEATHER incident
-            ['off' => -1, 'idx' => 0, 'cidx' => 0, 'vidx' => 0, 'didx' => 4, 'origin' => 'BOGOTA_C100', 'dest' => 'BOGOTA_NQS', 'start' => '06:00', 'unit' => 130000.00, 'qty' => 1, 'bg' => [BillingGroup::Salud->value], 'pm' => PaymentMethod::Credit],
-            ['off' => -1, 'idx' => 1, 'cidx' => 2, 'vidx' => 1, 'didx' => 0, 'origin' => 'BOGOTA_AEROPUERTO', 'dest' => 'BOGOTA_NORTE_170', 'start' => '09:00', 'unit' => 240000.00, 'qty' => 1, 'bg' => [BillingGroup::Turismo->value], 'pm' => PaymentMethod::Cash],
-            ['off' => -1, 'idx' => 2, 'cidx' => 1, 'vidx' => 2, 'didx' => 1, 'origin' => 'BOGOTA_NQS', 'dest' => 'BOGOTA_NORTE_170', 'start' => '14:00', 'unit' => 140000.00, 'qty' => 1, 'bg' => [BillingGroup::Escolar->value], 'pm' => PaymentMethod::Credit],
-            ['off' => -1, 'idx' => 3, 'cidx' => 3, 'vidx' => 3, 'didx' => 2, 'origin' => 'BOGOTA_CENTRO_8', 'dest' => 'BOGOTA_C93', 'start' => '17:00', 'unit' => 125000.00, 'qty' => 1, 'bg' => [BillingGroup::Empresarial->value], 'pm' => PaymentMethod::Cash],
+            ['off' => -1, 'idx' => 0, 'cidx' => 0, 'vidx' => 0, 'didx' => 4, 'origin' => 'BOGOTA_C100', 'dest' => 'BOGOTA_NQS', 'start' => '06:00', 'unit' => 130000.00, 'qty' => 1, 'bg' => ['salud'], 'pm' => PaymentMethod::Credit],
+            ['off' => -1, 'idx' => 1, 'cidx' => 2, 'vidx' => 1, 'didx' => 0, 'origin' => 'BOGOTA_AEROPUERTO', 'dest' => 'BOGOTA_NORTE_170', 'start' => '09:00', 'unit' => 240000.00, 'qty' => 1, 'bg' => ['turismo'], 'pm' => PaymentMethod::Cash],
+            ['off' => -1, 'idx' => 2, 'cidx' => 1, 'vidx' => 2, 'didx' => 1, 'origin' => 'BOGOTA_NQS', 'dest' => 'BOGOTA_NORTE_170', 'start' => '14:00', 'unit' => 140000.00, 'qty' => 1, 'bg' => ['escolar'], 'pm' => PaymentMethod::Credit],
+            ['off' => -1, 'idx' => 3, 'cidx' => 3, 'vidx' => 3, 'didx' => 2, 'origin' => 'BOGOTA_CENTRO_8', 'dest' => 'BOGOTA_C93', 'start' => '17:00', 'unit' => 125000.00, 'qty' => 1, 'bg' => ['empresarial'], 'pm' => PaymentMethod::Cash],
 
             // —— Hoy: 04:00 / 08:00 / 11:00 / 14:00 / 18:00 / 22:00 ——
-            ['off' => 0, 'idx' => 0, 'cidx' => 0, 'vidx' => 0, 'didx' => 0, 'origin' => 'BOGOTA_NORTE_170', 'dest' => 'BOGOTA_AEROPUERTO', 'start' => '04:00', 'unit' => 280000.00, 'qty' => 1, 'bg' => [BillingGroup::Turismo->value], 'pm' => PaymentMethod::Cash],
-            ['off' => 0, 'idx' => 1, 'cidx' => 1, 'vidx' => 1, 'didx' => 1, 'origin' => 'BOGOTA_C100', 'dest' => 'BOGOTA_ACC26', 'start' => '08:00', 'unit' => 160000.00, 'qty' => 1, 'bg' => [BillingGroup::Escolar->value], 'pm' => PaymentMethod::Credit],
-            ['off' => 0, 'idx' => 2, 'cidx' => 2, 'vidx' => 2, 'didx' => 2, 'origin' => 'BOGOTA_ZONA_T', 'dest' => 'CHIA', 'start' => '11:00', 'unit' => 250000.00, 'qty' => 1, 'bg' => [BillingGroup::Turismo->value], 'pm' => PaymentMethod::Transfer],
-            ['off' => 0, 'idx' => 3, 'cidx' => 3, 'vidx' => 3, 'didx' => 3, 'origin' => 'BOGOTA_NQS', 'dest' => 'BOGOTA_CENTRO_7', 'start' => '14:00', 'unit' => 130000.00, 'qty' => 1, 'bg' => [BillingGroup::Empresarial->value], 'pm' => PaymentMethod::Cash],
-            ['off' => 0, 'idx' => 4, 'cidx' => 0, 'vidx' => 4, 'didx' => 4, 'origin' => 'BOGOTA_CENTRO_8', 'dest' => 'BOGOTA_NORTE_170', 'start' => '18:00', 'unit' => 175000.00, 'qty' => 1, 'bg' => [BillingGroup::Salud->value], 'pm' => PaymentMethod::Credit],
-            ['off' => 0, 'idx' => 5, 'cidx' => 1, 'vidx' => 5, 'didx' => 0, 'origin' => 'BOGOTA_SUR_41A', 'dest' => 'BOGOTA_C100', 'start' => '22:00', 'unit' => 125000.00, 'qty' => 1, 'bg' => [BillingGroup::Empresarial->value], 'pm' => PaymentMethod::Cash],
+            ['off' => 0, 'idx' => 0, 'cidx' => 0, 'vidx' => 0, 'didx' => 0, 'origin' => 'BOGOTA_NORTE_170', 'dest' => 'BOGOTA_AEROPUERTO', 'start' => '04:00', 'unit' => 280000.00, 'qty' => 1, 'bg' => ['turismo'], 'pm' => PaymentMethod::Cash],
+            ['off' => 0, 'idx' => 1, 'cidx' => 1, 'vidx' => 1, 'didx' => 1, 'origin' => 'BOGOTA_C100', 'dest' => 'BOGOTA_ACC26', 'start' => '08:00', 'unit' => 160000.00, 'qty' => 1, 'bg' => ['escolar'], 'pm' => PaymentMethod::Credit],
+            ['off' => 0, 'idx' => 2, 'cidx' => 2, 'vidx' => 2, 'didx' => 2, 'origin' => 'BOGOTA_ZONA_T', 'dest' => 'CHIA', 'start' => '11:00', 'unit' => 250000.00, 'qty' => 1, 'bg' => ['turismo'], 'pm' => PaymentMethod::Transfer],
+            ['off' => 0, 'idx' => 3, 'cidx' => 3, 'vidx' => 3, 'didx' => 3, 'origin' => 'BOGOTA_NQS', 'dest' => 'BOGOTA_CENTRO_7', 'start' => '14:00', 'unit' => 130000.00, 'qty' => 1, 'bg' => ['empresarial'], 'pm' => PaymentMethod::Cash],
+            ['off' => 0, 'idx' => 4, 'cidx' => 0, 'vidx' => 4, 'didx' => 4, 'origin' => 'BOGOTA_CENTRO_8', 'dest' => 'BOGOTA_NORTE_170', 'start' => '18:00', 'unit' => 175000.00, 'qty' => 1, 'bg' => ['salud'], 'pm' => PaymentMethod::Credit],
+            ['off' => 0, 'idx' => 5, 'cidx' => 1, 'vidx' => 5, 'didx' => 0, 'origin' => 'BOGOTA_SUR_41A', 'dest' => 'BOGOTA_C100', 'start' => '22:00', 'unit' => 125000.00, 'qty' => 1, 'bg' => ['empresarial'], 'pm' => PaymentMethod::Cash],
 
             // —— Futuros (Open programado) ——
-            ['off' => 1, 'idx' => 0, 'cidx' => 0, 'vidx' => 6, 'didx' => 1, 'origin' => 'BOGOTA_CENTRO_7', 'dest' => 'BOGOTA_C100', 'start' => '06:00', 'unit' => 150000.00, 'qty' => 1, 'bg' => [BillingGroup::Salud->value], 'pm' => PaymentMethod::Credit],
-            ['off' => 1, 'idx' => 1, 'cidx' => 1, 'vidx' => 7, 'didx' => 2, 'origin' => 'BOGOTA_ACC26', 'dest' => 'BOGOTA_ZONA_T', 'start' => '09:00', 'unit' => 170000.00, 'qty' => 1, 'bg' => [BillingGroup::Escolar->value], 'pm' => PaymentMethod::Credit],
-            ['off' => 1, 'idx' => 2, 'cidx' => 2, 'vidx' => 0, 'didx' => 3, 'origin' => 'BOGOTA_C93', 'dest' => 'BOGOTA_NORTE_170', 'start' => '14:00', 'unit' => 130000.00, 'qty' => 1, 'bg' => [BillingGroup::Empresarial->value], 'pm' => PaymentMethod::Cash],
-            ['off' => 1, 'idx' => 3, 'cidx' => 3, 'vidx' => 1, 'didx' => 4, 'origin' => 'BOGOTA_NQS', 'dest' => 'BOGOTA_SUR_41A', 'start' => '17:00', 'unit' => 140000.00, 'qty' => 1, 'bg' => [BillingGroup::Salud->value], 'pm' => PaymentMethod::Credit],
+            ['off' => 1, 'idx' => 0, 'cidx' => 0, 'vidx' => 6, 'didx' => 1, 'origin' => 'BOGOTA_CENTRO_7', 'dest' => 'BOGOTA_C100', 'start' => '06:00', 'unit' => 150000.00, 'qty' => 1, 'bg' => ['salud'], 'pm' => PaymentMethod::Credit],
+            ['off' => 1, 'idx' => 1, 'cidx' => 1, 'vidx' => 7, 'didx' => 2, 'origin' => 'BOGOTA_ACC26', 'dest' => 'BOGOTA_ZONA_T', 'start' => '09:00', 'unit' => 170000.00, 'qty' => 1, 'bg' => ['escolar'], 'pm' => PaymentMethod::Credit],
+            ['off' => 1, 'idx' => 2, 'cidx' => 2, 'vidx' => 0, 'didx' => 3, 'origin' => 'BOGOTA_C93', 'dest' => 'BOGOTA_NORTE_170', 'start' => '14:00', 'unit' => 130000.00, 'qty' => 1, 'bg' => ['empresarial'], 'pm' => PaymentMethod::Cash],
+            ['off' => 1, 'idx' => 3, 'cidx' => 3, 'vidx' => 1, 'didx' => 4, 'origin' => 'BOGOTA_NQS', 'dest' => 'BOGOTA_SUR_41A', 'start' => '17:00', 'unit' => 140000.00, 'qty' => 1, 'bg' => ['salud'], 'pm' => PaymentMethod::Credit],
 
-            ['off' => 2, 'idx' => 0, 'cidx' => 0, 'vidx' => 2, 'didx' => 0, 'origin' => 'BOGOTA_CENTRO_7', 'dest' => 'BOGOTA_AEROPUERTO', 'start' => '05:00', 'unit' => 230000.00, 'qty' => 1, 'bg' => [BillingGroup::Turismo->value], 'pm' => PaymentMethod::Transfer],
-            ['off' => 2, 'idx' => 1, 'cidx' => 1, 'vidx' => 3, 'didx' => 1, 'origin' => 'BOGOTA_C100', 'dest' => 'BOGOTA_CENTRO_8', 'start' => '09:00', 'unit' => 130000.00, 'qty' => 1, 'bg' => [BillingGroup::Escolar->value], 'pm' => PaymentMethod::Credit],
-            ['off' => 2, 'idx' => 2, 'cidx' => 3, 'vidx' => 4, 'didx' => 2, 'origin' => 'BOGOTA_C93', 'dest' => 'BOGOTA_SUR_41A', 'start' => '14:00', 'unit' => 180000.00, 'qty' => 1, 'bg' => [BillingGroup::Empresarial->value], 'pm' => PaymentMethod::Cash],
-            ['off' => 2, 'idx' => 3, 'cidx' => 2, 'vidx' => 5, 'didx' => 3, 'origin' => 'BOGOTA_ZONA_T', 'dest' => 'BOGOTA_NORTE_170', 'start' => '17:00', 'unit' => 155000.00, 'qty' => 1, 'bg' => [BillingGroup::Salud->value], 'pm' => PaymentMethod::Credit],
+            ['off' => 2, 'idx' => 0, 'cidx' => 0, 'vidx' => 2, 'didx' => 0, 'origin' => 'BOGOTA_CENTRO_7', 'dest' => 'BOGOTA_AEROPUERTO', 'start' => '05:00', 'unit' => 230000.00, 'qty' => 1, 'bg' => ['turismo'], 'pm' => PaymentMethod::Transfer],
+            ['off' => 2, 'idx' => 1, 'cidx' => 1, 'vidx' => 3, 'didx' => 1, 'origin' => 'BOGOTA_C100', 'dest' => 'BOGOTA_CENTRO_8', 'start' => '09:00', 'unit' => 130000.00, 'qty' => 1, 'bg' => ['escolar'], 'pm' => PaymentMethod::Credit],
+            ['off' => 2, 'idx' => 2, 'cidx' => 3, 'vidx' => 4, 'didx' => 2, 'origin' => 'BOGOTA_C93', 'dest' => 'BOGOTA_SUR_41A', 'start' => '14:00', 'unit' => 180000.00, 'qty' => 1, 'bg' => ['empresarial'], 'pm' => PaymentMethod::Cash],
+            ['off' => 2, 'idx' => 3, 'cidx' => 2, 'vidx' => 5, 'didx' => 3, 'origin' => 'BOGOTA_ZONA_T', 'dest' => 'BOGOTA_NORTE_170', 'start' => '17:00', 'unit' => 155000.00, 'qty' => 1, 'bg' => ['salud'], 'pm' => PaymentMethod::Credit],
 
-            ['off' => 3, 'idx' => 0, 'cidx' => 0, 'vidx' => 6, 'didx' => 4, 'origin' => 'BOGOTA_NORTE_170', 'dest' => 'BOGOTA_NQS', 'start' => '06:00', 'unit' => 140000.00, 'qty' => 1, 'bg' => [BillingGroup::Salud->value], 'pm' => PaymentMethod::Credit],
-            ['off' => 3, 'idx' => 1, 'cidx' => 3, 'vidx' => 7, 'didx' => 0, 'origin' => 'BOGOTA_CENTRO_7', 'dest' => 'SOACHA', 'start' => '09:00', 'unit' => 220000.00, 'qty' => 1, 'bg' => [BillingGroup::Empresarial->value], 'pm' => PaymentMethod::Transfer],
-            ['off' => 3, 'idx' => 2, 'cidx' => 2, 'vidx' => 0, 'didx' => 1, 'origin' => 'BOGOTA_AEROPUERTO', 'dest' => 'BOGOTA_C100', 'start' => '14:00', 'unit' => 220000.00, 'qty' => 1, 'bg' => [BillingGroup::Turismo->value], 'pm' => PaymentMethod::Cash],
-            ['off' => 3, 'idx' => 3, 'cidx' => 1, 'vidx' => 1, 'didx' => 2, 'origin' => 'BOGOTA_C93', 'dest' => 'BOGOTA_ACC26', 'start' => '17:00', 'unit' => 135000.00, 'qty' => 1, 'bg' => [BillingGroup::Escolar->value], 'pm' => PaymentMethod::Credit],
+            ['off' => 3, 'idx' => 0, 'cidx' => 0, 'vidx' => 6, 'didx' => 4, 'origin' => 'BOGOTA_NORTE_170', 'dest' => 'BOGOTA_NQS', 'start' => '06:00', 'unit' => 140000.00, 'qty' => 1, 'bg' => ['salud'], 'pm' => PaymentMethod::Credit],
+            ['off' => 3, 'idx' => 1, 'cidx' => 3, 'vidx' => 7, 'didx' => 0, 'origin' => 'BOGOTA_CENTRO_7', 'dest' => 'SOACHA', 'start' => '09:00', 'unit' => 220000.00, 'qty' => 1, 'bg' => ['empresarial'], 'pm' => PaymentMethod::Transfer],
+            ['off' => 3, 'idx' => 2, 'cidx' => 2, 'vidx' => 0, 'didx' => 1, 'origin' => 'BOGOTA_AEROPUERTO', 'dest' => 'BOGOTA_C100', 'start' => '14:00', 'unit' => 220000.00, 'qty' => 1, 'bg' => ['turismo'], 'pm' => PaymentMethod::Cash],
+            ['off' => 3, 'idx' => 3, 'cidx' => 1, 'vidx' => 1, 'didx' => 2, 'origin' => 'BOGOTA_C93', 'dest' => 'BOGOTA_ACC26', 'start' => '17:00', 'unit' => 135000.00, 'qty' => 1, 'bg' => ['escolar'], 'pm' => PaymentMethod::Credit],
 
-            ['off' => 4, 'idx' => 0, 'cidx' => 2, 'vidx' => 2, 'didx' => 3, 'origin' => 'BOGOTA_AEROPUERTO', 'dest' => 'BOGOTA_ZONA_T', 'start' => '06:00', 'unit' => 200000.00, 'qty' => 1, 'bg' => [BillingGroup::Turismo->value], 'pm' => PaymentMethod::Cash],
-            ['off' => 4, 'idx' => 1, 'cidx' => 3, 'vidx' => 3, 'didx' => 4, 'origin' => 'BOGOTA_CENTRO_8', 'dest' => 'BOGOTA_CENTRO_7', 'start' => '09:00', 'unit' => 115000.00, 'qty' => 1, 'bg' => [BillingGroup::Empresarial->value], 'pm' => PaymentMethod::Cash],
-            ['off' => 4, 'idx' => 2, 'cidx' => 0, 'vidx' => 4, 'didx' => 0, 'origin' => 'BOGOTA_C100', 'dest' => 'BOGOTA_NORTE_170', 'start' => '14:00', 'unit' => 145000.00, 'qty' => 1, 'bg' => [BillingGroup::Salud->value], 'pm' => PaymentMethod::Credit],
-            ['off' => 4, 'idx' => 3, 'cidx' => 1, 'vidx' => 5, 'didx' => 1, 'origin' => 'BOGOTA_NQS', 'dest' => 'BOGOTA_C93', 'start' => '17:00', 'unit' => 130000.00, 'qty' => 1, 'bg' => [BillingGroup::Escolar->value], 'pm' => PaymentMethod::Credit],
+            ['off' => 4, 'idx' => 0, 'cidx' => 2, 'vidx' => 2, 'didx' => 3, 'origin' => 'BOGOTA_AEROPUERTO', 'dest' => 'BOGOTA_ZONA_T', 'start' => '06:00', 'unit' => 200000.00, 'qty' => 1, 'bg' => ['turismo'], 'pm' => PaymentMethod::Cash],
+            ['off' => 4, 'idx' => 1, 'cidx' => 3, 'vidx' => 3, 'didx' => 4, 'origin' => 'BOGOTA_CENTRO_8', 'dest' => 'BOGOTA_CENTRO_7', 'start' => '09:00', 'unit' => 115000.00, 'qty' => 1, 'bg' => ['empresarial'], 'pm' => PaymentMethod::Cash],
+            ['off' => 4, 'idx' => 2, 'cidx' => 0, 'vidx' => 4, 'didx' => 0, 'origin' => 'BOGOTA_C100', 'dest' => 'BOGOTA_NORTE_170', 'start' => '14:00', 'unit' => 145000.00, 'qty' => 1, 'bg' => ['salud'], 'pm' => PaymentMethod::Credit],
+            ['off' => 4, 'idx' => 3, 'cidx' => 1, 'vidx' => 5, 'didx' => 1, 'origin' => 'BOGOTA_NQS', 'dest' => 'BOGOTA_C93', 'start' => '17:00', 'unit' => 130000.00, 'qty' => 1, 'bg' => ['escolar'], 'pm' => PaymentMethod::Credit],
 
-            ['off' => 5, 'idx' => 0, 'cidx' => 2, 'vidx' => 6, 'didx' => 2, 'origin' => 'BOGOTA_NORTE_170', 'dest' => 'ZIPAQUIRA', 'start' => '06:00', 'unit' => 480000.00, 'qty' => 1, 'bg' => [BillingGroup::Turismo->value], 'pm' => PaymentMethod::Transfer],
-            ['off' => 5, 'idx' => 1, 'cidx' => 2, 'vidx' => 7, 'didx' => 3, 'origin' => 'BOGOTA_ACC26', 'dest' => 'BOGOTA_AEROPUERTO', 'start' => '09:00', 'unit' => 220000.00, 'qty' => 1, 'bg' => [BillingGroup::Turismo->value], 'pm' => PaymentMethod::Cash],
-            ['off' => 5, 'idx' => 2, 'cidx' => 1, 'vidx' => 0, 'didx' => 4, 'origin' => 'BOGOTA_C100', 'dest' => 'BOGOTA_SUR_41A', 'start' => '14:00', 'unit' => 160000.00, 'qty' => 1, 'bg' => [BillingGroup::Escolar->value], 'pm' => PaymentMethod::Credit],
-            ['off' => 5, 'idx' => 3, 'cidx' => 0, 'vidx' => 1, 'didx' => 0, 'origin' => 'BOGOTA_ZONA_T', 'dest' => 'BOGOTA_CENTRO_7', 'start' => '17:00', 'unit' => 140000.00, 'qty' => 1, 'bg' => [BillingGroup::Salud->value], 'pm' => PaymentMethod::Credit],
+            ['off' => 5, 'idx' => 0, 'cidx' => 2, 'vidx' => 6, 'didx' => 2, 'origin' => 'BOGOTA_NORTE_170', 'dest' => 'ZIPAQUIRA', 'start' => '06:00', 'unit' => 480000.00, 'qty' => 1, 'bg' => ['turismo'], 'pm' => PaymentMethod::Transfer],
+            ['off' => 5, 'idx' => 1, 'cidx' => 2, 'vidx' => 7, 'didx' => 3, 'origin' => 'BOGOTA_ACC26', 'dest' => 'BOGOTA_AEROPUERTO', 'start' => '09:00', 'unit' => 220000.00, 'qty' => 1, 'bg' => ['turismo'], 'pm' => PaymentMethod::Cash],
+            ['off' => 5, 'idx' => 2, 'cidx' => 1, 'vidx' => 0, 'didx' => 4, 'origin' => 'BOGOTA_C100', 'dest' => 'BOGOTA_SUR_41A', 'start' => '14:00', 'unit' => 160000.00, 'qty' => 1, 'bg' => ['escolar'], 'pm' => PaymentMethod::Credit],
+            ['off' => 5, 'idx' => 3, 'cidx' => 0, 'vidx' => 1, 'didx' => 0, 'origin' => 'BOGOTA_ZONA_T', 'dest' => 'BOGOTA_CENTRO_7', 'start' => '17:00', 'unit' => 140000.00, 'qty' => 1, 'bg' => ['salud'], 'pm' => PaymentMethod::Credit],
 
-            ['off' => 6, 'idx' => 0, 'cidx' => 0, 'vidx' => 2, 'didx' => 1, 'origin' => 'BOGOTA_NQS', 'dest' => 'BOGOTA_C93', 'start' => '06:00', 'unit' => 135000.00, 'qty' => 1, 'bg' => [BillingGroup::Salud->value], 'pm' => PaymentMethod::Credit],
-            ['off' => 6, 'idx' => 1, 'cidx' => 2, 'vidx' => 3, 'didx' => 2, 'origin' => 'BOGOTA_ZONA_T', 'dest' => 'BOGOTA_AEROPUERTO', 'start' => '09:00', 'unit' => 220000.00, 'qty' => 1, 'bg' => [BillingGroup::Turismo->value], 'pm' => PaymentMethod::Cash],
-            ['off' => 6, 'idx' => 2, 'cidx' => 0, 'vidx' => 4, 'didx' => 3, 'origin' => 'BOGOTA_CENTRO_7', 'dest' => 'BOGOTA_NORTE_170', 'start' => '14:00', 'unit' => 150000.00, 'qty' => 1, 'bg' => [BillingGroup::Salud->value], 'pm' => PaymentMethod::Credit],
-            ['off' => 6, 'idx' => 3, 'cidx' => 3, 'vidx' => 5, 'didx' => 4, 'origin' => 'BOGOTA_ACC26', 'dest' => 'BOGOTA_SUR_41A', 'start' => '17:00', 'unit' => 145000.00, 'qty' => 1, 'bg' => [BillingGroup::Empresarial->value], 'pm' => PaymentMethod::Cash],
+            ['off' => 6, 'idx' => 0, 'cidx' => 0, 'vidx' => 2, 'didx' => 1, 'origin' => 'BOGOTA_NQS', 'dest' => 'BOGOTA_C93', 'start' => '06:00', 'unit' => 135000.00, 'qty' => 1, 'bg' => ['salud'], 'pm' => PaymentMethod::Credit],
+            ['off' => 6, 'idx' => 1, 'cidx' => 2, 'vidx' => 3, 'didx' => 2, 'origin' => 'BOGOTA_ZONA_T', 'dest' => 'BOGOTA_AEROPUERTO', 'start' => '09:00', 'unit' => 220000.00, 'qty' => 1, 'bg' => ['turismo'], 'pm' => PaymentMethod::Cash],
+            ['off' => 6, 'idx' => 2, 'cidx' => 0, 'vidx' => 4, 'didx' => 3, 'origin' => 'BOGOTA_CENTRO_7', 'dest' => 'BOGOTA_NORTE_170', 'start' => '14:00', 'unit' => 150000.00, 'qty' => 1, 'bg' => ['salud'], 'pm' => PaymentMethod::Credit],
+            ['off' => 6, 'idx' => 3, 'cidx' => 3, 'vidx' => 5, 'didx' => 4, 'origin' => 'BOGOTA_ACC26', 'dest' => 'BOGOTA_SUR_41A', 'start' => '17:00', 'unit' => 145000.00, 'qty' => 1, 'bg' => ['empresarial'], 'pm' => PaymentMethod::Cash],
 
-            ['off' => 7, 'idx' => 0, 'cidx' => 2, 'vidx' => 6, 'didx' => 0, 'origin' => 'BOGOTA_C100', 'dest' => 'CHIA', 'start' => '06:00', 'unit' => 190000.00, 'qty' => 1, 'bg' => [BillingGroup::Turismo->value], 'pm' => PaymentMethod::Transfer],
-            ['off' => 7, 'idx' => 1, 'cidx' => 0, 'vidx' => 7, 'didx' => 1, 'origin' => 'BOGOTA_CENTRO_7', 'dest' => 'BOGOTA_NORTE_170', 'start' => '09:00', 'unit' => 150000.00, 'qty' => 1, 'bg' => [BillingGroup::Salud->value], 'pm' => PaymentMethod::Credit],
-            ['off' => 7, 'idx' => 2, 'cidx' => 1, 'vidx' => 0, 'didx' => 2, 'origin' => 'BOGOTA_NQS', 'dest' => 'BOGOTA_C93', 'start' => '14:00', 'unit' => 130000.00, 'qty' => 1, 'bg' => [BillingGroup::Empresarial->value], 'pm' => PaymentMethod::Cash],
-            ['off' => 7, 'idx' => 3, 'cidx' => 2, 'vidx' => 1, 'didx' => 3, 'origin' => 'BOGOTA_AEROPUERTO', 'dest' => 'BOGOTA_C100', 'start' => '17:00', 'unit' => 200000.00, 'qty' => 1, 'bg' => [BillingGroup::Turismo->value], 'pm' => PaymentMethod::Cash],
+            ['off' => 7, 'idx' => 0, 'cidx' => 2, 'vidx' => 6, 'didx' => 0, 'origin' => 'BOGOTA_C100', 'dest' => 'CHIA', 'start' => '06:00', 'unit' => 190000.00, 'qty' => 1, 'bg' => ['turismo'], 'pm' => PaymentMethod::Transfer],
+            ['off' => 7, 'idx' => 1, 'cidx' => 0, 'vidx' => 7, 'didx' => 1, 'origin' => 'BOGOTA_CENTRO_7', 'dest' => 'BOGOTA_NORTE_170', 'start' => '09:00', 'unit' => 150000.00, 'qty' => 1, 'bg' => ['salud'], 'pm' => PaymentMethod::Credit],
+            ['off' => 7, 'idx' => 2, 'cidx' => 1, 'vidx' => 0, 'didx' => 2, 'origin' => 'BOGOTA_NQS', 'dest' => 'BOGOTA_C93', 'start' => '14:00', 'unit' => 130000.00, 'qty' => 1, 'bg' => ['empresarial'], 'pm' => PaymentMethod::Cash],
+            ['off' => 7, 'idx' => 3, 'cidx' => 2, 'vidx' => 1, 'didx' => 3, 'origin' => 'BOGOTA_AEROPUERTO', 'dest' => 'BOGOTA_C100', 'start' => '17:00', 'unit' => 200000.00, 'qty' => 1, 'bg' => ['turismo'], 'pm' => PaymentMethod::Cash],
         ];
     }
 
