@@ -81,6 +81,24 @@ function RequiredMarker() {
     return <span className="text-destructive"> *</span>;
 }
 
+/**
+ * Slot de ayuda que SIEMPRE reserva una línea de alto (≈20px) bajo el
+ * input, incluso vacío. Sirve para que las celdas vecinas en una row
+ * de grid (`md:grid-cols-2/3`) tengan exactamente la misma altura
+ * aunque solo una tenga texto de ayuda. Mantén el copy a una línea —
+ * si necesitas más, replantea la información (ej. tooltip en el label).
+ */
+function FieldHint({ children }: { children?: React.ReactNode }) {
+    return (
+        <p
+            className="min-h-[1.25rem] text-xs text-muted-foreground italic"
+            aria-hidden={children ? undefined : true}
+        >
+            {children ?? ' '}
+        </p>
+    );
+}
+
 export const PAYMENT_STATUS_OPTIONS: Array<{
     value: string;
     label: string;
@@ -191,17 +209,13 @@ export default function InvoiceForm({
                                 : 'font-mono'
                         }
                     />
-                    {mode === 'create' && (
-                        <p className="text-xs text-muted-foreground italic">
-                            Se asigna automáticamente al guardar — el server
-                            reserva el siguiente disponible.
-                        </p>
-                    )}
-                    {mode === 'edit' && !canEditInvoiceNumber && (
-                        <p className="text-xs text-muted-foreground italic">
-                            El número no se edita una vez creada la factura.
-                        </p>
-                    )}
+                    <FieldHint>
+                        {mode === 'create'
+                            ? 'Asignado automáticamente al guardar.'
+                            : mode === 'edit' && !canEditInvoiceNumber
+                              ? 'No editable una vez creada.'
+                              : null}
+                    </FieldHint>
                     <InputError message={errors.invoice_number} />
                 </div>
 
@@ -221,11 +235,11 @@ export default function InvoiceForm({
                         placeholder="Selecciona un cliente"
                         disabled={isCustomerLocked}
                     />
-                    {isCustomerLocked && (
-                        <p className="text-xs text-muted-foreground italic">
-                            (no editable mientras haya servicios asociados)
-                        </p>
-                    )}
+                    <FieldHint>
+                        {isCustomerLocked
+                            ? 'Bloqueado mientras haya servicios.'
+                            : null}
+                    </FieldHint>
                     <InputError message={errors.third_party_id} />
                 </div>
             </div>
@@ -290,6 +304,7 @@ export default function InvoiceForm({
                         aria-invalid={invalid('issue_date')}
                         onChange={(e) => setData('issue_date', e.target.value)}
                     />
+                    <FieldHint />
                     <InputError message={errors.issue_date} />
                 </div>
 
@@ -306,22 +321,13 @@ export default function InvoiceForm({
                         invalid={invalid('total_value')}
                         className="tabular-nums"
                     />
-                    {isTotalLocked ? (
-                        <p className="text-xs text-muted-foreground italic">
-                            (calculado automáticamente — hay {servicesCount}{' '}
-                            servicio
-                            {servicesCount === 1 ? '' : 's'} asociado
-                            {servicesCount === 1 ? '' : 's'})
-                        </p>
-                    ) : (
-                        showPicker &&
-                        data.service_ids.length > 0 && (
-                            <p className="text-xs text-muted-foreground italic">
-                                (sugerido por los servicios seleccionados —
-                                puedes ajustarlo)
-                            </p>
-                        )
-                    )}
+                    <FieldHint>
+                        {isTotalLocked
+                            ? `Calculado de ${servicesCount} servicio${servicesCount === 1 ? '' : 's'}.`
+                            : showPicker && data.service_ids.length > 0
+                              ? 'Sugerido por servicios — editable.'
+                              : null}
+                    </FieldHint>
                     <InputError message={errors.total_value} />
                 </div>
 
@@ -350,6 +356,7 @@ export default function InvoiceForm({
                             ))}
                         </SelectContent>
                     </Select>
+                    <FieldHint />
                     <InputError message={errors.payment_status} />
                 </div>
             </div>
