@@ -119,6 +119,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('day-statuses.execute');
     Route::resource('day-statuses', App\Http\Controllers\DayStatusController::class)
         ->middleware('can:'.App\Enums\Permission::VIEW_DAY_SUMMARY->value);
+    Route::get('services-eta', [App\Http\Controllers\ServiceController::class, 'eta'])
+        ->middleware('can:'.App\Enums\Permission::CREATE_SERVICES->value)
+        ->name('services.eta');
     Route::resource('services', App\Http\Controllers\ServiceController::class)
         ->middleware('can:'.App\Enums\Permission::VIEW_SERVICES->value);
     Route::resource('incident-types', App\Http\Controllers\IncidentTypeController::class)

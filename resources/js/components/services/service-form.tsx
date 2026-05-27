@@ -10,7 +10,8 @@ import {
     Plus,
     ShieldAlert,
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import ServiceController from '@/actions/App/Http/Controllers/ServiceController';
 import FieldFooter from '@/components/field-footer';
 import {
     Choicebox,
@@ -272,6 +273,35 @@ function computeActualDuration(start: string, end: string): string | null {
     return `${diff} min`;
 }
 
+function parseHHmm(value: string): { h: number; m: number } | null {
+    if (!value) return null;
+    const [h, m] = value.split(':').map(Number);
+    if (Number.isNaN(h) || Number.isNaN(m)) return null;
+    return { h, m };
+}
+
+function formatHHmm(totalMinutes: number): string {
+    const wrapped = ((totalMinutes % 1440) + 1440) % 1440;
+    const h = Math.floor(wrapped / 60);
+    const m = wrapped % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+function addMinutes(start: string, mins: number): string | null {
+    const parsed = parseHHmm(start);
+    if (!parsed || !Number.isFinite(mins)) return null;
+    return formatHHmm(parsed.h * 60 + parsed.m + mins);
+}
+
+function diffMinutes(start: string, end: string): number | null {
+    const s = parseHHmm(start);
+    const e = parseHHmm(end);
+    if (!s || !e) return null;
+    const diff = e.h * 60 + e.m - (s.h * 60 + s.m);
+    if (diff <= 0) return null;
+    return diff;
+}
+
 /**
  * Native-Intl projection of a wall-clock day + time-of-day in
  * `timezone` to a UTC instant ISO string. Returns null when inputs are
@@ -506,6 +536,107 @@ export default function ServiceForm({
     );
 
     const isClosed = data.service_status === 'closed';
+
+    // Linked Horarios control: planned_end_time is derived from
+    // planned_start_time + planned_duration but lives in local state so
+    // operators can also edit the end-time directly (which recomputes
+    // duration). lastEditedRef breaks the otherwise-circular update.
+    const [plannedEndTime, setPlannedEndTime] = useState<string>(() => {
+        const mins = Number(data.planned_duration);
+        if (!Number.isFinite(mins) || mins <= 0) return '';
+        return addMinutes(data.planned_start_time, mins) ?? '';
+    });
+    const lastEditedRef = useRef<'start' | 'duration' | 'end' | null>(null);
+
+    useEffect(() => {
+        if (lastEditedRef.current === 'end') return;
+        const mins = Number(data.planned_duration);
+        if (!Number.isFinite(mins) || mins <= 0) {
+            if (plannedEndTime !== '') setPlannedEndTime('');
+            return;
+        }
+        const next = addMinutes(data.planned_start_time, mins);
+        if (next && next !== plannedEndTime) setPlannedEndTime(next);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [data.planned_start_time, data.planned_duration]);
+
+    const handlePlannedStartChange = (value: string) => {
+        lastEditedRef.current = 'start';
+        setData('planned_start_time', value);
+    };
+
+    const handlePlannedDurationChange = (value: string) => {
+        lastEditedRef.current = 'duration';
+        setData('planned_duration', value);
+    };
+
+    const handlePlannedEndChange = (value: string) => {
+        lastEditedRef.current = 'end';
+        setPlannedEndTime(value);
+        const mins = diffMinutes(data.planned_start_time, value);
+        if (mins !== null) setData('planned_duration', String(mins));
+    };
+
+    // ETA hint from Google Routes (curated cache → live fallback). Only
+    // fetched when both coords are present and not currently in flight
+    // for the same pair.
+    const [etaMinutes, setEtaMinutes] = useState<number | null>(null);
+    const etaAbortRef = useRef<AbortController | null>(null);
+
+    useEffect(() => {
+        const o = data.origin_coordinates;
+        const d = data.destination_coordinates;
+        if (!o || !d) {
+            etaAbortRef.current?.abort();
+            setEtaMinutes(null);
+            return;
+        }
+        etaAbortRef.current?.abort();
+        const ctrl = new AbortController();
+        etaAbortRef.current = ctrl;
+        const url = ServiceController.eta({
+            query: {
+                origin_coordinates: o,
+                destination_coordinates: d,
+            },
+        }).url;
+        fetch(url, {
+            signal: ctrl.signal,
+            headers: { Accept: 'application/json' },
+            credentials: 'same-origin',
+        })
+            .then((r) => (r.ok ? r.json() : null))
+            .then((res: { eta_minutes: number | null } | null) => {
+                if (res && typeof res.eta_minutes === 'number') {
+                    setEtaMinutes(res.eta_minutes);
+                } else {
+                    setEtaMinutes(null);
+                }
+            })
+            .catch((err) => {
+                if (
+                    err &&
+                    typeof err === 'object' &&
+                    'name' in err &&
+                    (err as { name?: string }).name === 'AbortError'
+                ) {
+                    return;
+                }
+                setEtaMinutes(null);
+            });
+    }, [data.origin_coordinates, data.destination_coordinates]);
+
+    const applyEta = () => {
+        if (etaMinutes === null) return;
+        lastEditedRef.current = 'duration';
+        setData('planned_duration', String(etaMinutes));
+    };
+
+    const currentDurationNum = Number(data.planned_duration);
+    const etaMatchesCurrent =
+        etaMinutes !== null &&
+        Number.isFinite(currentDurationNum) &&
+        currentDurationNum === etaMinutes;
 
     // REQ-011 billing-unit semantics. Look up the selected contract's
     // billing_unit_type and derive the Cantidad label + hint so the
@@ -1313,7 +1444,7 @@ export default function ServiceForm({
                     </CardAction>
                 </CardHeader>
                 <CardContent>
-                    <div className="grid gap-4 md:grid-cols-2 md:grid-rows-[auto_1fr_auto]">
+                    <div className="grid gap-4 md:grid-cols-3 md:grid-rows-[auto_1fr_auto]">
                         <div
                             className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
                             data-error={invalid('planned_start_time')}
@@ -1328,10 +1459,7 @@ export default function ServiceForm({
                                 aria-invalid={invalid('planned_start_time')}
                                 disabled={isFieldDisabled('planned_start_time')}
                                 onChange={(e) =>
-                                    setData(
-                                        'planned_start_time',
-                                        e.target.value,
-                                    )
+                                    handlePlannedStartChange(e.target.value)
                                 }
                             />
                             <FieldFooter error={errors.planned_start_time} />
@@ -1350,11 +1478,48 @@ export default function ServiceForm({
                                 aria-invalid={invalid('planned_duration')}
                                 disabled={isFieldDisabled('planned_duration')}
                                 onChange={(e) =>
-                                    setData('planned_duration', e.target.value)
+                                    handlePlannedDurationChange(e.target.value)
                                 }
                                 className="text-right tabular-nums"
                             />
-                            <FieldFooter error={errors.planned_duration} />
+                            <FieldFooter error={errors.planned_duration}>
+                                {etaMinutes !== null &&
+                                    (etaMatchesCurrent ? (
+                                        <>ETA Google: {etaMinutes} min ✓</>
+                                    ) : (
+                                        <>
+                                            Sugerido: {etaMinutes} min{' '}
+                                            <button
+                                                type="button"
+                                                onClick={applyEta}
+                                                disabled={isFieldDisabled(
+                                                    'planned_duration',
+                                                )}
+                                                className="ml-1 font-medium text-primary not-italic underline-offset-2 hover:underline disabled:opacity-50"
+                                            >
+                                                Aplicar
+                                            </button>
+                                        </>
+                                    ))}
+                            </FieldFooter>
+                        </div>
+                        <div className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid">
+                            <Label htmlFor="planned_end_time">
+                                Hora Fin Planificada
+                            </Label>
+                            <Input
+                                id="planned_end_time"
+                                type="time"
+                                value={plannedEndTime}
+                                disabled={isFieldDisabled('planned_duration')}
+                                onChange={(e) =>
+                                    handlePlannedEndChange(e.target.value)
+                                }
+                                className="bg-muted/30"
+                            />
+                            <FieldFooter>
+                                Derivado de Hora Inicio + Duración
+                            </FieldFooter>
                         </div>
                     </div>
 

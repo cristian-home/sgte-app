@@ -64,6 +64,62 @@ class ServiceController extends Controller
     }
 
     /**
+     * Estimate driving duration between two coordinates for the
+     * `/services/create` Horarios block. Curated cache hit avoids any
+     * network call; otherwise falls back to Google Routes (cached for
+     * 7 days) and returns null when the API can't deliver.
+     */
+    public function eta(Request $request): JsonResponse
+    {
+        Gate::authorize(Permission::CREATE_SERVICES->value);
+
+        $validated = $request->validate([
+            'origin_coordinates' => ['required', 'string', 'regex:/^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/'],
+            'destination_coordinates' => ['required', 'string', 'regex:/^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/'],
+        ]);
+
+        $origin = trim((string) $validated['origin_coordinates']);
+        $destination = trim((string) $validated['destination_coordinates']);
+
+        $curated = \App\Support\CuratedRoutes::forCoords($origin, $destination);
+        if ($curated !== null) {
+            return response()->json([
+                'eta_minutes' => (int) round($curated['duration_s'] / 60),
+                'source' => 'curated',
+            ]);
+        }
+
+        $cacheKey = 'eta:'.$origin.'>'.$destination;
+        $cache = \Illuminate\Support\Facades\Cache::store();
+
+        $live = $cache->get($cacheKey);
+        if (! is_array($live)) {
+            [$originLat, $originLng] = array_map('floatval', explode(',', $origin));
+            [$destLat, $destLng] = array_map('floatval', explode(',', $destination));
+
+            /** @var \App\Services\Google\RoutesClient $client */
+            $client = app(\App\Services\Google\RoutesClient::class);
+            $live = $client->driving($originLng, $originLat, $destLng, $destLat);
+
+            if (is_array($live) && isset($live['duration_s'])) {
+                $cache->put($cacheKey, $live, now()->addDays(7));
+            }
+        }
+
+        if (! is_array($live) || ! isset($live['duration_s'])) {
+            return response()->json([
+                'eta_minutes' => null,
+                'source' => null,
+            ]);
+        }
+
+        return response()->json([
+            'eta_minutes' => (int) round(((int) $live['duration_s']) / 60),
+            'source' => 'live',
+        ]);
+    }
+
+    /**
      * Option data used by the /services filter bar — contract, driver,
      * vehicle, and municipality comboboxes. Scoped to "active" or
      * in-use rows so the picker stays useful as the catalog grows.
