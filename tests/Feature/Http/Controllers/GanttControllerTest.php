@@ -8,7 +8,6 @@ use App\Enums\VehicleStatus;
 use App\Models\Contract;
 use App\Models\DayStatus;
 use App\Models\Driver;
-use App\Models\Municipality;
 use App\Models\Service;
 use App\Models\User;
 use App\Models\Vehicle;
@@ -43,7 +42,6 @@ test('index renders gantt page with expected props', function (): void {
         ->has('vehicles')
         ->has('services')
         ->has('dayStatus')
-        ->has('municipalities')
         ->has('date')
         ->has('canCreateServices')
     );
@@ -299,16 +297,15 @@ test('index returns JSON shape when Accept application/json (infinite scroll fet
         'service_date' => '2026-03-10',
     ]);
 
-    // The page Inertia branch carries vehicles, services, municipalities,
+    // The page Inertia branch carries vehicles, services, dayStatus,
     // etc. The JSON branch (used by `useGanttDays` to lazily fetch
     // adjacent days during horizontal scroll) only needs the per-day
-    // payload — vehicles + municipalities are client-cached from SSR.
+    // payload — vehicles are client-cached from SSR.
     $response = $this->getJson(route('gantt.index', ['date' => '2026-03-10']));
 
     $response->assertOk()
         ->assertJsonStructure(['date', 'services', 'dayStatus'])
         ->assertJsonMissing(['vehicles' => []])
-        ->assertJsonMissing(['municipalities' => []])
         ->assertJsonPath('date', '2026-03-10')
         ->assertJsonCount(1, 'services');
 });
@@ -332,24 +329,4 @@ test('JSON branch respects date filter', function (): void {
     $response->assertOk()
         ->assertJsonPath('date', '2026-03-11')
         ->assertJsonCount(1, 'services');
-});
-
-test('index filters vehicles by municipality', function (): void {
-    $municipality = Municipality::factory()->create();
-    $otherMunicipality = Municipality::factory()->create();
-    Vehicle::factory()->create([
-        'status' => VehicleStatus::Active,
-        'municipality_id' => $municipality->id,
-    ]);
-    Vehicle::factory()->create([
-        'status' => VehicleStatus::Active,
-        'municipality_id' => $otherMunicipality->id,
-    ]);
-
-    $response = get(route('gantt.index', ['municipality_id' => $municipality->id]));
-
-    $response->assertInertia(fn (AssertableInertia $page) => $page
-        ->has('vehicles', 1)
-        ->where('vehicles.0.municipality_id', $municipality->id)
-    );
 });

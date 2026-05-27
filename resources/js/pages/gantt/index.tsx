@@ -1,7 +1,6 @@
 import { Head, usePage } from '@inertiajs/react';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { index as ganttIndex } from '@/actions/App/Http/Controllers/GanttController';
-import { type MunicipalityOption } from '@/components/municipality-combobox';
 import AppLayout from '@/layouts/app-layout';
 import GanttHeader from './components/gantt-header';
 import GanttLegend from './components/gantt-legend';
@@ -34,9 +33,7 @@ interface Props {
     vehicles: Vehicle[];
     services: Service[];
     dayStatus: DayStatus | null;
-    municipalities: MunicipalityOption[];
     date: string;
-    municipalityId: number | null;
     canCreateServices: boolean;
 }
 
@@ -44,9 +41,7 @@ export default function GanttIndex({
     vehicles,
     services,
     dayStatus,
-    municipalities,
     date,
-    municipalityId,
     canCreateServices,
 }: Props) {
     const sharedConfig = usePage().props.config as
@@ -182,8 +177,6 @@ export default function GanttIndex({
             >
                 <GanttHeader
                     date={centerDate}
-                    municipalityId={municipalityId}
-                    municipalities={municipalities}
                     canCreateServices={canCreateServices}
                     onJumpToDate={handleJumpToDate}
                 />
