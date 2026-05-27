@@ -146,6 +146,30 @@ export const columns: ColumnDef<Service, unknown>[] = [
         },
     },
     {
+        id: 'service_value',
+        meta: { label: 'Valor del servicio' },
+        header: () => (
+            <span className="block text-right">Valor del servicio</span>
+        ),
+        cell: ({ row }) => {
+            const value =
+                Number(row.original.unit_value ?? 0) *
+                Number(row.original.quantity ?? 0);
+            if (!value) {
+                return (
+                    <span className="block text-right text-muted-foreground">
+                        —
+                    </span>
+                );
+            }
+            return (
+                <span className="block text-right font-medium tabular-nums">
+                    {currencyFormatter.format(value)}
+                </span>
+            );
+        },
+    },
+    {
         id: 'incidents',
         meta: { label: 'Novedades' },
         header: 'Novedades',
@@ -170,8 +194,11 @@ export const columns: ColumnDef<Service, unknown>[] = [
         header: () => <span className="block text-right">Recargo nov.</span>,
         cell: ({ row }) => {
             const amount = Number(
-                (row.original as Service & { billing_impact_amount?: string | number | null })
-                    .billing_impact_amount ?? 0,
+                (
+                    row.original as Service & {
+                        billing_impact_amount?: string | number | null;
+                    }
+                ).billing_impact_amount ?? 0,
             );
             if (!amount) {
                 return (
@@ -181,8 +208,38 @@ export const columns: ColumnDef<Service, unknown>[] = [
                 );
             }
             return (
-                <span className="block text-right font-medium tabular-nums text-amber-700 dark:text-amber-400">
+                <span className="block text-right font-medium text-amber-700 tabular-nums dark:text-amber-400">
                     {currencyFormatter.format(amount)}
+                </span>
+            );
+        },
+    },
+    {
+        id: 'total',
+        meta: { label: 'Total' },
+        header: () => <span className="block text-right">Total</span>,
+        cell: ({ row }) => {
+            const serviceValue =
+                Number(row.original.unit_value ?? 0) *
+                Number(row.original.quantity ?? 0);
+            const impact = Number(
+                (
+                    row.original as Service & {
+                        billing_impact_amount?: string | number | null;
+                    }
+                ).billing_impact_amount ?? 0,
+            );
+            const total = serviceValue + impact;
+            if (!total) {
+                return (
+                    <span className="block text-right text-muted-foreground">
+                        —
+                    </span>
+                );
+            }
+            return (
+                <span className="block text-right font-semibold tabular-nums">
+                    {currencyFormatter.format(total)}
                 </span>
             );
         },
