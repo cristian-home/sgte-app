@@ -1,7 +1,8 @@
-import { useForm } from '@inertiajs/react';
-import { useEffect } from 'react';
+import { router, useForm } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
 import InvoiceController from '@/actions/App/Http/Controllers/InvoiceController';
 import InvoiceForm, {
+    type EligibleServicesPayload,
     type InvoiceFormData,
 } from '@/components/invoices/invoice-form';
 import { type ThirdPartyOption } from '@/components/third-parties/third-party-combobox';
@@ -39,6 +40,7 @@ interface InvoiceDialogProps {
     mode: 'create' | 'edit';
     invoice?: EditableInvoice | null;
     thirdParties: ThirdPartyOption[];
+    eligibleServices?: EligibleServicesPayload | null;
 }
 
 const emptyData: InvoiceFormData = {
@@ -48,6 +50,8 @@ const emptyData: InvoiceFormData = {
     issue_date: '',
     payment_status: 'pending',
     notes: '',
+    service_ids: [],
+    override_justification: '',
 };
 
 /** Project a wall-clock date string onto a `Y-m-d` value for date inputs. */
@@ -70,6 +74,8 @@ function dataFromInvoice(invoice: EditableInvoice): InvoiceFormData {
         issue_date: toDateInput(invoice.issue_date),
         payment_status: invoice.payment_status,
         notes: invoice.notes ?? '',
+        service_ids: [],
+        override_justification: '',
     };
 }
 
@@ -79,9 +85,11 @@ export default function InvoiceDialog({
     mode,
     invoice,
     thirdParties,
+    eligibleServices = null,
 }: InvoiceDialogProps) {
     const { data, setData, post, put, processing, errors, clearErrors } =
         useForm<InvoiceFormData>({ ...emptyData });
+    const [loadingEligible, setLoadingEligible] = useState(false);
 
     // Re-seed the form whenever the dialog identity changes. Inertia's
     // `setData`/`clearErrors` aren't React state setters, so this effect
@@ -107,6 +115,17 @@ export default function InvoiceDialog({
             ? [invoice.third_party]
             : undefined;
 
+    function handleThirdPartyChange(id: string) {
+        if (mode !== 'create') return;
+        if (!id) return;
+        setLoadingEligible(true);
+        router.reload({
+            only: ['eligibleServices'],
+            data: { eligible_for: id },
+            onFinish: () => setLoadingEligible(false),
+        });
+    }
+
     function submit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
         // This dialog owns its <form>; stop the submit event from bubbling
@@ -127,7 +146,7 @@ export default function InvoiceDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="flex max-h-[calc(100vh-4rem)] flex-col px-0 sm:max-w-3xl">
+            <DialogContent className="flex max-h-[calc(100vh-4rem)] flex-col px-0 sm:max-w-4xl">
                 <DialogHeader className="px-6">
                     <DialogTitle>
                         {mode === 'create' ? 'Crear Factura' : 'Editar Factura'}
@@ -153,6 +172,10 @@ export default function InvoiceDialog({
                             idPrefix="dlg"
                             isTotalLocked={mode === 'edit' && servicesCount > 0}
                             servicesCount={servicesCount}
+                            mode={mode}
+                            eligibleServices={eligibleServices}
+                            loadingEligible={loadingEligible}
+                            onThirdPartyChange={handleThirdPartyChange}
                         />
                     </div>
 

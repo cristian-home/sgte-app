@@ -545,10 +545,7 @@ export default function InvoicesShow({
                             </CardHeader>
                             <CardContent className="space-y-6">
                                 {servicesWithBillingIncidents.map((service) => (
-                                    <div
-                                        key={service.id}
-                                        className="space-y-2"
-                                    >
+                                    <div key={service.id} className="space-y-2">
                                         <div className="flex flex-wrap items-baseline justify-between gap-2 border-b pb-1">
                                             <p className="text-sm font-medium">
                                                 Servicio del{' '}

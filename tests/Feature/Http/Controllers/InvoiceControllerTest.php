@@ -1209,3 +1209,177 @@ test('show: candidateServices excludes billing-blocked; blockedCandidateServices
         $page->has('blockedCandidateServices', 1, fn ($row) => $row->where('id', $blockedService->id)->etc());
     });
 });
+
+// ================================================================
+// Inline service assignment during invoice creation (store)
+// ================================================================
+
+test('store with service_ids attaches services and recomputes total', function (): void {
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    $contract = Contract::factory()->create(['third_party_id' => $customer->id]);
+    $s1 = Service::factory()->create([
+        'contract_id' => $contract->id,
+        'service_status' => ServiceStatus::Closed,
+        'unit_value' => 1000,
+        'quantity' => 2,
+        'invoice_id' => null,
+    ]);
+    $s2 = Service::factory()->create([
+        'contract_id' => $contract->id,
+        'service_status' => ServiceStatus::Closed,
+        'unit_value' => 500,
+        'quantity' => 1,
+        'invoice_id' => null,
+    ]);
+
+    $response = post(route('invoices.store'), [
+        'third_party_id' => $customer->id,
+        'invoice_number' => 'FAC-INLINE-001',
+        'issue_date' => Carbon::today()->toDateString(),
+        'payment_status' => 'pending',
+        'total_value' => 0,
+        'service_ids' => [$s1->id, $s2->id],
+    ]);
+
+    $response->assertRedirect();
+    $invoice = Invoice::query()->where('invoice_number', 'FAC-INLINE-001')->first();
+    expect($invoice)->not->toBeNull();
+    expect($s1->fresh()->invoice_id)->toBe($invoice->id);
+    expect($s2->fresh()->invoice_id)->toBe($invoice->id);
+    expect($invoice->total_value)->toBe('2500.00');
+});
+
+test('store with blocked services and no justification fails', function (): void {
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    $contract = Contract::factory()->create(['third_party_id' => $customer->id]);
+    $incidentType = IncidentType::factory()->create();
+    $service = Service::factory()->create([
+        'contract_id' => $contract->id,
+        'service_status' => ServiceStatus::Closed,
+        'unit_value' => 1000,
+        'quantity' => 1,
+        'invoice_id' => null,
+    ]);
+    ServiceIncident::factory()->create([
+        'service_id' => $service->id,
+        'incident_type_id' => $incidentType->id,
+        'affects_billing' => true,
+        'additional_value' => 500,
+    ]);
+
+    $response = post(route('invoices.store'), [
+        'third_party_id' => $customer->id,
+        'invoice_number' => 'FAC-INLINE-BLOCKED-NO-JUST',
+        'issue_date' => Carbon::today()->toDateString(),
+        'payment_status' => 'pending',
+        'total_value' => 0,
+        'service_ids' => [$service->id],
+    ]);
+
+    $response->assertSessionHasErrors('service_ids');
+    expect(Invoice::query()->where('invoice_number', 'FAC-INLINE-BLOCKED-NO-JUST')->exists())->toBeFalse();
+    expect($service->fresh()->invoice_id)->toBeNull();
+});
+
+test('store with blocked services and justification succeeds', function (): void {
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    $contract = Contract::factory()->create(['third_party_id' => $customer->id]);
+    $incidentType = IncidentType::factory()->create();
+    $service = Service::factory()->create([
+        'contract_id' => $contract->id,
+        'service_status' => ServiceStatus::Closed,
+        'unit_value' => 1000,
+        'quantity' => 1,
+        'invoice_id' => null,
+    ]);
+    ServiceIncident::factory()->create([
+        'service_id' => $service->id,
+        'incident_type_id' => $incidentType->id,
+        'affects_billing' => true,
+        'additional_value' => 500,
+    ]);
+
+    $response = post(route('invoices.store'), [
+        'third_party_id' => $customer->id,
+        'invoice_number' => 'FAC-INLINE-BLOCKED-OK',
+        'issue_date' => Carbon::today()->toDateString(),
+        'payment_status' => 'pending',
+        'total_value' => 0,
+        'service_ids' => [$service->id],
+        'override_justification' => 'Cliente aprobó la facturación por correo',
+    ]);
+
+    $response->assertRedirect();
+    $invoice = Invoice::query()->where('invoice_number', 'FAC-INLINE-BLOCKED-OK')->first();
+    expect($invoice)->not->toBeNull();
+    expect($service->fresh()->invoice_id)->toBe($invoice->id);
+    expect($invoice->total_value)->toBe('1500.00');
+});
+
+test('store with service_ids from a different customer fails and rolls back', function (): void {
+    $customerA = ThirdParty::factory()->create(['is_customer' => true]);
+    $customerB = ThirdParty::factory()->create(['is_customer' => true]);
+    $contractB = Contract::factory()->create(['third_party_id' => $customerB->id]);
+    $service = Service::factory()->create([
+        'contract_id' => $contractB->id,
+        'service_status' => ServiceStatus::Closed,
+        'invoice_id' => null,
+    ]);
+
+    $response = post(route('invoices.store'), [
+        'third_party_id' => $customerA->id,
+        'invoice_number' => 'FAC-INLINE-WRONG-CUSTOMER',
+        'issue_date' => Carbon::today()->toDateString(),
+        'payment_status' => 'pending',
+        'total_value' => 0,
+        'service_ids' => [$service->id],
+    ]);
+
+    $response->assertSessionHasErrors('service_ids');
+    expect(Invoice::query()->where('invoice_number', 'FAC-INLINE-WRONG-CUSTOMER')->exists())->toBeFalse();
+    expect($service->fresh()->invoice_id)->toBeNull();
+});
+
+test('store without service_ids still requires total_value', function (): void {
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+
+    $response = post(route('invoices.store'), [
+        'third_party_id' => $customer->id,
+        'invoice_number' => 'FAC-NO-TOTAL',
+        'issue_date' => Carbon::today()->toDateString(),
+        'payment_status' => 'pending',
+    ]);
+
+    $response->assertSessionHasErrors('total_value');
+});
+
+test('index with eligible_for returns partitioned candidates for that customer', function (): void {
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    $contract = Contract::factory()->create(['third_party_id' => $customer->id]);
+    $cleanService = Service::factory()->create([
+        'contract_id' => $contract->id,
+        'service_status' => ServiceStatus::Closed,
+        'service_date' => Carbon::today()->subDays(5),
+        'invoice_id' => null,
+    ]);
+    $blockedService = Service::factory()->create([
+        'contract_id' => $contract->id,
+        'service_status' => ServiceStatus::Closed,
+        'service_date' => Carbon::today()->subDays(5),
+        'invoice_id' => null,
+    ]);
+    $incidentType = IncidentType::factory()->create();
+    ServiceIncident::factory()->create([
+        'service_id' => $blockedService->id,
+        'incident_type_id' => $incidentType->id,
+        'affects_billing' => true,
+    ]);
+
+    $response = get(route('invoices.index', ['eligible_for' => $customer->id]));
+
+    $response->assertOk();
+    $response->assertInertia(function ($page) use ($cleanService, $blockedService) {
+        $page->has('eligibleServices.cleanCandidates', 1, fn ($row) => $row->where('id', $cleanService->id)->etc());
+        $page->has('eligibleServices.blockedCandidates', 1, fn ($row) => $row->where('id', $blockedService->id)->etc());
+    });
+});
