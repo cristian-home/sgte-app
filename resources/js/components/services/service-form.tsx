@@ -1033,7 +1033,7 @@ export default function ServiceForm({
                 <CardContent>
                     <div className="grid gap-6 md:grid-cols-2">
                         <div
-                            className="grid gap-2"
+                            className="grid min-w-0 gap-2"
                             data-error={
                                 invalid('origin_municipality_id') ||
                                 invalid('origin_address')
@@ -1157,7 +1157,7 @@ export default function ServiceForm({
                             />
                         </div>
                         <div
-                            className="grid gap-2"
+                            className="grid min-w-0 gap-2"
                             data-error={
                                 invalid('destination_municipality_id') ||
                                 invalid('destination_address')
