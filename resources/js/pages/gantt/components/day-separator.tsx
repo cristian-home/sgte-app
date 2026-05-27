@@ -1,4 +1,5 @@
 import { Lock } from 'lucide-react';
+import { memo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { DayStatus } from '@/types/models';
@@ -40,7 +41,7 @@ const dayFormatter = new Intl.DateTimeFormat('es-CO', {
  * HourlyGrid) supplies the muted background strip and the today
  * highlight; this component is just the sticky content pill.
  */
-export default function DaySeparator({
+function DaySeparator({
     date,
     isToday = false,
     dayStatus = null,
@@ -85,3 +86,5 @@ export default function DaySeparator({
         </div>
     );
 }
+
+export default memo(DaySeparator);
