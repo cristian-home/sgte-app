@@ -31,7 +31,7 @@ function Swatch({ className, children }: SwatchProps) {
  */
 export default function GanttLegend() {
     return (
-        <div className="flex flex-wrap items-center gap-1.5 rounded-md border bg-muted/30 px-3 py-1.5 text-xs text-muted-foreground lg:gap-x-4">
+        <div className="flex flex-wrap overflow-x-clip items-center gap-1.5 rounded-md border bg-muted/30 px-3 py-1.5 text-xs text-muted-foreground lg:gap-x-4">
             <Swatch className="bg-orange-400 dark:bg-orange-500">
                 Abierto
             </Swatch>
@@ -40,13 +40,13 @@ export default function GanttLegend() {
             <Swatch className="bg-zinc-400 opacity-70 dark:bg-zinc-600">
                 Bloqueado
             </Swatch>
-            <span className="flex items-center gap-1.5">
+            {/* <span className="flex items-center gap-1.5">
                 <span
                     aria-hidden
                     className="inline-block h-3 w-0.5 bg-red-500"
                 />
                 Ahora
-            </span>
+            </span> */}
 
             <Popover>
                 <PopoverTrigger className="ml-auto inline-flex items-center gap-1 rounded text-xs text-muted-foreground hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
