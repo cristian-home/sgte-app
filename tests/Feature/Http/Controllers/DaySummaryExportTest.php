@@ -141,9 +141,11 @@ test('export emits Valor del servicio and Total per row with billing-affecting i
     $row = str_getcsv($lines[1]);
 
     $valorIdx = array_search('Valor del servicio', $headers, true);
+    $recargoIdx = array_search('Recargo novedades', $headers, true);
     $totalIdx = array_search('Total', $headers, true);
 
     expect($row[$valorIdx])->toBe('100000.00');
+    expect($row[$recargoIdx])->toBe('15000.00');
     expect($row[$totalIdx])->toBe('115000.00');
 });
 
