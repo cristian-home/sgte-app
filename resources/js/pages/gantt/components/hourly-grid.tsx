@@ -12,6 +12,7 @@ import {
     create as servicesCreate,
     edit as servicesEdit,
 } from '@/actions/App/Http/Controllers/ServiceController';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { computeVehicleDocStatus, HOUR_LABELS } from '../gantt-utils';
 import {
@@ -241,6 +242,37 @@ export default function HourlyGrid({
         return map;
     }, [cache]);
 
+    // Pre-compute absolute pixel positions per service id. Memoizing
+    // by (cache, epoch) keeps the position object identities stable
+    // across re-renders (e.g. ResizeObserver-driven virtualizer
+    // updates during a window drag), which lets the memo() wrapper
+    // around ServiceBar short-circuit cheaply instead of re-running
+    // 50+ Radix Tooltip subtrees per resize frame.
+    const positionsByServiceId = useMemo(() => {
+        const map = new Map<
+            number,
+            { left: number; width: number; unit: 'px' }
+        >();
+        for (const entry of cache.values()) {
+            if (entry.status !== 'ready') continue;
+            for (const s of entry.services) {
+                const pos = serviceBarAbsolutePosition(
+                    s.planned_start_at,
+                    s.planned_duration,
+                    s.timezone,
+                    epoch,
+                );
+                if (pos)
+                    map.set(s.id, {
+                        left: pos.left,
+                        width: pos.width,
+                        unit: 'px',
+                    });
+            }
+        }
+        return map;
+    }, [cache, epoch]);
+
     // URL sync via debounce-on-scroll. Paused during an epoch swap so
     // the imperative scrollLeft adjustment doesn't propagate a bogus
     // centered date to the URL.
@@ -397,39 +429,42 @@ export default function HourlyGrid({
         [jumpToDate],
     );
 
-    function handleEmptyCellClick(
-        vehicle: Vehicle,
-        e: React.MouseEvent<HTMLDivElement>,
-    ) {
-        const status = vehicleStatuses[vehicle.id];
-        if (status?.isBlocked || !canCreateServices) return;
-        const target = e.currentTarget;
-        const rect = target.getBoundingClientRect();
-        // clientX − rect.left is the click position INSIDE the timeline
-        // region of the row (the sidebar has its own rect). Add the
-        // scroller's scrollLeft minus the sidebar offset to get the
-        // absolute pixel on the timeline canvas.
-        const absPx = e.clientX - rect.left;
-        const { date, timeHHMM } = pixelToDateTime(absPx, epoch);
-        // Per-day gate: services can't be created on a day already
-        // marked Executed. Checked here at click time (rather than as a
-        // row-level prop) because a single row spans the full 61-day
-        // canvas, in which any subset of days may be Executed.
-        if (cache.get(date)?.dayStatus?.status === 'executed') return;
-        router.get(servicesCreate().url, {
-            vehicle_id: vehicle.id,
-            planned_start_time: timeHHMM,
-            service_date: date,
-        });
-    }
-
-    function handleServiceClick(serviceId: number) {
+    // Stable handler refs so memo()'d ServiceBar / VehicleSidebarItem
+    // don't bust their shallow-prop comparison on every parent render.
+    const handleServiceClick = useCallback((serviceId: number) => {
         router.get(servicesEdit(serviceId).url);
-    }
+    }, []);
+
+    const handleEmptyCellClick = useCallback(
+        (vehicle: Vehicle, e: React.MouseEvent<HTMLDivElement>) => {
+            const status = vehicleStatuses[vehicle.id];
+            if (status?.isBlocked || !canCreateServices) return;
+            const target = e.currentTarget;
+            const rect = target.getBoundingClientRect();
+            const absPx = e.clientX - rect.left;
+            const { date, timeHHMM } = pixelToDateTime(absPx, epoch);
+            // Per-day gate: services can't be created on a day already
+            // marked Executed. Checked here at click time (rather than
+            // as a row-level prop) because a single row spans the full
+            // window in which any subset of days may be Executed.
+            if (cache.get(date)?.dayStatus?.status === 'executed') return;
+            router.get(servicesCreate().url, {
+                vehicle_id: vehicle.id,
+                planned_start_time: timeHHMM,
+                service_date: date,
+            });
+        },
+        [vehicleStatuses, canCreateServices, epoch, cache],
+    );
 
     const totalTimelineWidth = numDays * PX_PER_DAY;
 
     return (
+        // Single TooltipProvider for the whole grid. Without this every
+        // ServiceBar (~50) and VehicleSidebarItem (~10) wraps its own
+        // provider, which adds Radix context overhead and prevents
+        // tooltip delay coordination.
+        <TooltipProvider delayDuration={300}>
         <div className="relative size-full">
             {/* Top-of-grid fetching indicator. Lives OUTSIDE the
                 scroller so it stays anchored horizontally across the
@@ -589,23 +624,16 @@ export default function HourlyGrid({
                                                 .get(date)
                                                 ?.get(vehicle.id) ?? [];
                                         return services.map((service) => {
-                                            const pos =
-                                                serviceBarAbsolutePosition(
-                                                    service.planned_start_at,
-                                                    service.planned_duration,
-                                                    service.timezone,
-                                                    epoch,
+                                            const position =
+                                                positionsByServiceId.get(
+                                                    service.id,
                                                 );
-                                            if (!pos) return null;
+                                            if (!position) return null;
                                             return (
                                                 <ServiceBar
                                                     key={service.id}
                                                     service={service}
-                                                    position={{
-                                                        left: pos.left,
-                                                        width: pos.width,
-                                                        unit: 'px',
-                                                    }}
+                                                    position={position}
                                                     onClick={handleServiceClick}
                                                 />
                                             );
@@ -649,6 +677,7 @@ export default function HourlyGrid({
                 </div>
             </div>
         </div>
+        </TooltipProvider>
     );
 }
 
