@@ -167,8 +167,8 @@ export default function InvoiceForm({
 
     return (
         <div className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2">
-                <div className="grid gap-2">
+            <div className="grid gap-x-4 gap-y-2 md:grid-cols-2 md:grid-rows-[auto_auto_auto]">
+                <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                     <Label htmlFor={id('invoice_number')}>
                         Número de Factura
                         <RequiredMarker />
@@ -200,7 +200,7 @@ export default function InvoiceForm({
                     </FieldFooter>
                 </div>
 
-                <div className="grid gap-2">
+                <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                     <Label htmlFor={id('third_party_id')}>
                         Cliente
                         <RequiredMarker />
@@ -271,8 +271,8 @@ export default function InvoiceForm({
                 </div>
             )}
 
-            <div className="grid gap-4 md:grid-cols-3">
-                <div className="grid gap-2">
+            <div className="grid gap-x-4 gap-y-2 md:grid-cols-3 md:grid-rows-[auto_auto_auto]">
+                <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                     <Label htmlFor={id('issue_date')}>
                         Fecha de Emisión
                         <RequiredMarker />
@@ -287,7 +287,7 @@ export default function InvoiceForm({
                     <FieldFooter error={errors.issue_date} />
                 </div>
 
-                <div className="grid gap-2">
+                <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                     <Label htmlFor={id('total_value')}>
                         Valor Total
                         <RequiredMarker />
@@ -309,7 +309,7 @@ export default function InvoiceForm({
                     </FieldFooter>
                 </div>
 
-                <div className="grid gap-2">
+                <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                     <Label htmlFor={id('payment_status')}>
                         Estado
                         <RequiredMarker />

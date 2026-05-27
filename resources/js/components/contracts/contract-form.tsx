@@ -166,7 +166,7 @@ export default function ContractForm({
     }
 
     const customerField = (
-        <div className="grid gap-2">
+        <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
             <Label htmlFor={id('third_party_id')}>
                 Cliente
                 <RequiredMarker />
@@ -294,8 +294,8 @@ export default function ContractForm({
     return (
         <div className="space-y-6">
             {genericSwitchTop}
-            <div className="grid gap-4 md:grid-cols-2">
-                <div className="grid gap-2">
+            <div className="grid gap-x-4 gap-y-2 md:grid-cols-2 md:grid-rows-[auto_auto_auto]">
+                <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                     <Label htmlFor={id('contract_number')}>
                         Número de Contrato
                         {!data.is_generic && <RequiredMarker />}
@@ -356,8 +356,8 @@ export default function ContractForm({
                 <InputError message={errors.contract_object} />
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
-                <div className="grid gap-2">
+            <div className="grid gap-x-4 gap-y-2 md:grid-cols-2 md:grid-rows-[auto_auto_auto]">
+                <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                     <Label htmlFor={id('start_date')}>
                         Fecha de Inicio
                         <RequiredMarker />
@@ -372,7 +372,7 @@ export default function ContractForm({
                     <FieldFooter error={errors.start_date} />
                 </div>
 
-                <div className="grid gap-2">
+                <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                     <Label htmlFor={id('end_date')}>
                         Fecha de Fin
                         <RequiredMarker />

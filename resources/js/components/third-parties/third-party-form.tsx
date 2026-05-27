@@ -94,8 +94,8 @@ export default function ThirdPartyForm({
 
     return (
         <div className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2">
-                <div className="grid gap-2">
+            <div className="grid gap-x-4 gap-y-2 md:grid-cols-2 md:grid-rows-[auto_auto_auto]">
+                <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                     <Label htmlFor={id('document_type_id')}>
                         Tipo de Documento
                         <RequiredMarker />
@@ -120,7 +120,7 @@ export default function ThirdPartyForm({
                     <FieldFooter error={errors.document_type_id} />
                 </div>
 
-                <div className="grid gap-2">
+                <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                     <Label htmlFor={id('identification_number')}>
                         Número de Identificación
                         <RequiredMarker />
@@ -174,8 +174,8 @@ export default function ThirdPartyForm({
             </div>
 
             {data.is_natural_person ? (
-                <div className="grid gap-4 md:grid-cols-2">
-                    <div className="grid gap-2">
+                <div className="grid gap-x-4 gap-y-2 md:grid-cols-2 md:grid-rows-[auto_auto_auto]">
+                    <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                         <Label htmlFor={id('first_name')}>
                             Primer Nombre
                             <RequiredMarker />
@@ -189,7 +189,7 @@ export default function ThirdPartyForm({
                         />
                         <FieldFooter error={errors.first_name} />
                     </div>
-                    <div className="grid gap-2">
+                    <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                         <Label htmlFor={id('second_name')}>
                             Segundo Nombre
                         </Label>
@@ -202,7 +202,11 @@ export default function ThirdPartyForm({
                         />
                         <FieldFooter error={errors.second_name} />
                     </div>
-                    <div className="grid gap-2">
+                </div>
+            ) : null}
+            {data.is_natural_person ? (
+                <div className="grid gap-x-4 gap-y-2 md:grid-cols-2 md:grid-rows-[auto_auto_auto]">
+                    <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                         <Label htmlFor={id('first_lastname')}>
                             Primer Apellido
                             <RequiredMarker />
@@ -216,7 +220,7 @@ export default function ThirdPartyForm({
                         />
                         <FieldFooter error={errors.first_lastname} />
                     </div>
-                    <div className="grid gap-2">
+                    <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                         <Label htmlFor={id('second_lastname')}>
                             Segundo Apellido
                         </Label>
@@ -231,8 +235,8 @@ export default function ThirdPartyForm({
                     </div>
                 </div>
             ) : (
-                <div className="grid gap-4 md:grid-cols-2">
-                    <div className="grid gap-2">
+                <div className="grid gap-x-4 gap-y-2 md:grid-cols-2 md:grid-rows-[auto_auto_auto]">
+                    <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                         <Label htmlFor={id('company_name')}>
                             Razón Social
                             <RequiredMarker />
@@ -246,7 +250,7 @@ export default function ThirdPartyForm({
                         />
                         <FieldFooter error={errors.company_name} />
                     </div>
-                    <div className="grid gap-2">
+                    <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                         <Label htmlFor={id('trade_name')}>
                             Nombre Comercial
                         </Label>
@@ -262,8 +266,8 @@ export default function ThirdPartyForm({
                 </div>
             )}
 
-            <div className="grid gap-4 md:grid-cols-2">
-                <div className="grid gap-2">
+            <div className="grid gap-x-4 gap-y-2 md:grid-cols-2 md:grid-rows-[auto_auto_auto]">
+                <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                     <Label htmlFor={id('municipality_id')}>Municipio</Label>
                     <MunicipalityCombobox
                         id={id('municipality_id')}
@@ -274,7 +278,7 @@ export default function ThirdPartyForm({
                     />
                     <FieldFooter error={errors.municipality_id} />
                 </div>
-                <div className="grid gap-2">
+                <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                     <Label htmlFor={id('address')}>
                         Dirección
                         <RequiredMarker />
@@ -286,7 +290,10 @@ export default function ThirdPartyForm({
                     />
                     <FieldFooter error={errors.address} />
                 </div>
-                <div className="grid gap-2">
+            </div>
+
+            <div className="grid gap-x-4 gap-y-2 md:grid-cols-2 md:grid-rows-[auto_auto_auto]">
+                <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                     <Label htmlFor={id('phone')}>
                         Teléfono
                         <RequiredMarker />
@@ -299,7 +306,7 @@ export default function ThirdPartyForm({
                     />
                     <FieldFooter error={errors.phone} />
                 </div>
-                <div className="grid gap-2">
+                <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                     <Label htmlFor={id('email')}>
                         Correo Electrónico
                         <RequiredMarker />
