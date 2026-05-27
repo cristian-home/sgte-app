@@ -121,8 +121,8 @@ export default function DriverForm({
             {/* Section 1: Identificación */}
             <section className="space-y-4">
                 <h3 className="text-base font-semibold">Identificación</h3>
-                <div className="grid gap-4 md:grid-cols-2">
-                    <div className="grid gap-2">
+                <div className="grid gap-x-4 gap-y-2 md:grid-cols-2 md:grid-rows-[auto_auto_auto]">
+                    <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                         <Label htmlFor={id('document_type_id')}>
                             Tipo de Documento
                             <RequiredMarker />
@@ -153,7 +153,7 @@ export default function DriverForm({
                         <FieldFooter error={errors.document_type_id} />
                     </div>
 
-                    <div className="grid gap-2">
+                    <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                         <Label htmlFor={id('identification_number')}>
                             Número de Identificación
                             <RequiredMarker />
@@ -168,8 +168,10 @@ export default function DriverForm({
                         />
                         <FieldFooter error={errors.identification_number} />
                     </div>
+                </div>
 
-                    <div className="grid gap-2">
+                <div className="grid gap-x-4 gap-y-2 md:grid-cols-2 md:grid-rows-[auto_auto_auto]">
+                    <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                         <Label htmlFor={id('first_name')}>
                             Primer Nombre
                             <RequiredMarker />
@@ -185,7 +187,7 @@ export default function DriverForm({
                         <FieldFooter error={errors.first_name} />
                     </div>
 
-                    <div className="grid gap-2">
+                    <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                         <Label htmlFor={id('second_name')}>
                             Segundo Nombre
                         </Label>
@@ -199,8 +201,10 @@ export default function DriverForm({
                         />
                         <FieldFooter error={errors.second_name} />
                     </div>
+                </div>
 
-                    <div className="grid gap-2">
+                <div className="grid gap-x-4 gap-y-2 md:grid-cols-2 md:grid-rows-[auto_auto_auto]">
+                    <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                         <Label htmlFor={id('first_lastname')}>
                             Primer Apellido
                             <RequiredMarker />
@@ -216,7 +220,7 @@ export default function DriverForm({
                         <FieldFooter error={errors.first_lastname} />
                     </div>
 
-                    <div className="grid gap-2">
+                    <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                         <Label htmlFor={id('second_lastname')}>
                             Segundo Apellido
                         </Label>
@@ -236,37 +240,35 @@ export default function DriverForm({
             {/* Section 2: Datos de Contacto */}
             <section className="space-y-4">
                 <h3 className="text-base font-semibold">Datos de Contacto</h3>
-                <div className="grid gap-4 md:grid-cols-2">
-                    <div className="grid gap-2 md:col-span-2">
-                        <Label htmlFor={id('municipality_id')}>Municipio</Label>
-                        <MunicipalityCombobox
-                            id={id('municipality_id')}
-                            municipalities={municipalities}
-                            value={data.municipality_id || null}
-                            onChange={(value) =>
-                                setData('municipality_id', value)
-                            }
-                            invalid={invalid('municipality_id')}
-                            placeholder="Selecciona un municipio"
-                        />
-                        <FieldFooter error={errors.municipality_id} />
-                    </div>
+                <div className="grid gap-2">
+                    <Label htmlFor={id('municipality_id')}>Municipio</Label>
+                    <MunicipalityCombobox
+                        id={id('municipality_id')}
+                        municipalities={municipalities}
+                        value={data.municipality_id || null}
+                        onChange={(value) => setData('municipality_id', value)}
+                        invalid={invalid('municipality_id')}
+                        placeholder="Selecciona un municipio"
+                    />
+                    <FieldFooter error={errors.municipality_id} />
+                </div>
 
-                    <div className="grid gap-2 md:col-span-2">
-                        <Label htmlFor={id('address')}>
-                            Dirección
-                            <RequiredMarker />
-                        </Label>
-                        <Input
-                            id={id('address')}
-                            value={data.address}
-                            aria-invalid={invalid('address')}
-                            onChange={(e) => setData('address', e.target.value)}
-                        />
-                        <FieldFooter error={errors.address} />
-                    </div>
+                <div className="grid gap-2">
+                    <Label htmlFor={id('address')}>
+                        Dirección
+                        <RequiredMarker />
+                    </Label>
+                    <Input
+                        id={id('address')}
+                        value={data.address}
+                        aria-invalid={invalid('address')}
+                        onChange={(e) => setData('address', e.target.value)}
+                    />
+                    <FieldFooter error={errors.address} />
+                </div>
 
-                    <div className="grid gap-2">
+                <div className="grid gap-x-4 gap-y-2 md:grid-cols-2 md:grid-rows-[auto_auto_auto]">
+                    <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                         <Label htmlFor={id('phone')}>
                             Teléfono
                             <RequiredMarker />
@@ -280,7 +282,7 @@ export default function DriverForm({
                         <FieldFooter error={errors.phone} />
                     </div>
 
-                    <div className="grid gap-2">
+                    <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                         <Label htmlFor={id('email')}>
                             Correo Electrónico
                             <RequiredMarker />
@@ -300,8 +302,8 @@ export default function DriverForm({
             {/* Section 3: Licencia */}
             <section className="space-y-4">
                 <h3 className="text-base font-semibold">Licencia</h3>
-                <div className="grid gap-4 md:grid-cols-2">
-                    <div className="grid gap-2">
+                <div className="grid gap-x-4 gap-y-2 md:grid-cols-2 md:grid-rows-[auto_auto_auto]">
+                    <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                         <Label htmlFor={id('license_category')}>
                             Categoría
                             <RequiredMarker />
@@ -331,7 +333,7 @@ export default function DriverForm({
                         <FieldFooter error={errors.license_category} />
                     </div>
 
-                    <div className="grid gap-2">
+                    <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                         <Label htmlFor={id('license_due_date')}>
                             Fecha de Vencimiento
                             <RequiredMarker />
@@ -353,8 +355,8 @@ export default function DriverForm({
             {/* Section 4: Afiliaciones */}
             <section className="space-y-4">
                 <h3 className="text-base font-semibold">Afiliaciones</h3>
-                <div className="grid gap-4 md:grid-cols-3">
-                    <div className="grid gap-2">
+                <div className="grid gap-x-4 gap-y-2 md:grid-cols-3 md:grid-rows-[auto_auto_auto]">
+                    <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                         <Label htmlFor={id('eps_id')}>
                             EPS
                             <RequiredMarker />
@@ -383,7 +385,7 @@ export default function DriverForm({
                         <FieldFooter error={errors.eps_id} />
                     </div>
 
-                    <div className="grid gap-2">
+                    <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                         <Label htmlFor={id('pension_fund_id')}>
                             Fondo de Pensiones
                             <RequiredMarker />
@@ -414,7 +416,7 @@ export default function DriverForm({
                         <FieldFooter error={errors.pension_fund_id} />
                     </div>
 
-                    <div className="grid gap-2">
+                    <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                         <Label htmlFor={id('severance_fund_id')}>
                             Fondo de Cesantías
                             <RequiredMarker />
