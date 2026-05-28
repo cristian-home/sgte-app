@@ -71,11 +71,9 @@ test('updating an unrelated field does not dispatch the job', function (): void 
 
     Bus::assertDispatchedTimes(FetchServiceRoute::class, 1);
 
-    // Changing a billing-group association should not re-fetch the
-    // route; the cache key is based on coordinates only.
-    $service->billingGroups()->sync(
-        [\App\Models\BillingGroup::firstWhere('code', 'turismo')->id],
-    );
+    // Changing the billing-group tags should not re-fetch the route;
+    // the cache key is based on coordinates only.
+    $service->update(['billing_groups' => ['Turismo']]);
 
     Bus::assertDispatchedTimes(FetchServiceRoute::class, 1);
 });

@@ -1,5 +1,5 @@
 import { Head, Link, useForm } from '@inertiajs/react';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import ServiceController from '@/actions/App/Http/Controllers/ServiceController';
 import { type MunicipalityOption } from '@/components/municipality-combobox';
 import ServiceForm, {
@@ -38,15 +38,7 @@ interface Service {
     actual_end_local: string | null;
     unit_value: string;
     quantity: number;
-    // Hydrated via `$service->load('billingGroups')` — JSON-serializes
-    // as the snake_case relation name `billing_groups`. Each entry is
-    // a full BillingGroup row; the form maps it to ids on initialize.
-    billing_groups?: Array<{
-        id: number;
-        code: string;
-        name: string;
-        active?: boolean;
-    }> | null;
+    billing_groups?: string[] | null;
     payment_method: string;
     service_status: string;
     service_incidents_count?: number;
@@ -58,7 +50,6 @@ export default function ServicesEdit({
     drivers,
     contracts,
     municipalities,
-    billingGroups = [],
     dayStatus,
     canEditExecuted,
     isAdmin,
@@ -68,7 +59,6 @@ export default function ServicesEdit({
     drivers: DriverOption[];
     contracts: ContractOption[];
     municipalities: MunicipalityOption[];
-    billingGroups?: import('@/components/services/billing-groups-tags').BillingGroupOption[];
     dayStatus?: DayStatus | null;
     canEditExecuted?: boolean;
     isAdmin?: boolean;
@@ -111,7 +101,7 @@ export default function ServicesEdit({
         timezone: service.timezone,
         unit_value: service.unit_value,
         quantity: String(service.quantity),
-        billing_groups: (service.billing_groups ?? []).map((g) => g.id),
+        billing_groups: service.billing_groups ?? [],
         payment_method: service.payment_method,
         service_status: service.service_status,
         justification: '',
@@ -124,23 +114,6 @@ export default function ServicesEdit({
     }
 
     const [addressCommitInFlight, setAddressCommitInFlight] = useState(false);
-
-    // En edit mode los servicios pueden tener asociados grupos
-    // inactivos (desactivados por admin después). Mezclamos la lista
-    // activa del catálogo con los attached del servicio para que la
-    // UI siga mostrándolos (marcados como inactivos) y se puedan
-    // destildar.
-    const mergedBillingGroups = useMemo(() => {
-        const byId = new Map(billingGroups.map((g) => [g.id, g]));
-        for (const g of service.billing_groups ?? []) {
-            if (!byId.has(g.id)) {
-                byId.set(g.id, { ...g, active: g.active ?? false });
-            }
-        }
-        return Array.from(byId.values()).sort((a, b) =>
-            a.name.localeCompare(b.name),
-        );
-    }, [billingGroups, service.billing_groups]);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -156,7 +129,6 @@ export default function ServicesEdit({
                         drivers={drivers}
                         contracts={contracts}
                         municipalities={municipalities}
-                        billingGroups={mergedBillingGroups}
                         incidentCount={service.service_incidents_count}
                         mode="edit"
                         dayStatus={dayStatus}

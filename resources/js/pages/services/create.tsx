@@ -33,7 +33,6 @@ export default function ServicesCreate({
     canBypassExecutedDay = false,
     thirdParties = [],
     documentTypes = [],
-    billingGroups = [],
 }: {
     vehicles: VehicleOption[];
     drivers: DriverOption[];
@@ -48,7 +47,6 @@ export default function ServicesCreate({
     canBypassExecutedDay?: boolean;
     thirdParties?: ThirdPartyOption[];
     documentTypes?: DocumentTypeOption[];
-    billingGroups?: import('@/components/services/billing-groups-tags').BillingGroupOption[];
 }) {
     const { data, setData, post, processing, errors } = useForm({
         contract_id: '',
@@ -73,7 +71,7 @@ export default function ServicesCreate({
         actual_end_time: '',
         unit_value: '',
         quantity: '1',
-        billing_groups: [] as number[],
+        billing_groups: [] as string[],
         payment_method: 'credit',
         service_status: 'open',
         justification: '',
@@ -129,7 +127,6 @@ export default function ServicesCreate({
                         drivers={drivers}
                         contracts={contracts}
                         municipalities={municipalities}
-                        billingGroups={billingGroups}
                         mode="create"
                         onAddressCommitInFlight={setAddressCommitInFlight}
                         onCreateContractClick={

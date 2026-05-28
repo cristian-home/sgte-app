@@ -82,12 +82,6 @@ enum Permission: string
     case UPDATE_INCIDENT_TYPES = 'incident-types.update';
     case DELETE_INCIDENT_TYPES = 'incident-types.delete';
 
-    // Billing Groups (catalog)
-    case VIEW_BILLING_GROUPS = 'billing-groups.view';
-    case CREATE_BILLING_GROUPS = 'billing-groups.create';
-    case UPDATE_BILLING_GROUPS = 'billing-groups.update';
-    case DELETE_BILLING_GROUPS = 'billing-groups.delete';
-
     // Static Catalogs (document types, EPS, pension funds, severance funds)
     case MANAGE_CATALOGS = 'catalogs.manage';
 
@@ -153,10 +147,6 @@ enum Permission: string
             self::CREATE_INCIDENT_TYPES => 'Crear tipos de novedad',
             self::UPDATE_INCIDENT_TYPES => 'Editar tipos de novedad',
             self::DELETE_INCIDENT_TYPES => 'Eliminar tipos de novedad',
-            self::VIEW_BILLING_GROUPS => 'Ver grupos de facturación',
-            self::CREATE_BILLING_GROUPS => 'Crear grupos de facturación',
-            self::UPDATE_BILLING_GROUPS => 'Editar grupos de facturación',
-            self::DELETE_BILLING_GROUPS => 'Eliminar grupos de facturación',
             self::MANAGE_CATALOGS => 'Gestionar catálogos (documentos, EPS, fondos)',
             self::VIEW_AUDIT_LOG => 'Ver registro de auditoría',
             self::MANAGE_DATA_IMPORTS => 'Gestionar importaciones masivas',
@@ -217,10 +207,6 @@ enum Permission: string
             self::CREATE_INCIDENT_TYPES => 'Crear tipos de novedad.',
             self::UPDATE_INCIDENT_TYPES => 'Editar tipos de novedad.',
             self::DELETE_INCIDENT_TYPES => 'Eliminar tipos de novedad.',
-            self::VIEW_BILLING_GROUPS => 'Consultar grupos de facturación.',
-            self::CREATE_BILLING_GROUPS => 'Crear grupos de facturación.',
-            self::UPDATE_BILLING_GROUPS => 'Editar grupos de facturación.',
-            self::DELETE_BILLING_GROUPS => 'Eliminar grupos de facturación.',
             self::MANAGE_CATALOGS => 'Gestionar catálogos: documentos, EPS, fondos y municipios.',
             self::VIEW_AUDIT_LOG => 'Historial de cambios sensibles registrados en el sistema.',
             self::MANAGE_DATA_IMPORTS => 'Cargar archivos masivos de usuarios, conductores, terceros o vehículos.',
@@ -281,10 +267,6 @@ enum Permission: string
             self::CREATE_INCIDENT_TYPES,
             self::UPDATE_INCIDENT_TYPES,
             self::DELETE_INCIDENT_TYPES => PermissionGroup::INCIDENT_TYPES,
-            self::VIEW_BILLING_GROUPS,
-            self::CREATE_BILLING_GROUPS,
-            self::UPDATE_BILLING_GROUPS,
-            self::DELETE_BILLING_GROUPS => PermissionGroup::BILLING_GROUPS,
             self::MANAGE_CATALOGS => PermissionGroup::CATALOGS,
             self::VIEW_AUDIT_LOG => PermissionGroup::AUDIT,
             self::MANAGE_DATA_IMPORTS => PermissionGroup::DATA_IMPORTS,

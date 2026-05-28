@@ -25,7 +25,7 @@ import LocationField, {
 } from '@/components/location-field';
 import MapPickerModal from '@/components/map-picker-modal';
 import { type MunicipalityOption } from '@/components/municipality-combobox';
-import BillingGroupsTags from '@/components/services/billing-groups-tags';
+import BillingGroupsInput from '@/components/services/billing-groups-input';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -131,7 +131,7 @@ export interface ServiceFormData {
     actual_end_time: string;
     unit_value: string;
     quantity: string;
-    billing_groups: number[];
+    billing_groups: string[];
     payment_method: string;
     service_status: string;
     justification: string;
@@ -390,7 +390,6 @@ interface ServiceFormProps {
     drivers: DriverOption[];
     contracts: ContractOption[];
     municipalities: MunicipalityOption[];
-    billingGroups: import('@/components/services/billing-groups-tags').BillingGroupOption[];
     incidentCount?: number;
     mode: 'create' | 'edit';
     dayStatus?: DayStatus | null;
@@ -421,7 +420,6 @@ export default function ServiceForm({
     drivers,
     contracts,
     municipalities,
-    billingGroups,
     incidentCount,
     mode,
     dayStatus,
@@ -1622,13 +1620,12 @@ export default function ServiceForm({
                             <Label htmlFor="billing_groups">
                                 Grupos de Facturación
                             </Label>
-                            <BillingGroupsTags
+                            <BillingGroupsInput
                                 id="billing_groups"
                                 value={data.billing_groups}
                                 onChange={(next) =>
                                     setData('billing_groups', next)
                                 }
-                                options={billingGroups}
                                 invalid={invalid('billing_groups')}
                                 disabled={isFieldDisabled('billing_groups')}
                             />

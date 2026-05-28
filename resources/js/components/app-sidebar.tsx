@@ -22,7 +22,6 @@ import { index as epsIndex } from '@/actions/App/Http/Controllers/EpsController'
 import { index as fuecsIndex } from '@/actions/App/Http/Controllers/FuecController';
 import { index as fuecNumberRangesIndex } from '@/actions/App/Http/Controllers/FuecNumberRangeController';
 import { index as ganttIndex } from '@/actions/App/Http/Controllers/GanttController';
-import { index as billingGroupsIndex } from '@/actions/App/Http/Controllers/BillingGroupController';
 import { index as incidentTypesIndex } from '@/actions/App/Http/Controllers/IncidentTypeController';
 import { index as invoicesIndex } from '@/actions/App/Http/Controllers/InvoiceController';
 import { index as pensionFundsIndex } from '@/actions/App/Http/Controllers/PensionFundController';
@@ -240,11 +239,6 @@ const navGroups: NavGroup[] = [
                 title: 'Tipos de Novedad',
                 href: incidentTypesIndex(),
                 permission: Permission.VIEW_INCIDENT_TYPES,
-            },
-            {
-                title: 'Grupos de Facturación',
-                href: billingGroupsIndex(),
-                permission: Permission.VIEW_BILLING_GROUPS,
             },
         ],
     },
