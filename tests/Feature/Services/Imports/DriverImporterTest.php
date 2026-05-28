@@ -150,3 +150,38 @@ test('invalid timezone goes to errored', function (): void {
     expect($result['counters']['errored'])->toBe(1);
     expect($result['errors'])->toContain('Zona horaria');
 });
+
+test('chunk continues after a unique-violation row (resilient processing)', function (): void {
+    // Reproduces the bug observed during Playwright smoke: a row that
+    // throws a QueryException at insert time (e.g. drivers.user_id
+    // unique violation because the user already has a Driver attached)
+    // would abort the entire chunk's transaction, losing the other
+    // valid rows. The fix is per-row atomicity.
+    $user = User::factory()->create(['email' => 'driver-already-bound@x.co']);
+    $user->assignRole(Role::DRIVER->value);
+
+    // Pre-seed: this user already has a Driver attached → row 1 will
+    // fail with `drivers_user_id_unique` violation at INSERT.
+    Driver::factory()->create([
+        'user_id' => $user->id,
+        'identification_number' => '9999999999',
+    ]);
+
+    $csv = headerDriver().
+        // Row 1: collides on user_id unique (will throw QueryException).
+        'CC,1010101010,Conflict,,Row,,Cra 1,3001234567,c@x.co,C3,2027-12-31,EPS001,FP001,FC001,1,driver-already-bound@x.co,,'."\n".
+        // Row 2: independent identification_number, no user link → must succeed.
+        'CC,2020202020,After,,Conflict,,Cra 1,3001234567,a@x.co,C3,2027-12-31,EPS001,FP001,FC001,1,,,'."\n";
+
+    $result = runDriverImporter($csv);
+
+    expect($result['counters']['errored'])->toBe(1);
+    expect($result['counters']['created'])->toBe(1);
+    // Both SQLite ("UNIQUE constraint failed: drivers.user_id") and
+    // Postgres ("duplicate key value violates unique constraint
+    // \"drivers_user_id_unique\"") name the offending column.
+    expect($result['errors'])->toContain('user_id');
+
+    expect(Driver::query()->where('identification_number', '2020202020')->exists())->toBeTrue();
+    expect(Driver::query()->where('identification_number', '1010101010')->exists())->toBeFalse();
+});
