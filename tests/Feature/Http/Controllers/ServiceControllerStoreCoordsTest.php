@@ -61,7 +61,7 @@ function buildStoreCoordsPayload(array $overrides = []): array
         'planned_duration' => 120,
         'unit_value' => 250000,
         'quantity' => 1,
-        'billing_groups' => [\App\Models\BillingGroup::firstWhere('code', 'salud')->id],
+        'billing_groups' => ['Salud'],
         'payment_method' => 'credit',
         'service_status' => 'open',
     ], $overrides);

@@ -1,8 +1,8 @@
 import { Form } from '@inertiajs/react';
 import { useRef } from 'react';
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
-import Heading from '@/components/heading';
 import FieldFooter from '@/components/field-footer';
+import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,

@@ -182,7 +182,7 @@ test('store saves and redirects', function (): void {
     $planned_duration = 120;
     $unit_value = fake()->randomFloat(2, 50000, 500000);
     $quantity = fake()->numberBetween(1, 5);
-    $billing_groups = [\App\Models\BillingGroup::firstWhere('code', 'salud')->id];
+    $billing_groups = ['Salud', 'AC01'];
     $payment_method = fake()->randomElement(['cash', 'credit', 'transfer']);
 
     $response = post(route('services.store'), [

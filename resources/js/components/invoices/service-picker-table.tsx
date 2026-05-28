@@ -41,7 +41,7 @@ export interface ServicePickerRow {
         affects_billing: boolean;
         additional_value: string | number | null;
     }>;
-    billing_groups?: Array<{ id: number; name: string }>;
+    billing_groups?: string[] | null;
 }
 
 export const JUSTIFICATION_MIN = 10;
@@ -146,7 +146,7 @@ export default function ServicePickerTable({
 }: ServicePickerTableProps) {
     const id = (name: string) => (idPrefix ? `${idPrefix}_${name}` : name);
 
-    const [groupFilterId, setGroupFilterId] = useState<string>('');
+    const [groupFilter, setGroupFilter] = useState<string>('');
 
     const blockedIds = useMemo(
         () => new Set(blockedCandidates.map((r) => r.id)),
@@ -158,37 +158,33 @@ export default function ServicePickerTable({
         [selectedIds, blockedIds],
     );
 
-    // Union of billing_group ids+names across all candidate buckets,
-    // used to populate the local "Grupo" filter. Derived from data so
+    // Union of billing-group tags across all candidate buckets, used
+    // to populate the local "Grupo" filter. Derived from data so
     // operators only see groups that actually apply to the visible
     // services (no dead options).
     const availableGroups = useMemo(() => {
-        const map = new Map<number, string>();
+        const set = new Set<string>();
         for (const row of [
             ...candidates,
             ...blockedCandidates,
             ...attachedCandidates,
         ]) {
-            for (const g of row.billing_groups ?? []) {
-                if (!map.has(g.id)) {
-                    map.set(g.id, g.name);
-                }
+            for (const tag of row.billing_groups ?? []) {
+                set.add(tag);
             }
         }
-        return Array.from(map.entries())
-            .map(([id, name]) => ({ id, name }))
-            .sort((a, b) => a.name.localeCompare(b.name));
+        return Array.from(set.values()).sort((a, b) =>
+            a.localeCompare(b),
+        );
     }, [candidates, blockedCandidates, attachedCandidates]);
 
     const filter = (rows: ServicePickerRow[]) => {
         const term = search.trim().toLowerCase();
-        const groupId = groupFilterId === '' ? null : Number(groupFilterId);
-        if (!term && groupId === null) return rows;
+        const tag = groupFilter === '' ? null : groupFilter;
+        if (!term && tag === null) return rows;
         return rows.filter((row) => {
-            if (groupId !== null) {
-                const has = (row.billing_groups ?? []).some(
-                    (g) => g.id === groupId,
-                );
+            if (tag !== null) {
+                const has = (row.billing_groups ?? []).includes(tag);
                 if (!has) return false;
             }
             if (!term) return true;
@@ -210,17 +206,17 @@ export default function ServicePickerTable({
     const filteredClean = useMemo(
         () => filter(candidates),
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        [candidates, search, groupFilterId],
+        [candidates, search, groupFilter],
     );
     const filteredBlocked = useMemo(
         () => filter(blockedCandidates),
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        [blockedCandidates, search, groupFilterId],
+        [blockedCandidates, search, groupFilter],
     );
     const filteredAttached = useMemo(
         () => filter(attachedCandidates),
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        [attachedCandidates, search, groupFilterId],
+        [attachedCandidates, search, groupFilter],
     );
 
     const allCleanSelected =
@@ -276,9 +272,9 @@ export default function ServicePickerTable({
                 />
                 {availableGroups.length > 0 && (
                     <Select
-                        value={groupFilterId === '' ? 'all' : groupFilterId}
+                        value={groupFilter === '' ? 'all' : groupFilter}
                         onValueChange={(v) =>
-                            setGroupFilterId(v === 'all' ? '' : v)
+                            setGroupFilter(v === 'all' ? '' : v)
                         }
                     >
                         <SelectTrigger
@@ -291,9 +287,9 @@ export default function ServicePickerTable({
                             <SelectItem value="all">
                                 Todos los grupos
                             </SelectItem>
-                            {availableGroups.map((g) => (
-                                <SelectItem key={g.id} value={String(g.id)}>
-                                    {g.name}
+                            {availableGroups.map((tag) => (
+                                <SelectItem key={tag} value={tag}>
+                                    {tag}
                                 </SelectItem>
                             ))}
                         </SelectContent>

@@ -18,7 +18,6 @@ enum PermissionGroup: string
     case GPS = 'gps';
     case USERS = 'users';
     case INCIDENT_TYPES = 'incident-types';
-    case BILLING_GROUPS = 'billing-groups';
     case CATALOGS = 'catalogs';
     case AUDIT = 'audit';
     case DATA_IMPORTS = 'data-imports';
@@ -41,7 +40,6 @@ enum PermissionGroup: string
             self::GPS => 'GPS',
             self::USERS => 'Usuarios',
             self::INCIDENT_TYPES => 'Tipos de novedad',
-            self::BILLING_GROUPS => 'Grupos de facturación',
             self::CATALOGS => 'Catálogos',
             self::AUDIT => 'Auditoría',
             self::DATA_IMPORTS => 'Importaciones',
@@ -66,11 +64,10 @@ enum PermissionGroup: string
             self::GPS => 11,
             self::USERS => 12,
             self::INCIDENT_TYPES => 13,
-            self::BILLING_GROUPS => 14,
-            self::CATALOGS => 15,
-            self::AUDIT => 16,
-            self::DATA_IMPORTS => 17,
-            self::NOTIFICATIONS => 18,
+            self::CATALOGS => 14,
+            self::AUDIT => 15,
+            self::DATA_IMPORTS => 16,
+            self::NOTIFICATIONS => 17,
         };
     }
 }

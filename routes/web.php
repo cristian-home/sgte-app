@@ -127,9 +127,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('incident-types', App\Http\Controllers\IncidentTypeController::class)
         ->except(['create', 'edit'])
         ->middleware('can:'.App\Enums\Permission::VIEW_INCIDENT_TYPES->value);
-    Route::resource('billing-groups', App\Http\Controllers\BillingGroupController::class)
-        ->except(['create', 'edit'])
-        ->middleware('can:'.App\Enums\Permission::VIEW_BILLING_GROUPS->value);
     // Service incidents — intentionally NOT gated at the route level.
     // Drivers have CREATE_INCIDENTS but no VIEW_INCIDENTS (they file
     // incidents on their own services from the driver portal), so a

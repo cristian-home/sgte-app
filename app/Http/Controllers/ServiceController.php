@@ -228,12 +228,7 @@ class ServiceController extends Controller
             $serviceData['create_generic_contract'],
         );
 
-        // billing_groups is the pivot payload; sync after create.
-        $billingGroupIds = $serviceData['billing_groups'] ?? [];
-        unset($serviceData['billing_groups']);
-
         $service = Service::create($serviceData);
-        $service->billingGroups()->sync($billingGroupIds);
 
         // REQ-009: tag retroactive closed entries so /audit-log can
         // filter them apart from services closed via the driver
@@ -298,7 +293,6 @@ class ServiceController extends Controller
             'invoice',
             'serviceIncidents.incidentType',
             'serviceIncidents.registrar',
-            'billingGroups',
         ]);
         $service->loadCount('serviceIncidents');
 
@@ -363,7 +357,6 @@ class ServiceController extends Controller
             'driver',
             'originMunicipality.department',
             'destinationMunicipality.department',
-            'billingGroups',
         ]);
         $service->loadCount('serviceIncidents');
 
@@ -388,10 +381,6 @@ class ServiceController extends Controller
         $justification = $validated['justification'] ?? null;
         unset($validated['justification']);
 
-        $billingGroupIdsProvided = array_key_exists('billing_groups', $validated);
-        $billingGroupIds = $validated['billing_groups'] ?? [];
-        unset($validated['billing_groups']);
-
         // REQ-009 reopen invariant: capture before-state so the
         // activity-log entry can name which actual_*_time fields were
         // cleared or set during the status transition.
@@ -402,9 +391,6 @@ class ServiceController extends Controller
         $actualEndBefore = $service->actual_end_at;
 
         $service->update($validated);
-        if ($billingGroupIdsProvided) {
-            $service->billingGroups()->sync($billingGroupIds);
-        }
         $service->refresh();
 
         $statusAfter = $service->service_status instanceof \App\Enums\ServiceStatus
@@ -494,10 +480,6 @@ class ServiceController extends Controller
                 ->with('department:id,name')
                 ->orderBy('name')
                 ->get(['id', 'name', 'code', 'department_id', 'latitude', 'longitude']),
-            'billingGroups' => \App\Models\BillingGroup::query()
-                ->where('active', true)
-                ->orderBy('name')
-                ->get(['id', 'code', 'name']),
         ];
     }
 

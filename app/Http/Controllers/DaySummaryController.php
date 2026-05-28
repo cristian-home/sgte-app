@@ -89,7 +89,6 @@ class DaySummaryController extends Controller
                 'driver:id,first_name,first_lastname',
                 'contract:id,contract_number,third_party_id',
                 'contract.thirdParty:id,company_name,first_name,first_lastname,is_natural_person',
-                'billingGroups:id,name',
             ])
             ->withCount('serviceIncidents')
             ->withSum(
@@ -129,7 +128,7 @@ class DaySummaryController extends Controller
                     $service->unit_value,
                     $service->quantity,
                     $service->payment_method->value,
-                    $service->billingGroups->pluck('name')->implode(', '),
+                    implode(', ', $service->billing_groups ?? []),
                     number_format($total, 2, '.', ''),
                 ]);
             }

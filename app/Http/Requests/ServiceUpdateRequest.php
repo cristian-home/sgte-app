@@ -101,12 +101,8 @@ class ServiceUpdateRequest extends ServiceStoreRequest
 
         // Accounting: billing fields only
         return [
-            // En edit permitimos cualquier billing_group existente
-            // (incluso inactivos), porque un servicio puede tener un
-            // grupo previamente desactivado y queremos preservar esa
-            // asociación al editar otros campos.
             'billing_groups' => ['nullable', 'array'],
-            'billing_groups.*' => ['integer', Rule::exists('billing_groups', 'id')],
+            'billing_groups.*' => ['string', 'max:50', 'distinct'],
             'unit_value' => ['required', 'numeric', 'between:-9999999999.99,9999999999.99'],
             'quantity' => ['required', 'integer'],
             'payment_method' => ['required', Rule::enum(PaymentMethod::class)],

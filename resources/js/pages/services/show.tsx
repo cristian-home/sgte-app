@@ -389,12 +389,12 @@ export default function ServicesShow({
                                     {service.billing_groups &&
                                     service.billing_groups.length > 0 ? (
                                         <div className="flex flex-wrap justify-center gap-1">
-                                            {service.billing_groups.map((g) => (
+                                            {service.billing_groups.map((tag) => (
                                                 <Badge
-                                                    key={g.id}
+                                                    key={tag}
                                                     variant="secondary"
                                                 >
-                                                    {g.name}
+                                                    {tag}
                                                 </Badge>
                                             ))}
                                         </div>

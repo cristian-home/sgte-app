@@ -98,7 +98,7 @@ test('accounting can update billing fields on an executed day', function (): voi
         'unit_value' => 200000,
         'quantity' => 3,
         'payment_method' => 'cash',
-        'billing_groups' => [\App\Models\BillingGroup::firstWhere('code', 'salud')->id],
+        'billing_groups' => ['Salud'],
     ]);
 
     $response->assertRedirect(route('services.index'));
