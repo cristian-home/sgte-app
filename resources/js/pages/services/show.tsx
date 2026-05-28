@@ -16,6 +16,10 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import ServiceIncidentController from '@/actions/App/Http/Controllers/ServiceIncidentController';
+import {
+    type BillingIncidentRow,
+    IncidentsBillingBreakdown,
+} from '@/components/billing/incidents-billing-breakdown';
 import { Can } from '@/components/can';
 import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
 import { IncidentSeverityPill } from '@/components/incidents/incident-severity-pill';
@@ -25,7 +29,6 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BillingGroupLabel } from '@/enums/BillingGroup';
 import { PaymentMethodLabel } from '@/enums/PaymentMethod';
 import { Permission } from '@/enums/Permission';
 import { ServiceStatusLabel } from '@/enums/ServiceStatus';
@@ -33,7 +36,6 @@ import AppLayout from '@/layouts/app-layout';
 import { formatEventTime } from '@/lib/datetime';
 import services from '@/routes/services';
 import { type BreadcrumbItem } from '@/types';
-import type { BillingGroup } from '@/enums/BillingGroup';
 import type { Service } from '@/types/models';
 
 interface DayStatusWithExecutor {
@@ -155,10 +157,12 @@ export default function ServicesShow({
     service,
     dayStatus,
     recentIncidents,
+    billingIncidents,
 }: {
     service: Service;
     dayStatus?: DayStatusWithExecutor | null;
     recentIncidents?: RecentIncidentRow[];
+    billingIncidents?: BillingIncidentRow[];
 }) {
     const clientName = service.contract?.third_party
         ? service.contract.third_party.company_name ||
@@ -286,9 +290,11 @@ export default function ServicesShow({
                                     {driverName}
                                 </IconField>
                                 <IconField icon={MapPin} label="Origen">
-                                    {municipalityDisplay(
-                                        service.origin_municipality,
-                                    )}
+                                    <span className="capitalize">
+                                        {municipalityDisplay(
+                                            service.origin_municipality,
+                                        )}
+                                    </span>
                                 </IconField>
                                 <IconField icon={CircleDot} label="Estado">
                                     <Badge
@@ -389,12 +395,10 @@ export default function ServicesShow({
                                         <div className="flex flex-wrap justify-center gap-1">
                                             {service.billing_groups.map((g) => (
                                                 <Badge
-                                                    key={g}
+                                                    key={g.id}
                                                     variant="secondary"
                                                 >
-                                                    {BillingGroupLabel[
-                                                        g as BillingGroup
-                                                    ] ?? g}
+                                                    {g.name}
                                                 </Badge>
                                             ))}
                                         </div>
@@ -420,7 +424,25 @@ export default function ServicesShow({
                     </Card>
                 </div>
 
-                {/* Row 3: Novedades */}
+                {/* Row 3 (conditional): Impacto de novedades en facturación */}
+                {billingIncidents && billingIncidents.length > 0 && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>
+                                Impacto de novedades en facturación
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <IncidentsBillingBreakdown
+                                unitValue={service.unit_value}
+                                quantity={service.quantity}
+                                incidents={billingIncidents}
+                            />
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* Row 4: Novedades */}
                 <Card>
                     <CardHeader>
                         <div className="flex items-center justify-between">

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import InputError from '@/components/input-error';
+import FieldFooter from '@/components/field-footer';
 import MunicipalityCombobox, {
     type MunicipalityOption,
 } from '@/components/municipality-combobox';
@@ -121,8 +121,8 @@ export default function DriverForm({
             {/* Section 1: Identificación */}
             <section className="space-y-4">
                 <h3 className="text-base font-semibold">Identificación</h3>
-                <div className="grid gap-4 md:grid-cols-2">
-                    <div className="grid gap-2">
+                <div className="grid gap-x-4 gap-y-2 md:grid-cols-2 md:grid-rows-[auto_auto_auto]">
+                    <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                         <Label htmlFor={id('document_type_id')}>
                             Tipo de Documento
                             <RequiredMarker />
@@ -150,10 +150,10 @@ export default function DriverForm({
                                 ))}
                             </SelectContent>
                         </Select>
-                        <InputError message={errors.document_type_id} />
+                        <FieldFooter error={errors.document_type_id} />
                     </div>
 
-                    <div className="grid gap-2">
+                    <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                         <Label htmlFor={id('identification_number')}>
                             Número de Identificación
                             <RequiredMarker />
@@ -166,10 +166,12 @@ export default function DriverForm({
                             }
                             invalid={invalid('identification_number')}
                         />
-                        <InputError message={errors.identification_number} />
+                        <FieldFooter error={errors.identification_number} />
                     </div>
+                </div>
 
-                    <div className="grid gap-2">
+                <div className="grid gap-x-4 gap-y-2 md:grid-cols-2 md:grid-rows-[auto_auto_auto]">
+                    <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                         <Label htmlFor={id('first_name')}>
                             Primer Nombre
                             <RequiredMarker />
@@ -182,10 +184,10 @@ export default function DriverForm({
                                 setData('first_name', e.target.value)
                             }
                         />
-                        <InputError message={errors.first_name} />
+                        <FieldFooter error={errors.first_name} />
                     </div>
 
-                    <div className="grid gap-2">
+                    <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                         <Label htmlFor={id('second_name')}>
                             Segundo Nombre
                         </Label>
@@ -197,10 +199,12 @@ export default function DriverForm({
                                 setData('second_name', e.target.value)
                             }
                         />
-                        <InputError message={errors.second_name} />
+                        <FieldFooter error={errors.second_name} />
                     </div>
+                </div>
 
-                    <div className="grid gap-2">
+                <div className="grid gap-x-4 gap-y-2 md:grid-cols-2 md:grid-rows-[auto_auto_auto]">
+                    <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                         <Label htmlFor={id('first_lastname')}>
                             Primer Apellido
                             <RequiredMarker />
@@ -213,10 +217,10 @@ export default function DriverForm({
                                 setData('first_lastname', e.target.value)
                             }
                         />
-                        <InputError message={errors.first_lastname} />
+                        <FieldFooter error={errors.first_lastname} />
                     </div>
 
-                    <div className="grid gap-2">
+                    <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                         <Label htmlFor={id('second_lastname')}>
                             Segundo Apellido
                         </Label>
@@ -228,7 +232,7 @@ export default function DriverForm({
                                 setData('second_lastname', e.target.value)
                             }
                         />
-                        <InputError message={errors.second_lastname} />
+                        <FieldFooter error={errors.second_lastname} />
                     </div>
                 </div>
             </section>
@@ -236,37 +240,35 @@ export default function DriverForm({
             {/* Section 2: Datos de Contacto */}
             <section className="space-y-4">
                 <h3 className="text-base font-semibold">Datos de Contacto</h3>
-                <div className="grid gap-4 md:grid-cols-2">
-                    <div className="grid gap-2 md:col-span-2">
-                        <Label htmlFor={id('municipality_id')}>Municipio</Label>
-                        <MunicipalityCombobox
-                            id={id('municipality_id')}
-                            municipalities={municipalities}
-                            value={data.municipality_id || null}
-                            onChange={(value) =>
-                                setData('municipality_id', value)
-                            }
-                            invalid={invalid('municipality_id')}
-                            placeholder="Selecciona un municipio"
-                        />
-                        <InputError message={errors.municipality_id} />
-                    </div>
+                <div className="grid gap-2">
+                    <Label htmlFor={id('municipality_id')}>Municipio</Label>
+                    <MunicipalityCombobox
+                        id={id('municipality_id')}
+                        municipalities={municipalities}
+                        value={data.municipality_id || null}
+                        onChange={(value) => setData('municipality_id', value)}
+                        invalid={invalid('municipality_id')}
+                        placeholder="Selecciona un municipio"
+                    />
+                    <FieldFooter error={errors.municipality_id} />
+                </div>
 
-                    <div className="grid gap-2 md:col-span-2">
-                        <Label htmlFor={id('address')}>
-                            Dirección
-                            <RequiredMarker />
-                        </Label>
-                        <Input
-                            id={id('address')}
-                            value={data.address}
-                            aria-invalid={invalid('address')}
-                            onChange={(e) => setData('address', e.target.value)}
-                        />
-                        <InputError message={errors.address} />
-                    </div>
+                <div className="grid gap-2">
+                    <Label htmlFor={id('address')}>
+                        Dirección
+                        <RequiredMarker />
+                    </Label>
+                    <Input
+                        id={id('address')}
+                        value={data.address}
+                        aria-invalid={invalid('address')}
+                        onChange={(e) => setData('address', e.target.value)}
+                    />
+                    <FieldFooter error={errors.address} />
+                </div>
 
-                    <div className="grid gap-2">
+                <div className="grid gap-x-4 gap-y-2 md:grid-cols-2 md:grid-rows-[auto_auto_auto]">
+                    <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                         <Label htmlFor={id('phone')}>
                             Teléfono
                             <RequiredMarker />
@@ -277,10 +279,10 @@ export default function DriverForm({
                             onValueChange={(raw) => setData('phone', raw)}
                             invalid={invalid('phone')}
                         />
-                        <InputError message={errors.phone} />
+                        <FieldFooter error={errors.phone} />
                     </div>
 
-                    <div className="grid gap-2">
+                    <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                         <Label htmlFor={id('email')}>
                             Correo Electrónico
                             <RequiredMarker />
@@ -292,7 +294,7 @@ export default function DriverForm({
                             aria-invalid={invalid('email')}
                             onChange={(e) => setData('email', e.target.value)}
                         />
-                        <InputError message={errors.email} />
+                        <FieldFooter error={errors.email} />
                     </div>
                 </div>
             </section>
@@ -300,8 +302,8 @@ export default function DriverForm({
             {/* Section 3: Licencia */}
             <section className="space-y-4">
                 <h3 className="text-base font-semibold">Licencia</h3>
-                <div className="grid gap-4 md:grid-cols-2">
-                    <div className="grid gap-2">
+                <div className="grid gap-x-4 gap-y-2 md:grid-cols-2 md:grid-rows-[auto_auto_auto]">
+                    <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                         <Label htmlFor={id('license_category')}>
                             Categoría
                             <RequiredMarker />
@@ -328,10 +330,10 @@ export default function DriverForm({
                                 C3
                             </ToggleGroupItem>
                         </ToggleGroup>
-                        <InputError message={errors.license_category} />
+                        <FieldFooter error={errors.license_category} />
                     </div>
 
-                    <div className="grid gap-2">
+                    <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                         <Label htmlFor={id('license_due_date')}>
                             Fecha de Vencimiento
                             <RequiredMarker />
@@ -345,7 +347,7 @@ export default function DriverForm({
                                 setData('license_due_date', e.target.value)
                             }
                         />
-                        <InputError message={errors.license_due_date} />
+                        <FieldFooter error={errors.license_due_date} />
                     </div>
                 </div>
             </section>
@@ -353,8 +355,8 @@ export default function DriverForm({
             {/* Section 4: Afiliaciones */}
             <section className="space-y-4">
                 <h3 className="text-base font-semibold">Afiliaciones</h3>
-                <div className="grid gap-4 md:grid-cols-3">
-                    <div className="grid gap-2">
+                <div className="grid gap-x-4 gap-y-2 md:grid-cols-3 md:grid-rows-[auto_auto_auto]">
+                    <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                         <Label htmlFor={id('eps_id')}>
                             EPS
                             <RequiredMarker />
@@ -380,10 +382,10 @@ export default function DriverForm({
                                 ))}
                             </SelectContent>
                         </Select>
-                        <InputError message={errors.eps_id} />
+                        <FieldFooter error={errors.eps_id} />
                     </div>
 
-                    <div className="grid gap-2">
+                    <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                         <Label htmlFor={id('pension_fund_id')}>
                             Fondo de Pensiones
                             <RequiredMarker />
@@ -411,10 +413,10 @@ export default function DriverForm({
                                 ))}
                             </SelectContent>
                         </Select>
-                        <InputError message={errors.pension_fund_id} />
+                        <FieldFooter error={errors.pension_fund_id} />
                     </div>
 
-                    <div className="grid gap-2">
+                    <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                         <Label htmlFor={id('severance_fund_id')}>
                             Fondo de Cesantías
                             <RequiredMarker />
@@ -442,7 +444,7 @@ export default function DriverForm({
                                 ))}
                             </SelectContent>
                         </Select>
-                        <InputError message={errors.severance_fund_id} />
+                        <FieldFooter error={errors.severance_fund_id} />
                     </div>
                 </div>
 
@@ -458,7 +460,7 @@ export default function DriverForm({
                         Seguridad social activa
                     </Label>
                 </div>
-                <InputError message={errors.has_social_security} />
+                <FieldFooter error={errors.has_social_security} />
             </section>
 
             {/* Section 5: Estado */}
@@ -474,7 +476,7 @@ export default function DriverForm({
                     />
                     <Label htmlFor={id('active')}>Conductor activo</Label>
                 </div>
-                <InputError message={errors.active} />
+                <FieldFooter error={errors.active} />
             </section>
 
             {mode === 'create' && (
@@ -525,7 +527,7 @@ export default function DriverForm({
                                     setData('account_email', e.target.value);
                                 }}
                             />
-                            <InputError message={errors.account_email} />
+                            <FieldFooter error={errors.account_email} />
                         </div>
                     )}
                 </section>

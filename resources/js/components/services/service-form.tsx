@@ -10,8 +10,9 @@ import {
     Plus,
     ShieldAlert,
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import InputError from '@/components/input-error';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import ServiceController from '@/actions/App/Http/Controllers/ServiceController';
+import FieldFooter from '@/components/field-footer';
 import {
     Choicebox,
     ChoiceboxIndicator,
@@ -130,7 +131,7 @@ export interface ServiceFormData {
     actual_end_time: string;
     unit_value: string;
     quantity: string;
-    billing_groups: string[];
+    billing_groups: number[];
     payment_method: string;
     service_status: string;
     justification: string;
@@ -272,6 +273,35 @@ function computeActualDuration(start: string, end: string): string | null {
     return `${diff} min`;
 }
 
+function parseHHmm(value: string): { h: number; m: number } | null {
+    if (!value) return null;
+    const [h, m] = value.split(':').map(Number);
+    if (Number.isNaN(h) || Number.isNaN(m)) return null;
+    return { h, m };
+}
+
+function formatHHmm(totalMinutes: number): string {
+    const wrapped = ((totalMinutes % 1440) + 1440) % 1440;
+    const h = Math.floor(wrapped / 60);
+    const m = wrapped % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+function addMinutes(start: string, mins: number): string | null {
+    const parsed = parseHHmm(start);
+    if (!parsed || !Number.isFinite(mins)) return null;
+    return formatHHmm(parsed.h * 60 + parsed.m + mins);
+}
+
+function diffMinutes(start: string, end: string): number | null {
+    const s = parseHHmm(start);
+    const e = parseHHmm(end);
+    if (!s || !e) return null;
+    const diff = e.h * 60 + e.m - (s.h * 60 + s.m);
+    if (diff <= 0) return null;
+    return diff;
+}
+
 /**
  * Native-Intl projection of a wall-clock day + time-of-day in
  * `timezone` to a UTC instant ISO string. Returns null when inputs are
@@ -360,6 +390,7 @@ interface ServiceFormProps {
     drivers: DriverOption[];
     contracts: ContractOption[];
     municipalities: MunicipalityOption[];
+    billingGroups: import('@/components/services/billing-groups-tags').BillingGroupOption[];
     incidentCount?: number;
     mode: 'create' | 'edit';
     dayStatus?: DayStatus | null;
@@ -390,6 +421,7 @@ export default function ServiceForm({
     drivers,
     contracts,
     municipalities,
+    billingGroups,
     incidentCount,
     mode,
     dayStatus,
@@ -505,6 +537,129 @@ export default function ServiceForm({
 
     const isClosed = data.service_status === 'closed';
 
+    // Linked Horarios control: planned_end_time is derived from
+    // planned_start_time + planned_duration but lives in local state so
+    // operators can also edit the end-time directly (which recomputes
+    // duration). lastEditedRef breaks the otherwise-circular update.
+    const [plannedEndTime, setPlannedEndTime] = useState<string>(() => {
+        const mins = Number(data.planned_duration);
+        if (!Number.isFinite(mins) || mins <= 0) return '';
+        return addMinutes(data.planned_start_time, mins) ?? '';
+    });
+    const lastEditedRef = useRef<'start' | 'duration' | 'end' | null>(null);
+
+    useEffect(() => {
+        if (lastEditedRef.current === 'end') return;
+        const mins = Number(data.planned_duration);
+        if (!Number.isFinite(mins) || mins <= 0) {
+            if (plannedEndTime !== '') setPlannedEndTime('');
+            return;
+        }
+        const next = addMinutes(data.planned_start_time, mins);
+        if (next && next !== plannedEndTime) setPlannedEndTime(next);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [data.planned_start_time, data.planned_duration]);
+
+    const handlePlannedStartChange = (value: string) => {
+        lastEditedRef.current = 'start';
+        setData('planned_start_time', value);
+    };
+
+    const handlePlannedDurationChange = (value: string) => {
+        lastEditedRef.current = 'duration';
+        setData('planned_duration', value);
+    };
+
+    const handlePlannedEndChange = (value: string) => {
+        lastEditedRef.current = 'end';
+        setPlannedEndTime(value);
+        const mins = diffMinutes(data.planned_start_time, value);
+        if (mins !== null) setData('planned_duration', String(mins));
+    };
+
+    // ETA hint from Google Routes (curated cache → live fallback). Only
+    // fetched when both coords are present and not currently in flight
+    // for the same pair. Auto-applies to planned_duration when the field
+    // is still empty/zero so create-mode starts pre-filled; in edit mode
+    // (or after the operator typed something) the existing value wins —
+    // the Aplicar button is the explicit revert.
+    const [etaMinutes, setEtaMinutes] = useState<number | null>(null);
+    const etaAbortRef = useRef<AbortController | null>(null);
+    // Mirror of data.planned_duration kept in a ref so the async ETA
+    // resolver can read the up-to-date value (the .then closure would
+    // otherwise see the value at effect-trigger time).
+    const durationRef = useRef(data.planned_duration);
+    useEffect(() => {
+        durationRef.current = data.planned_duration;
+    }, [data.planned_duration]);
+
+    useEffect(() => {
+        const o = data.origin_coordinates;
+        const d = data.destination_coordinates;
+        if (!o || !d) {
+            etaAbortRef.current?.abort();
+            setEtaMinutes(null);
+            return;
+        }
+        etaAbortRef.current?.abort();
+        const ctrl = new AbortController();
+        etaAbortRef.current = ctrl;
+        const url = ServiceController.eta({
+            query: {
+                origin_coordinates: o,
+                destination_coordinates: d,
+            },
+        }).url;
+        fetch(url, {
+            signal: ctrl.signal,
+            headers: { Accept: 'application/json' },
+            credentials: 'same-origin',
+        })
+            .then((r) => (r.ok ? r.json() : null))
+            .then((res: { eta_minutes: number | null } | null) => {
+                if (res && typeof res.eta_minutes === 'number') {
+                    const n = res.eta_minutes;
+                    setEtaMinutes(n);
+                    const currentRaw = durationRef.current;
+                    const currentNum = Number(currentRaw);
+                    const isEmpty =
+                        !currentRaw ||
+                        !Number.isFinite(currentNum) ||
+                        currentNum <= 0;
+                    if (isEmpty) {
+                        lastEditedRef.current = 'duration';
+                        setData('planned_duration', String(n));
+                    }
+                } else {
+                    setEtaMinutes(null);
+                }
+            })
+            .catch((err) => {
+                if (
+                    err &&
+                    typeof err === 'object' &&
+                    'name' in err &&
+                    (err as { name?: string }).name === 'AbortError'
+                ) {
+                    return;
+                }
+                setEtaMinutes(null);
+            });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [data.origin_coordinates, data.destination_coordinates]);
+
+    const applyEta = () => {
+        if (etaMinutes === null) return;
+        lastEditedRef.current = 'duration';
+        setData('planned_duration', String(etaMinutes));
+    };
+
+    const currentDurationNum = Number(data.planned_duration);
+    const etaMatchesCurrent =
+        etaMinutes !== null &&
+        Number.isFinite(currentDurationNum) &&
+        currentDurationNum === etaMinutes;
+
     // REQ-011 billing-unit semantics. Look up the selected contract's
     // billing_unit_type and derive the Cantidad label + hint so the
     // operator knows whether they're entering trips, passengers, days,
@@ -596,8 +751,9 @@ export default function ServiceForm({
                     <ShieldAlert className="size-4" />
                     <AlertTitle>Día ejecutado</AlertTitle>
                     <AlertDescription>
-                        Está editando un servicio en un día ejecutado. Se
-                        requiere justificación.
+                        Está editando un servicio en un día ejecutado. La
+                        modificación requiere justificación obligatoria y
+                        quedará registrada en la auditoría.
                     </AlertDescription>
                 </Alert>
             )}
@@ -662,7 +818,7 @@ export default function ServiceForm({
                                     setData('service_date', e.target.value)
                                 }
                             />
-                            <InputError message={errors.service_date} />
+                            <FieldFooter error={errors.service_date} />
                         </div>
                         <div
                             className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
@@ -760,7 +916,7 @@ export default function ServiceForm({
                                     </Button>
                                 )}
                             </div>
-                            <InputError message={errors.contract_id} />
+                            <FieldFooter error={errors.contract_id} />
                         </div>
                         <div
                             className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
@@ -808,7 +964,7 @@ export default function ServiceForm({
                                     ),
                                 )}
                             </ToggleGroup>
-                            <InputError message={errors.service_status} />
+                            <FieldFooter error={errors.service_status} />
                         </div>
                     </div>
 
@@ -892,7 +1048,7 @@ export default function ServiceForm({
                                 disabled={isFieldDisabled('vehicle_id')}
                                 invalid={invalid('vehicle_id')}
                             />
-                            <InputError message={errors.vehicle_id} />
+                            <FieldFooter error={errors.vehicle_id} />
                         </div>
 
                         {selectedVehicle?.is_third_party ? (
@@ -1018,7 +1174,7 @@ export default function ServiceForm({
                                     disabled={isFieldDisabled('driver_id')}
                                     invalid={invalid('driver_id')}
                                 />
-                                <InputError message={errors.driver_id} />
+                                <FieldFooter error={errors.driver_id} />
                             </div>
                         )}
                     </div>
@@ -1033,7 +1189,7 @@ export default function ServiceForm({
                 <CardContent>
                     <div className="grid gap-6 md:grid-cols-2">
                         <div
-                            className="grid gap-2"
+                            className="grid min-w-0 gap-2"
                             data-error={
                                 invalid('origin_municipality_id') ||
                                 invalid('origin_address')
@@ -1094,8 +1250,8 @@ export default function ServiceForm({
                                     isFieldDisabled('origin_municipality_id')
                                 }
                             />
-                            <InputError
-                                message={
+                            <FieldFooter
+                                error={
                                     errors.origin_municipality_id ||
                                     errors.origin_address ||
                                     errors.origin_coordinates
@@ -1157,7 +1313,7 @@ export default function ServiceForm({
                             />
                         </div>
                         <div
-                            className="grid gap-2"
+                            className="grid min-w-0 gap-2"
                             data-error={
                                 invalid('destination_municipality_id') ||
                                 invalid('destination_address')
@@ -1222,8 +1378,8 @@ export default function ServiceForm({
                                     )
                                 }
                             />
-                            <InputError
-                                message={
+                            <FieldFooter
+                                error={
                                     errors.destination_municipality_id ||
                                     errors.destination_address ||
                                     errors.destination_coordinates
@@ -1310,7 +1466,7 @@ export default function ServiceForm({
                     </CardAction>
                 </CardHeader>
                 <CardContent>
-                    <div className="grid gap-4 md:grid-cols-2 md:grid-rows-[auto_1fr_auto]">
+                    <div className="grid gap-4 md:grid-cols-3 md:grid-rows-[auto_1fr_auto]">
                         <div
                             className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
                             data-error={invalid('planned_start_time')}
@@ -1325,13 +1481,10 @@ export default function ServiceForm({
                                 aria-invalid={invalid('planned_start_time')}
                                 disabled={isFieldDisabled('planned_start_time')}
                                 onChange={(e) =>
-                                    setData(
-                                        'planned_start_time',
-                                        e.target.value,
-                                    )
+                                    handlePlannedStartChange(e.target.value)
                                 }
                             />
-                            <InputError message={errors.planned_start_time} />
+                            <FieldFooter error={errors.planned_start_time} />
                         </div>
                         <div
                             className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
@@ -1347,11 +1500,49 @@ export default function ServiceForm({
                                 aria-invalid={invalid('planned_duration')}
                                 disabled={isFieldDisabled('planned_duration')}
                                 onChange={(e) =>
-                                    setData('planned_duration', e.target.value)
+                                    handlePlannedDurationChange(e.target.value)
                                 }
                                 className="text-right tabular-nums"
                             />
-                            <InputError message={errors.planned_duration} />
+                            <FieldFooter error={errors.planned_duration}>
+                                {etaMinutes !== null && (
+                                    <>
+                                        ETA Google: {etaMinutes} min
+                                        {etaMatchesCurrent ? (
+                                            <> ✓</>
+                                        ) : (
+                                            <button
+                                                type="button"
+                                                onClick={applyEta}
+                                                disabled={isFieldDisabled(
+                                                    'planned_duration',
+                                                )}
+                                                className="ml-2 font-medium text-primary not-italic underline-offset-2 hover:underline disabled:opacity-50"
+                                            >
+                                                Aplicar
+                                            </button>
+                                        )}
+                                    </>
+                                )}
+                            </FieldFooter>
+                        </div>
+                        <div className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid">
+                            <Label htmlFor="planned_end_time">
+                                Hora Fin Planificada
+                            </Label>
+                            <Input
+                                id="planned_end_time"
+                                type="time"
+                                value={plannedEndTime}
+                                disabled={isFieldDisabled('planned_duration')}
+                                onChange={(e) =>
+                                    handlePlannedEndChange(e.target.value)
+                                }
+                                className="bg-muted/30"
+                            />
+                            <FieldFooter>
+                                Derivado de Hora Inicio + Duración
+                            </FieldFooter>
                         </div>
                     </div>
 
@@ -1379,9 +1570,7 @@ export default function ServiceForm({
                                         )
                                     }
                                 />
-                                <InputError
-                                    message={errors.actual_start_time}
-                                />
+                                <FieldFooter error={errors.actual_start_time} />
                             </div>
                             <div
                                 className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
@@ -1405,7 +1594,7 @@ export default function ServiceForm({
                                         )
                                     }
                                 />
-                                <InputError message={errors.actual_end_time} />
+                                <FieldFooter error={errors.actual_end_time} />
                             </div>
                             <div className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                                 <Label>Duración Real</Label>
@@ -1439,10 +1628,11 @@ export default function ServiceForm({
                                 onChange={(next) =>
                                     setData('billing_groups', next)
                                 }
+                                options={billingGroups}
                                 invalid={invalid('billing_groups')}
                                 disabled={isFieldDisabled('billing_groups')}
                             />
-                            <InputError message={errors.billing_groups} />
+                            <FieldFooter error={errors.billing_groups} />
                         </div>
                         <div
                             className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
@@ -1462,7 +1652,7 @@ export default function ServiceForm({
                                 disabled={isFieldDisabled('unit_value')}
                                 className="text-right tabular-nums"
                             />
-                            <InputError message={errors.unit_value} />
+                            <FieldFooter error={errors.unit_value} />
                         </div>
                         <div
                             className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
@@ -1485,7 +1675,7 @@ export default function ServiceForm({
                             <p className="text-xs text-muted-foreground">
                                 {billingUnitHint}
                             </p>
-                            <InputError message={errors.quantity} />
+                            <FieldFooter error={errors.quantity} />
                         </div>
                     </div>
                     <div
@@ -1530,7 +1720,7 @@ export default function ServiceForm({
                                 },
                             )}
                         </Choicebox>
-                        <InputError message={errors.payment_method} />
+                        <FieldFooter error={errors.payment_method} />
                     </div>
                 </CardContent>
             </Card>
@@ -1558,47 +1748,36 @@ export default function ServiceForm({
                             )
                         }
                     />
-                    <InputError message={errors.manual_entry_justification} />
+                    <FieldFooter error={errors.manual_entry_justification} />
                 </div>
             )}
 
             {isAdminEdit && (
-                <>
-                    <Alert variant="destructive">
-                        <AlertTriangle className="size-4" />
-                        <AlertTitle>Día ejecutado</AlertTitle>
-                        <AlertDescription>
-                            Este servicio pertenece a un día ejecutado. La
-                            modificación requiere justificación obligatoria y
-                            quedará registrada en la auditoría.
-                        </AlertDescription>
-                    </Alert>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Justificación del cambio</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div
-                                className="group/field grid gap-2"
-                                data-error={invalid('justification')}
-                            >
-                                <Label htmlFor="justification">
-                                    Justificación del cambio *
-                                </Label>
-                                <textarea
-                                    id="justification"
-                                    className="flex min-h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-                                    value={data.justification}
-                                    placeholder="Explique el motivo de la modificación..."
-                                    onChange={(e) =>
-                                        setData('justification', e.target.value)
-                                    }
-                                />
-                                <InputError message={errors.justification} />
-                            </div>
-                        </CardContent>
-                    </Card>
-                </>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Justificación del cambio</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div
+                            className="group/field grid gap-2"
+                            data-error={invalid('justification')}
+                        >
+                            <Label htmlFor="justification">
+                                Justificación del cambio *
+                            </Label>
+                            <textarea
+                                id="justification"
+                                className="flex min-h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                                value={data.justification}
+                                placeholder="Explique el motivo de la modificación..."
+                                onChange={(e) =>
+                                    setData('justification', e.target.value)
+                                }
+                            />
+                            <FieldFooter error={errors.justification} />
+                        </div>
+                    </CardContent>
+                </Card>
             )}
         </APIProvider>
     );

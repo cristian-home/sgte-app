@@ -75,13 +75,7 @@ export default function DriverDashboard({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Mis Servicios" />
             <div
-                className="flex flex-col gap-3 p-4"
-                // Cap the driver page at the viewport minus the
-                // breadcrumb header (h-16). The inner DayTimeline
-                // then absorbs the remaining height via `flex-1` and
-                // becomes its own scroll container, so the hour rail
-                // never spills past the window even on a 24h-tall day.
-                style={{ height: 'calc(100svh - 5rem)' }}
+                className="flex flex-col gap-3 p-4 h-[calc(100svh-4rem)] md:h-[calc(100svh-5rem)]"
             >
                 {/* Compact header: title + date on the left, date
                     navigator on the right. Wraps on narrow widths. */}

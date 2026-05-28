@@ -99,7 +99,7 @@ export default function MunicipalityCombobox({
                             !selected && 'text-muted-foreground',
                         )}
                     >
-                        <span className="min-w-0 truncate text-left">
+                        <span className="min-w-0 truncate text-left capitalize">
                             {displayLabel}
                         </span>
                         <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
@@ -130,6 +130,7 @@ export default function MunicipalityCombobox({
                             <CommandGroup
                                 key={group.departmentName}
                                 heading={group.departmentName}
+                                className="capitalize"
                             >
                                 {group.items.map((m) => (
                                     <CommandItem

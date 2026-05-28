@@ -10,6 +10,10 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import InvoiceController from '@/actions/App/Http/Controllers/InvoiceController';
+import {
+    type BillingIncidentRow,
+    IncidentsBillingBreakdown,
+} from '@/components/billing/incidents-billing-breakdown';
 import { Can } from '@/components/can';
 import InvoiceDialog from '@/components/invoices/invoice-dialog';
 import { PaymentStatusPill } from '@/components/invoices/payment-status-pill';
@@ -89,6 +93,13 @@ interface RecentServiceRow {
     quantity: number | null;
     vehicle?: { id: number; plate: string } | null;
     contract?: { id: number; contract_number: string } | null;
+    service_incidents?: BillingIncidentRow[];
+}
+
+interface BillingTotals {
+    subtotal_services: number;
+    subtotal_incidents: number;
+    grand_total: number;
 }
 
 const currencyFormatter = new Intl.NumberFormat('es-CO', {
@@ -150,6 +161,7 @@ export default function InvoicesShow({
     invoice,
     recentServices,
     computedTotal,
+    billingTotals,
     candidateServices,
     blockedCandidateServices,
     thirdParties,
@@ -157,6 +169,7 @@ export default function InvoicesShow({
     invoice: ShowInvoice;
     recentServices: RecentServiceRow[];
     computedTotal: string;
+    billingTotals?: BillingTotals;
     candidateServices: ServicePickerRow[];
     blockedCandidateServices?: ServicePickerRow[];
     thirdParties: ThirdPartyOption[];
@@ -511,6 +524,113 @@ export default function InvoicesShow({
                         )}
                     </CardContent>
                 </Card>
+
+                {/* Desglose de novedades facturables (mirror of the PDF). */}
+                {(() => {
+                    const servicesWithBillingIncidents = recentServices.filter(
+                        (s) => (s.service_incidents?.length ?? 0) > 0,
+                    );
+                    if (
+                        servicesWithBillingIncidents.length === 0 &&
+                        (billingTotals?.subtotal_incidents ?? 0) === 0
+                    ) {
+                        return null;
+                    }
+                    return (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>
+                                    Novedades que afectan facturación
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                {servicesWithBillingIncidents.map((service) => (
+                                    <div key={service.id} className="space-y-2">
+                                        <div className="flex flex-wrap items-baseline justify-between gap-2 border-b pb-1">
+                                            <p className="text-sm font-medium">
+                                                Servicio del{' '}
+                                                {formatDate(
+                                                    service.service_date,
+                                                )}{' '}
+                                                ·{' '}
+                                                <span className="font-mono">
+                                                    {service.vehicle?.plate ??
+                                                        '—'}
+                                                </span>
+                                                {service.contract && (
+                                                    <span className="ml-2 font-mono text-xs text-muted-foreground">
+                                                        {
+                                                            service.contract
+                                                                .contract_number
+                                                        }
+                                                    </span>
+                                                )}
+                                            </p>
+                                            <Link
+                                                href={
+                                                    services.show(service.id)
+                                                        .url
+                                                }
+                                                className="text-xs text-primary hover:underline"
+                                            >
+                                                Ver servicio
+                                            </Link>
+                                        </div>
+                                        <IncidentsBillingBreakdown
+                                            unitValue={service.unit_value}
+                                            quantity={service.quantity}
+                                            incidents={
+                                                service.service_incidents ?? []
+                                            }
+                                            alwaysShow
+                                        />
+                                    </div>
+                                ))}
+                                {billingTotals && (
+                                    <div className="border-t-2 pt-3">
+                                        <table className="w-full text-sm">
+                                            <tbody>
+                                                <tr>
+                                                    <td className="py-1 text-muted-foreground">
+                                                        Subtotal servicios
+                                                    </td>
+                                                    <td className="py-1 text-right tabular-nums">
+                                                        {currencyFormatter.format(
+                                                            billingTotals.subtotal_services,
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                                {billingTotals.subtotal_incidents >
+                                                    0 && (
+                                                    <tr>
+                                                        <td className="py-1 text-muted-foreground">
+                                                            Subtotal novedades
+                                                        </td>
+                                                        <td className="py-1 text-right tabular-nums">
+                                                            {currencyFormatter.format(
+                                                                billingTotals.subtotal_incidents,
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                                <tr className="border-t">
+                                                    <td className="pt-2 font-semibold">
+                                                        Total factura
+                                                    </td>
+                                                    <td className="pt-2 text-right text-lg font-bold tabular-nums">
+                                                        {currencyFormatter.format(
+                                                            billingTotals.grand_total,
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    );
+                })()}
             </div>
 
             <ServicePickerDialog

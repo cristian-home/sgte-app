@@ -2,9 +2,13 @@
 
 namespace App\Services\Imports;
 
+use App\Enums\BillingUnitType;
+use App\Enums\ContractObject;
+use App\Models\Contract;
 use App\Models\DocumentType;
 use App\Models\Municipality;
 use App\Models\ThirdParty;
+use App\Support\Tz;
 use Illuminate\Database\Eloquent\Model;
 
 class ThirdPartyImporter extends AbstractImporter
@@ -108,7 +112,69 @@ class ThirdPartyImporter extends AbstractImporter
 
     public function persistNew(array $data): Model
     {
-        return ThirdParty::query()->create($data);
+        $thirdParty = ThirdParty::query()->create($data);
+
+        if ($thirdParty->is_customer) {
+            $this->ensureGenericContractFor($thirdParty);
+        }
+
+        return $thirdParty;
+    }
+
+    /**
+     * Create the bulk-import default contract for a newly-imported customer.
+     *
+     * The contract is generic, active, runs from today through the end of
+     * 2026-12-31 (operation TZ), and is unique per third party — running the
+     * import twice does not create a second one.
+     *
+     * Numbering reuses the `GEN-NNNN-YYYY` pattern from
+     * {@see \App\Http\Controllers\ContractController::store()}. The
+     * `count()+1` lookup is non-atomic but the importer runs serially in a
+     * single queued job, so a race is not reachable today.
+     */
+    protected function ensureGenericContractFor(ThirdParty $thirdParty): void
+    {
+        $tz = Tz::operation();
+        $today = Tz::nowIn($tz)->format('Y-m-d');
+
+        Contract::firstOrCreate(
+            [
+                'third_party_id' => $thirdParty->id,
+                'is_generic' => true,
+                'active' => true,
+            ],
+            [
+                'contract_number' => $this->nextGenericContractNumber(),
+                'contract_object' => ContractObject::Occasional->value,
+                'timezone' => $tz,
+                'start_at' => Tz::startOfDayInTzAsUtc($today, $tz),
+                'end_at' => Tz::endOfDayInTzAsUtc('2026-12-31', $tz),
+                'route_description' => 'Contrato genérico — '.$this->thirdPartyDisplayName($thirdParty),
+                'billing_unit_type' => BillingUnitType::Viaje->value,
+            ],
+        );
+    }
+
+    protected function nextGenericContractNumber(): string
+    {
+        $year = now()->year;
+        $sequence = Contract::query()
+            ->where('contract_number', 'like', "GEN-%-{$year}")
+            ->count() + 1;
+
+        return sprintf('GEN-%04d-%d', $sequence, $year);
+    }
+
+    protected function thirdPartyDisplayName(ThirdParty $thirdParty): string
+    {
+        if (! empty($thirdParty->company_name)) {
+            return $thirdParty->company_name;
+        }
+
+        $name = trim(($thirdParty->first_name ?? '').' '.($thirdParty->first_lastname ?? ''));
+
+        return $name !== '' ? $name : $thirdParty->identification_number;
     }
 
     public function applyUpdate(Model $existing, array $data): Model

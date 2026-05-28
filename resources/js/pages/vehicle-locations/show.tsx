@@ -1,7 +1,6 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { Check, Copy, ExternalLink, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import type { BreadcrumbItem } from '@/types';
 import { Can } from '@/components/can';
 import LocationStaticMap from '@/components/services/location-static-map';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +12,7 @@ import { useClipboard } from '@/hooks/use-clipboard';
 import AppLayout from '@/layouts/app-layout';
 import { formatTimestampInViewerTz } from '@/lib/datetime';
 import vehicles from '@/routes/vehicles';
+import type { BreadcrumbItem } from '@/types';
 
 
 interface Location {

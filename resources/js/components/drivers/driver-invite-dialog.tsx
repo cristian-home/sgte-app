@@ -1,7 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import { useEffect, useId } from 'react';
 import DriverController from '@/actions/App/Http/Controllers/DriverController';
-import InputError from '@/components/input-error';
+import FieldFooter from '@/components/field-footer';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -81,7 +81,7 @@ export function DriverInviteDialog({
                             autoFocus
                             required
                         />
-                        <InputError message={errors.account_email} />
+                        <FieldFooter error={errors.account_email} />
                     </div>
                     <DialogFooter>
                         <Button

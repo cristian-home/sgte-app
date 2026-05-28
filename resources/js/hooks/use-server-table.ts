@@ -31,6 +31,16 @@ export interface UseServerTableOptions<TData> {
      * having to pass them as props to every cell.
      */
     meta?: unknown;
+
+    /**
+     * Fires after each successful refetch with the raw JSON returned by
+     * the index endpoint. Use it to read filter-derived extras the
+     * controller merges into the paginator shape (e.g. an aggregate
+     * total). The default render uses Inertia props; this callback is
+     * how those Inertia props are kept in sync when the hook refetches
+     * via plain fetch() and the full Inertia re-render is skipped.
+     */
+    onResponse?: (json: Record<string, unknown>) => void;
 }
 
 export interface UseServerTableReturn<TData> {
@@ -93,6 +103,7 @@ export function useServerTable<TData>({
     debounceMs = 300,
     initialColumnVisibility = {},
     meta,
+    onResponse,
 }: UseServerTableOptions<TData>): UseServerTableReturn<TData> {
     const [paginatedData, setPaginatedData] =
         useState<PaginatedData<TData>>(initialData);
@@ -145,6 +156,11 @@ export function useServerTable<TData>({
     const isFirstRender = useRef(true);
     const abortRef = useRef<AbortController | undefined>(undefined);
 
+    const onResponseRef = useRef(onResponse);
+    useEffect(() => {
+        onResponseRef.current = onResponse;
+    }, [onResponse]);
+
     const fetchData = useCallback(
         async (newParams: Record<string, string>) => {
             abortRef.current?.abort();
@@ -160,8 +176,10 @@ export function useServerTable<TData>({
                     signal: controller.signal,
                 });
                 if (!response.ok) return;
-                const json = (await response.json()) as PaginatedData<TData>;
+                const json = (await response.json()) as PaginatedData<TData> &
+                    Record<string, unknown>;
                 setPaginatedData(json);
+                onResponseRef.current?.(json);
 
                 // Sync browser URL without navigation (preserve Inertia's page state)
                 history.replaceState(history.state, '', url);

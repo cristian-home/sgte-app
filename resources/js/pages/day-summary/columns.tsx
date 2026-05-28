@@ -4,6 +4,12 @@ import { formatEventTime } from '@/lib/datetime';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { Service } from '@/types';
 
+const currencyFormatter = new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    maximumFractionDigits: 0,
+});
+
 function addMinutes(time: string, minutes: number): string {
     const [h, m] = time.split(':').map(Number);
     const total = h * 60 + m + minutes;
@@ -36,7 +42,9 @@ export const columns: ColumnDef<Service, unknown>[] = [
             const vehicle = row.original.vehicle;
             return (
                 <div className="flex items-center gap-1.5">
-                    <span className="font-medium">{vehicle?.plate ?? '—'}</span>
+                    <span className="font-mono font-medium">
+                        {vehicle?.plate ?? '—'}
+                    </span>
                     {vehicle?.is_third_party && (
                         <Badge
                             variant="outline"
@@ -138,6 +146,30 @@ export const columns: ColumnDef<Service, unknown>[] = [
         },
     },
     {
+        id: 'service_value',
+        meta: { label: 'Valor del servicio' },
+        header: () => (
+            <span className="block text-right">Valor del servicio</span>
+        ),
+        cell: ({ row }) => {
+            const value =
+                Number(row.original.unit_value ?? 0) *
+                Number(row.original.quantity ?? 0);
+            if (!value) {
+                return (
+                    <span className="block text-right text-muted-foreground">
+                        —
+                    </span>
+                );
+            }
+            return (
+                <span className="block text-right font-medium tabular-nums">
+                    {currencyFormatter.format(value)}
+                </span>
+            );
+        },
+    },
+    {
         id: 'incidents',
         meta: { label: 'Novedades' },
         header: 'Novedades',
@@ -154,6 +186,62 @@ export const columns: ColumnDef<Service, unknown>[] = [
                 );
             }
             return <span className="text-muted-foreground">—</span>;
+        },
+    },
+    {
+        id: 'billing_impact',
+        meta: { label: 'Recargo novedades' },
+        header: () => <span className="block text-right">Recargo nov.</span>,
+        cell: ({ row }) => {
+            const amount = Number(
+                (
+                    row.original as Service & {
+                        billing_impact_amount?: string | number | null;
+                    }
+                ).billing_impact_amount ?? 0,
+            );
+            if (!amount) {
+                return (
+                    <span className="block text-right text-muted-foreground">
+                        —
+                    </span>
+                );
+            }
+            return (
+                <span className="block text-right font-medium text-amber-700 tabular-nums dark:text-amber-400">
+                    {currencyFormatter.format(amount)}
+                </span>
+            );
+        },
+    },
+    {
+        id: 'total',
+        meta: { label: 'Total' },
+        header: () => <span className="block text-right">Total</span>,
+        cell: ({ row }) => {
+            const serviceValue =
+                Number(row.original.unit_value ?? 0) *
+                Number(row.original.quantity ?? 0);
+            const impact = Number(
+                (
+                    row.original as Service & {
+                        billing_impact_amount?: string | number | null;
+                    }
+                ).billing_impact_amount ?? 0,
+            );
+            const total = serviceValue + impact;
+            if (!total) {
+                return (
+                    <span className="block text-right text-muted-foreground">
+                        —
+                    </span>
+                );
+            }
+            return (
+                <span className="block text-right font-semibold tabular-nums">
+                    {currencyFormatter.format(total)}
+                </span>
+            );
         },
     },
 ];

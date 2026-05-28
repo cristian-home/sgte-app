@@ -322,15 +322,17 @@ export default function DriversShow({
                                 {driver.second_lastname ?? '—'}
                             </Field>
                             <Field label="Municipio">
-                                {driver.municipality
-                                    ? `${driver.municipality.name}${
-                                          driver.municipality.department
-                                              ? ', ' +
-                                                driver.municipality.department
-                                                    .name
-                                              : ''
-                                      }`
-                                    : '—'}
+                                <span className="capitalize">
+                                    {driver.municipality
+                                        ? `${driver.municipality.name}${
+                                              driver.municipality.department
+                                                  ? ', ' +
+                                                    driver.municipality
+                                                        .department.name
+                                                  : ''
+                                          }`
+                                        : '—'}
+                                </span>
                             </Field>
                             <Field label="Dirección">{driver.address}</Field>
                             <Field label="Teléfono">{driver.phone}</Field>

@@ -11,7 +11,7 @@ import {
     Users,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import InputError from '@/components/input-error';
+import FieldFooter from '@/components/field-footer';
 import {
     Choicebox,
     ChoiceboxIndicator,
@@ -30,6 +30,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import TimezoneCombobox from '@/components/ui/timezone-combobox';
 import { BillingUnitType } from '@/enums/BillingUnitType';
+import { viewerToday } from '@/lib/datetime';
 import type { DocumentTypeOption } from '@/components/third-parties/third-party-form';
 
 export interface ContractFormData {
@@ -53,6 +54,13 @@ interface ContractFormProps {
     ) => void;
     errors: Partial<Record<keyof ContractFormData, string>>;
     thirdParties: ThirdPartyOption[];
+    /**
+     * Drives the "Contrato genérico" quick-create UX: in `create` mode
+     * the switch hides the auto-filled fields and the dialog submits
+     * with backend defaults. In `edit` mode the switch only controls
+     * the contract_number requirement (legacy behaviour).
+     */
+    mode?: 'create' | 'edit';
     /**
      * Extra customers that MUST appear in the combobox even if they
      * are no longer flagged `is_customer = true`. Used by the edit
@@ -104,6 +112,7 @@ export default function ContractForm({
     setData,
     errors,
     thirdParties,
+    mode = 'edit',
     forceIncludeCustomer,
     idPrefix = '',
     allowCreateThirdParty = false,
@@ -134,88 +143,183 @@ export default function ContractForm({
         | undefined;
     const operationTz = sharedConfig?.operation_tz ?? 'America/Bogota';
     const timezoneLabel = data.timezone || operationTz;
+    const isGenericQuickCreate = mode === 'create' && data.is_generic;
+
+    function handleGenericToggle(checked: boolean) {
+        setData('is_generic', checked);
+        if (!checked || mode !== 'create') {
+            return;
+        }
+        // Quick-create defaults: prefill everything except the customer.
+        // Backend re-applies the same defaults defensively in
+        // ContractStoreRequest::prepareForValidation.
+        const today = viewerToday(operationTz);
+        const year = Number(today.slice(0, 4));
+        const endOfYear = `${year}-12-31`;
+        setData('contract_object', 'business');
+        setData('timezone', operationTz);
+        setData('start_date', today);
+        setData('end_date', endOfYear);
+        setData('route_description', 'Genérico');
+        setData('billing_unit_type', BillingUnitType.Viaje);
+    }
+
+    const customerField = (
+        <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
+            <Label htmlFor={id('third_party_id')}>
+                Cliente
+                <RequiredMarker />
+            </Label>
+            {/* min-w-0 on the flex row itself is required because
+             * the row is a grid item (grid items default to
+             * `min-width: auto` and refuse to shrink below
+             * content). Without it, a long client label widens
+             * the trigger and pushes the "+" button into the
+             * next grid column. */}
+            <div className="flex min-w-0 gap-2">
+                <div className="min-w-0 flex-1">
+                    <ThirdPartyCombobox
+                        id={id('third_party_id')}
+                        thirdParties={thirdParties}
+                        role="customer"
+                        forceInclude={forceIncludeCustomer}
+                        value={data.third_party_id || null}
+                        onChange={(value) => setData('third_party_id', value)}
+                        invalid={invalid('third_party_id')}
+                        placeholder="Selecciona un cliente"
+                    />
+                </div>
+                {allowCreateThirdParty && documentTypes && municipalities && (
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setCreateTpOpen(true)}
+                        aria-label="Crear nuevo cliente"
+                        title="Crear nuevo cliente"
+                    >
+                        <Plus className="size-4" />
+                    </Button>
+                )}
+            </div>
+            <FieldFooter error={errors.third_party_id} />
+        </div>
+    );
+
+    const genericSwitchTop = (
+        <div className="flex items-start gap-3 rounded-md border border-dashed bg-muted/30 p-3">
+            <Switch
+                id={id('is_generic')}
+                checked={data.is_generic}
+                onCheckedChange={handleGenericToggle}
+                className="mt-0.5"
+            />
+            <div className="grid gap-0.5">
+                <Label
+                    htmlFor={id('is_generic')}
+                    className="cursor-pointer text-sm font-medium"
+                >
+                    Contrato Genérico
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                    {mode === 'create'
+                        ? 'Crea el contrato solo con el cliente — el resto se completa con valores por defecto.'
+                        : 'El número se autogenera con el patrón GEN-####-YYYY.'}
+                </p>
+                <FieldFooter error={errors.is_generic} />
+            </div>
+        </div>
+    );
+
+    const activeSwitchRow = (
+        <>
+            <div className="flex items-center gap-3">
+                <Switch
+                    id={id('active')}
+                    checked={data.active}
+                    onCheckedChange={(checked) => setData('active', checked)}
+                />
+                <Label htmlFor={id('active')}>Activo</Label>
+            </div>
+            <FieldFooter error={errors.active} />
+        </>
+    );
+
+    const thirdPartyCreateDialog = allowCreateThirdParty &&
+        documentTypes &&
+        municipalities && (
+            <ThirdPartyDialog
+                open={createTpOpen}
+                onOpenChange={setCreateTpOpen}
+                mode="create"
+                cascade
+                documentTypes={documentTypes}
+                municipalities={municipalities}
+            />
+        );
+
+    if (isGenericQuickCreate) {
+        return (
+            <div className="space-y-6">
+                {genericSwitchTop}
+                {customerField}
+                {thirdPartyCreateDialog}
+                <div className="rounded-md border border-dashed bg-muted/40 p-4 text-sm text-muted-foreground">
+                    Se aplicarán valores por defecto al guardar:
+                    <ul className="mt-2 list-disc space-y-1 pl-5">
+                        <li>
+                            Número:{' '}
+                            <code className="text-foreground">
+                                GEN-####-{new Date().getFullYear()}
+                            </code>{' '}
+                            (autogenerado)
+                        </li>
+                        <li>Objeto: Empresarial</li>
+                        <li>
+                            Vigencia: hoy → 31-dic-{new Date().getFullYear()}
+                        </li>
+                        <li>
+                            Zona horaria: <code>{operationTz}</code>
+                        </li>
+                        <li>Recorrido: "Genérico"</li>
+                        <li>Unidad de facturación: Viaje</li>
+                    </ul>
+                </div>
+                {activeSwitchRow}
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2">
-                <div className="grid gap-2">
+            {genericSwitchTop}
+            <div className="grid gap-x-4 gap-y-2 md:grid-cols-2 md:grid-rows-[auto_auto_auto]">
+                <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                     <Label htmlFor={id('contract_number')}>
                         Número de Contrato
                         {!data.is_generic && <RequiredMarker />}
                     </Label>
-                    {data.is_generic ? (
-                        <p className="text-sm text-muted-foreground">
-                            Se generará automáticamente al guardar
-                            (GEN-####-YYYY).
-                        </p>
-                    ) : (
-                        <Input
-                            id={id('contract_number')}
-                            value={data.contract_number}
-                            aria-invalid={invalid('contract_number')}
-                            onChange={(e) =>
-                                setData('contract_number', e.target.value)
-                            }
-                        />
-                    )}
-                    <InputError message={errors.contract_number} />
+                    <Input
+                        id={id('contract_number')}
+                        value={data.contract_number}
+                        readOnly={data.is_generic}
+                        aria-invalid={invalid('contract_number')}
+                        onChange={(e) =>
+                            setData('contract_number', e.target.value)
+                        }
+                        className={data.is_generic ? 'bg-muted/40' : undefined}
+                    />
+                    <FieldFooter error={errors.contract_number}>
+                        {data.is_generic
+                            ? 'Se generará al guardar (GEN-####-YYYY).'
+                            : null}
+                    </FieldFooter>
                 </div>
 
-                <div className="grid gap-2">
-                    <Label htmlFor={id('third_party_id')}>
-                        Cliente
-                        <RequiredMarker />
-                    </Label>
-                    {/* min-w-0 on the flex row itself is required because
-                     * the row is a grid item (grid items default to
-                     * `min-width: auto` and refuse to shrink below
-                     * content). Without it, a long client label widens
-                     * the trigger and pushes the "+" button into the
-                     * next grid column. */}
-                    <div className="flex min-w-0 gap-2">
-                        <div className="min-w-0 flex-1">
-                            <ThirdPartyCombobox
-                                id={id('third_party_id')}
-                                thirdParties={thirdParties}
-                                role="customer"
-                                forceInclude={forceIncludeCustomer}
-                                value={data.third_party_id || null}
-                                onChange={(value) =>
-                                    setData('third_party_id', value)
-                                }
-                                invalid={invalid('third_party_id')}
-                                placeholder="Selecciona un cliente"
-                            />
-                        </div>
-                        {allowCreateThirdParty &&
-                            documentTypes &&
-                            municipalities && (
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="icon"
-                                    onClick={() => setCreateTpOpen(true)}
-                                    aria-label="Crear nuevo cliente"
-                                    title="Crear nuevo cliente"
-                                >
-                                    <Plus className="size-4" />
-                                </Button>
-                            )}
-                    </div>
-                    <InputError message={errors.third_party_id} />
-                </div>
+                {customerField}
             </div>
 
-            {allowCreateThirdParty && documentTypes && municipalities && (
-                <ThirdPartyDialog
-                    open={createTpOpen}
-                    onOpenChange={setCreateTpOpen}
-                    mode="create"
-                    cascade
-                    documentTypes={documentTypes}
-                    municipalities={municipalities}
-                />
-            )}
+            {thirdPartyCreateDialog}
 
             <div className="grid gap-2">
                 <Label htmlFor={id('contract_object')}>
@@ -248,11 +352,11 @@ export default function ContractForm({
                         );
                     })}
                 </Choicebox>
-                <InputError message={errors.contract_object} />
+                <FieldFooter error={errors.contract_object} />
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
-                <div className="grid gap-2">
+            <div className="grid gap-x-4 gap-y-2 md:grid-cols-2 md:grid-rows-[auto_auto_auto]">
+                <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                     <Label htmlFor={id('start_date')}>
                         Fecha de Inicio
                         <RequiredMarker />
@@ -264,10 +368,10 @@ export default function ContractForm({
                         aria-invalid={invalid('start_date')}
                         onChange={(e) => setData('start_date', e.target.value)}
                     />
-                    <InputError message={errors.start_date} />
+                    <FieldFooter error={errors.start_date} />
                 </div>
 
-                <div className="grid gap-2">
+                <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                     <Label htmlFor={id('end_date')}>
                         Fecha de Fin
                         <RequiredMarker />
@@ -279,7 +383,7 @@ export default function ContractForm({
                         aria-invalid={invalid('end_date')}
                         onChange={(e) => setData('end_date', e.target.value)}
                     />
-                    <InputError message={errors.end_date} />
+                    <FieldFooter error={errors.end_date} />
                 </div>
             </div>
 
@@ -297,7 +401,7 @@ export default function ContractForm({
                     <strong>{timezoneLabel}</strong>. Por defecto:{' '}
                     <code>{operationTz}</code>.
                 </p>
-                <InputError message={errors.timezone} />
+                <FieldFooter error={errors.timezone} />
             </div>
 
             <div className="grid gap-2">
@@ -315,7 +419,7 @@ export default function ContractForm({
                     }
                     className="flex min-h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive"
                 />
-                <InputError message={errors.route_description} />
+                <FieldFooter error={errors.route_description} />
             </div>
 
             <div className="grid gap-2">
@@ -359,33 +463,10 @@ export default function ContractForm({
                     hora). Aparece como "Cantidad (…)" en el formulario de
                     servicios.
                 </p>
-                <InputError message={errors.billing_unit_type} />
+                <FieldFooter error={errors.billing_unit_type} />
             </div>
 
-            <div className="flex flex-wrap items-center gap-6">
-                <div className="flex items-center gap-3">
-                    <Switch
-                        id={id('is_generic')}
-                        checked={data.is_generic}
-                        onCheckedChange={(checked) =>
-                            setData('is_generic', checked)
-                        }
-                    />
-                    <Label htmlFor={id('is_generic')}>Contrato Genérico</Label>
-                </div>
-                <div className="flex items-center gap-3">
-                    <Switch
-                        id={id('active')}
-                        checked={data.active}
-                        onCheckedChange={(checked) =>
-                            setData('active', checked)
-                        }
-                    />
-                    <Label htmlFor={id('active')}>Activo</Label>
-                </div>
-            </div>
-            <InputError message={errors.is_generic} />
-            <InputError message={errors.active} />
+            {activeSwitchRow}
         </div>
     );
 }

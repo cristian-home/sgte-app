@@ -1,5 +1,5 @@
 import { CircleCheck, PowerOff, Wrench } from 'lucide-react';
-import InputError from '@/components/input-error';
+import FieldFooter from '@/components/field-footer';
 import {
     Choicebox,
     ChoiceboxIndicator,
@@ -129,7 +129,7 @@ export default function VehicleForm({
                         }
                         placeholder="V-001"
                     />
-                    <InputError message={errors.internal_code} />
+                    <FieldFooter error={errors.internal_code} />
                 </div>
                 <div
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
@@ -151,7 +151,7 @@ export default function VehicleForm({
                         className="font-mono tracking-wider uppercase"
                         autoCapitalize="characters"
                     />
-                    <InputError message={errors.plate} />
+                    <FieldFooter error={errors.plate} />
                 </div>
                 <div
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
@@ -164,7 +164,7 @@ export default function VehicleForm({
                         onValueChange={(raw) => setData('mobile_number', raw)}
                         invalid={invalid('mobile_number')}
                     />
-                    <InputError message={errors.mobile_number} />
+                    <FieldFooter error={errors.mobile_number} />
                 </div>
             </div>
 
@@ -180,7 +180,7 @@ export default function VehicleForm({
                         aria-invalid={invalid('brand')}
                         onChange={(e) => setData('brand', e.target.value)}
                     />
-                    <InputError message={errors.brand} />
+                    <FieldFooter error={errors.brand} />
                 </div>
                 <div
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
@@ -193,7 +193,7 @@ export default function VehicleForm({
                         aria-invalid={invalid('line')}
                         onChange={(e) => setData('line', e.target.value)}
                     />
-                    <InputError message={errors.line} />
+                    <FieldFooter error={errors.line} />
                 </div>
                 <div
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
@@ -207,7 +207,7 @@ export default function VehicleForm({
                         aria-invalid={invalid('model_year')}
                         onChange={(e) => setData('model_year', e.target.value)}
                     />
-                    <InputError message={errors.model_year} />
+                    <FieldFooter error={errors.model_year} />
                 </div>
             </div>
 
@@ -239,7 +239,7 @@ export default function VehicleForm({
                             </SelectItem>
                         </SelectContent>
                     </Select>
-                    <InputError message={errors.type} />
+                    <FieldFooter error={errors.type} />
                 </div>
                 <div
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
@@ -256,7 +256,7 @@ export default function VehicleForm({
                         aria-invalid={invalid('capacity')}
                         onChange={(e) => setData('capacity', e.target.value)}
                     />
-                    <InputError message={errors.capacity} />
+                    <FieldFooter error={errors.capacity} />
                 </div>
                 <div
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
@@ -270,7 +270,7 @@ export default function VehicleForm({
                         onChange={(val) => setData('municipality_id', val)}
                         invalid={!!errors.municipality_id}
                     />
-                    <InputError message={errors.municipality_id} />
+                    <FieldFooter error={errors.municipality_id} />
                 </div>
             </div>
 
@@ -288,7 +288,7 @@ export default function VehicleForm({
                             setData('engine_number', e.target.value)
                         }
                     />
-                    <InputError message={errors.engine_number} />
+                    <FieldFooter error={errors.engine_number} />
                 </div>
                 <div
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
@@ -305,7 +305,7 @@ export default function VehicleForm({
                             setData('chassis_number', e.target.value)
                         }
                     />
-                    <InputError message={errors.chassis_number} />
+                    <FieldFooter error={errors.chassis_number} />
                 </div>
             </div>
 
@@ -320,7 +320,7 @@ export default function VehicleForm({
                 <Label htmlFor={id('is_third_party')}>
                     Vehículo de Tercero
                 </Label>
-                <InputError message={errors.is_third_party} />
+                <FieldFooter error={errors.is_third_party} />
             </div>
 
             {data.is_third_party && (
@@ -352,7 +352,7 @@ export default function VehicleForm({
                             ))}
                         </SelectContent>
                     </Select>
-                    <InputError message={errors.third_party_id} />
+                    <FieldFooter error={errors.third_party_id} />
                 </div>
             )}
 
@@ -374,7 +374,7 @@ export default function VehicleForm({
                             setData('soat_due_date', e.target.value)
                         }
                     />
-                    <InputError message={errors.soat_due_date} />
+                    <FieldFooter error={errors.soat_due_date} />
                 </div>
                 <div
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
@@ -393,7 +393,7 @@ export default function VehicleForm({
                             setData('rtm_due_date', e.target.value)
                         }
                     />
-                    <InputError message={errors.rtm_due_date} />
+                    <FieldFooter error={errors.rtm_due_date} />
                 </div>
                 <div
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
@@ -412,7 +412,7 @@ export default function VehicleForm({
                             setData('operation_card_due_date', e.target.value)
                         }
                     />
-                    <InputError message={errors.operation_card_due_date} />
+                    <FieldFooter error={errors.operation_card_due_date} />
                 </div>
             </div>
 
@@ -454,7 +454,7 @@ export default function VehicleForm({
                         );
                     })}
                 </Choicebox>
-                <InputError message={errors.status} />
+                <FieldFooter error={errors.status} />
             </div>
         </>
     );

@@ -43,15 +43,16 @@ test('store uses form request validation')
 
 test('store saves and redirects', function (): void {
     $thirdParty = ThirdParty::factory()->create(['is_customer' => true]);
-    $invoice_number = fake()->unique()->numerify('FAC-TEST-####');
     $total_value = fake()->randomFloat(2, 100000, 5000000);
     $issue_date = Carbon::parse(fake()->date());
     $payment_status = fake()->randomElement(['pending', 'paid', 'overdue']);
     $notes = fake()->text();
+    $year = (int) now(\App\Support\Tz::operation())->format('Y');
 
     $response = post(route('invoices.store'), [
         'third_party_id' => $thirdParty->id,
-        'invoice_number' => $invoice_number,
+        // El número que mande el cliente se ignora; el server asigna
+        // FAC-####-YYYY automáticamente.
         'total_value' => $total_value,
         'issue_date' => $issue_date,
         'payment_status' => $payment_status,
@@ -59,14 +60,14 @@ test('store saves and redirects', function (): void {
     ]);
 
     $invoices = Invoice::query()
-        ->where('invoice_number', $invoice_number)
+        ->where('third_party_id', $thirdParty->id)
         ->where('total_value', $total_value)
         ->where('payment_status', $payment_status)
         ->where('notes', $notes)
         ->get();
     expect($invoices)->toHaveCount(1);
+    expect($invoices->first()->invoice_number)->toMatch("/^FAC-\\d{4}-{$year}$/");
     expect($invoices->first()->issue_date)->toBe($issue_date->format('Y-m-d'));
-    $invoice = $invoices->first();
 
     $response->assertRedirect();
     $response->assertSessionHas('success');
@@ -323,14 +324,15 @@ test('store accepts total_value of 0.01', function (): void {
 
     $response = post(route('invoices.store'), [
         'third_party_id' => $customer->id,
-        'invoice_number' => 'FAC-MIN-VAL',
         'total_value' => 0.01,
         'issue_date' => Carbon::today()->toDateString(),
         'payment_status' => 'pending',
     ]);
 
     $response->assertRedirect();
-    expect(Invoice::query()->where('invoice_number', 'FAC-MIN-VAL')->count())->toBe(1);
+    $invoice = Invoice::query()->latest('id')->first();
+    expect($invoice->total_value)->toBe('0.01');
+    expect($invoice->invoice_number)->toStartWith('FAC-');
 });
 
 test('update rejects null third_party_id', function (): void {
@@ -1208,4 +1210,536 @@ test('show: candidateServices excludes billing-blocked; blockedCandidateServices
         $page->has('candidateServices', 1, fn ($row) => $row->where('id', $cleanService->id)->etc());
         $page->has('blockedCandidateServices', 1, fn ($row) => $row->where('id', $blockedService->id)->etc());
     });
+});
+
+// ================================================================
+// Inline service assignment during invoice creation (store)
+// ================================================================
+
+test('store with service_ids attaches services and recomputes total', function (): void {
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    $contract = Contract::factory()->create(['third_party_id' => $customer->id]);
+    $s1 = Service::factory()->create([
+        'contract_id' => $contract->id,
+        'service_status' => ServiceStatus::Closed,
+        'unit_value' => 1000,
+        'quantity' => 2,
+        'invoice_id' => null,
+    ]);
+    $s2 = Service::factory()->create([
+        'contract_id' => $contract->id,
+        'service_status' => ServiceStatus::Closed,
+        'unit_value' => 500,
+        'quantity' => 1,
+        'invoice_id' => null,
+    ]);
+
+    $response = post(route('invoices.store'), [
+        'third_party_id' => $customer->id,
+        'issue_date' => Carbon::today()->toDateString(),
+        'payment_status' => 'pending',
+        'total_value' => 0,
+        'service_ids' => [$s1->id, $s2->id],
+    ]);
+
+    $response->assertRedirect();
+    $invoice = Invoice::query()->latest('id')->first();
+    expect($invoice)->not->toBeNull();
+    expect($invoice->invoice_number)->toStartWith('FAC-');
+    expect($s1->fresh()->invoice_id)->toBe($invoice->id);
+    expect($s2->fresh()->invoice_id)->toBe($invoice->id);
+    expect($invoice->total_value)->toBe('2500.00');
+});
+
+test('store with blocked services and no justification fails', function (): void {
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    $contract = Contract::factory()->create(['third_party_id' => $customer->id]);
+    $incidentType = IncidentType::factory()->create();
+    $service = Service::factory()->create([
+        'contract_id' => $contract->id,
+        'service_status' => ServiceStatus::Closed,
+        'unit_value' => 1000,
+        'quantity' => 1,
+        'invoice_id' => null,
+    ]);
+    ServiceIncident::factory()->create([
+        'service_id' => $service->id,
+        'incident_type_id' => $incidentType->id,
+        'affects_billing' => true,
+        'additional_value' => 500,
+    ]);
+
+    $invoiceCountBefore = Invoice::query()->count();
+    $response = post(route('invoices.store'), [
+        'third_party_id' => $customer->id,
+        'issue_date' => Carbon::today()->toDateString(),
+        'payment_status' => 'pending',
+        'total_value' => 0,
+        'service_ids' => [$service->id],
+    ]);
+
+    $response->assertSessionHasErrors('service_ids');
+    expect(Invoice::query()->count())->toBe($invoiceCountBefore);
+    expect($service->fresh()->invoice_id)->toBeNull();
+});
+
+test('store with blocked services and justification succeeds', function (): void {
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    $contract = Contract::factory()->create(['third_party_id' => $customer->id]);
+    $incidentType = IncidentType::factory()->create();
+    $service = Service::factory()->create([
+        'contract_id' => $contract->id,
+        'service_status' => ServiceStatus::Closed,
+        'unit_value' => 1000,
+        'quantity' => 1,
+        'invoice_id' => null,
+    ]);
+    ServiceIncident::factory()->create([
+        'service_id' => $service->id,
+        'incident_type_id' => $incidentType->id,
+        'affects_billing' => true,
+        'additional_value' => 500,
+    ]);
+
+    $response = post(route('invoices.store'), [
+        'third_party_id' => $customer->id,
+        'issue_date' => Carbon::today()->toDateString(),
+        'payment_status' => 'pending',
+        'total_value' => 0,
+        'service_ids' => [$service->id],
+        'override_justification' => 'Cliente aprobó la facturación por correo',
+    ]);
+
+    $response->assertRedirect();
+    $invoice = Invoice::query()->latest('id')->first();
+    expect($invoice)->not->toBeNull();
+    expect($invoice->invoice_number)->toStartWith('FAC-');
+    expect($service->fresh()->invoice_id)->toBe($invoice->id);
+    expect($invoice->total_value)->toBe('1500.00');
+});
+
+test('store with service_ids from a different customer fails and rolls back', function (): void {
+    $customerA = ThirdParty::factory()->create(['is_customer' => true]);
+    $customerB = ThirdParty::factory()->create(['is_customer' => true]);
+    $contractB = Contract::factory()->create(['third_party_id' => $customerB->id]);
+    $service = Service::factory()->create([
+        'contract_id' => $contractB->id,
+        'service_status' => ServiceStatus::Closed,
+        'invoice_id' => null,
+    ]);
+
+    $invoiceCountBefore = Invoice::query()->count();
+    $response = post(route('invoices.store'), [
+        'third_party_id' => $customerA->id,
+        'issue_date' => Carbon::today()->toDateString(),
+        'payment_status' => 'pending',
+        'total_value' => 0,
+        'service_ids' => [$service->id],
+    ]);
+
+    $response->assertSessionHasErrors('service_ids');
+    expect(Invoice::query()->count())->toBe($invoiceCountBefore);
+    expect($service->fresh()->invoice_id)->toBeNull();
+});
+
+test('store without service_ids still requires total_value', function (): void {
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+
+    $response = post(route('invoices.store'), [
+        'third_party_id' => $customer->id,
+        'invoice_number' => 'FAC-NO-TOTAL',
+        'issue_date' => Carbon::today()->toDateString(),
+        'payment_status' => 'pending',
+    ]);
+
+    $response->assertSessionHasErrors('total_value');
+});
+
+test('eligibleServices endpoint returns partitioned candidates for that customer', function (): void {
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    $contract = Contract::factory()->create(['third_party_id' => $customer->id]);
+    $cleanService = Service::factory()->create([
+        'contract_id' => $contract->id,
+        'service_status' => ServiceStatus::Closed,
+        'service_date' => Carbon::today()->subDays(5),
+        'invoice_id' => null,
+    ]);
+    $blockedService = Service::factory()->create([
+        'contract_id' => $contract->id,
+        'service_status' => ServiceStatus::Closed,
+        'service_date' => Carbon::today()->subDays(5),
+        'invoice_id' => null,
+    ]);
+    $incidentType = IncidentType::factory()->create();
+    ServiceIncident::factory()->create([
+        'service_id' => $blockedService->id,
+        'incident_type_id' => $incidentType->id,
+        'affects_billing' => true,
+    ]);
+
+    $response = $this->getJson(route('invoices.eligible-services', ['customer_id' => $customer->id]));
+
+    $response->assertOk();
+    $response->assertJsonPath('cleanCandidates.0.id', $cleanService->id);
+    $response->assertJsonPath('blockedCandidates.0.id', $blockedService->id);
+    $response->assertJsonCount(1, 'cleanCandidates');
+    $response->assertJsonCount(1, 'blockedCandidates');
+});
+
+test('eligibleServices endpoint requires customer_id', function (): void {
+    $response = $this->getJson(route('invoices.eligible-services'));
+
+    $response->assertStatus(422);
+    $response->assertJsonValidationErrors(['customer_id']);
+});
+
+// ================================================================
+// Auto-numeración + super-admin gate + edit-mode service diff
+// ================================================================
+
+test('store auto-genera FAC-####-YYYY ignorando invoice_number del cliente', function (): void {
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    $year = (int) now(\App\Support\Tz::operation())->format('Y');
+
+    $response = post(route('invoices.store'), [
+        'third_party_id' => $customer->id,
+        'invoice_number' => 'IGNORED-BY-SERVER',
+        'total_value' => 1000,
+        'issue_date' => Carbon::today()->toDateString(),
+        'payment_status' => 'pending',
+    ]);
+
+    $response->assertRedirect();
+    $invoice = Invoice::query()->latest('id')->first();
+    expect($invoice->invoice_number)->toMatch("/^FAC-\\d{4}-{$year}$/");
+    expect($invoice->invoice_number)->not->toBe('IGNORED-BY-SERVER');
+});
+
+test('store incrementa el sufijo monotónicamente', function (): void {
+    Invoice::query()->delete();
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    $year = (int) now(\App\Support\Tz::operation())->format('Y');
+
+    $numbers = [];
+    foreach (range(1, 3) as $_) {
+        post(route('invoices.store'), [
+            'third_party_id' => $customer->id,
+            'total_value' => 100,
+            'issue_date' => Carbon::today()->toDateString(),
+            'payment_status' => 'pending',
+        ])->assertRedirect();
+        $numbers[] = Invoice::query()->latest('id')->first()->invoice_number;
+    }
+
+    expect($numbers)->toBe([
+        sprintf('FAC-%04d-%d', 1, $year),
+        sprintf('FAC-%04d-%d', 2, $year),
+        sprintf('FAC-%04d-%d', 3, $year),
+    ]);
+});
+
+test('update sin super admin no cambia invoice_number', function (): void {
+    $user = User::factory()->create();
+    $user->assignRole('admin');
+    $this->actingAs($user);
+
+    $invoice = Invoice::factory()->create(['invoice_number' => 'FAC-0099-2026']);
+
+    put(route('invoices.update', $invoice), [
+        'third_party_id' => $invoice->third_party_id,
+        'invoice_number' => 'INTENTO-DE-CAMBIO',
+        'total_value' => $invoice->total_value,
+        'issue_date' => $invoice->issue_date,
+        'payment_status' => $invoice->payment_status->value,
+    ])->assertRedirect();
+
+    expect($invoice->fresh()->invoice_number)->toBe('FAC-0099-2026');
+});
+
+test('update como super admin cambia invoice_number', function (): void {
+    // Beforeach already actingAs a super_admin user.
+    $invoice = Invoice::factory()->create(['invoice_number' => 'FAC-0042-2026']);
+
+    put(route('invoices.update', $invoice), [
+        'third_party_id' => $invoice->third_party_id,
+        'invoice_number' => 'FAC-AJUSTE-2026',
+        'total_value' => $invoice->total_value,
+        'issue_date' => $invoice->issue_date,
+        'payment_status' => $invoice->payment_status->value,
+    ])->assertRedirect();
+
+    expect($invoice->fresh()->invoice_number)->toBe('FAC-AJUSTE-2026');
+});
+
+test('update rechaza cambiar third_party_id con servicios asociados', function (): void {
+    $customerA = ThirdParty::factory()->create(['is_customer' => true]);
+    $customerB = ThirdParty::factory()->create(['is_customer' => true]);
+    $contractA = Contract::factory()->create(['third_party_id' => $customerA->id]);
+    $invoice = Invoice::factory()->create(['third_party_id' => $customerA->id]);
+    Service::factory()->create([
+        'contract_id' => $contractA->id,
+        'service_status' => ServiceStatus::Closed,
+        'invoice_id' => $invoice->id,
+    ]);
+
+    $response = put(route('invoices.update', $invoice), [
+        'third_party_id' => $customerB->id,
+        'invoice_number' => $invoice->invoice_number,
+        'total_value' => $invoice->total_value,
+        'issue_date' => $invoice->issue_date,
+        'payment_status' => $invoice->payment_status->value,
+    ]);
+
+    $response->assertSessionHasErrors('third_party_id');
+    expect($invoice->fresh()->third_party_id)->toBe($customerA->id);
+});
+
+test('update con service_ids set final hace diff attach/detach', function (): void {
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    $contract = Contract::factory()->create(['third_party_id' => $customer->id]);
+    $invoice = Invoice::factory()->create([
+        'third_party_id' => $customer->id,
+        'total_value' => 0,
+    ]);
+    $s1 = Service::factory()->create([
+        'contract_id' => $contract->id,
+        'service_status' => ServiceStatus::Closed,
+        'unit_value' => 1000,
+        'quantity' => 1,
+        'invoice_id' => $invoice->id,
+    ]);
+    $s2 = Service::factory()->create([
+        'contract_id' => $contract->id,
+        'service_status' => ServiceStatus::Closed,
+        'unit_value' => 500,
+        'quantity' => 1,
+        'invoice_id' => $invoice->id,
+    ]);
+    $s3 = Service::factory()->create([
+        'contract_id' => $contract->id,
+        'service_status' => ServiceStatus::Closed,
+        'unit_value' => 800,
+        'quantity' => 1,
+        'invoice_id' => null,
+    ]);
+
+    $response = put(route('invoices.update', $invoice), [
+        'third_party_id' => $invoice->third_party_id,
+        'invoice_number' => $invoice->invoice_number,
+        'total_value' => 0,
+        'issue_date' => $invoice->issue_date,
+        'payment_status' => $invoice->payment_status->value,
+        'service_ids' => [$s2->id, $s3->id], // detach s1, mantener s2, agregar s3
+    ]);
+    $response->assertRedirect();
+    $response->assertSessionHasNoErrors();
+
+    expect($s1->fresh()->invoice_id)->toBeNull();
+    expect($s2->fresh()->invoice_id)->toBe($invoice->id);
+    expect($s3->fresh()->invoice_id)->toBe($invoice->id);
+    expect($invoice->fresh()->total_value)->toBe('1300.00');
+});
+
+test('update con service_ids vacío desvincula todos los servicios', function (): void {
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    $contract = Contract::factory()->create(['third_party_id' => $customer->id]);
+    $invoice = Invoice::factory()->create(['third_party_id' => $customer->id]);
+    $s1 = Service::factory()->create([
+        'contract_id' => $contract->id,
+        'service_status' => ServiceStatus::Closed,
+        'unit_value' => 1000,
+        'quantity' => 1,
+        'invoice_id' => $invoice->id,
+    ]);
+    $s2 = Service::factory()->create([
+        'contract_id' => $contract->id,
+        'service_status' => ServiceStatus::Closed,
+        'unit_value' => 500,
+        'quantity' => 1,
+        'invoice_id' => $invoice->id,
+    ]);
+
+    put(route('invoices.update', $invoice), [
+        'third_party_id' => $invoice->third_party_id,
+        'invoice_number' => $invoice->invoice_number,
+        'total_value' => 0,
+        'issue_date' => $invoice->issue_date,
+        'payment_status' => $invoice->payment_status->value,
+        'service_ids' => [],
+    ])->assertRedirect();
+
+    expect($s1->fresh()->invoice_id)->toBeNull();
+    expect($s2->fresh()->invoice_id)->toBeNull();
+    expect($invoice->fresh()->total_value)->toBe('0.00');
+});
+
+test('update con blocked en service_ids sin justificación falla y rollback', function (): void {
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    $contract = Contract::factory()->create(['third_party_id' => $customer->id]);
+    $invoice = Invoice::factory()->create(['third_party_id' => $customer->id]);
+    $blocked = Service::factory()->create([
+        'contract_id' => $contract->id,
+        'service_status' => ServiceStatus::Closed,
+        'unit_value' => 1000,
+        'quantity' => 1,
+        'invoice_id' => null,
+    ]);
+    ServiceIncident::factory()->create([
+        'service_id' => $blocked->id,
+        'incident_type_id' => IncidentType::factory()->create()->id,
+        'affects_billing' => true,
+        'additional_value' => 500,
+    ]);
+
+    $response = put(route('invoices.update', $invoice), [
+        'third_party_id' => $invoice->third_party_id,
+        'invoice_number' => $invoice->invoice_number,
+        'total_value' => 0,
+        'issue_date' => $invoice->issue_date,
+        'payment_status' => $invoice->payment_status->value,
+        'service_ids' => [$blocked->id],
+    ]);
+
+    $response->assertSessionHasErrors('service_ids');
+    expect($blocked->fresh()->invoice_id)->toBeNull();
+});
+
+test('attachedServices endpoint devuelve los servicios actualmente asociados', function (): void {
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    $contract = Contract::factory()->create(['third_party_id' => $customer->id]);
+    $invoice = Invoice::factory()->create(['third_party_id' => $customer->id]);
+    $attached = Service::factory()->create([
+        'contract_id' => $contract->id,
+        'service_status' => ServiceStatus::Closed,
+        'invoice_id' => $invoice->id,
+    ]);
+    Service::factory()->create([
+        'contract_id' => $contract->id,
+        'service_status' => ServiceStatus::Closed,
+        'invoice_id' => null,
+    ]);
+
+    $response = $this->getJson(route('invoices.attached-services', $invoice));
+
+    $response->assertOk();
+    $response->assertJsonCount(1, 'attachedCandidates');
+    $response->assertJsonPath('attachedCandidates.0.id', $attached->id);
+});
+
+// ================================================================
+// Filter by billing_group on /invoices index
+// ================================================================
+
+test('index filters invoices by billing_group', function (): void {
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    $contract = Contract::factory()->create(['third_party_id' => $customer->id]);
+
+    $salud = \App\Models\BillingGroup::firstWhere('code', 'salud');
+    $turismo = \App\Models\BillingGroup::firstWhere('code', 'turismo');
+
+    $invoiceSalud = Invoice::factory()->create(['third_party_id' => $customer->id]);
+    $invoiceTurismo = Invoice::factory()->create(['third_party_id' => $customer->id]);
+
+    $serviceSalud = Service::factory()->create([
+        'contract_id' => $contract->id,
+        'invoice_id' => $invoiceSalud->id,
+        'service_status' => ServiceStatus::Closed,
+    ]);
+    $serviceSalud->billingGroups()->sync([$salud->id]);
+
+    $serviceTurismo = Service::factory()->create([
+        'contract_id' => $contract->id,
+        'invoice_id' => $invoiceTurismo->id,
+        'service_status' => ServiceStatus::Closed,
+    ]);
+    $serviceTurismo->billingGroups()->sync([$turismo->id]);
+
+    $response = get(route('invoices.index', ['filter' => ['billing_group' => $salud->id]]));
+
+    $response->assertOk();
+    $rows = $response->viewData('page')['props']['invoices']['data'];
+    $ids = array_column($rows, 'id');
+    expect($ids)->toContain($invoiceSalud->id);
+    expect($ids)->not->toContain($invoiceTurismo->id);
+});
+
+test('index passes billingGroups (active only) as a prop for the toolbar', function (): void {
+    \App\Models\BillingGroup::factory()->create(['code' => 'inactivo-test', 'active' => false]);
+
+    $response = get(route('invoices.index'));
+
+    $response->assertOk();
+    $billingGroups = $response->viewData('page')['props']['billingGroups'];
+    $codes = collect($billingGroups)->pluck('name')->all();
+    // The 5 seeded defaults are active; the inactive one above should be filtered out.
+    expect(count($billingGroups))->toBeGreaterThanOrEqual(5);
+    expect($codes)->not->toContain('Inactivo-test');
+});
+
+test('show works for an invoice without third_party_id', function (): void {
+    $invoice = Invoice::factory()->create(['third_party_id' => null]);
+
+    $response = get(route('invoices.show', $invoice));
+
+    $response->assertOk();
+    $response->assertInertia(
+        fn ($page) => $page
+            ->component('invoices/show')
+            ->where('candidateServices', [])
+            ->where('blockedCandidateServices', []),
+    );
+});
+
+test('attachServices fails fast when invoice has no customer', function (): void {
+    $invoice = Invoice::factory()->create(['third_party_id' => null]);
+    $service = Service::factory()->create([
+        'service_status' => ServiceStatus::Closed,
+        'invoice_id' => null,
+    ]);
+
+    $response = post(route('invoices.services.attach', $invoice), [
+        'service_ids' => [$service->id],
+    ]);
+
+    $response->assertSessionHasErrors('service_ids');
+    expect($service->fresh()->invoice_id)->toBeNull();
+});
+
+test('update can assign third_party_id when current is null', function (): void {
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    $invoice = Invoice::factory()->create(['third_party_id' => null]);
+
+    $response = put(route('invoices.update', $invoice), [
+        'third_party_id' => $customer->id,
+        'invoice_number' => $invoice->invoice_number,
+        'total_value' => $invoice->total_value,
+        'issue_date' => $invoice->issue_date,
+        'payment_status' => $invoice->payment_status->value,
+    ]);
+
+    $response->assertRedirect();
+    $response->assertSessionHasNoErrors();
+    expect($invoice->fresh()->third_party_id)->toBe($customer->id);
+});
+
+test('eligibleServices endpoint includes billing_groups on each row', function (): void {
+    $customer = ThirdParty::factory()->create(['is_customer' => true]);
+    $contract = Contract::factory()->create(['third_party_id' => $customer->id]);
+
+    $salud = \App\Models\BillingGroup::firstWhere('code', 'salud');
+
+    $service = Service::factory()->create([
+        'contract_id' => $contract->id,
+        'service_status' => ServiceStatus::Closed,
+        'service_date' => Carbon::today()->subDays(5),
+        'invoice_id' => null,
+    ]);
+    $service->billingGroups()->sync([$salud->id]);
+
+    $response = $this->getJson(route('invoices.eligible-services', ['customer_id' => $customer->id]));
+
+    $response->assertOk();
+    $response->assertJsonPath('cleanCandidates.0.id', $service->id);
+    $response->assertJsonPath('cleanCandidates.0.billing_groups.0.id', $salud->id);
+    $response->assertJsonPath('cleanCandidates.0.billing_groups.0.name', 'Salud');
 });

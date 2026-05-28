@@ -1,4 +1,4 @@
-import InputError from '@/components/input-error';
+import FieldFooter from '@/components/field-footer';
 import MunicipalityCombobox, {
     type MunicipalityOption,
 } from '@/components/municipality-combobox';
@@ -94,8 +94,8 @@ export default function ThirdPartyForm({
 
     return (
         <div className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2">
-                <div className="grid gap-2">
+            <div className="grid gap-x-4 gap-y-2 md:grid-cols-2 md:grid-rows-[auto_auto_auto]">
+                <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                     <Label htmlFor={id('document_type_id')}>
                         Tipo de Documento
                         <RequiredMarker />
@@ -117,10 +117,10 @@ export default function ThirdPartyForm({
                             ))}
                         </SelectContent>
                     </Select>
-                    <InputError message={errors.document_type_id} />
+                    <FieldFooter error={errors.document_type_id} />
                 </div>
 
-                <div className="grid gap-2">
+                <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                     <Label htmlFor={id('identification_number')}>
                         Número de Identificación
                         <RequiredMarker />
@@ -153,7 +153,7 @@ export default function ThirdPartyForm({
                             invalid={!!errors.identification_number}
                         />
                     )}
-                    <InputError message={errors.identification_number} />
+                    <FieldFooter error={errors.identification_number} />
                 </div>
             </div>
 
@@ -170,12 +170,12 @@ export default function ThirdPartyForm({
                         ? 'Persona Natural'
                         : 'Persona Jurídica'}
                 </Label>
-                <InputError message={errors.is_natural_person} />
+                <FieldFooter error={errors.is_natural_person} />
             </div>
 
             {data.is_natural_person ? (
-                <div className="grid gap-4 md:grid-cols-2">
-                    <div className="grid gap-2">
+                <div className="grid gap-x-4 gap-y-2 md:grid-cols-2 md:grid-rows-[auto_auto_auto]">
+                    <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                         <Label htmlFor={id('first_name')}>
                             Primer Nombre
                             <RequiredMarker />
@@ -187,9 +187,9 @@ export default function ThirdPartyForm({
                                 setData('first_name', e.target.value)
                             }
                         />
-                        <InputError message={errors.first_name} />
+                        <FieldFooter error={errors.first_name} />
                     </div>
-                    <div className="grid gap-2">
+                    <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                         <Label htmlFor={id('second_name')}>
                             Segundo Nombre
                         </Label>
@@ -200,9 +200,13 @@ export default function ThirdPartyForm({
                                 setData('second_name', e.target.value)
                             }
                         />
-                        <InputError message={errors.second_name} />
+                        <FieldFooter error={errors.second_name} />
                     </div>
-                    <div className="grid gap-2">
+                </div>
+            ) : null}
+            {data.is_natural_person ? (
+                <div className="grid gap-x-4 gap-y-2 md:grid-cols-2 md:grid-rows-[auto_auto_auto]">
+                    <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                         <Label htmlFor={id('first_lastname')}>
                             Primer Apellido
                             <RequiredMarker />
@@ -214,9 +218,9 @@ export default function ThirdPartyForm({
                                 setData('first_lastname', e.target.value)
                             }
                         />
-                        <InputError message={errors.first_lastname} />
+                        <FieldFooter error={errors.first_lastname} />
                     </div>
-                    <div className="grid gap-2">
+                    <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                         <Label htmlFor={id('second_lastname')}>
                             Segundo Apellido
                         </Label>
@@ -227,12 +231,12 @@ export default function ThirdPartyForm({
                                 setData('second_lastname', e.target.value)
                             }
                         />
-                        <InputError message={errors.second_lastname} />
+                        <FieldFooter error={errors.second_lastname} />
                     </div>
                 </div>
             ) : (
-                <div className="grid gap-4 md:grid-cols-2">
-                    <div className="grid gap-2">
+                <div className="grid gap-x-4 gap-y-2 md:grid-cols-2 md:grid-rows-[auto_auto_auto]">
+                    <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                         <Label htmlFor={id('company_name')}>
                             Razón Social
                             <RequiredMarker />
@@ -244,9 +248,9 @@ export default function ThirdPartyForm({
                                 setData('company_name', e.target.value)
                             }
                         />
-                        <InputError message={errors.company_name} />
+                        <FieldFooter error={errors.company_name} />
                     </div>
-                    <div className="grid gap-2">
+                    <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                         <Label htmlFor={id('trade_name')}>
                             Nombre Comercial
                         </Label>
@@ -257,13 +261,13 @@ export default function ThirdPartyForm({
                                 setData('trade_name', e.target.value)
                             }
                         />
-                        <InputError message={errors.trade_name} />
+                        <FieldFooter error={errors.trade_name} />
                     </div>
                 </div>
             )}
 
-            <div className="grid gap-4 md:grid-cols-2">
-                <div className="grid gap-2">
+            <div className="grid gap-x-4 gap-y-2 md:grid-cols-2 md:grid-rows-[auto_auto_auto]">
+                <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                     <Label htmlFor={id('municipality_id')}>Municipio</Label>
                     <MunicipalityCombobox
                         id={id('municipality_id')}
@@ -272,9 +276,9 @@ export default function ThirdPartyForm({
                         onChange={(val) => setData('municipality_id', val)}
                         invalid={!!errors.municipality_id}
                     />
-                    <InputError message={errors.municipality_id} />
+                    <FieldFooter error={errors.municipality_id} />
                 </div>
-                <div className="grid gap-2">
+                <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                     <Label htmlFor={id('address')}>
                         Dirección
                         <RequiredMarker />
@@ -284,9 +288,12 @@ export default function ThirdPartyForm({
                         value={data.address}
                         onChange={(e) => setData('address', e.target.value)}
                     />
-                    <InputError message={errors.address} />
+                    <FieldFooter error={errors.address} />
                 </div>
-                <div className="grid gap-2">
+            </div>
+
+            <div className="grid gap-x-4 gap-y-2 md:grid-cols-2 md:grid-rows-[auto_auto_auto]">
+                <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                     <Label htmlFor={id('phone')}>
                         Teléfono
                         <RequiredMarker />
@@ -297,9 +304,9 @@ export default function ThirdPartyForm({
                         onValueChange={(raw) => setData('phone', raw)}
                         invalid={!!errors.phone}
                     />
-                    <InputError message={errors.phone} />
+                    <FieldFooter error={errors.phone} />
                 </div>
-                <div className="grid gap-2">
+                <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                     <Label htmlFor={id('email')}>
                         Correo Electrónico
                         <RequiredMarker />
@@ -310,7 +317,7 @@ export default function ThirdPartyForm({
                         value={data.email}
                         onChange={(e) => setData('email', e.target.value)}
                     />
-                    <InputError message={errors.email} />
+                    <FieldFooter error={errors.email} />
                 </div>
             </div>
 

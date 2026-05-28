@@ -567,7 +567,7 @@ export default function LocationField({
         invalid || invalidMunicipality || invalidAddress || false;
 
     return (
-        <div ref={containerRef} className="space-y-1">
+        <div ref={containerRef} className="min-w-0 space-y-1">
             <ButtonGroup className="w-full">
                 {/* Inner shell that holds prefix icon + chip + native input
                     + right-side icons. Carries the visual border so the
@@ -575,7 +575,7 @@ export default function LocationField({
                     right edge stays flat to seam against the map button. */}
                 <div
                     className={cn(
-                        'relative flex flex-1 items-center gap-1 rounded-l-md border bg-background px-2 py-1 text-sm',
+                        'relative flex min-w-0 flex-1 items-center gap-1 rounded-l-md border bg-background px-2 py-1 text-sm',
                         'focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20',
                         wrapperInvalid &&
                             'border-destructive focus-within:ring-destructive/20',
@@ -616,7 +616,7 @@ export default function LocationField({
                         onFocus={handleInputFocus}
                         placeholder={placeholder}
                         disabled={disabled || committing}
-                        className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed"
+                        className="min-w-0 flex-1 truncate bg-transparent text-sm outline-none placeholder:text-muted-foreground focus:text-clip disabled:cursor-not-allowed"
                     />
                     {(loadingSuggest || committing) && (
                         <Loader2 className="size-4 shrink-0 animate-spin text-muted-foreground" />
@@ -742,7 +742,7 @@ function CityChip({
     return (
         <span
             className={cn(
-                'inline-flex shrink-0 items-center gap-1 rounded-md bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground shadow-sm',
+                'inline-flex shrink-0 items-center gap-1 rounded-md bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground capitalize shadow-sm',
                 disabled && 'pointer-events-none opacity-60',
             )}
         >
@@ -754,7 +754,7 @@ function CityChip({
                 }}
                 aria-label={`Cambiar ciudad seleccionada: ${label}`}
                 disabled={disabled}
-                className="cursor-pointer rounded-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed"
+                className="cursor-pointer rounded-sm capitalize focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed"
             >
                 {label}
             </button>
@@ -844,7 +844,7 @@ function CityDropdown({
                                     )}
                                     aria-hidden
                                 />
-                                <span className="flex-1 truncate">
+                                <span className="flex-1 truncate capitalize">
                                     {m.name}
                                 </span>
                                 <span className="text-xs text-muted-foreground">

@@ -2,7 +2,7 @@ import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import ServiceController from '@/actions/App/Http/Controllers/ServiceController';
 import ContractDialog from '@/components/contracts/contract-dialog';
-import InputError from '@/components/input-error';
+import FieldFooter from '@/components/field-footer';
 import { type MunicipalityOption } from '@/components/municipality-combobox';
 import ServiceForm, {
     type ContractOption,
@@ -13,7 +13,6 @@ import { type ThirdPartyOption } from '@/components/third-parties/third-party-co
 import { type DocumentTypeOption } from '@/components/third-parties/third-party-form';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import services from '@/routes/services';
@@ -34,6 +33,7 @@ export default function ServicesCreate({
     canBypassExecutedDay = false,
     thirdParties = [],
     documentTypes = [],
+    billingGroups = [],
 }: {
     vehicles: VehicleOption[];
     drivers: DriverOption[];
@@ -48,6 +48,7 @@ export default function ServicesCreate({
     canBypassExecutedDay?: boolean;
     thirdParties?: ThirdPartyOption[];
     documentTypes?: DocumentTypeOption[];
+    billingGroups?: import('@/components/services/billing-groups-tags').BillingGroupOption[];
 }) {
     const { data, setData, post, processing, errors } = useForm({
         contract_id: '',
@@ -72,7 +73,7 @@ export default function ServicesCreate({
         actual_end_time: '',
         unit_value: '',
         quantity: '1',
-        billing_groups: [] as string[],
+        billing_groups: [] as number[],
         payment_method: 'credit',
         service_status: 'open',
         justification: '',
@@ -117,108 +118,94 @@ export default function ServicesCreate({
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Crear Servicio" />
-            <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Crear Servicio</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <form onSubmit={submit} className="space-y-6">
-                            <ServiceForm
-                                data={data}
-                                setData={setData}
-                                errors={errors}
-                                vehicles={vehicles}
-                                drivers={drivers}
-                                contracts={contracts}
-                                municipalities={municipalities}
-                                mode="create"
-                                onAddressCommitInFlight={
-                                    setAddressCommitInFlight
+            <div className="flex h-full flex-1 flex-col gap-4 p-4">
+                <h1 className="text-xl font-semibold">Crear Servicio</h1>
+                <form onSubmit={submit} className="space-y-6">
+                    <ServiceForm
+                        data={data}
+                        setData={setData}
+                        errors={errors}
+                        vehicles={vehicles}
+                        drivers={drivers}
+                        contracts={contracts}
+                        municipalities={municipalities}
+                        billingGroups={billingGroups}
+                        mode="create"
+                        onAddressCommitInFlight={setAddressCommitInFlight}
+                        onCreateContractClick={
+                            canCascadeContract
+                                ? () => setContractDialogOpen(true)
+                                : undefined
+                        }
+                    />
+
+                    {isExecutedDay && (
+                        <Alert variant="destructive">
+                            <AlertTitle>Día ejecutado</AlertTitle>
+                            <AlertDescription>
+                                {canBypassExecutedDay
+                                    ? 'El día ya fue ejecutado. Agregar un servicio es una excepción y requiere justificación (10–500 caracteres). Quedará registrado en la auditoría.'
+                                    : 'No se pueden agregar servicios a un día ejecutado. Esta acción está reservada al administrador.'}
+                            </AlertDescription>
+                        </Alert>
+                    )}
+
+                    {isExecutedDay && canBypassExecutedDay && (
+                        <div className="grid gap-2">
+                            <Label htmlFor="justification">
+                                Justificación
+                                <span className="text-destructive">{' *'}</span>
+                            </Label>
+                            <textarea
+                                id="justification"
+                                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                                value={data.justification}
+                                onChange={(e) =>
+                                    setData('justification', e.target.value)
                                 }
-                                onCreateContractClick={
-                                    canCascadeContract
-                                        ? () => setContractDialogOpen(true)
-                                        : undefined
-                                }
+                                maxLength={500}
+                                minLength={10}
+                                placeholder="Motivo del registro tardío en día ejecutado (mínimo 10 caracteres)."
                             />
+                            <FieldFooter error={errors.justification} />
+                        </div>
+                    )}
 
-                            {isExecutedDay && (
-                                <Alert variant="destructive">
-                                    <AlertTitle>Día ejecutado</AlertTitle>
-                                    <AlertDescription>
-                                        {canBypassExecutedDay
-                                            ? 'El día ya fue ejecutado. Agregar un servicio es una excepción y requiere justificación (10–500 caracteres). Quedará registrado en la auditoría.'
-                                            : 'No se pueden agregar servicios a un día ejecutado. Esta acción está reservada al administrador.'}
-                                    </AlertDescription>
-                                </Alert>
-                            )}
+                    <div className="flex items-center gap-4">
+                        <Button
+                            type="submit"
+                            disabled={
+                                processing ||
+                                addressCommitInFlight ||
+                                (isExecutedDay && !canBypassExecutedDay)
+                            }
+                        >
+                            Guardar
+                        </Button>
+                        <Link href={services.index().url}>
+                            <Button type="button" variant="outline">
+                                Cancelar
+                            </Button>
+                        </Link>
+                    </div>
+                </form>
 
-                            {isExecutedDay && canBypassExecutedDay && (
-                                <div className="grid gap-2">
-                                    <Label htmlFor="justification">
-                                        Justificación
-                                        <span className="text-destructive">
-                                            {' *'}
-                                        </span>
-                                    </Label>
-                                    <textarea
-                                        id="justification"
-                                        className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-                                        value={data.justification}
-                                        onChange={(e) =>
-                                            setData(
-                                                'justification',
-                                                e.target.value,
-                                            )
-                                        }
-                                        maxLength={500}
-                                        minLength={10}
-                                        placeholder="Motivo del registro tardío en día ejecutado (mínimo 10 caracteres)."
-                                    />
-                                    <InputError
-                                        message={errors.justification}
-                                    />
-                                </div>
-                            )}
-
-                            <div className="flex items-center gap-4">
-                                <Button
-                                    type="submit"
-                                    disabled={
-                                        processing ||
-                                        addressCommitInFlight ||
-                                        (isExecutedDay && !canBypassExecutedDay)
-                                    }
-                                >
-                                    Guardar
-                                </Button>
-                                <Link href={services.index().url}>
-                                    <Button type="button" variant="outline">
-                                        Cancelar
-                                    </Button>
-                                </Link>
-                            </div>
-                        </form>
-
-                        {/*
-                            ContractDialog renders its own <form>. Keep it
-                            OUTSIDE the service <form> above: React propagates
-                            submit events through the component tree (not the
-                            portaled DOM), so nesting it would also fire the
-                            service form's onSubmit. See BUG-002.
-                        */}
-                        <ContractDialog
-                            open={contractDialogOpen}
-                            onOpenChange={setContractDialogOpen}
-                            mode="create"
-                            cascade
-                            thirdParties={thirdParties}
-                            documentTypes={documentTypes}
-                            municipalities={municipalities}
-                        />
-                    </CardContent>
-                </Card>
+                {/*
+                    ContractDialog renders its own <form>. Keep it
+                    OUTSIDE the service <form> above: React propagates
+                    submit events through the component tree (not the
+                    portaled DOM), so nesting it would also fire the
+                    service form's onSubmit. See BUG-002.
+                */}
+                <ContractDialog
+                    open={contractDialogOpen}
+                    onOpenChange={setContractDialogOpen}
+                    mode="create"
+                    cascade
+                    thirdParties={thirdParties}
+                    documentTypes={documentTypes}
+                    municipalities={municipalities}
+                />
             </div>
         </AppLayout>
     );

@@ -1,4 +1,10 @@
-import InputError from '@/components/input-error';
+import { Loader2 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import FieldFooter from '@/components/field-footer';
+import ServicePickerTable, {
+    rowBillableTotal,
+    type ServicePickerRow,
+} from '@/components/invoices/service-picker-table';
 import ThirdPartyCombobox, {
     type ThirdPartyOption,
 } from '@/components/third-parties/third-party-combobox';
@@ -20,6 +26,13 @@ export interface InvoiceFormData {
     issue_date: string;
     payment_status: string;
     notes: string;
+    service_ids: number[];
+    override_justification: string;
+}
+
+export interface EligibleServicesPayload {
+    cleanCandidates: ServicePickerRow[];
+    blockedCandidates: ServicePickerRow[];
 }
 
 interface InvoiceFormProps {
@@ -28,7 +41,7 @@ interface InvoiceFormProps {
         key: K,
         value: InvoiceFormData[K],
     ) => void;
-    errors: Partial<Record<keyof InvoiceFormData, string>>;
+    errors: Partial<Record<keyof InvoiceFormData | 'service_ids', string>>;
     thirdParties: ThirdPartyOption[];
     /**
      * Extra customers that MUST appear in the combobox even if they
@@ -48,6 +61,20 @@ interface InvoiceFormProps {
      * when isTotalLocked is true.
      */
     servicesCount?: number;
+    /** Create mode → show the inline picker; edit mode → hide it. */
+    mode?: 'create' | 'edit';
+    /** Eligible services payload (null until the parent loads it). */
+    eligibleServices?: EligibleServicesPayload | null;
+    /** Spinner state while the parent is fetching eligible services. */
+    loadingEligible?: boolean;
+    /** Called when the customer combobox changes (create mode only). */
+    onThirdPartyChange?: (id: string) => void;
+    /** Preview del próximo número de factura (create-mode, readonly). */
+    nextInvoiceNumberPreview?: string;
+    /** Permite editar el número de factura en edit mode (solo super admin). */
+    canEditInvoiceNumber?: boolean;
+    /** Servicios ya asociados a esta factura (solo edit mode). */
+    attachedServices?: ServicePickerRow[];
 }
 
 function RequiredMarker() {
@@ -72,31 +99,114 @@ export default function InvoiceForm({
     idPrefix = '',
     isTotalLocked = false,
     servicesCount = 0,
+    mode = 'edit',
+    eligibleServices = null,
+    loadingEligible = false,
+    onThirdPartyChange,
+    nextInvoiceNumberPreview,
+    canEditInvoiceNumber = false,
+    attachedServices = [],
 }: InvoiceFormProps) {
     const id = (name: string) => (idPrefix ? `${idPrefix}_${name}` : name);
     const invalid = (field: keyof InvoiceFormData) =>
         errors[field] ? true : undefined;
 
+    const [pickerSearch, setPickerSearch] = useState('');
+    const [showBlocked, setShowBlocked] = useState(false);
+
+    const showPickerCreate =
+        mode === 'create' && Boolean(data.third_party_id) && !isTotalLocked;
+    const showPickerEdit = mode === 'edit' && Boolean(data.third_party_id);
+    const showPicker = showPickerCreate || showPickerEdit;
+    const isCustomerLocked = mode === 'edit' && servicesCount > 0;
+    const isInvoiceNumberReadOnly =
+        mode === 'create' || (mode === 'edit' && !canEditInvoiceNumber);
+
+    function handleThirdPartyChange(value: string) {
+        if (isCustomerLocked) return;
+        setData('third_party_id', value);
+        // En create reseteamos el set de seleccionados; en edit el
+        // parent ya re-hidrata data.service_ids con los attached cuando
+        // cambia el invoice, y aquí no aplicaría porque el combobox
+        // está bloqueado cuando hay servicios.
+        if (mode === 'create') {
+            setData('service_ids', []);
+        }
+        setData('override_justification', '');
+        setShowBlocked(false);
+        setPickerSearch('');
+        onThirdPartyChange?.(value);
+    }
+
+    // Auto-fill total_value from the selected services' billable amount.
+    // The input stays editable (no readOnly) — user can override the
+    // suggestion, but the server reconciles after attach so the final
+    // persisted value still reflects the actual services.
+    const selectedTotal = useMemo(() => {
+        if (!showPicker) return 0;
+        const idSet = new Set(data.service_ids);
+        const rows: ServicePickerRow[] = [
+            ...(eligibleServices?.cleanCandidates ?? []),
+            ...(eligibleServices?.blockedCandidates ?? []),
+            ...attachedServices,
+        ];
+        return rows
+            .filter((row) => idSet.has(row.id))
+            .reduce((acc, row) => acc + rowBillableTotal(row), 0);
+    }, [showPicker, eligibleServices, attachedServices, data.service_ids]);
+
+    useEffect(() => {
+        if (!showPicker) return;
+        if (data.service_ids.length === 0) return;
+        const next = String(selectedTotal);
+        if (next !== data.total_value) {
+            setData('total_value', next);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedTotal, showPicker, data.service_ids.length]);
+
     return (
         <div className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2">
-                <div className="grid gap-2">
+            <div className="grid gap-x-4 gap-y-2 md:grid-cols-2 md:grid-rows-[auto_auto_auto]">
+                <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                     <Label htmlFor={id('invoice_number')}>
                         Número de Factura
-                        <RequiredMarker />
+                        {!isInvoiceNumberReadOnly && <RequiredMarker />}
                     </Label>
-                    <Input
-                        id={id('invoice_number')}
-                        value={data.invoice_number}
-                        aria-invalid={invalid('invoice_number')}
-                        onChange={(e) =>
-                            setData('invoice_number', e.target.value)
-                        }
-                    />
-                    <InputError message={errors.invoice_number} />
+                    {isInvoiceNumberReadOnly ? (
+                        // Display read-only invoice numbers as a prominent
+                        // value tag, not an input. Removes the affordance
+                        // that suggests the field is editable.
+                        <div
+                            id={id('invoice_number')}
+                            className="flex h-9 items-center rounded-md bg-muted px-3 font-mono text-base font-semibold tracking-wide tabular-nums"
+                            aria-label="Número de factura asignado"
+                        >
+                            {mode === 'create'
+                                ? (nextInvoiceNumberPreview ?? '—')
+                                : data.invoice_number}
+                        </div>
+                    ) : (
+                        <Input
+                            id={id('invoice_number')}
+                            value={data.invoice_number}
+                            aria-invalid={invalid('invoice_number')}
+                            onChange={(e) =>
+                                setData('invoice_number', e.target.value)
+                            }
+                            className="font-mono"
+                        />
+                    )}
+                    <FieldFooter error={errors.invoice_number}>
+                        {mode === 'create'
+                            ? 'Asignado automáticamente al guardar.'
+                            : mode === 'edit' && !canEditInvoiceNumber
+                              ? 'No editable una vez creada.'
+                              : null}
+                    </FieldFooter>
                 </div>
 
-                <div className="grid gap-2">
+                <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                     <Label htmlFor={id('third_party_id')}>
                         Cliente
                         <RequiredMarker />
@@ -107,16 +217,68 @@ export default function InvoiceForm({
                         role="customer"
                         forceInclude={forceIncludeCustomer}
                         value={data.third_party_id || null}
-                        onChange={(value) => setData('third_party_id', value)}
+                        onChange={handleThirdPartyChange}
                         invalid={invalid('third_party_id')}
                         placeholder="Selecciona un cliente"
+                        disabled={isCustomerLocked}
                     />
-                    <InputError message={errors.third_party_id} />
+                    <FieldFooter error={errors.third_party_id}>
+                        {isCustomerLocked
+                            ? 'Bloqueado mientras haya servicios.'
+                            : null}
+                    </FieldFooter>
                 </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-3">
-                <div className="grid gap-2">
+            {showPicker && (
+                <div className="space-y-2">
+                    <Label>Servicios a facturar</Label>
+                    {loadingEligible ? (
+                        <div className="flex items-center gap-2 rounded-md border border-dashed bg-muted/30 p-6 text-sm text-muted-foreground">
+                            <Loader2 className="size-4 animate-spin" />
+                            Cargando servicios elegibles…
+                        </div>
+                    ) : eligibleServices ? (
+                        eligibleServices.cleanCandidates.length === 0 &&
+                        eligibleServices.blockedCandidates.length === 0 &&
+                        attachedServices.length === 0 ? (
+                            <div className="rounded-md border border-dashed bg-muted/30 p-6 text-sm text-muted-foreground">
+                                {mode === 'create'
+                                    ? 'No hay servicios elegibles para este cliente. Puedes crear la factura igual y asociar servicios después desde su detalle.'
+                                    : 'No hay servicios asociados ni elegibles para este cliente.'}
+                            </div>
+                        ) : (
+                            <ServicePickerTable
+                                candidates={eligibleServices.cleanCandidates}
+                                blockedCandidates={
+                                    eligibleServices.blockedCandidates
+                                }
+                                attachedCandidates={attachedServices}
+                                selectedIds={data.service_ids}
+                                onSelectedIdsChange={(ids) =>
+                                    setData('service_ids', ids)
+                                }
+                                showBlocked={showBlocked}
+                                onShowBlockedChange={setShowBlocked}
+                                justification={data.override_justification}
+                                onJustificationChange={(v) =>
+                                    setData('override_justification', v)
+                                }
+                                justificationError={
+                                    errors.override_justification
+                                }
+                                serviceIdsError={errors.service_ids}
+                                search={pickerSearch}
+                                onSearchChange={setPickerSearch}
+                                idPrefix={id('picker')}
+                            />
+                        )
+                    ) : null}
+                </div>
+            )}
+
+            <div className="grid gap-x-4 gap-y-2 md:grid-cols-3 md:grid-rows-[auto_auto_auto]">
+                <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                     <Label htmlFor={id('issue_date')}>
                         Fecha de Emisión
                         <RequiredMarker />
@@ -128,10 +290,10 @@ export default function InvoiceForm({
                         aria-invalid={invalid('issue_date')}
                         onChange={(e) => setData('issue_date', e.target.value)}
                     />
-                    <InputError message={errors.issue_date} />
+                    <FieldFooter error={errors.issue_date} />
                 </div>
 
-                <div className="grid gap-2">
+                <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                     <Label htmlFor={id('total_value')}>
                         Valor Total
                         <RequiredMarker />
@@ -144,18 +306,16 @@ export default function InvoiceForm({
                         invalid={invalid('total_value')}
                         className="tabular-nums"
                     />
-                    {isTotalLocked && (
-                        <p className="text-xs text-muted-foreground italic">
-                            (calculado automáticamente — hay {servicesCount}{' '}
-                            servicio
-                            {servicesCount === 1 ? '' : 's'} asociado
-                            {servicesCount === 1 ? '' : 's'})
-                        </p>
-                    )}
-                    <InputError message={errors.total_value} />
+                    <FieldFooter error={errors.total_value}>
+                        {isTotalLocked
+                            ? `Calculado de ${servicesCount} servicio${servicesCount === 1 ? '' : 's'}.`
+                            : showPicker && data.service_ids.length > 0
+                              ? 'Sugerido por servicios — editable.'
+                              : null}
+                    </FieldFooter>
                 </div>
 
-                <div className="grid gap-2">
+                <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
                     <Label htmlFor={id('payment_status')}>
                         Estado
                         <RequiredMarker />
@@ -180,7 +340,7 @@ export default function InvoiceForm({
                             ))}
                         </SelectContent>
                     </Select>
-                    <InputError message={errors.payment_status} />
+                    <FieldFooter error={errors.payment_status} />
                 </div>
             </div>
 
@@ -194,7 +354,7 @@ export default function InvoiceForm({
                     onChange={(e) => setData('notes', e.target.value)}
                     className="flex min-h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive"
                 />
-                <InputError message={errors.notes} />
+                <FieldFooter error={errors.notes} />
             </div>
         </div>
     );

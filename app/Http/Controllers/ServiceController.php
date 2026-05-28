@@ -64,6 +64,62 @@ class ServiceController extends Controller
     }
 
     /**
+     * Estimate driving duration between two coordinates for the
+     * `/services/create` Horarios block. Curated cache hit avoids any
+     * network call; otherwise falls back to Google Routes (cached for
+     * 7 days) and returns null when the API can't deliver.
+     */
+    public function eta(Request $request): JsonResponse
+    {
+        Gate::authorize(Permission::CREATE_SERVICES->value);
+
+        $validated = $request->validate([
+            'origin_coordinates' => ['required', 'string', 'regex:/^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/'],
+            'destination_coordinates' => ['required', 'string', 'regex:/^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/'],
+        ]);
+
+        $origin = trim((string) $validated['origin_coordinates']);
+        $destination = trim((string) $validated['destination_coordinates']);
+
+        $curated = \App\Support\CuratedRoutes::forCoords($origin, $destination);
+        if ($curated !== null) {
+            return response()->json([
+                'eta_minutes' => (int) round($curated['duration_s'] / 60),
+                'source' => 'curated',
+            ]);
+        }
+
+        $cacheKey = 'eta:'.$origin.'>'.$destination;
+        $cache = \Illuminate\Support\Facades\Cache::store();
+
+        $live = $cache->get($cacheKey);
+        if (! is_array($live)) {
+            [$originLat, $originLng] = array_map('floatval', explode(',', $origin));
+            [$destLat, $destLng] = array_map('floatval', explode(',', $destination));
+
+            /** @var \App\Services\Google\RoutesClient $client */
+            $client = app(\App\Services\Google\RoutesClient::class);
+            $live = $client->driving($originLng, $originLat, $destLng, $destLat);
+
+            if (is_array($live) && isset($live['duration_s'])) {
+                $cache->put($cacheKey, $live, now()->addDays(7));
+            }
+        }
+
+        if (! is_array($live) || ! isset($live['duration_s'])) {
+            return response()->json([
+                'eta_minutes' => null,
+                'source' => null,
+            ]);
+        }
+
+        return response()->json([
+            'eta_minutes' => (int) round(((int) $live['duration_s']) / 60),
+            'source' => 'live',
+        ]);
+    }
+
+    /**
      * Option data used by the /services filter bar — contract, driver,
      * vehicle, and municipality comboboxes. Scoped to "active" or
      * in-use rows so the picker stays useful as the catalog grows.
@@ -172,7 +228,12 @@ class ServiceController extends Controller
             $serviceData['create_generic_contract'],
         );
 
+        // billing_groups is the pivot payload; sync after create.
+        $billingGroupIds = $serviceData['billing_groups'] ?? [];
+        unset($serviceData['billing_groups']);
+
         $service = Service::create($serviceData);
+        $service->billingGroups()->sync($billingGroupIds);
 
         // REQ-009: tag retroactive closed entries so /audit-log can
         // filter them apart from services closed via the driver
@@ -237,6 +298,7 @@ class ServiceController extends Controller
             'invoice',
             'serviceIncidents.incidentType',
             'serviceIncidents.registrar',
+            'billingGroups',
         ]);
         $service->loadCount('serviceIncidents');
 
@@ -264,10 +326,28 @@ class ServiceController extends Controller
                 'affects_billing',
             ]);
 
+        // Billing-affecting incidents projected to the shape the
+        // <IncidentsBillingBreakdown> table consumes. The Service model
+        // already eager-loads `serviceIncidents.incidentType` above, so
+        // this is just a filtered projection — no extra query.
+        $billingIncidents = $service->serviceIncidents
+            ->where('affects_billing', true)
+            ->values()
+            ->map(fn ($incident) => [
+                'id' => $incident->id,
+                'additional_value' => $incident->additional_value,
+                'description' => $incident->description,
+                'reported_at' => $incident->reported_at?->toIso8601String(),
+                'incident_type' => $incident->incidentType
+                    ? ['id' => $incident->incidentType->id, 'name' => $incident->incidentType->name]
+                    : null,
+            ]);
+
         return Inertia::render('services/show', [
             'service' => $service,
             'dayStatus' => $dayStatus,
             'recentIncidents' => $recentIncidents,
+            'billingIncidents' => $billingIncidents,
         ]);
     }
 
@@ -283,6 +363,7 @@ class ServiceController extends Controller
             'driver',
             'originMunicipality.department',
             'destinationMunicipality.department',
+            'billingGroups',
         ]);
         $service->loadCount('serviceIncidents');
 
@@ -307,6 +388,10 @@ class ServiceController extends Controller
         $justification = $validated['justification'] ?? null;
         unset($validated['justification']);
 
+        $billingGroupIdsProvided = array_key_exists('billing_groups', $validated);
+        $billingGroupIds = $validated['billing_groups'] ?? [];
+        unset($validated['billing_groups']);
+
         // REQ-009 reopen invariant: capture before-state so the
         // activity-log entry can name which actual_*_time fields were
         // cleared or set during the status transition.
@@ -317,6 +402,9 @@ class ServiceController extends Controller
         $actualEndBefore = $service->actual_end_at;
 
         $service->update($validated);
+        if ($billingGroupIdsProvided) {
+            $service->billingGroups()->sync($billingGroupIds);
+        }
         $service->refresh();
 
         $statusAfter = $service->service_status instanceof \App\Enums\ServiceStatus
@@ -406,6 +494,10 @@ class ServiceController extends Controller
                 ->with('department:id,name')
                 ->orderBy('name')
                 ->get(['id', 'name', 'code', 'department_id', 'latitude', 'longitude']),
+            'billingGroups' => \App\Models\BillingGroup::query()
+                ->where('active', true)
+                ->orderBy('name')
+                ->get(['id', 'code', 'name']),
         ];
     }
 

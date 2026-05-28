@@ -2,7 +2,7 @@ import { Form } from '@inertiajs/react';
 import { REGEXP_ONLY_DIGITS } from 'input-otp';
 import { Check, Copy, ScanLine } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import InputError from '@/components/input-error';
+import FieldFooter from '@/components/field-footer';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -194,8 +194,8 @@ function TwoFactorVerificationStep({
                                     )}
                                 </InputOTPGroup>
                             </InputOTP>
-                            <InputError
-                                message={
+                            <FieldFooter
+                                error={
                                     errors?.confirmTwoFactorAuthentication?.code
                                 }
                             />

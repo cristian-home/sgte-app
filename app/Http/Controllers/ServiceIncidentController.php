@@ -37,14 +37,7 @@ class ServiceIncidentController extends Controller
     {
         Gate::authorize(Permission::VIEW_INCIDENTS->value);
 
-        $serviceIncidents = QueryBuilder::for(ServiceIncident::class)
-            ->with([
-                'service:id,service_date_local,planned_start_at,timezone,vehicle_id,contract_id,driver_id',
-                'service.vehicle:id,plate',
-                'service.contract:id,contract_number',
-                'incidentType:id,code,name,severity',
-                'registrar:id,name',
-            ])
+        $baseQuery = QueryBuilder::for(ServiceIncident::class)
             ->allowedFilters([
                 AllowedFilter::exact('service_id'),
                 AllowedFilter::exact('incident_type_id'),
@@ -59,12 +52,38 @@ class ServiceIncidentController extends Controller
                 }),
             ])
             ->allowedSorts(['reported_at', 'service_id', 'incident_type_id'])
-            ->defaultSort('-reported_at')
+            ->defaultSort('-reported_at');
+
+        // Sum the `additional_value` of billing-affecting incidents that
+        // match the user's current filter set. Used by the footer of the
+        // table so the operator sees "total recargo del listado" without
+        // having to read each row. Cloned before pagination so the sum
+        // is over the FULL filtered set, not just the current page.
+        $filteredBillingTotal = (float) (clone $baseQuery)
+            ->where('affects_billing', true)
+            ->sum('additional_value');
+
+        $serviceIncidents = $baseQuery
+            ->with([
+                'service:id,service_date_local,planned_start_at,timezone,vehicle_id,contract_id,driver_id',
+                'service.vehicle:id,plate',
+                'service.contract:id,contract_number',
+                'incidentType:id,code,name,severity',
+                'registrar:id,name',
+            ])
             ->paginate($request->perPage())
             ->withQueryString();
 
         if ($request->wantsJson()) {
-            return response()->json($serviceIncidents);
+            // useServerTable refetches via fetch() + Accept: application/json
+            // when a filter changes, which hits this branch instead of the
+            // full Inertia re-render. Merging the extra meta key keeps the
+            // paginator shape intact (data, current_page, …) so the hook
+            // still consumes it, and exposes the recomputed total so the
+            // page can update its footer in lockstep with the filters.
+            return response()->json(
+                $serviceIncidents->toArray() + ['filtered_billing_total' => $filteredBillingTotal],
+            );
         }
 
         return Inertia::render('service-incidents/index', [
@@ -72,6 +91,7 @@ class ServiceIncidentController extends Controller
             'incidentTypes' => IncidentType::query()
                 ->orderBy('name')
                 ->get(['id', 'code', 'name', 'severity', 'affects_billing_default']),
+            'filteredBillingTotal' => $filteredBillingTotal,
         ]);
     }
 

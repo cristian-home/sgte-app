@@ -3,7 +3,7 @@ import { Form, Head } from '@inertiajs/react';
 import { useRef } from 'react';
 import PasswordController from '@/actions/App/Http/Controllers/Settings/PasswordController';
 import Heading from '@/components/heading';
-import InputError from '@/components/input-error';
+import FieldFooter from '@/components/field-footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -76,8 +76,8 @@ export default function Password() {
                                         placeholder="Contraseña actual"
                                     />
 
-                                    <InputError
-                                        message={errors.current_password}
+                                    <FieldFooter
+                                        error={errors.current_password}
                                     />
                                 </div>
 
@@ -96,7 +96,7 @@ export default function Password() {
                                         placeholder="Nueva contraseña"
                                     />
 
-                                    <InputError message={errors.password} />
+                                    <FieldFooter error={errors.password} />
                                 </div>
 
                                 <div className="grid gap-2">
@@ -113,8 +113,8 @@ export default function Password() {
                                         placeholder="Confirmar contraseña"
                                     />
 
-                                    <InputError
-                                        message={errors.password_confirmation}
+                                    <FieldFooter
+                                        error={errors.password_confirmation}
                                     />
                                 </div>
 

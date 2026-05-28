@@ -286,15 +286,17 @@ export default function ThirdPartiesShow({
                     <CardContent>
                         <div className="grid gap-4 md:grid-cols-2">
                             <Field label="Municipio">
-                                {thirdParty.municipality
-                                    ? `${thirdParty.municipality.name}${
-                                          thirdParty.municipality.department
-                                              ? ', ' +
-                                                thirdParty.municipality
-                                                    .department.name
-                                              : ''
-                                      }`
-                                    : '—'}
+                                <span className="capitalize">
+                                    {thirdParty.municipality
+                                        ? `${thirdParty.municipality.name}${
+                                              thirdParty.municipality.department
+                                                  ? ', ' +
+                                                    thirdParty.municipality
+                                                        .department.name
+                                                  : ''
+                                          }`
+                                        : '—'}
+                                </span>
                             </Field>
                             <Field label="Dirección">
                                 {thirdParty.address ?? '—'}
@@ -341,7 +343,7 @@ export default function ThirdPartiesShow({
                                                             vehicles.show(v.id)
                                                                 .url
                                                         }
-                                                        className="text-primary hover:underline"
+                                                        className="font-mono text-primary hover:underline"
                                                     >
                                                         {v.plate}
                                                     </Link>

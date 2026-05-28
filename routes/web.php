@@ -97,6 +97,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('invoices/{invoice}/services', [App\Http\Controllers\InvoiceController::class, 'attachServices'])->middleware('can:'.App\Enums\Permission::ASSIGN_SERVICES_TO_INVOICES->value)->name('invoices.services.attach');
     Route::delete('invoices/{invoice}/services/{service}', [App\Http\Controllers\InvoiceController::class, 'detachService'])->middleware('can:'.App\Enums\Permission::ASSIGN_SERVICES_TO_INVOICES->value)->name('invoices.services.detach');
     Route::post('invoices/{invoice}/recompute-total', [App\Http\Controllers\InvoiceController::class, 'recomputeTotal'])->middleware('can:'.App\Enums\Permission::ASSIGN_SERVICES_TO_INVOICES->value)->name('invoices.recompute-total');
+    Route::get('invoices-eligible-services', [App\Http\Controllers\InvoiceController::class, 'eligibleServices'])
+        ->middleware('can:'.App\Enums\Permission::ASSIGN_SERVICES_TO_INVOICES->value)
+        ->name('invoices.eligible-services');
+    Route::get('invoices/{invoice}/attached-services', [App\Http\Controllers\InvoiceController::class, 'attachedServices'])
+        ->middleware('can:'.App\Enums\Permission::VIEW_INVOICES->value)
+        ->name('invoices.attached-services');
     Route::resource('invoices', App\Http\Controllers\InvoiceController::class)
         ->except(['create', 'edit'])
         ->middleware('can:'.App\Enums\Permission::VIEW_INVOICES->value);
@@ -113,11 +119,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('day-statuses.execute');
     Route::resource('day-statuses', App\Http\Controllers\DayStatusController::class)
         ->middleware('can:'.App\Enums\Permission::VIEW_DAY_SUMMARY->value);
+    Route::get('services-eta', [App\Http\Controllers\ServiceController::class, 'eta'])
+        ->middleware('can:'.App\Enums\Permission::CREATE_SERVICES->value)
+        ->name('services.eta');
     Route::resource('services', App\Http\Controllers\ServiceController::class)
         ->middleware('can:'.App\Enums\Permission::VIEW_SERVICES->value);
     Route::resource('incident-types', App\Http\Controllers\IncidentTypeController::class)
         ->except(['create', 'edit'])
         ->middleware('can:'.App\Enums\Permission::VIEW_INCIDENT_TYPES->value);
+    Route::resource('billing-groups', App\Http\Controllers\BillingGroupController::class)
+        ->except(['create', 'edit'])
+        ->middleware('can:'.App\Enums\Permission::VIEW_BILLING_GROUPS->value);
     // Service incidents — intentionally NOT gated at the route level.
     // Drivers have CREATE_INCIDENTS but no VIEW_INCIDENTS (they file
     // incidents on their own services from the driver portal), so a

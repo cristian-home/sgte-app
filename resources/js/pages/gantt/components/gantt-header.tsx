@@ -1,39 +1,26 @@
-import { router, usePage } from '@inertiajs/react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Link, usePage } from '@inertiajs/react';
 import { index as daySummaryIndex } from '@/actions/App/Http/Controllers/DaySummaryController';
-import { index as ganttIndex } from '@/actions/App/Http/Controllers/GanttController';
-import MunicipalityCombobox, {
-    type MunicipalityOption,
-} from '@/components/municipality-combobox';
-import { Badge } from '@/components/ui/badge';
+import DateStepper from '@/components/date-stepper';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { viewerToday } from '@/lib/datetime';
-import { cn } from '@/lib/utils';
-import type { DayStatus } from '@/types/models';
 
 interface GanttHeaderProps {
+    /** Currently centered date in the timeline (controlled by the page). */
     date: string;
-    municipalityId: number | null;
-    municipalities: MunicipalityOption[];
-    dayStatus: DayStatus | null;
     canCreateServices: boolean;
-}
-
-function addDays(dateStr: string, days: number): string {
-    const d = new Date(dateStr + 'T12:00:00');
-    d.setDate(d.getDate() + days);
-    return d.toISOString().slice(0, 10);
-}
-
-function formatDateEs(dateStr: string): string {
-    const d = new Date(dateStr + 'T12:00:00');
-    return d.toLocaleDateString('es-CO', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-    });
+    /**
+     * Page-level callback that scrolls the timeline so `date` lands at
+     * the center (noon of the day). Used by the chevrons + date picker.
+     */
+    onJumpToDate: (date: string) => void;
+    /**
+     * Page-level callback that scrolls the timeline so the current
+     * instant lands at the center — the Now indicator's red vertical
+     * line ends up in the viewport's horizontal middle. Used by the
+     * Hoy button so "back to now" feels more precise than just
+     * "back to today midnight".
+     */
+    onJumpToNow: () => void;
 }
 
 function isToday(dateStr: string, operationTz: string): boolean {
@@ -42,113 +29,36 @@ function isToday(dateStr: string, operationTz: string): boolean {
 
 export default function GanttHeader({
     date,
-    municipalityId,
-    municipalities,
-    dayStatus,
+    onJumpToDate,
+    onJumpToNow,
 }: GanttHeaderProps) {
-    const isExecuted = dayStatus?.status === 'executed';
     const sharedConfig = usePage().props.config as
         | { operation_tz?: string }
         | undefined;
     const operationTz = sharedConfig?.operation_tz ?? 'America/Bogota';
 
-    function navigate(newDate: string, newMunicipalityId?: number | null) {
-        const params: Record<string, string | number> = { date: newDate };
-        const mId =
-            newMunicipalityId !== undefined
-                ? newMunicipalityId
-                : municipalityId;
-        if (mId) {
-            params.municipality_id = mId;
-        }
-        router.get(ganttIndex().url, params, {
-            preserveState: true,
-            preserveScroll: true,
-        });
-    }
-
     return (
-        <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-3">
-                <div className="flex items-center gap-1">
-                    <Button
-                        variant="outline"
-                        size="icon"
-                        className="size-8"
-                        onClick={() => navigate(addDays(date, -1))}
-                    >
-                        <ChevronLeft className="size-4" />
-                    </Button>
-                    <Button
-                        variant="outline"
-                        size="icon"
-                        className="size-8"
-                        onClick={() => navigate(addDays(date, 1))}
-                    >
-                        <ChevronRight className="size-4" />
-                    </Button>
-                </div>
+        <div className="flex flex-wrap items-center gap-2">
+            <DateStepper value={date} onChange={onJumpToDate} />
 
-                <Input
-                    type="date"
-                    value={date}
-                    onChange={(e) => {
-                        if (e.target.value) navigate(e.target.value);
-                    }}
-                    className="h-8 w-auto"
-                />
-
-                {!isToday(date, operationTz) && (
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8"
-                        onClick={() => navigate(viewerToday(operationTz))}
-                    >
-                        Hoy
-                    </Button>
-                )}
-
-                <span className="text-sm font-medium capitalize">
-                    {formatDateEs(date)}
-                </span>
-
-                <div className="ml-auto flex items-center gap-3">
-                    <Button variant="outline" size="sm" className="h-8" asChild>
-                        <a href={daySummaryIndex({ query: { date } }).url}>
-                            Resumen
-                        </a>
-                    </Button>
-                    <MunicipalityCombobox
-                        municipalities={municipalities}
-                        value={municipalityId}
-                        onChange={(val) =>
-                            navigate(date, val ? Number(val) : null)
-                        }
-                        placeholder="Todos los municipios"
-                        className="w-60"
-                    />
-
-                    {dayStatus && (
-                        <Badge
-                            className={cn(
-                                isExecuted
-                                    ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
-                                    : 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
-                            )}
-                        >
-                            {isExecuted ? 'Ejecutado' : 'Proyectado'}
-                        </Badge>
-                    )}
-                </div>
-            </div>
-
-            {isExecuted && (
-                <div className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700 dark:border-green-800 dark:bg-green-950 dark:text-green-300">
-                    Día Ejecutado — No se pueden crear nuevos servicios en este
-                    día.
-                </div>
+            {!isToday(date, operationTz) && (
+                <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8"
+                    onClick={onJumpToNow}
+                >
+                    Hoy
+                </Button>
             )}
+
+            <div className="ml-auto">
+                <Button variant="outline" size="sm" className="h-8" asChild>
+                    <Link href={daySummaryIndex({ query: { date } }).url}>
+                        Resumen
+                    </Link>
+                </Button>
+            </div>
         </div>
     );
 }

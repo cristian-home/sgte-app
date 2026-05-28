@@ -1,5 +1,5 @@
 import { Form, Head } from '@inertiajs/react';
-import InputError from '@/components/input-error';
+import FieldFooter from '@/components/field-footer';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -46,7 +46,7 @@ export default function Login({ status, canResetPassword }: Props) {
                                     inputMode="email"
                                     placeholder="email@example.com"
                                 />
-                                <InputError message={errors.email} />
+                                <FieldFooter error={errors.email} />
                             </div>
 
                             <div className="grid gap-2">
@@ -71,7 +71,7 @@ export default function Login({ status, canResetPassword }: Props) {
                                     autoComplete="current-password"
                                     placeholder="Contraseña"
                                 />
-                                <InputError message={errors.password} />
+                                <FieldFooter error={errors.password} />
                             </div>
 
                             <div className="flex items-center space-x-3">

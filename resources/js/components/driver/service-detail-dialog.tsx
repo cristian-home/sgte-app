@@ -108,7 +108,7 @@ export function ServiceDetailDialog({
                                         <Truck className="size-5 text-muted-foreground sm:size-6" />
                                     </div>
                                     <div className="min-w-0">
-                                        <DialogTitle className="text-lg/tight sm:text-xl">
+                                        <DialogTitle className="font-mono text-lg/tight sm:text-xl">
                                             {service.vehicle?.plate ?? '—'}
                                         </DialogTitle>
                                         <DialogDescription className="mt-0.5 line-clamp-1">
@@ -152,7 +152,7 @@ export function ServiceDetailDialog({
                                 <span className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
                                     A
                                 </span>
-                                <span className="truncate text-sm font-medium">
+                                <span className="truncate text-sm font-medium capitalize">
                                     {municipalityName(
                                         service.origin_municipality,
                                     )}
@@ -167,7 +167,7 @@ export function ServiceDetailDialog({
                                 <span className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
                                     B
                                 </span>
-                                <span className="truncate text-sm font-medium">
+                                <span className="truncate text-sm font-medium capitalize">
                                     {municipalityName(
                                         service.destination_municipality,
                                     )}
