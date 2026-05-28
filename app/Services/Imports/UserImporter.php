@@ -21,7 +21,7 @@ class UserImporter extends AbstractImporter
 
     public function expectedHeaders(): array
     {
-        return ['email', 'name', 'role', 'password'];
+        return ['email', 'name', 'role', 'password', 'timezone'];
     }
 
     public function naturalKey(): string
@@ -36,6 +36,10 @@ class UserImporter extends AbstractImporter
             'name' => ['required', 'string', 'max:100'],
             'role' => ['required', 'string', 'in:'.implode(',', self::ALLOWED_ROLES)],
             'password' => ['nullable', 'string', 'min:8', 'max:255'],
+            // Optional. Blank → column stays NULL (column has no DB
+            // default; the CaptureViewerTimezone middleware will fill
+            // it on first login from the browser).
+            'timezone' => ['nullable', 'string', 'in:'.implode(',', timezone_identifiers_list())],
         ];
     }
 
@@ -48,6 +52,7 @@ class UserImporter extends AbstractImporter
             'role.required' => 'El rol es obligatorio.',
             'role.in' => 'Rol inválido. Valores permitidos: '.implode(', ', self::ALLOWED_ROLES).'.',
             'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
+            'timezone.in' => 'Zona horaria inválida. Use un identificador IANA (ej. America/Bogota) o deje en blanco.',
         ];
     }
 
@@ -56,13 +61,22 @@ class UserImporter extends AbstractImporter
         $hasExplicitPassword = isset($row['password']) && $row['password'] !== '' && $row['password'] !== null;
         $plainPassword = $hasExplicitPassword ? $row['password'] : Str::password(16);
 
-        return [
+        $payload = [
             'email' => $row['email'],
             'name' => $row['name'],
             'password' => Hash::make($plainPassword),
             'must_change_password' => ! $hasExplicitPassword,
             '_role' => $row['role'],
         ];
+
+        // Only set timezone when explicitly provided; otherwise leave
+        // the column NULL so the viewer-TZ capture middleware can fill
+        // it on first login.
+        if (! empty($row['timezone'])) {
+            $payload['timezone'] = $row['timezone'];
+        }
+
+        return $payload;
     }
 
     public function findExisting(string $naturalKeyValue): ?Model

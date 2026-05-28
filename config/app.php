@@ -31,6 +31,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Application Version
+    |--------------------------------------------------------------------------
+    |
+    | Read at runtime from the VERSION file in the repo root. The release
+    | flow keeps VERSION and the pushed git tag in sync (CI guard in
+    | deploy-production.yml). Falls back to "dev" when the file is absent
+    | (local checkouts outside a release).
+    |
+    */
+
+    'version' => trim((string) @file_get_contents(base_path('VERSION'))) ?: 'dev',
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Environment
     |--------------------------------------------------------------------------
     |

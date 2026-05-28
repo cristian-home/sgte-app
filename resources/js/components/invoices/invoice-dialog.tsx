@@ -8,7 +8,6 @@ import InvoiceForm, {
 import { type ServicePickerRow } from '@/components/invoices/service-picker-table';
 import { type ThirdPartyOption } from '@/components/third-parties/third-party-combobox';
 import { Button } from '@/components/ui/button';
-import { usePermissions } from '@/hooks/use-permissions';
 import {
     Dialog,
     DialogClose,
@@ -18,6 +17,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import { usePermissions } from '@/hooks/use-permissions';
 import { parseDueDate } from '@/lib/document-status';
 import type { Invoice } from '@/types/models';
 

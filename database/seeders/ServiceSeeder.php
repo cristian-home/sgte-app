@@ -64,9 +64,15 @@ class ServiceSeeder extends Seeder
 
         $now = CarbonImmutable::now('UTC');
 
-        // Map billing-group codes to IDs once. BillingGroupSeeder runs
-        // before this so the catalog is populated.
-        $billingGroupIds = \App\Models\BillingGroup::query()->pluck('id', 'code')->all();
+        // Free-text billing-group tags by short code (display label).
+        // Matches the labels operators are expected to type by hand.
+        $billingGroupLabels = [
+            'salud' => 'Salud',
+            'escolar' => 'Escolar',
+            'turismo' => 'Turismo',
+            'empresarial' => 'Empresarial',
+            'ocasional' => 'Ocasional',
+        ];
 
         $invoiceCursor = 0;
 
@@ -108,7 +114,12 @@ class ServiceSeeder extends Seeder
                 $row['off'], $plannedStart, $plannedEnd, $duration, $row['idx'], $now,
             );
 
-            $service = Service::create([
+            $billingGroupTags = array_values(array_filter(array_map(
+                fn (string $code) => $billingGroupLabels[$code] ?? null,
+                $row['bg'],
+            )));
+
+            Service::create([
                 'contract_id' => $contract->id,
                 'vehicle_id' => $vehicle->id,
                 'driver_id' => $driver->id,
@@ -133,6 +144,7 @@ class ServiceSeeder extends Seeder
                 'timezone' => SeedClock::tz(),
                 'unit_value' => $row['unit'],
                 'quantity' => $row['qty'],
+                'billing_groups' => $billingGroupTags,
                 'payment_method' => $row['pm']->value,
                 'service_status' => $status,
                 // Route fields inlined from the cache — no async job,
@@ -146,13 +158,6 @@ class ServiceSeeder extends Seeder
                 'route_fetched_at' => $cachedRoute !== null ? $now : null,
                 'route_source' => $cachedRoute !== null ? 'google' : null,
             ]);
-
-            $service->billingGroups()->sync(
-                array_filter(array_map(
-                    fn (string $code) => $billingGroupIds[$code] ?? null,
-                    $row['bg'],
-                )),
-            );
         }
     }
 

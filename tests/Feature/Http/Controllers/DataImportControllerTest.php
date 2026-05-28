@@ -67,7 +67,7 @@ test('store uploads to s3, creates row, and dispatches the job', function (): vo
 
     $file = UploadedFile::fake()->createWithContent(
         'users.csv',
-        "email,name,role,password\n",
+        "email,name,role,password,timezone\n",
     );
 
     $response = post(route('admin.imports.store'), [
@@ -225,7 +225,7 @@ test('non super admin cannot store', function (string $role): void {
         'type' => DataImportType::Users->value,
         'csv' => UploadedFile::fake()->createWithContent(
             'users.csv',
-            "email,name,role,password\n",
+            "email,name,role,password,timezone\n",
         ),
     ])->assertForbidden();
 

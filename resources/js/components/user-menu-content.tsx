@@ -1,5 +1,5 @@
 import { Link, router } from '@inertiajs/react';
-import { LogOut, Settings } from 'lucide-react';
+import { Info, LogOut, Settings } from 'lucide-react';
 import {
     DropdownMenuGroup,
     DropdownMenuItem,
@@ -10,7 +10,7 @@ import { UserInfo } from '@/components/user-info';
 import { Permission } from '@/enums/Permission';
 import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
 import { usePermissions } from '@/hooks/use-permissions';
-import { logout } from '@/routes';
+import { about, logout } from '@/routes';
 import { edit } from '@/routes/profile';
 import type { User } from '@/types';
 
@@ -53,6 +53,20 @@ export function UserMenuContent({ user }: Props) {
                     <DropdownMenuSeparator />
                 </>
             )}
+            <DropdownMenuGroup>
+                <DropdownMenuItem asChild>
+                    <Link
+                        className="block w-full cursor-pointer"
+                        href={about()}
+                        prefetch
+                        onClick={cleanup}
+                    >
+                        <Info className="mr-2" />
+                        Acerca de
+                    </Link>
+                </DropdownMenuItem>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
                 <Link
                     className="block w-full cursor-pointer"

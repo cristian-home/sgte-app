@@ -18,6 +18,8 @@ Route::get('fuec/verify/{uuid}', [App\Http\Controllers\FuecVerifyController::cla
 require __DIR__.'/settings.php';
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('about', [App\Http\Controllers\AboutController::class, 'show'])->name('about');
+
     // Driver dashboard
     Route::get('driver', [App\Http\Controllers\DriverDashboardController::class, 'index'])->name('driver.dashboard');
     Route::post('driver/services/{service}/confirm-start', [App\Http\Controllers\DriverDashboardController::class, 'confirmStart'])->name('driver.confirm-start');
@@ -127,9 +129,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('incident-types', App\Http\Controllers\IncidentTypeController::class)
         ->except(['create', 'edit'])
         ->middleware('can:'.App\Enums\Permission::VIEW_INCIDENT_TYPES->value);
-    Route::resource('billing-groups', App\Http\Controllers\BillingGroupController::class)
-        ->except(['create', 'edit'])
-        ->middleware('can:'.App\Enums\Permission::VIEW_BILLING_GROUPS->value);
     // Service incidents — intentionally NOT gated at the route level.
     // Drivers have CREATE_INCIDENTS but no VIEW_INCIDENTS (they file
     // incidents on their own services from the driver portal), so a

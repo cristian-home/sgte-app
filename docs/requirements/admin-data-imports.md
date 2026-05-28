@@ -316,37 +316,43 @@ final readonly class HeaderCheck
 class RowTransformException extends \RuntimeException {}
 ```
 
+> **Nota (2026-05-28):** las definiciones a continuación reflejan la
+> implementación actual, que diverge del draft original (campos
+> `birth_date`/`license_number`/`model`/`year` nunca llegaron a producción).
+> La fuente de verdad son las clases en `app/Services/Imports/` y las
+> plantillas estáticas en `database/csv/templates/`.
+
 #### Concreto: `UserImporter`
 
-- `expectedHeaders()`: `['email', 'name', 'role', 'password']`
+- `expectedHeaders()`: `['email', 'name', 'role', 'password', 'timezone']`
 - `naturalKey()`: `'email'`
-- `rules()`: `email => required|email|max:255`, `name => required|string|max:100`, `role => required|in:admin,operator,driver,accounting` (NO super_admin), `password => nullable|string|min:8|max:255`.
-- `transformRow()`: si `password` vacío genera `Str::password(16)` y marca flag `must_change_password = true`; si viene, `must_change_password = false`. Hashea con `bcrypt`. Resuelve `role` → asignación posterior con Spatie en `persistNew`/`applyUpdate`.
+- `rules()`: `email => required|email|max:255`, `name => required|string|max:100`, `role => required|in:admin,operator,driver,accounting` (NO super_admin), `password => nullable|string|min:8|max:255`, `timezone => nullable|string|in:timezone_identifiers_list()`.
+- `transformRow()`: si `password` vacío genera `Str::password(16)` y marca flag `must_change_password = true`; si viene, `must_change_password = false`. Hashea con `bcrypt`. Si `timezone` viene, lo persiste; si está vacío, omite la clave para que el CaptureViewerTimezone middleware la rellene al primer login. Resuelve `role` → asignación posterior con Spatie en `persistNew`/`applyUpdate`.
 - `persistNew()`: `User::create(...)` + `$user->assignRole($role)`.
 - `applyUpdate()`: `$existing->update(...)` + `$existing->syncRoles([$role])`.
 
 #### Concreto: `ThirdPartyImporter`
 
-- `expectedHeaders()`: `['identification_type', 'identification_number', 'name', 'type', 'phone', 'email', 'address', 'municipality_code']`
+- `expectedHeaders()`: `['document_type_code', 'identification_number', 'is_natural_person', 'first_name', 'second_name', 'first_lastname', 'second_lastname', 'company_name', 'trade_name', 'address', 'phone', 'email', 'is_customer', 'is_provider', 'municipality_code']`
 - `naturalKey()`: `'identification_number'`
-- `rules()`: ver §10 del draft (`identification_type` in NIT,CC,CE,PA; `type` in client,provider,both; `municipality_code` nullable + exists:municipalities,code; etc.).
-- `transformRow()`: resuelve `municipality_code` → `municipality_id` con `Municipality::where('code', $code)->first()` (nullable).
+- `rules()`: `document_type_code => required|exists:document_types,code`, booleans con `boolean`, `municipality_code => nullable|exists:municipalities,code`. Sin columna `timezone` (la tabla no la tiene).
+- `transformRow()`: resuelve `document_type_code` y `municipality_code` a sus IDs. Si `is_customer=1`, `persistNew()` auto-crea un contrato genérico (`GEN-NNNN-YYYY`) usando `Tz::operation()`.
 - `persistNew()/applyUpdate()`: `ThirdParty::create / $existing->update`.
 
 #### Concreto: `DriverImporter`
 
-- `expectedHeaders()`: `['identification_type', 'identification_number', 'first_name', 'first_lastname', 'second_lastname', 'birth_date', 'license_number', 'license_category', 'license_due_date', 'eps_code', 'pension_fund_code', 'severance_fund_code', 'has_social_security', 'user_email', 'municipality_code']`
+- `expectedHeaders()`: `['document_type_code', 'identification_number', 'first_name', 'second_name', 'first_lastname', 'second_lastname', 'address', 'phone', 'email', 'license_category', 'license_due_date', 'eps_code', 'pension_fund_code', 'severance_fund_code', 'has_social_security', 'user_email', 'municipality_code', 'timezone']`
 - `naturalKey()`: `'identification_number'`
-- `rules()`: `birth_date / license_due_date => required|date_format:Y-m-d`, `license_category => required|in:A1,A2,B1,B2,B3,C1,C2,C3` (verificar enum `LicenseCategory.php` real), `eps_code => required|string|exists:eps,code`, `pension_fund_code => required|exists:pension_funds,code`, `severance_fund_code => required|exists:severance_funds,code`, `has_social_security => required|boolean`, `user_email => nullable|email|exists:users,email`, `municipality_code => nullable|exists:municipalities,code`.
-- `transformRow()`: resuelve todos los `*_code` → `*_id` con queries `firstOrFail` (FK rota lanza `RowTransformException`); resuelve `user_email` → `user_id` y verifica que el user tenga rol `driver` (si no, `RowTransformException`).
+- `rules()`: `license_due_date => required|date_format:Y-m-d`, `license_category => required|in:` con valores reales del enum `LicenseCategory`, `eps_code|pension_fund_code|severance_fund_code => required|exists:<catalog>,code`, `has_social_security => required|boolean`, `user_email => nullable|email|exists:users,email`, `municipality_code => nullable|exists:municipalities,code`, `timezone => nullable|string|in:timezone_identifiers_list()`.
+- `transformRow()`: resuelve todos los `*_code` → `*_id` con queries explícitas (FK rota lanza `RowTransformException`); resuelve `user_email` → `user_id` y verifica rol `driver`. El setter `license_due_date` del modelo proyecta `Y-m-d` a `license_due_at` UTC usando el timezone de la fila. Si `timezone` viene, se persiste; si vacío, se omite y la columna usa el default DB `America/Bogota`.
 - `persistNew()/applyUpdate()`: `Driver::create / $existing->update`.
 
 #### Concreto: `VehicleImporter`
 
-- `expectedHeaders()`: `['plate', 'internal_code', 'type', 'brand', 'model', 'year', 'is_third_party', 'third_party_identification', 'soat_due_date', 'rtm_due_date', 'operation_card_due_date']`
+- `expectedHeaders()`: `['plate', 'internal_code', 'mobile_number', 'type', 'brand', 'line', 'model_year', 'engine_number', 'chassis_number', 'capacity', 'is_third_party', 'third_party_identification', 'soat_due_date', 'rtm_due_date', 'operation_card_due_date', 'municipality_code', 'timezone']`
 - `naturalKey()`: `'plate'`
-- `rules()`: `plate => required|string|max:6|regex:/^[A-Z]{3}[0-9]{3}$/i`, `type => required` con valores del enum `VehicleType` real (verificar), `year => required|integer|min:1980|max:2030`, `is_third_party => required|boolean`, `third_party_identification => required_if:is_third_party,1|exists:third_parties,identification_number`, `soat_due_date / rtm_due_date => required|date_format:Y-m-d`, `operation_card_due_date => nullable|date_format:Y-m-d`.
-- `transformRow()`: si `is_third_party`, resuelve `third_party_identification` → `third_party_id`; normaliza `plate` a uppercase.
+- `rules()`: `plate => required|string|min:6|max:6`, `type => required|in:` con valores reales del enum `VehicleType`, `model_year => required|integer|between:1980,2100`, `capacity => required|integer|min:1`, `is_third_party => required|boolean`, `third_party_identification => required_if:is_third_party,1|exists:third_parties,identification_number`, `soat_due_date / rtm_due_date / operation_card_due_date => required|date_format:Y-m-d`, `municipality_code => nullable|exists:municipalities,code`, `timezone => nullable|string|in:timezone_identifiers_list()`.
+- `transformRow()`: si `is_third_party`, resuelve `third_party_identification` → `third_party_id`; normaliza `plate` a uppercase; status hardcoded a `Active`. Los setters `soat/rtm/operation_card_due_date` del modelo proyectan `Y-m-d` a sus `*_due_at` UTC en el timezone de la fila. Si `timezone` viene, se persiste; si vacío, default DB `America/Bogota`.
 - `persistNew()/applyUpdate()`: `Vehicle::create / $existing->update`.
 
 #### `App\Services\Imports\ImporterRegistry`
@@ -430,29 +436,35 @@ database/csv/templates/
 
 Encoding UTF-8. Formato fechas `YYYY-MM-DD`. Booleanos `1` / `0`.
 
+La columna `timezone` (presente en Users, Drivers y Vehicles) es opcional:
+si se deja en blanco, Drivers/Vehicles usan el default de columna
+`America/Bogota` y Users quedan en NULL (el middleware `CaptureViewerTimezone`
+la rellena al primer login). Debe ser un identificador IANA válido cuando
+se especifica.
+
 `users.csv`:
 ```csv
-email,name,role,password
-juan.perez@cliente.co,Juan Pérez,admin,
-ana.lopez@cliente.co,Ana López,operator,Temporal2026!
+email,name,role,password,timezone
+juan.perez@cliente.co,Juan Pérez,admin,,
+ana.lopez@cliente.co,Ana López,operator,Temporal2026!,America/Bogota
 ```
 
 `third_parties.csv`:
 ```csv
-identification_type,identification_number,name,type,phone,email,address,municipality_code
-NIT,900123456,Empresa SA,client,3001234567,contacto@empresa.co,Cra 1 #2-3,11001
+document_type_code,identification_number,is_natural_person,first_name,second_name,first_lastname,second_lastname,company_name,trade_name,address,phone,email,is_customer,is_provider,municipality_code
+NIT,900123456,0,,,,,Empresa SA,Empresa,Cra 1 #2-3,3001234567,contacto@empresa.co,1,0,11001
 ```
 
 `drivers.csv`:
 ```csv
-identification_type,identification_number,first_name,first_lastname,second_lastname,birth_date,license_number,license_category,license_due_date,eps_code,pension_fund_code,severance_fund_code,has_social_security,user_email,municipality_code
-CC,1023456789,Carlos,Ramírez,Pérez,1990-05-12,LIC123456,C1,2027-12-31,EPS001,PF001,SF001,1,driver@cliente.co,11001
+document_type_code,identification_number,first_name,second_name,first_lastname,second_lastname,address,phone,email,license_category,license_due_date,eps_code,pension_fund_code,severance_fund_code,has_social_security,user_email,municipality_code,timezone
+CC,1023456789,Carlos,Andrés,Ramírez,Pérez,Cl 5 #6-7,3107654321,carlos.r@cliente.co,C3,2027-12-31,EPS001,FP001,FC001,1,driver@sgte.app,11001,
 ```
 
 `vehicles.csv`:
 ```csv
-plate,internal_code,type,brand,model,year,is_third_party,third_party_identification,soat_due_date,rtm_due_date,operation_card_due_date
-ABC123,V001,Bus,Chevrolet,NPR,2020,0,,2026-12-31,2026-08-15,2027-03-01
+plate,internal_code,mobile_number,type,brand,line,model_year,engine_number,chassis_number,capacity,is_third_party,third_party_identification,soat_due_date,rtm_due_date,operation_card_due_date,municipality_code,timezone
+ABC123,V001,3001112233,bus,Chevrolet,NPR,2020,ENG12345,CHS67890,30,0,,2026-12-31,2026-08-15,2027-03-01,11001,
 ```
 
 `README.md`:

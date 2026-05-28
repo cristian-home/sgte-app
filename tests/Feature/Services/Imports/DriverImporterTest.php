@@ -42,7 +42,7 @@ function runDriverImporter(string $csv, ?DataImport $import = null): array
 
 function headerDriver(): string
 {
-    return 'document_type_code,identification_number,first_name,second_name,first_lastname,second_lastname,address,phone,email,license_category,license_due_date,eps_code,pension_fund_code,severance_fund_code,has_social_security,user_email,municipality_code'."\n";
+    return 'document_type_code,identification_number,first_name,second_name,first_lastname,second_lastname,address,phone,email,license_category,license_due_date,eps_code,pension_fund_code,severance_fund_code,has_social_security,user_email,municipality_code,timezone'."\n";
 }
 
 beforeEach(function (): void {
@@ -57,7 +57,7 @@ beforeEach(function (): void {
 
 test('valid row creates a driver and resolves all FKs', function (): void {
     $csv = headerDriver().
-        'CC,1023456789,Carlos,,Ramirez,,Cra 1,3001234567,carlos@x.co,C3,2027-12-31,EPS001,FP001,FC001,1,,'."\n";
+        'CC,1023456789,Carlos,,Ramirez,,Cra 1,3001234567,carlos@x.co,C3,2027-12-31,EPS001,FP001,FC001,1,,,'."\n";
 
     $result = runDriverImporter($csv);
 
@@ -69,7 +69,7 @@ test('valid row creates a driver and resolves all FKs', function (): void {
 
 test('invalid eps_code goes to errored', function (): void {
     $csv = headerDriver().
-        'CC,1023111111,Ana,,Lopez,,Cra 1,3001234567,a@x.co,C3,2027-12-31,XYZ999,FP001,FC001,1,,'."\n";
+        'CC,1023111111,Ana,,Lopez,,Cra 1,3001234567,a@x.co,C3,2027-12-31,XYZ999,FP001,FC001,1,,,'."\n";
 
     $result = runDriverImporter($csv);
 
@@ -81,7 +81,7 @@ test('user_email without driver role goes to errored', function (): void {
     $user->assignRole(Role::ADMIN->value);
 
     $csv = headerDriver().
-        'CC,1023222222,Beto,,Diaz,,Cra 1,3001234567,b@x.co,C2,2027-12-31,EPS001,FP001,FC001,1,admin-not-driver@x.co,'."\n";
+        'CC,1023222222,Beto,,Diaz,,Cra 1,3001234567,b@x.co,C2,2027-12-31,EPS001,FP001,FC001,1,admin-not-driver@x.co,,'."\n";
 
     $result = runDriverImporter($csv);
 
@@ -94,7 +94,7 @@ test('user_email with driver role binds user_id', function (): void {
     $user->assignRole(Role::DRIVER->value);
 
     $csv = headerDriver().
-        'CC,1023333333,Cesar,,Estrada,,Cra 1,3001234567,c@x.co,C1,2027-12-31,EPS001,FP001,FC001,1,driver-bind@x.co,'."\n";
+        'CC,1023333333,Cesar,,Estrada,,Cra 1,3001234567,c@x.co,C1,2027-12-31,EPS001,FP001,FC001,1,driver-bind@x.co,,'."\n";
 
     $result = runDriverImporter($csv);
 
@@ -105,7 +105,7 @@ test('user_email with driver role binds user_id', function (): void {
 
 test('license_category outside enum goes to errored', function (): void {
     $csv = headerDriver().
-        'CC,1023444444,Diana,,Gomez,,Cra 1,3001234567,d@x.co,B1,2027-12-31,EPS001,FP001,FC001,1,,'."\n";
+        'CC,1023444444,Diana,,Gomez,,Cra 1,3001234567,d@x.co,B1,2027-12-31,EPS001,FP001,FC001,1,,,'."\n";
 
     $result = runDriverImporter($csv);
 
@@ -115,6 +115,73 @@ test('license_category outside enum goes to errored', function (): void {
 
 test('expected headers and natural key', function (): void {
     $importer = app(DriverImporter::class);
-    expect($importer->expectedHeaders())->toContain('eps_code', 'pension_fund_code', 'severance_fund_code');
+    expect($importer->expectedHeaders())->toContain('eps_code', 'pension_fund_code', 'severance_fund_code', 'timezone');
     expect($importer->naturalKey())->toBe('identification_number');
+});
+
+test('blank timezone column falls back to the column default', function (): void {
+    $csv = headerDriver().
+        'CC,1023555555,Eva,,Mora,,Cra 1,3001234567,e@x.co,C3,2027-12-31,EPS001,FP001,FC001,1,,,'."\n";
+
+    $result = runDriverImporter($csv);
+
+    expect($result['counters']['created'])->toBe(1);
+    $driver = Driver::query()->where('identification_number', '1023555555')->first();
+    expect($driver->timezone)->toBe('America/Bogota');
+});
+
+test('explicit timezone column is persisted verbatim', function (): void {
+    $csv = headerDriver().
+        'CC,1023666666,Felipe,,Nieto,,Cra 1,3001234567,f@x.co,C3,2027-12-31,EPS001,FP001,FC001,1,,,America/New_York'."\n";
+
+    $result = runDriverImporter($csv);
+
+    expect($result['counters']['created'])->toBe(1);
+    $driver = Driver::query()->where('identification_number', '1023666666')->first();
+    expect($driver->timezone)->toBe('America/New_York');
+});
+
+test('invalid timezone goes to errored', function (): void {
+    $csv = headerDriver().
+        'CC,1023777777,Gina,,Ortiz,,Cra 1,3001234567,g@x.co,C3,2027-12-31,EPS001,FP001,FC001,1,,,Atlantis/Standard'."\n";
+
+    $result = runDriverImporter($csv);
+
+    expect($result['counters']['errored'])->toBe(1);
+    expect($result['errors'])->toContain('Zona horaria');
+});
+
+test('chunk continues after a unique-violation row (resilient processing)', function (): void {
+    // Reproduces the bug observed during Playwright smoke: a row that
+    // throws a QueryException at insert time (e.g. drivers.user_id
+    // unique violation because the user already has a Driver attached)
+    // would abort the entire chunk's transaction, losing the other
+    // valid rows. The fix is per-row atomicity.
+    $user = User::factory()->create(['email' => 'driver-already-bound@x.co']);
+    $user->assignRole(Role::DRIVER->value);
+
+    // Pre-seed: this user already has a Driver attached → row 1 will
+    // fail with `drivers_user_id_unique` violation at INSERT.
+    Driver::factory()->create([
+        'user_id' => $user->id,
+        'identification_number' => '9999999999',
+    ]);
+
+    $csv = headerDriver().
+        // Row 1: collides on user_id unique (will throw QueryException).
+        'CC,1010101010,Conflict,,Row,,Cra 1,3001234567,c@x.co,C3,2027-12-31,EPS001,FP001,FC001,1,driver-already-bound@x.co,,'."\n".
+        // Row 2: independent identification_number, no user link → must succeed.
+        'CC,2020202020,After,,Conflict,,Cra 1,3001234567,a@x.co,C3,2027-12-31,EPS001,FP001,FC001,1,,,'."\n";
+
+    $result = runDriverImporter($csv);
+
+    expect($result['counters']['errored'])->toBe(1);
+    expect($result['counters']['created'])->toBe(1);
+    // Both SQLite ("UNIQUE constraint failed: drivers.user_id") and
+    // Postgres ("duplicate key value violates unique constraint
+    // \"drivers_user_id_unique\"") name the offending column.
+    expect($result['errors'])->toContain('user_id');
+
+    expect(Driver::query()->where('identification_number', '2020202020')->exists())->toBeTrue();
+    expect(Driver::query()->where('identification_number', '1010101010')->exists())->toBeFalse();
 });

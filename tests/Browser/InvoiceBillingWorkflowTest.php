@@ -214,7 +214,7 @@ test('picker hides services with billing-affecting incidents by default (F-invoi
         'unit_value' => 100000,
         'quantity' => 1,
         'service_date' => now()->subDays(3),
-        'billing_groups' => [\App\Models\BillingGroup::firstWhere('code', 'empresarial')->id],
+        'billing_groups' => ['Empresarial'],
     ]);
 
     // Blocked candidate — affects_billing=true, must be hidden until toggle.
@@ -225,7 +225,7 @@ test('picker hides services with billing-affecting incidents by default (F-invoi
         'unit_value' => 75000,
         'quantity' => 1,
         'service_date' => now()->subDays(4),
-        'billing_groups' => [\App\Models\BillingGroup::firstWhere('code', 'ocasional')->id],
+        'billing_groups' => ['Ocasional'],
     ]);
     $incidentType = IncidentType::factory()->create([
         'name' => 'Ruta truncada',

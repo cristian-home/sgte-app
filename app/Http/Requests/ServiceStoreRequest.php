@@ -88,7 +88,7 @@ class ServiceStoreRequest extends FormRequest
             'unit_value' => ['required', 'numeric', 'between:-9999999999.99,9999999999.99'],
             'quantity' => ['required', 'integer'],
             'billing_groups' => ['nullable', 'array'],
-            'billing_groups.*' => ['integer', Rule::exists('billing_groups', 'id')->where('active', true)],
+            'billing_groups.*' => ['string', 'max:50', 'distinct'],
             'payment_method' => ['required', Rule::enum(PaymentMethod::class)],
             'service_status' => ['required', Rule::enum(ServiceStatus::class)],
             'manual_entry_justification' => ['nullable', 'string', 'min:10', 'max:500'],
@@ -472,6 +472,35 @@ class ServiceStoreRequest extends FormRequest
         }
 
         $this->mergeActualInstantsIfPresent($timezone);
+
+        $this->mergeNormalizedBillingGroups();
+    }
+
+    /**
+     * Normalize free-text billing-group tags: trim each entry, drop
+     * empties, and dedupe exact matches (case-sensitive). Preserves
+     * capitalization so tags like "AC01" round-trip intact.
+     */
+    protected function mergeNormalizedBillingGroups(): void
+    {
+        $raw = $this->input('billing_groups');
+        if (! is_array($raw)) {
+            return;
+        }
+
+        $clean = [];
+        foreach ($raw as $tag) {
+            if (! is_string($tag)) {
+                continue;
+            }
+            $trimmed = trim($tag);
+            if ($trimmed === '' || in_array($trimmed, $clean, true)) {
+                continue;
+            }
+            $clean[] = $trimmed;
+        }
+
+        $this->merge(['billing_groups' => $clean]);
     }
 
     /**

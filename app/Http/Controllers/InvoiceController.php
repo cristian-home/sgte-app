@@ -43,16 +43,6 @@ class InvoiceController extends Controller
                 'invoice_number',
                 AllowedFilter::exact('payment_status'),
                 AllowedFilter::exact('third_party_id'),
-                // Invoices with at least one attached service that
-                // carries the given billing-group id. Accountants use
-                // this to slice the list per business line (Salud,
-                // Empresarial, etc.).
-                AllowedFilter::callback('billing_group', function ($query, $value): void {
-                    $query->whereHas(
-                        'services.billingGroups',
-                        fn ($q) => $q->where('billing_groups.id', $value),
-                    );
-                }),
             ])
             ->allowedSorts(['invoice_number', 'issued_at', 'total_value', 'payment_status'])
             ->defaultSort('-issued_at')
@@ -67,10 +57,6 @@ class InvoiceController extends Controller
             'invoices' => $invoices,
             'thirdParties' => $this->customerOptions(),
             'nextInvoiceNumberPreview' => Invoice::nextInvoiceNumber(),
-            'billingGroups' => \App\Models\BillingGroup::query()
-                ->where('active', true)
-                ->orderBy('name')
-                ->get(['id', 'name']),
         ]);
     }
 
@@ -121,7 +107,6 @@ class InvoiceController extends Controller
                 'driver:id,first_name,first_lastname',
                 'contract:id,contract_number',
                 'serviceIncidents:id,service_id,affects_billing,additional_value',
-                'billingGroups:id,name',
             ])
             ->orderByDesc('service_date_local')
             ->orderByDesc('id')
@@ -135,6 +120,7 @@ class InvoiceController extends Controller
                 'contract_id',
                 'unit_value',
                 'quantity',
+                'billing_groups',
                 'service_status',
             ]);
 
@@ -747,7 +733,6 @@ class InvoiceController extends Controller
                 'driver:id,first_name,first_lastname',
                 'contract:id,contract_number',
                 'serviceIncidents:id,service_id,affects_billing,additional_value',
-                'billingGroups:id,name',
             ])
             ->orderByDesc('service_date_local')
             ->orderByDesc('id')
@@ -761,6 +746,7 @@ class InvoiceController extends Controller
                 'contract_id',
                 'unit_value',
                 'quantity',
+                'billing_groups',
                 'service_status',
             ]);
     }

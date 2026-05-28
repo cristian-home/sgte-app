@@ -38,12 +38,12 @@ function runVehicleImporter(string $csv, ?DataImport $import = null): array
 
 function headerVehicle(): string
 {
-    return 'plate,internal_code,mobile_number,type,brand,line,model_year,engine_number,chassis_number,capacity,is_third_party,third_party_identification,soat_due_date,rtm_due_date,operation_card_due_date,municipality_code'."\n";
+    return 'plate,internal_code,mobile_number,type,brand,line,model_year,engine_number,chassis_number,capacity,is_third_party,third_party_identification,soat_due_date,rtm_due_date,operation_card_due_date,municipality_code,timezone'."\n";
 }
 
 test('valid own-fleet row creates a vehicle and uppercases plate', function (): void {
     $csv = headerVehicle().
-        'abc123,V001,3001234567,bus,Chevrolet,NPR,2020,ENG12345,CHS67890,30,0,,2026-12-31,2026-08-15,2027-03-01,'."\n";
+        'abc123,V001,3001234567,bus,Chevrolet,NPR,2020,ENG12345,CHS67890,30,0,,2026-12-31,2026-08-15,2027-03-01,,'."\n";
 
     $result = runVehicleImporter($csv);
 
@@ -55,7 +55,7 @@ test('valid own-fleet row creates a vehicle and uppercases plate', function (): 
 
 test('third-party vehicle without identification goes to errored', function (): void {
     $csv = headerVehicle().
-        'DEF456,V002,3001234567,bus,Chevrolet,NPR,2020,ENG12345,CHS67890,30,1,,2026-12-31,2026-08-15,2027-03-01,'."\n";
+        'DEF456,V002,3001234567,bus,Chevrolet,NPR,2020,ENG12345,CHS67890,30,1,,2026-12-31,2026-08-15,2027-03-01,,'."\n";
 
     $result = runVehicleImporter($csv);
 
@@ -67,7 +67,7 @@ test('third-party vehicle with valid identification resolves third_party_id', fu
     $tp = ThirdParty::factory()->create(['identification_number' => '900111222']);
 
     $csv = headerVehicle().
-        'GHI789,V003,3001234567,buseta,Volkswagen,Crafter,2022,ENG54321,CHS09876,18,1,900111222,2026-11-30,2026-09-01,2027-02-15,'."\n";
+        'GHI789,V003,3001234567,buseta,Volkswagen,Crafter,2022,ENG54321,CHS09876,18,1,900111222,2026-11-30,2026-09-01,2027-02-15,,'."\n";
 
     $result = runVehicleImporter($csv);
 
@@ -79,7 +79,7 @@ test('third-party vehicle with valid identification resolves third_party_id', fu
 
 test('invalid type goes to errored', function (): void {
     $csv = headerVehicle().
-        'JKL012,V004,3001234567,truck,Ford,F150,2021,ENGABC,CHSDEF,5,0,,2026-12-31,2026-08-15,2027-03-01,'."\n";
+        'JKL012,V004,3001234567,truck,Ford,F150,2021,ENGABC,CHSDEF,5,0,,2026-12-31,2026-08-15,2027-03-01,,'."\n";
 
     $result = runVehicleImporter($csv);
 
@@ -88,6 +88,38 @@ test('invalid type goes to errored', function (): void {
 
 test('expected headers and natural key', function (): void {
     $importer = app(VehicleImporter::class);
-    expect($importer->expectedHeaders())->toContain('plate', 'type', 'soat_due_date');
+    expect($importer->expectedHeaders())->toContain('plate', 'type', 'soat_due_date', 'timezone');
     expect($importer->naturalKey())->toBe('plate');
+});
+
+test('blank timezone column falls back to the column default', function (): void {
+    $csv = headerVehicle().
+        'MNO345,V005,3009998877,bus,Renault,Master,2023,ENGZZZ,CHSYYY,20,0,,2026-12-31,2026-08-15,2027-03-01,,'."\n";
+
+    $result = runVehicleImporter($csv);
+
+    expect($result['counters']['created'])->toBe(1);
+    $vehicle = Vehicle::query()->where('plate', 'MNO345')->first();
+    expect($vehicle->timezone)->toBe('America/Bogota');
+});
+
+test('explicit timezone column is persisted verbatim', function (): void {
+    $csv = headerVehicle().
+        'PQR678,V006,3009998877,bus,Hino,300,2024,ENGAAA,CHSBBB,20,0,,2026-12-31,2026-08-15,2027-03-01,,America/New_York'."\n";
+
+    $result = runVehicleImporter($csv);
+
+    expect($result['counters']['created'])->toBe(1);
+    $vehicle = Vehicle::query()->where('plate', 'PQR678')->first();
+    expect($vehicle->timezone)->toBe('America/New_York');
+});
+
+test('invalid timezone goes to errored', function (): void {
+    $csv = headerVehicle().
+        'STU901,V007,3009998877,bus,Hino,500,2024,ENGCCC,CHSDDD,20,0,,2026-12-31,2026-08-15,2027-03-01,,Atlantis/Standard'."\n";
+
+    $result = runVehicleImporter($csv);
+
+    expect($result['counters']['errored'])->toBe(1);
+    expect($result['errors'])->toContain('Zona horaria');
 });

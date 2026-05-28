@@ -30,6 +30,7 @@ class VehicleImporter extends AbstractImporter
             'rtm_due_date',
             'operation_card_due_date',
             'municipality_code',
+            'timezone',
         ];
     }
 
@@ -59,6 +60,9 @@ class VehicleImporter extends AbstractImporter
             'rtm_due_date' => ['required', 'date_format:Y-m-d'],
             'operation_card_due_date' => ['required', 'date_format:Y-m-d'],
             'municipality_code' => ['nullable', 'string', 'exists:municipalities,code'],
+            // Optional. Blank → DB default 'America/Bogota'. Must be a
+            // valid IANA timezone identifier.
+            'timezone' => ['nullable', 'string', 'in:'.implode(',', timezone_identifiers_list())],
         ];
     }
 
@@ -71,6 +75,7 @@ class VehicleImporter extends AbstractImporter
             'third_party_identification.required_if' => 'La identificación del tercero es obligatoria cuando is_third_party=1.',
             'third_party_identification.exists' => 'No existe un tercero con esa identificación.',
             'municipality_code.exists' => 'El municipio no existe en el catálogo DIVIPOLA.',
+            'timezone.in' => 'Zona horaria inválida. Use un identificador IANA (ej. America/Bogota) o deje en blanco para el valor por defecto.',
         ];
     }
 
@@ -97,7 +102,7 @@ class VehicleImporter extends AbstractImporter
             }
         }
 
-        return [
+        $payload = [
             'plate' => strtoupper((string) $row['plate']),
             'internal_code' => $row['internal_code'],
             'mobile_number' => $row['mobile_number'],
@@ -116,6 +121,15 @@ class VehicleImporter extends AbstractImporter
             'municipality_id' => $municipality?->id,
             'status' => VehicleStatus::Active->value,
         ];
+
+        // Only set timezone when explicitly provided; otherwise omit so
+        // the DB default ('America/Bogota') applies on insert and the
+        // current value is preserved on update.
+        if (! empty($row['timezone'])) {
+            $payload['timezone'] = $row['timezone'];
+        }
+
+        return $payload;
     }
 
     public function findExisting(string $naturalKeyValue): ?Model
