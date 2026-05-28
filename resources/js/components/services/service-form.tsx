@@ -579,9 +579,19 @@ export default function ServiceForm({
 
     // ETA hint from Google Routes (curated cache → live fallback). Only
     // fetched when both coords are present and not currently in flight
-    // for the same pair.
+    // for the same pair. Auto-applies to planned_duration when the field
+    // is still empty/zero so create-mode starts pre-filled; in edit mode
+    // (or after the operator typed something) the existing value wins —
+    // the Aplicar button is the explicit revert.
     const [etaMinutes, setEtaMinutes] = useState<number | null>(null);
     const etaAbortRef = useRef<AbortController | null>(null);
+    // Mirror of data.planned_duration kept in a ref so the async ETA
+    // resolver can read the up-to-date value (the .then closure would
+    // otherwise see the value at effect-trigger time).
+    const durationRef = useRef(data.planned_duration);
+    useEffect(() => {
+        durationRef.current = data.planned_duration;
+    }, [data.planned_duration]);
 
     useEffect(() => {
         const o = data.origin_coordinates;
@@ -608,7 +618,18 @@ export default function ServiceForm({
             .then((r) => (r.ok ? r.json() : null))
             .then((res: { eta_minutes: number | null } | null) => {
                 if (res && typeof res.eta_minutes === 'number') {
-                    setEtaMinutes(res.eta_minutes);
+                    const n = res.eta_minutes;
+                    setEtaMinutes(n);
+                    const currentRaw = durationRef.current;
+                    const currentNum = Number(currentRaw);
+                    const isEmpty =
+                        !currentRaw ||
+                        !Number.isFinite(currentNum) ||
+                        currentNum <= 0;
+                    if (isEmpty) {
+                        lastEditedRef.current = 'duration';
+                        setData('planned_duration', String(n));
+                    }
                 } else {
                     setEtaMinutes(null);
                 }
@@ -624,6 +645,7 @@ export default function ServiceForm({
                 }
                 setEtaMinutes(null);
             });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [data.origin_coordinates, data.destination_coordinates]);
 
     const applyEta = () => {
@@ -1483,24 +1505,25 @@ export default function ServiceForm({
                                 className="text-right tabular-nums"
                             />
                             <FieldFooter error={errors.planned_duration}>
-                                {etaMinutes !== null &&
-                                    (etaMatchesCurrent ? (
-                                        <>ETA Google: {etaMinutes} min ✓</>
-                                    ) : (
-                                        <>
-                                            Sugerido: {etaMinutes} min{' '}
+                                {etaMinutes !== null && (
+                                    <>
+                                        ETA Google: {etaMinutes} min
+                                        {etaMatchesCurrent ? (
+                                            <> ✓</>
+                                        ) : (
                                             <button
                                                 type="button"
                                                 onClick={applyEta}
                                                 disabled={isFieldDisabled(
                                                     'planned_duration',
                                                 )}
-                                                className="ml-1 font-medium text-primary not-italic underline-offset-2 hover:underline disabled:opacity-50"
+                                                className="ml-2 font-medium text-primary not-italic underline-offset-2 hover:underline disabled:opacity-50"
                                             >
                                                 Aplicar
                                             </button>
-                                        </>
-                                    ))}
+                                        )}
+                                    </>
+                                )}
                             </FieldFooter>
                         </div>
                         <div className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid">
