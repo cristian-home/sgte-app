@@ -54,6 +54,8 @@ class HandleInertiaRequests extends Middleware
             'config' => [
                 'operation_tz' => Tz::operation(),
                 'viewer_tz' => Tz::viewer($request),
+                'version' => config('app.version'),
+                'environment' => config('app.env'),
             ],
             // Surface controller-set flash keys to the frontend. Used by
             // the cascade-create dialogs (service ← contract ← tercero)
