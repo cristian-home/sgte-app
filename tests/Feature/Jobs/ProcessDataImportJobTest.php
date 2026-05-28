@@ -31,9 +31,9 @@ function makeUserImport(string $csv, array $overrides = []): DataImport
 }
 
 test('job processes a valid csv and marks completed with correct counters', function (): void {
-    $csv = "email,name,role,password\n".
-        "a@x.co,A,admin,\n".
-        "b@x.co,B,operator,Temporal2026!\n";
+    $csv = "email,name,role,password,timezone\n".
+        "a@x.co,A,admin,,\n".
+        "b@x.co,B,operator,Temporal2026!,\n";
 
     $import = makeUserImport($csv);
 
@@ -61,9 +61,9 @@ test('invalid header marks failed without processing rows', function (): void {
 });
 
 test('errors.csv is uploaded to s3 when there are errored rows', function (): void {
-    $csv = "email,name,role,password\n".
-        "valid@x.co,Valid,admin,\n".
-        "notanemail,Bad,admin,\n";
+    $csv = "email,name,role,password,timezone\n".
+        "valid@x.co,Valid,admin,,\n".
+        "notanemail,Bad,admin,,\n";
 
     $import = makeUserImport($csv);
 
@@ -82,7 +82,7 @@ test('errors.csv is uploaded to s3 when there are errored rows', function (): vo
 });
 
 test('failed() marks the import as failed with truncated message', function (): void {
-    $import = makeUserImport("email,name,role,password\nx@y.co,X,admin,\n");
+    $import = makeUserImport("email,name,role,password,timezone\nx@y.co,X,admin,\n");
 
     (new ProcessDataImportJob($import))->failed(new \RuntimeException(str_repeat('A', 2000)));
 
@@ -93,7 +93,7 @@ test('failed() marks the import as failed with truncated message', function (): 
 });
 
 test('dry_run does not persist users and reports counters', function (): void {
-    $csv = "email,name,role,password\nfoo@bar.co,Foo,admin,\n";
+    $csv = "email,name,role,password,timezone\nfoo@bar.co,Foo,admin,,\n";
 
     $import = makeUserImport($csv, ['dry_run' => true]);
 
@@ -106,7 +106,7 @@ test('dry_run does not persist users and reports counters', function (): void {
 });
 
 test('rows_total is populated before processing starts', function (): void {
-    $csv = "email,name,role,password\n".str_repeat("x@y.co,X,admin,\n", 3);
+    $csv = "email,name,role,password,timezone\n".str_repeat("x@y.co,X,admin,,\n", 3);
 
     $import = makeUserImport($csv);
 
