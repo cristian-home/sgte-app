@@ -22,8 +22,24 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: production
 
     steps:
+      - name: Checkout (tag push only)
+        if: github.event_name == 'push'
+        uses: actions/checkout@v4
+
+      - name: Verify VERSION matches tag
+        if: github.event_name == 'push'
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          FILE="$(tr -d '[:space:]' < VERSION)"
+          if [ "$TAG" != "$FILE" ]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} no coincide con VERSION (${FILE}). Bumpea VERSION antes de tagear."
+            exit 1
+          fi
+          echo "VERSION (${FILE}) coincide con el tag (${GITHUB_REF_NAME})."
+
       - name: Trigger Dokploy production deployment
         run: |
           curl -sSf -X POST "${{ secrets.DOKPLOY_PROD_URL }}/api/application.redeploy" \

@@ -10,6 +10,8 @@ declare module '@inertiajs/core' {
             config: {
                 operation_tz: string;
                 viewer_tz: string;
+                version: string;
+                environment: string;
             };
             [key: string]: unknown;
         };

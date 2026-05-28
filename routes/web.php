@@ -18,6 +18,8 @@ Route::get('fuec/verify/{uuid}', [App\Http\Controllers\FuecVerifyController::cla
 require __DIR__.'/settings.php';
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('about', [App\Http\Controllers\AboutController::class, 'show'])->name('about');
+
     // Driver dashboard
     Route::get('driver', [App\Http\Controllers\DriverDashboardController::class, 'index'])->name('driver.dashboard');
     Route::post('driver/services/{service}/confirm-start', [App\Http\Controllers\DriverDashboardController::class, 'confirmStart'])->name('driver.confirm-start');
