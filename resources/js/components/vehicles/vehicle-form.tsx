@@ -262,7 +262,7 @@ export default function VehicleForm({
                     className="group/field grid gap-2 md:row-span-3 md:grid-rows-subgrid"
                     data-error={invalid('municipality_id')}
                 >
-                    <Label htmlFor={id('municipality_id')}>Municipio</Label>
+                    <Label htmlFor={id('municipality_id')}>Ciudad</Label>
                     <MunicipalityCombobox
                         id={id('municipality_id')}
                         municipalities={municipalities}

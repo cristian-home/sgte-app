@@ -285,7 +285,7 @@ export default function ThirdPartiesShow({
                     </CardHeader>
                     <CardContent>
                         <div className="grid gap-4 md:grid-cols-2">
-                            <Field label="Municipio">
+                            <Field label="Ciudad">
                                 <span className="capitalize">
                                     {thirdParty.municipality
                                         ? `${thirdParty.municipality.name}${

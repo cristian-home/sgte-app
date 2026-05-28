@@ -268,7 +268,7 @@ export default function ThirdPartyForm({
 
             <div className="grid gap-x-4 gap-y-2 md:grid-cols-2 md:grid-rows-[auto_auto_auto]">
                 <div className="grid gap-2 md:row-span-3 md:grid-rows-subgrid">
-                    <Label htmlFor={id('municipality_id')}>Municipio</Label>
+                    <Label htmlFor={id('municipality_id')}>Ciudad</Label>
                     <MunicipalityCombobox
                         id={id('municipality_id')}
                         municipalities={municipalities}

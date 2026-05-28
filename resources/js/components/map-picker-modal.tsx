@@ -233,7 +233,7 @@ function MapPickerBody({
                     la dirección que verá en su panel.
                     {municipalityHint && (
                         <span className="mt-1 block">
-                            <strong>Municipio:</strong> {municipalityHint}
+                            <strong>Ciudad:</strong> {municipalityHint}
                         </span>
                     )}
                 </DialogDescription>

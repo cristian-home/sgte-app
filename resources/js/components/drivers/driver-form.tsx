@@ -241,14 +241,14 @@ export default function DriverForm({
             <section className="space-y-4">
                 <h3 className="text-base font-semibold">Datos de Contacto</h3>
                 <div className="grid gap-2">
-                    <Label htmlFor={id('municipality_id')}>Municipio</Label>
+                    <Label htmlFor={id('municipality_id')}>Ciudad</Label>
                     <MunicipalityCombobox
                         id={id('municipality_id')}
                         municipalities={municipalities}
                         value={data.municipality_id || null}
                         onChange={(value) => setData('municipality_id', value)}
                         invalid={invalid('municipality_id')}
-                        placeholder="Selecciona un municipio"
+                        placeholder="Selecciona una ciudad"
                     />
                     <FieldFooter error={errors.municipality_id} />
                 </div>
