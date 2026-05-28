@@ -150,71 +150,99 @@ abstract class AbstractImporter
     ): void {
         $delta = ['created' => 0, 'updated' => 0, 'skipped' => 0, 'errored' => 0];
 
-        DB::transaction(function () use ($chunk, $import, $errorsWriter, &$seenKeys, &$delta) {
-            foreach ($chunk as $entry) {
-                $row = $entry['data'];
-                $rowNumber = $entry['row_number'];
+        foreach ($chunk as $entry) {
+            $row = $entry['data'];
+            $rowNumber = $entry['row_number'];
 
-                $validator = Validator::make($row, $this->rules(), $this->messages());
-                if ($validator->fails()) {
-                    $this->writeError($errorsWriter, $rowNumber, implode('; ', $validator->errors()->all()), $row);
-                    $delta['errored']++;
+            $validator = Validator::make($row, $this->rules(), $this->messages());
+            if ($validator->fails()) {
+                $this->writeError($errorsWriter, $rowNumber, implode('; ', $validator->errors()->all()), $row);
+                $delta['errored']++;
 
-                    continue;
-                }
-
-                $validated = $validator->validated();
-
-                $key = (string) ($validated[$this->naturalKey()] ?? '');
-                if ($key !== '' && isset($seenKeys[$key])) {
-                    $this->writeError(
-                        $errorsWriter,
-                        $rowNumber,
-                        "Clave duplicada en el archivo: {$this->naturalKey()}={$key} (vista en fila {$seenKeys[$key]})",
-                        $row,
-                    );
-                    $delta['errored']++;
-
-                    continue;
-                }
-                if ($key !== '') {
-                    $seenKeys[$key] = $rowNumber;
-                }
-
-                try {
-                    $transformed = $this->transformRow($validated);
-                } catch (RowTransformException $e) {
-                    $this->writeError($errorsWriter, $rowNumber, $e->getMessage(), $row);
-                    $delta['errored']++;
-
-                    continue;
-                }
-
-                $existing = $key !== '' ? $this->findExisting($key) : null;
-
-                if ($existing !== null && ! $import->update_existing) {
-                    $delta['skipped']++;
-
-                    continue;
-                }
-
-                if ($import->dry_run) {
-                    $existing !== null ? $delta['updated']++ : $delta['created']++;
-
-                    continue;
-                }
-
-                if ($existing !== null) {
-                    $this->applyUpdate($existing, $transformed);
-                    $delta['updated']++;
-                } else {
-                    $this->persistNew($transformed);
-                    $delta['created']++;
-                }
+                continue;
             }
-        });
+
+            $validated = $validator->validated();
+
+            $key = (string) ($validated[$this->naturalKey()] ?? '');
+            if ($key !== '' && isset($seenKeys[$key])) {
+                $this->writeError(
+                    $errorsWriter,
+                    $rowNumber,
+                    "Clave duplicada en el archivo: {$this->naturalKey()}={$key} (vista en fila {$seenKeys[$key]})",
+                    $row,
+                );
+                $delta['errored']++;
+
+                continue;
+            }
+            if ($key !== '') {
+                $seenKeys[$key] = $rowNumber;
+            }
+
+            try {
+                $transformed = $this->transformRow($validated);
+            } catch (RowTransformException $e) {
+                $this->writeError($errorsWriter, $rowNumber, $e->getMessage(), $row);
+                $delta['errored']++;
+
+                continue;
+            }
+
+            $existing = $key !== '' ? $this->findExisting($key) : null;
+
+            if ($existing !== null && ! $import->update_existing) {
+                $delta['skipped']++;
+
+                continue;
+            }
+
+            if ($import->dry_run) {
+                $existing !== null ? $delta['updated']++ : $delta['created']++;
+
+                continue;
+            }
+
+            // Wrap each persistence step in its own transaction so a row
+            // failure (unique violation, FK error, etc.) rolls back ONLY
+            // that row and the chunk continues. The transaction is also
+            // necessary for importers that touch multiple tables in one
+            // row (e.g. ThirdPartyImporter auto-creates a contract for
+            // new customers) — both writes commit or roll back together.
+            try {
+                DB::transaction(function () use ($existing, $transformed): void {
+                    if ($existing !== null) {
+                        $this->applyUpdate($existing, $transformed);
+                    } else {
+                        $this->persistNew($transformed);
+                    }
+                });
+
+                $existing !== null ? $delta['updated']++ : $delta['created']++;
+            } catch (\Throwable $e) {
+                $this->writeError($errorsWriter, $rowNumber, $this->humanizeDbError($e), $row);
+                $delta['errored']++;
+            }
+        }
 
         $onProgress($delta);
+    }
+
+    /**
+     * Strip the noisy "(Connection: pgsql, Host: ..., SQL: INSERT ...)"
+     * suffix that QueryException::getMessage() appends. Keeps the
+     * driver-level diagnostic ("duplicate key value violates...") which
+     * is the part the operator actually needs to fix the CSV.
+     */
+    protected function humanizeDbError(\Throwable $e): string
+    {
+        $message = $e->getMessage();
+        $cutoff = strpos($message, ' (Connection:');
+        if ($cutoff !== false) {
+            $message = substr($message, 0, $cutoff);
+        }
+
+        return $message;
     }
 
     /**
