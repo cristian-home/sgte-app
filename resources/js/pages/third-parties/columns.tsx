@@ -99,8 +99,8 @@ export const columns: ColumnDef<ThirdPartyRow, unknown>[] = [
     },
     {
         id: 'municipio',
-        meta: { label: 'Municipio' },
-        header: 'Municipio',
+        meta: { label: 'Ciudad' },
+        header: 'Ciudad',
         cell: ({ row }) => (
             <span className="capitalize">
                 {row.original.municipality?.name ?? '—'}

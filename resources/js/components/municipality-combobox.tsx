@@ -40,8 +40,8 @@ export default function MunicipalityCombobox({
     municipalities,
     value,
     onChange,
-    placeholder = 'Seleccionar municipio...',
-    searchPlaceholder = 'Buscar municipio...',
+    placeholder = 'Seleccionar ciudad...',
+    searchPlaceholder = 'Buscar ciudad...',
     disabled = false,
     invalid,
     id,
@@ -125,7 +125,7 @@ export default function MunicipalityCombobox({
                 <Command>
                     <CommandInput placeholder={searchPlaceholder} />
                     <CommandList>
-                        <CommandEmpty>No se encontro municipio.</CommandEmpty>
+                        <CommandEmpty>No se encontró ciudad.</CommandEmpty>
                         {grouped.map((group) => (
                             <CommandGroup
                                 key={group.departmentName}

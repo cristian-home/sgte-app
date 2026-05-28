@@ -59,7 +59,7 @@ const REFERENCE_CATALOGS: { catalog: string; label: string }[] = [
     { catalog: 'eps', label: 'EPS' },
     { catalog: 'pension-funds', label: 'Fondos de Pensiones' },
     { catalog: 'severance-funds', label: 'Fondos de Cesantías' },
-    { catalog: 'municipalities', label: 'Municipios' },
+    { catalog: 'municipalities', label: 'Ciudades' },
     { catalog: 'departments', label: 'Departamentos' },
     { catalog: 'document-types', label: 'Tipos de Documento' },
     { catalog: 'incident-types', label: 'Tipos de Novedad' },

@@ -207,7 +207,7 @@ enum Permission: string
             self::CREATE_INCIDENT_TYPES => 'Crear tipos de novedad.',
             self::UPDATE_INCIDENT_TYPES => 'Editar tipos de novedad.',
             self::DELETE_INCIDENT_TYPES => 'Eliminar tipos de novedad.',
-            self::MANAGE_CATALOGS => 'Gestionar catálogos: documentos, EPS, fondos y municipios.',
+            self::MANAGE_CATALOGS => 'Gestionar catálogos: documentos, EPS, fondos y ciudades.',
             self::VIEW_AUDIT_LOG => 'Historial de cambios sensibles registrados en el sistema.',
             self::MANAGE_DATA_IMPORTS => 'Cargar archivos masivos de usuarios, conductores, terceros o vehículos.',
             self::RECEIVE_NOTIFICATIONS => 'Recibir alertas del sistema por correo y en la aplicación.',

@@ -321,7 +321,7 @@ export default function DriversShow({
                             <Field label="Segundo Apellido">
                                 {driver.second_lastname ?? '—'}
                             </Field>
-                            <Field label="Municipio">
+                            <Field label="Ciudad">
                                 <span className="capitalize">
                                     {driver.municipality
                                         ? `${driver.municipality.name}${

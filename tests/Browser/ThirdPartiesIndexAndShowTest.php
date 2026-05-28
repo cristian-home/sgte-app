@@ -62,7 +62,7 @@ test('third parties index renders the table with Spanish headers and combines ro
             ->assertSee('Nombre')
             ->assertSee('Tipo')
             ->assertSee('Roles')
-            ->assertSee('Municipio')
+            ->assertSee('Ciudad')
             ->assertSee('Vinculación')
             ->assertSee($customerOnly->first_lastname)
             ->assertSee($providerOnly->company_name)
