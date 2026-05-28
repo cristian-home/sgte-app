@@ -52,7 +52,7 @@ test('super admin sees the imports index with templates, catalogs, and retention
             ->assertSee('Descargar plantilla — Terceros')
             ->assertSee('Descargar plantilla — Vehículos')
             ->assertSee('EPS')
-            ->assertSee('Municipios')
+            ->assertSee('Ciudades')
             ->assertDontSee('error')
             ->assertDontSee('Exception')
             ->screenshot('admin-imports-index-empty');

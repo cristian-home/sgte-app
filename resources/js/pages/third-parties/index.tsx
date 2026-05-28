@@ -101,7 +101,7 @@ export default function ThirdPartiesIndex({
             ...STATIC_THIRD_PARTY_FILTERS,
             {
                 name: 'municipality_id',
-                label: 'Municipio',
+                label: 'Ciudad',
                 options: municipalities.map((m) => ({
                     value: String(m.id),
                     label: m.department

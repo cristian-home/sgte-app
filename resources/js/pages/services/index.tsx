@@ -185,7 +185,7 @@ export default function ServicesIndex({
             },
             {
                 name: 'origin_municipality_id',
-                label: 'Municipio Origen',
+                label: 'Ciudad Origen',
                 options: filterMunicipalities.map((m) => ({
                     value: String(m.id),
                     label: municipalityFilterLabel(m),
@@ -194,7 +194,7 @@ export default function ServicesIndex({
             },
             {
                 name: 'destination_municipality_id',
-                label: 'Municipio Destino',
+                label: 'Ciudad Destino',
                 options: filterMunicipalities.map((m) => ({
                     value: String(m.id),
                     label: municipalityFilterLabel(m),

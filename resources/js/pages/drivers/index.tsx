@@ -119,7 +119,7 @@ export default function DriversIndex({
             ...STATIC_DRIVER_FILTERS,
             {
                 name: 'municipality_id',
-                label: 'Municipio',
+                label: 'Ciudad',
                 options: municipalities.map((m) => ({
                     value: String(m.id),
                     label: m.department

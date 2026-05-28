@@ -795,7 +795,7 @@ function CityDropdown({
         return (
             <ul id={listboxId} role="listbox" className="py-1 text-sm">
                 <li className="px-3 py-2 text-muted-foreground">
-                    No se encontró municipio.
+                    No se encontró ciudad.
                 </li>
             </ul>
         );
