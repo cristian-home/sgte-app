@@ -40,9 +40,12 @@ jobs:
           fi
           echo "VERSION (${FILE}) coincide con el tag (${GITHUB_REF_NAME})."
 
-      - name: Trigger Dokploy production deployment
+      - name: Trigger Dokploy production deployment (full build)
         run: |
-          curl -sSf -X POST "${{ secrets.DOKPLOY_PROD_URL }}/api/application.redeploy" \
+          # application.deploy = rebuild desde el código (toma ~10 min).
+          # NO usamos application.redeploy porque ése sólo reinicia el
+          # contenedor con la imagen vieja y no traería el código del tag.
+          curl -sSf -X POST "${{ secrets.DOKPLOY_PROD_URL }}/api/application.deploy" \
             -H "x-api-key: ${{ secrets.DOKPLOY_PROD_TOKEN }}" \
             -H "Content-Type: application/json" \
             -d '{"applicationId": "${{ secrets.DOKPLOY_PROD_APP_ID }}"}'
