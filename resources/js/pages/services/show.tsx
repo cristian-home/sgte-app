@@ -33,7 +33,7 @@ import { PaymentMethodLabel } from '@/enums/PaymentMethod';
 import { Permission } from '@/enums/Permission';
 import { ServiceStatusLabel } from '@/enums/ServiceStatus';
 import AppLayout from '@/layouts/app-layout';
-import { formatEventTime } from '@/lib/datetime';
+import { formatEventDate, formatEventTime } from '@/lib/datetime';
 import services from '@/routes/services';
 import { type BreadcrumbItem } from '@/types';
 import type { Service } from '@/types/models';
@@ -56,14 +56,6 @@ function formatCurrency(value: string | number): string {
         currency: 'COP',
         minimumFractionDigits: 0,
     }).format(Number(value));
-}
-
-function formatDate(date: string): string {
-    return new Intl.DateTimeFormat('es-CO', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-    }).format(new Date(date));
 }
 
 function formatDateTime(date: string): string {
@@ -259,7 +251,11 @@ export default function ServicesShow({
                         <CardContent>
                             <dl className="grid gap-4 sm:grid-cols-2">
                                 <IconField icon={Calendar} label="Fecha">
-                                    {formatDate(service.service_date)}
+                                    {formatEventDate(
+                                        service.planned_start_at,
+                                        service.timezone,
+                                        { dateStyle: 'long' },
+                                    )}
                                 </IconField>
                                 <IconField icon={FileText} label="Contrato">
                                     {service.contract?.contract_number ??
