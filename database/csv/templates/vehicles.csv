@@ -1,3 +1,3 @@
-plate,internal_code,mobile_number,type,brand,line,model_year,engine_number,chassis_number,capacity,is_third_party,third_party_identification,soat_due_date,rtm_due_date,operation_card_due_date,municipality_code
-ABC123,V001,3001112233,bus,Chevrolet,NPR,2020,ENG12345,CHS67890,30,0,,2026-12-31,2026-08-15,2027-03-01,11001
-DEF456,V002,3104445566,buseta,Volkswagen,Crafter,2022,ENG54321,CHS09876,18,1,900123456,2026-11-30,2026-09-01,2027-02-15,11001
+plate,internal_code,mobile_number,type,brand,line,model_year,engine_number,chassis_number,capacity,is_third_party,third_party_identification,soat_due_date,rtm_due_date,operation_card_due_date,municipality_code,timezone
+ABC123,V001,3001112233,bus,Chevrolet,NPR,2020,ENG12345,CHS67890,30,0,,2026-12-31,2026-08-15,2027-03-01,11001,
+DEF456,V002,3104445566,buseta,Volkswagen,Crafter,2022,ENG54321,CHS09876,18,1,900123456,2026-11-30,2026-09-01,2027-02-15,11001,America/Bogota
