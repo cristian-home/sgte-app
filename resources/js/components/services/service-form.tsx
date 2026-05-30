@@ -646,7 +646,19 @@ export default function ServiceForm({
     // is still empty/zero so create-mode starts pre-filled; in edit mode
     // (or after the operator typed something) the existing value wins —
     // the Aplicar button is the explicit revert.
-    const [etaMinutes, setEtaMinutes] = useState<number | null>(null);
+    const [eta, setEta] = useState<{ key: string; minutes: number } | null>(
+        null,
+    );
+    // Derive the visible ETA during render: it applies only when both coords
+    // are present AND match the pair the value was fetched for. This removes
+    // the need to synchronously reset state inside the fetch effect when the
+    // coords become incomplete or change to a different pair.
+    const etaCoordsKey =
+        data.origin_coordinates && data.destination_coordinates
+            ? `${data.origin_coordinates}|${data.destination_coordinates}`
+            : null;
+    const etaMinutes =
+        etaCoordsKey && eta?.key === etaCoordsKey ? eta.minutes : null;
     const etaAbortRef = useRef<AbortController | null>(null);
     // Mirror of data.planned_duration kept in a ref so the async ETA
     // resolver can read the up-to-date value (the .then closure would
@@ -660,11 +672,9 @@ export default function ServiceForm({
         const o = data.origin_coordinates;
         const d = data.destination_coordinates;
         if (!o || !d) {
+            // No synchronous reset needed: `etaMinutes` is derived in render
+            // and is already null when the coords are incomplete.
             etaAbortRef.current?.abort();
-            // Reset the hint when the coords become incomplete — a legitimate
-            // reset-on-dependency-change tied to the fetch lifecycle.
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setEtaMinutes(null);
             return;
         }
         etaAbortRef.current?.abort();
@@ -685,7 +695,7 @@ export default function ServiceForm({
             .then((res: { eta_minutes: number | null } | null) => {
                 if (res && typeof res.eta_minutes === 'number') {
                     const n = res.eta_minutes;
-                    setEtaMinutes(n);
+                    setEta({ key: `${o}|${d}`, minutes: n });
                     const currentRaw = durationRef.current;
                     const currentNum = Number(currentRaw);
                     const isEmpty =
@@ -697,7 +707,7 @@ export default function ServiceForm({
                         setData('planned_duration', String(n));
                     }
                 } else {
-                    setEtaMinutes(null);
+                    setEta(null);
                 }
             })
             .catch((err) => {
@@ -709,7 +719,7 @@ export default function ServiceForm({
                 ) {
                     return;
                 }
-                setEtaMinutes(null);
+                setEta(null);
             });
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [data.origin_coordinates, data.destination_coordinates]);
