@@ -661,6 +661,9 @@ export default function ServiceForm({
         const d = data.destination_coordinates;
         if (!o || !d) {
             etaAbortRef.current?.abort();
+            // Reset the hint when the coords become incomplete — a legitimate
+            // reset-on-dependency-change tied to the fetch lifecycle.
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setEtaMinutes(null);
             return;
         }
