@@ -32,10 +32,11 @@ interface Service {
     destination_coordinates_source: string | null;
     destination_coordinates_accuracy: string | null;
     destination_place_id: string | null;
-    planned_start_local: string;
+    planned_start_local_datetime: string | null;
+    planned_end_local_datetime: string | null;
     planned_duration: number;
-    actual_start_local: string | null;
-    actual_end_local: string | null;
+    actual_start_local_datetime: string | null;
+    actual_end_local_datetime: string | null;
     unit_value: string;
     quantity: number;
     billing_groups?: string[] | null;
@@ -75,7 +76,6 @@ export default function ServicesEdit({
         contract_id: String(service.contract_id),
         vehicle_id: String(service.vehicle_id),
         driver_id: service.driver_id ? String(service.driver_id) : '',
-        service_date: service.service_date.substring(0, 10),
         origin_municipality_id: service.origin_municipality_id
             ? String(service.origin_municipality_id)
             : '',
@@ -94,10 +94,11 @@ export default function ServicesEdit({
         destination_coordinates_accuracy:
             service.destination_coordinates_accuracy ?? '',
         destination_place_id: service.destination_place_id ?? '',
-        planned_start_time: service.planned_start_local,
+        planned_start: service.planned_start_local_datetime ?? '',
+        planned_end: service.planned_end_local_datetime ?? '',
         planned_duration: String(service.planned_duration),
-        actual_start_time: service.actual_start_local ?? '',
-        actual_end_time: service.actual_end_local ?? '',
+        actual_start: service.actual_start_local_datetime ?? '',
+        actual_end: service.actual_end_local_datetime ?? '',
         timezone: service.timezone,
         unit_value: service.unit_value,
         quantity: String(service.quantity),

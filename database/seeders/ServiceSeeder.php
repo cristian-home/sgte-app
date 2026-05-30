@@ -138,6 +138,7 @@ class ServiceSeeder extends Seeder
                 'destination_coordinates_accuracy' => $destination['accuracy'],
                 'destination_place_id' => $destination['place_id'] ?? null,
                 'planned_start_at' => $plannedStart,
+                'planned_end_at' => $plannedEnd,
                 'planned_duration' => $duration,
                 'actual_start_at' => $actualStart,
                 'actual_end_at' => $actualEnd,

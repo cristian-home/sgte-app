@@ -54,15 +54,21 @@ class ServiceStoreRequest extends FormRequest
             'vehicle_id' => ['required', 'integer', 'exists:vehicles,id'],
             'driver_id' => ['nullable', 'integer', 'exists:drivers,id'],
             'invoice_id' => ['nullable', 'integer', 'exists:invoices,id'],
-            // Wall-clock helpers retained for the form payload; the
-            // persisted source of truth is `planned_start_at` (UTC instant)
-            // and `service_date_local` (operation-TZ day), merged in
-            // prepareForValidation().
-            'service_date' => ['required', 'date_format:Y-m-d'],
+            // Wall-clock datetimes (Y-m-d H:i) from the form's datetime
+            // pickers. The persisted source of truth is the UTC instant
+            // (`planned_start_at` / `planned_end_at`) plus `service_date_local`
+            // (operation-TZ day), all merged in prepareForValidation().
+            'planned_start' => ['required', 'date_format:Y-m-d H:i'],
+            // Optional input: when omitted it is derived from
+            // planned_start + planned_duration in prepareForValidation. The
+            // persisted `planned_end_at` instant below stays required.
+            'planned_end' => ['nullable', 'date_format:Y-m-d H:i'],
             'service_date_local' => ['required', 'date_format:Y-m-d'],
-            'planned_start_time' => ['required', 'date_format:H:i'],
             'timezone' => ['required', 'string', Rule::in(timezone_identifiers_list())],
             'planned_start_at' => ['required', 'date'],
+            // Ordering (end after start) is enforced in after() against the
+            // visible `planned_end` field so the error renders on the picker.
+            'planned_end_at' => ['required', 'date'],
             'origin_municipality_id' => ['nullable', 'integer', 'exists:municipalities,id'],
             'origin_address' => ['nullable', 'string', 'max:255'],
             // When the operator fills the address text, they must also
@@ -80,11 +86,16 @@ class ServiceStoreRequest extends FormRequest
             'destination_coordinates_source' => ['required_with:destination_address,destination_municipality_id', 'nullable', Rule::in(['google', 'manual'])],
             'destination_coordinates_accuracy' => ['nullable', 'string', 'max:20'],
             'destination_place_id' => ['nullable', 'string', 'max:255'],
-            'planned_duration' => ['required', 'integer'],
-            'actual_start_time' => ['nullable', Rule::requiredIf($this->input('service_status') === 'closed')],
-            'actual_end_time' => ['nullable', Rule::requiredIf($this->input('service_status') === 'closed'), 'after:actual_start_time'],
+            // Derived from (planned_end_at - planned_start_at) in
+            // prepareForValidation() and re-derived by Service::saving().
+            'planned_duration' => ['nullable', 'integer'],
+            'actual_start' => ['nullable', Rule::requiredIf($this->input('service_status') === 'closed'), 'date_format:Y-m-d H:i'],
+            'actual_end' => ['nullable', Rule::requiredIf($this->input('service_status') === 'closed'), 'date_format:Y-m-d H:i'],
             'actual_start_at' => ['nullable', 'date'],
-            'actual_end_at' => ['nullable', 'date', 'after:actual_start_at'],
+            // Ordering is enforced in after() against the visible
+            // `actual_end` field. Compared as instants, so a next-day end
+            // (e.g. 22:00 → 05:00) validates correctly across midnight.
+            'actual_end_at' => ['nullable', 'date'],
             'unit_value' => ['required', 'numeric', 'between:-9999999999.99,9999999999.99'],
             'quantity' => ['required', 'integer'],
             'billing_groups' => ['nullable', 'array'],
@@ -136,8 +147,85 @@ class ServiceStoreRequest extends FormRequest
                 $this->validateVehicleDocumentsNotExpired($validator);
                 $this->validateDriverLicense($validator);
                 $this->validateRetroactiveEntry($validator);
+                $this->validatePlannedStartNotPast($validator);
+                $this->validateScheduleOrder($validator);
             },
         ];
+    }
+
+    /**
+     * Enforce end-after-start for both the planned and actual windows,
+     * comparing UTC instants (so a window crossing midnight is valid) and
+     * keying errors to the visible wall-clock fields so they render on the
+     * pickers.
+     */
+    protected function validateScheduleOrder($validator): void
+    {
+        $pairs = [
+            ['planned_start_at', 'planned_end_at', 'planned_end', 'El fin planificado debe ser posterior al inicio.'],
+            ['actual_start_at', 'actual_end_at', 'actual_end', 'El fin real debe ser posterior al inicio.'],
+        ];
+
+        foreach ($pairs as [$startKey, $endKey, $errorField, $message]) {
+            $start = $this->input($startKey);
+            $end = $this->input($endKey);
+
+            if (! is_string($start) || $start === '' || ! is_string($end) || $end === '') {
+                continue;
+            }
+
+            try {
+                $startAt = CarbonImmutable::parse($start)->utc();
+                $endAt = CarbonImmutable::parse($end)->utc();
+            } catch (\Exception) {
+                continue;
+            }
+
+            if ($endAt->lte($startAt)) {
+                $validator->errors()->add($errorField, $message);
+            }
+        }
+    }
+
+    /**
+     * Block scheduling an OPEN service in the past. Only on create (edits
+     * to existing services may legitimately touch past dates) and only for
+     * open services — a CLOSED past-dated service is a retroactive record
+     * governed by validateRetroactiveEntry(), not a forward plan, so it is
+     * intentionally allowed here.
+     */
+    protected function validatePlannedStartNotPast($validator): void
+    {
+        if ($this->route('service') !== null) {
+            return;
+        }
+
+        if ($this->input('service_status') === ServiceStatus::Closed->value) {
+            return;
+        }
+
+        $plannedStart = $this->input('planned_start_at');
+        if (! is_string($plannedStart) || $plannedStart === '') {
+            return;
+        }
+
+        $timezone = $this->resolveServiceTimezone();
+
+        try {
+            $startDate = CarbonImmutable::parse($plannedStart)->setTimezone($timezone)->toDateString();
+        } catch (\Exception) {
+            return;
+        }
+
+        // Date-granular per requirement ("fecha anterior a hoy"): a service
+        // scheduled for today at any time is fine; only an earlier calendar
+        // day in the service's timezone is rejected.
+        if ($startDate < CarbonImmutable::now($timezone)->toDateString()) {
+            $validator->errors()->add(
+                'planned_start',
+                'No se puede planear un servicio en una fecha anterior a hoy.',
+            );
+        }
     }
 
     /**
@@ -442,38 +530,60 @@ class ServiceStoreRequest extends FormRequest
         $timezone = $this->resolveServiceTimezone();
         $this->merge(['timezone' => $timezone]);
 
-        $serviceDate = $this->input('service_date');
-        $plannedTime = $this->input('planned_start_time');
+        // Project each wall-clock datetime (Y-m-d H:i) in the service's TZ to
+        // a UTC instant. This mirrors the iCalendar "instant + IANA TZ"
+        // pattern: persistence is universal, presentation is event-TZ. Each
+        // datetime carries its own day, so a window that crosses midnight
+        // (e.g. 22:00 → 05:00) round-trips correctly.
+        $plannedStartAt = $this->projectWallClock($this->input('planned_start'), $timezone);
+        if ($plannedStartAt !== null) {
+            $serviceDate = $plannedStartAt->setTimezone($timezone)->format('Y-m-d');
+            $this->merge([
+                'planned_start_at' => $plannedStartAt->utc()->toIso8601String(),
+                'service_date' => $serviceDate,
+                'service_date_local' => $serviceDate,
+            ]);
+        }
 
-        // Project the wall-clock day + time-of-day in the service's TZ to a
-        // UTC instant. This mirrors the iCalendar "instant + IANA TZ"
-        // pattern: persistence is universal, presentation is event-TZ.
-        if (is_string($serviceDate) && is_string($plannedTime)) {
-            $serviceDate = substr($serviceDate, 0, 10);
-            $plannedTime = substr($plannedTime, 0, 5);
+        $plannedEndAt = $this->projectWallClock($this->input('planned_end'), $timezone);
+        // Fall back to start + duration when the caller supplies a duration
+        // but no explicit end datetime.
+        if ($plannedEndAt === null && $plannedStartAt !== null && is_numeric($this->input('planned_duration'))) {
+            $plannedEndAt = $plannedStartAt->addMinutes((int) $this->input('planned_duration'));
+        }
+        if ($plannedEndAt !== null) {
+            $this->merge(['planned_end_at' => $plannedEndAt->utc()->toIso8601String()]);
 
-            try {
-                $plannedStartAt = CarbonImmutable::createFromFormat(
-                    'Y-m-d H:i',
-                    "{$serviceDate} {$plannedTime}",
-                    $timezone,
-                );
-
-                if ($plannedStartAt !== false) {
-                    $this->merge([
-                        'planned_start_at' => $plannedStartAt->utc()->toIso8601String(),
-                        'service_date_local' => $serviceDate,
-                    ]);
-                }
-            } catch (\Exception $e) {
-                // Wall-clock parsing failed; per-field validation rules will
-                // surface a clearer error to the user.
+            if ($plannedStartAt !== null) {
+                $this->merge([
+                    'planned_duration' => (int) $plannedStartAt->diffInMinutes($plannedEndAt, false),
+                ]);
             }
         }
 
-        $this->mergeActualInstantsIfPresent($timezone);
+        $this->mergeActualInstants($timezone);
 
         $this->mergeNormalizedBillingGroups();
+    }
+
+    /**
+     * Parse a wall-clock 'Y-m-d H:i' string as an instant in the given TZ.
+     * Returns null when empty or unparseable (per-field rules then surface
+     * the error).
+     */
+    protected function projectWallClock(mixed $value, string $timezone): ?CarbonImmutable
+    {
+        if (! is_string($value) || trim($value) === '') {
+            return null;
+        }
+
+        try {
+            $instant = CarbonImmutable::createFromFormat('Y-m-d H:i', substr($value, 0, 16), $timezone);
+        } catch (\Exception) {
+            return null;
+        }
+
+        return $instant === false ? null : $instant;
     }
 
     /**
@@ -504,36 +614,23 @@ class ServiceStoreRequest extends FormRequest
     }
 
     /**
-     * Project optional wall-clock actual_*_time inputs into UTC instants.
+     * Project optional wall-clock actual_* datetimes into UTC instants. Each
+     * datetime carries its own day, so the start and end may legitimately
+     * fall on different calendar days.
      */
-    protected function mergeActualInstantsIfPresent(string $timezone): void
+    protected function mergeActualInstants(string $timezone): void
     {
-        $serviceDate = (string) $this->input('service_date');
-        if ($serviceDate === '') {
-            return;
-        }
-        $serviceDate = substr($serviceDate, 0, 10);
-
-        foreach (['actual_start_time' => 'actual_start_at', 'actual_end_time' => 'actual_end_at'] as $wallclock => $instant) {
-            $time = $this->input($wallclock);
-            if (! is_string($time) || $time === '') {
+        foreach (['actual_start' => 'actual_start_at', 'actual_end' => 'actual_end_at'] as $wallclock => $instant) {
+            $value = $this->input($wallclock);
+            if (! is_string($value) || trim($value) === '') {
                 $this->merge([$instant => null]);
 
                 continue;
             }
-            $time = substr($time, 0, 5);
 
-            try {
-                $value = CarbonImmutable::createFromFormat(
-                    'Y-m-d H:i',
-                    "{$serviceDate} {$time}",
-                    $timezone,
-                );
-                if ($value !== false) {
-                    $this->merge([$instant => $value->utc()->toIso8601String()]);
-                }
-            } catch (\Exception $e) {
-                // Surface to per-field rule.
+            $projected = $this->projectWallClock($value, $timezone);
+            if ($projected !== null) {
+                $this->merge([$instant => $projected->utc()->toIso8601String()]);
             }
         }
     }

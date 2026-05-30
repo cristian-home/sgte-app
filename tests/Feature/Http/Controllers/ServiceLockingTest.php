@@ -43,15 +43,14 @@ function validUpdateData(object $test): array
         'contract_id' => $test->contract->id,
         'vehicle_id' => $test->vehicle->id,
         'driver_id' => $test->driver->id,
-        'service_date' => $test->serviceDate,
-        'planned_start_time' => '10:00',
+        'planned_start' => $test->serviceDate.' 10:00',
         'planned_duration' => 90,
         'unit_value' => 100000,
         'quantity' => 2,
         'payment_method' => 'credit',
         'service_status' => 'closed',
-        'actual_start_time' => '10:00',
-        'actual_end_time' => '11:30',
+        'actual_start' => $test->serviceDate.' 10:00',
+        'actual_end' => $test->serviceDate.' 11:30',
     ];
 }
 
@@ -234,8 +233,7 @@ test('creating a service on an executed day is rejected for non-admin roles', fu
         'contract_id' => $this->contract->id,
         'vehicle_id' => $this->vehicle->id,
         'driver_id' => $this->driver->id,
-        'service_date' => $this->serviceDate,
-        'planned_start_time' => '14:00',
+        'planned_start' => $this->serviceDate.' 14:00',
         'planned_duration' => 60,
         'unit_value' => 100000,
         'quantity' => 1,

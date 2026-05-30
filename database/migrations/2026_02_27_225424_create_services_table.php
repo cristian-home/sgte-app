@@ -52,6 +52,11 @@ return new class extends Migration
             // queries. Wall-clock projection is derived from these + the
             // `timezone` column via accessors on the Service model.
             $table->timestampTz('planned_start_at');
+            // UTC instant for the planned end. Source of truth for the
+            // planned window; `planned_duration` (minutes) is derived from
+            // (planned_end_at - planned_start_at) by Service::saving() and
+            // kept in sync for NoScheduleConflict and the Gantt.
+            $table->timestampTz('planned_end_at')->nullable();
             $table->integer('planned_duration');
             $table->timestampTz('actual_start_at')->nullable();
             $table->timestampTz('actual_end_at')->nullable();
