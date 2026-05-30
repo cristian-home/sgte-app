@@ -179,3 +179,70 @@ test('editing a past service allows past datetimes', function (): void {
     expect($service->planned_start_local)->toBe('09:00')
         ->and($service->planned_duration)->toBe(90);
 });
+
+/**
+ * Actual-vs-planned tolerance (ACTUAL_TOLERANCE_HOURS = 6): the actual
+ * times may deviate from the planned window by up to 6 h on either side —
+ * an early departure or a late finish — but not further. Exercised with a
+ * past closed (retroactive) service so the records are valid to persist.
+ */
+function tolerancePayload(string $day, array $overrides = []): array
+{
+    return array_replace([
+        'contract_id' => test()->contract->id,
+        'vehicle_id' => test()->vehicle->id,
+        'driver_id' => test()->driver->id,
+        'timezone' => 'America/Bogota',
+        'planned_start' => "{$day} 08:00",
+        'planned_end' => "{$day} 10:00",
+        'unit_value' => 100000,
+        'quantity' => 1,
+        'payment_method' => 'credit',
+        'service_status' => 'closed',
+        'actual_start' => "{$day} 08:00",
+        'actual_end' => "{$day} 10:00",
+        'manual_entry_justification' => 'Registro retroactivo dentro de la verificación de tolerancia.',
+    ], $overrides);
+}
+
+test('accepts an actual start exactly at the tolerance before the planned start', function (): void {
+    // planned start 08:00 → lower bound 02:00 (6 h before). 02:00 is allowed.
+    $day = Carbon::now('America/Bogota')->subDays(3)->toDateString();
+    post(route('services.store'), tolerancePayload($day, [
+        'actual_start' => "{$day} 02:00",
+        'actual_end' => "{$day} 09:00",
+    ]))->assertRedirect(route('services.index'));
+
+    expect(Service::query()->count())->toBe(1);
+});
+
+test('rejects an actual start more than the tolerance before the planned start', function (): void {
+    $day = Carbon::now('America/Bogota')->subDays(3)->toDateString();
+    post(route('services.store'), tolerancePayload($day, [
+        'actual_start' => "{$day} 01:00", // 7 h before planned start
+        'actual_end' => "{$day} 09:00",
+    ]))->assertSessionHasErrors(['actual_start']);
+
+    expect(Service::query()->count())->toBe(0);
+});
+
+test('accepts an actual end exactly at the tolerance after the planned end', function (): void {
+    // planned end 10:00 → upper bound 16:00 (6 h after). 16:00 is allowed.
+    $day = Carbon::now('America/Bogota')->subDays(3)->toDateString();
+    post(route('services.store'), tolerancePayload($day, [
+        'actual_start' => "{$day} 08:00",
+        'actual_end' => "{$day} 16:00",
+    ]))->assertRedirect(route('services.index'));
+
+    expect(Service::query()->count())->toBe(1);
+});
+
+test('rejects an actual end more than the tolerance after the planned end', function (): void {
+    $day = Carbon::now('America/Bogota')->subDays(3)->toDateString();
+    post(route('services.store'), tolerancePayload($day, [
+        'actual_start' => "{$day} 08:00",
+        'actual_end' => "{$day} 17:00", // 7 h after planned end
+    ]))->assertSessionHasErrors(['actual_end']);
+
+    expect(Service::query()->count())->toBe(0);
+});

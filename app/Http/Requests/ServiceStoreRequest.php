@@ -23,6 +23,15 @@ use Illuminate\Validation\Rule;
 class ServiceStoreRequest extends FormRequest
 {
     /**
+     * Tolerance, in hours, that the actual (executed) times may deviate
+     * from the planned window. The actual start/end must fall within
+     * [planned_start − N h, planned_end + N h]. Allows realistic early
+     * departures / late finishes while catching gross data-entry errors
+     * (e.g. a wrong month). Mirrored on the frontend pickers' min/max.
+     */
+    protected const ACTUAL_TOLERANCE_HOURS = 6;
+
+    /**
      * License ↔ vehicle-type compatibility for Colombian public passenger transport.
      * Keys are vehicle types, values are the license categories legally authorized
      * to drive them for public passenger transport.
@@ -149,8 +158,56 @@ class ServiceStoreRequest extends FormRequest
                 $this->validateRetroactiveEntry($validator);
                 $this->validatePlannedStartNotPast($validator);
                 $this->validateScheduleOrder($validator);
+                $this->validateActualWithinTolerance($validator);
             },
         ];
+    }
+
+    /**
+     * Bound the actual (executed) times to the planned window plus a
+     * tolerance (see ACTUAL_TOLERANCE_HOURS): each actual instant must fall
+     * within [planned_start − N h, planned_end + N h]. The actual start may
+     * legitimately precede the planned start (early departure) — it just
+     * cannot drift further than the tolerance. Errors are keyed to the
+     * visible wall-clock fields so they render on the pickers.
+     */
+    protected function validateActualWithinTolerance($validator): void
+    {
+        $plannedStart = $this->input('planned_start_at');
+        $plannedEnd = $this->input('planned_end_at');
+
+        if (! is_string($plannedStart) || $plannedStart === '' || ! is_string($plannedEnd) || $plannedEnd === '') {
+            return;
+        }
+
+        try {
+            $lower = CarbonImmutable::parse($plannedStart)->utc()->subHours(self::ACTUAL_TOLERANCE_HOURS);
+            $upper = CarbonImmutable::parse($plannedEnd)->utc()->addHours(self::ACTUAL_TOLERANCE_HOURS);
+        } catch (\Exception) {
+            return;
+        }
+
+        $checks = [
+            ['actual_start_at', 'actual_start', 'El inicio real está fuera de la tolerancia de '.self::ACTUAL_TOLERANCE_HOURS.' h respecto al horario planificado.'],
+            ['actual_end_at', 'actual_end', 'El fin real está fuera de la tolerancia de '.self::ACTUAL_TOLERANCE_HOURS.' h respecto al horario planificado.'],
+        ];
+
+        foreach ($checks as [$key, $field, $message]) {
+            $value = $this->input($key);
+            if (! is_string($value) || $value === '') {
+                continue;
+            }
+
+            try {
+                $instant = CarbonImmutable::parse($value)->utc();
+            } catch (\Exception) {
+                continue;
+            }
+
+            if ($instant->lt($lower) || $instant->gt($upper)) {
+                $validator->errors()->add($field, $message);
+            }
+        }
     }
 
     /**

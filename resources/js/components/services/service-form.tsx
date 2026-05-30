@@ -1,6 +1,6 @@
 import { usePage } from '@inertiajs/react';
 import { APIProvider } from '@vis.gl/react-google-maps';
-import { format as formatDate } from 'date-fns';
+import { endOfDay, format as formatDate, startOfDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import {
     AlertTriangle,
@@ -404,12 +404,14 @@ function ScheduleDateTimeField({
     value,
     onChange,
     min,
+    max,
     disabled,
     invalid,
 }: {
     value: string;
     onChange: (value: string) => void;
     min?: Date;
+    max?: Date;
     disabled?: boolean;
     invalid?: boolean;
 }) {
@@ -418,6 +420,7 @@ function ScheduleDateTimeField({
             value={wallClockToDate(value)}
             onChange={(date) => onChange(dateToWallClock(date))}
             min={min}
+            max={max}
             disabled={disabled}
             locale={es}
             weekStartsOn={1}
@@ -801,6 +804,31 @@ export default function ServiceForm({
         mode === 'create' && isPastDate && isClosed;
     const illegalCreateAsClosed =
         mode === 'create' && isFutureOrToday && isClosed;
+
+    // Tolerance window for the actual (executed) times: the backend bounds
+    // each actual instant to [planned_start − 6h, planned_end + 6h] (see
+    // ACTUAL_TOLERANCE_HOURS). The picker bounds below are intentionally
+    // DAY-granular and generous — they grey out days clearly outside the
+    // window (catching gross typos) without ever blocking a valid time on a
+    // boundary day. The precise ±6h check stays server-side, where the
+    // error message lives. Bounds are undefined until the planned window is
+    // set, leaving the pickers unconstrained.
+    const ACTUAL_TOLERANCE_MS = 6 * 60 * 60 * 1000;
+    const plannedStartDate = wallClockToDate(data.planned_start);
+    const plannedEndDate = wallClockToDate(data.planned_end);
+    const actualLowerBound = plannedStartDate
+        ? startOfDay(new Date(plannedStartDate.getTime() - ACTUAL_TOLERANCE_MS))
+        : undefined;
+    const actualUpperBound = plannedEndDate
+        ? endOfDay(new Date(plannedEndDate.getTime() + ACTUAL_TOLERANCE_MS))
+        : undefined;
+    // Actual-end floor: the executed end must follow the executed start, but
+    // keep it day-granular so a same-day later time stays selectable (the
+    // strict end-after-start check is enforced on the server).
+    const actualStartDate = wallClockToDate(data.actual_start);
+    const actualEndMin = actualStartDate
+        ? startOfDay(actualStartDate)
+        : actualLowerBound;
 
     return (
         // One APIProvider for the whole form so both LocationFields and
@@ -1620,6 +1648,8 @@ export default function ServiceForm({
                                     onChange={(value) =>
                                         setData('actual_start', value)
                                     }
+                                    min={actualLowerBound}
+                                    max={actualUpperBound}
                                     disabled={isFieldDisabled('actual_start')}
                                     invalid={invalid('actual_start')}
                                 />
@@ -1635,7 +1665,8 @@ export default function ServiceForm({
                                     onChange={(value) =>
                                         setData('actual_end', value)
                                     }
-                                    min={wallClockToDate(data.actual_start)}
+                                    min={actualEndMin}
+                                    max={actualUpperBound}
                                     disabled={isFieldDisabled('actual_end')}
                                     invalid={invalid('actual_end')}
                                 />
