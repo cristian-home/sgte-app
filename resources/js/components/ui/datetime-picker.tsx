@@ -31,6 +31,7 @@ import {
   startOfDay,
   endOfDay,
 } from 'date-fns';
+import { es } from 'date-fns/locale';
 import {
   CheckIcon,
   ChevronDownIcon,
@@ -272,7 +273,7 @@ export function DateTimePicker({
           <div className="text-md font-bold ms-2 flex items-center cursor-pointer">
             <div>
               <span onClick={() => setMonthYearPicker(monthYearPicker === 'month' ? false : 'month')}>
-                {format(month, 'MMMM')}
+                {format(month, 'MMMM', { locale: es })}
               </span>
               <span className="ms-1" onClick={() => setMonthYearPicker(monthYearPicker === 'year' ? false : 'year')}>
                 {format(month, 'yyyy')}
@@ -355,11 +356,11 @@ export function DateTimePicker({
           )}
           <div className="flex flex-row-reverse items-center justify-between">
             <Button className="ms-2 h-7 px-2" onClick={onSubmit}>
-              Done
+              Listo
             </Button>
             {timezone && (
               <div className="text-sm">
-                <span>Timezone:</span>
+                <span>Zona horaria:</span>
                 <span className="font-semibold ms-1">{timezone}</span>
               </div>
             )}
@@ -406,7 +407,7 @@ function MonthYearPicker({
       const endM = endOfMonth(setMonthFns(value, i));
       if (minDate && endM < minDate) disabled = true;
       if (maxDate && startM > maxDate) disabled = true;
-      months.push({ value: i, label: format(new Date(0, i), 'MMM'), disabled });
+      months.push({ value: i, label: format(new Date(0, i), 'MMM', { locale: es }), disabled });
     }
     return months;
   }, [value]);
