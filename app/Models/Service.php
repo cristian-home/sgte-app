@@ -46,6 +46,7 @@ class Service extends Model
         'destination_coordinates_accuracy',
         'destination_place_id',
         'planned_start_at',
+        'planned_end_at',
         'planned_duration',
         'actual_start_at',
         'actual_end_at',
@@ -73,8 +74,13 @@ class Service extends Model
     protected $appends = [
         'service_date',
         'planned_start_local',
+        'planned_end_local',
         'actual_start_local',
         'actual_end_local',
+        'planned_start_local_datetime',
+        'planned_end_local_datetime',
+        'actual_start_local_datetime',
+        'actual_end_local_datetime',
     ];
 
     /**
@@ -101,6 +107,7 @@ class Service extends Model
             // instant stable in either driver.
             'service_date_local' => 'immutable_date',
             'planned_start_at' => 'immutable_datetime:Y-m-d H:i:sP',
+            'planned_end_at' => 'immutable_datetime:Y-m-d H:i:sP',
             'actual_start_at' => 'immutable_datetime:Y-m-d H:i:sP',
             'actual_end_at' => 'immutable_datetime:Y-m-d H:i:sP',
             'timezone' => 'string',
@@ -145,6 +152,15 @@ class Service extends Model
             $service->service_date_local = Carbon::instance($service->planned_start_at)
                 ->setTimezone($tz)
                 ->toDateString();
+
+            // `planned_end_at` is the source of truth for the planned window;
+            // keep `planned_duration` (minutes) derived from it so the
+            // NoScheduleConflict rule and the Gantt — which read minutes —
+            // stay consistent without touching those consumers.
+            if ($service->planned_end_at instanceof \DateTimeInterface) {
+                $service->planned_duration = (int) Carbon::instance($service->planned_start_at)
+                    ->diffInMinutes(Carbon::instance($service->planned_end_at), false);
+            }
         });
 
         // Cache refresh hooks split across created/updated because:
@@ -190,6 +206,47 @@ class Service extends Model
     public function getPlannedStartLocalAttribute(): ?string
     {
         return $this->planned_start_at?->setTimezone($this->resolveTimezone())->format('H:i');
+    }
+
+    /**
+     * Wall-clock planned end time (HH:mm) projected in the service's timezone.
+     */
+    public function getPlannedEndLocalAttribute(): ?string
+    {
+        return $this->planned_end_at?->setTimezone($this->resolveTimezone())->format('H:i');
+    }
+
+    /**
+     * Wall-clock planned start datetime (Y-m-d H:i) in the service's timezone.
+     * Consumed by the create/edit form's datetime pickers.
+     */
+    public function getPlannedStartLocalDatetimeAttribute(): ?string
+    {
+        return $this->planned_start_at?->setTimezone($this->resolveTimezone())->format('Y-m-d H:i');
+    }
+
+    /**
+     * Wall-clock planned end datetime (Y-m-d H:i) in the service's timezone.
+     */
+    public function getPlannedEndLocalDatetimeAttribute(): ?string
+    {
+        return $this->planned_end_at?->setTimezone($this->resolveTimezone())->format('Y-m-d H:i');
+    }
+
+    /**
+     * Wall-clock actual start datetime (Y-m-d H:i) in the service's timezone.
+     */
+    public function getActualStartLocalDatetimeAttribute(): ?string
+    {
+        return $this->actual_start_at?->setTimezone($this->resolveTimezone())->format('Y-m-d H:i');
+    }
+
+    /**
+     * Wall-clock actual end datetime (Y-m-d H:i) in the service's timezone.
+     */
+    public function getActualEndLocalDatetimeAttribute(): ?string
+    {
+        return $this->actual_end_at?->setTimezone($this->resolveTimezone())->format('Y-m-d H:i');
     }
 
     /**
@@ -262,6 +319,12 @@ class Service extends Model
     {
         $instant = $this->wallClockToInstant($value);
         $this->setAttribute('actual_start_at', $instant?->utc());
+    }
+
+    public function setPlannedEndTimeAttribute(mixed $value, ?string $dateOverride = null): void
+    {
+        $instant = $this->wallClockToInstant($value, $dateOverride);
+        $this->setAttribute('planned_end_at', $instant?->utc());
     }
 
     public function setActualEndTimeAttribute(mixed $value): void

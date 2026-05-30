@@ -7,6 +7,7 @@ use App\Enums\ServiceStatus;
 use App\Models\Contract;
 use App\Models\Driver;
 use App\Models\Municipality;
+use App\Models\Service;
 use App\Models\Vehicle;
 use Carbon\CarbonImmutable;
 use Database\Factories\Support\RealColombianAddresses;
@@ -14,6 +15,27 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 
 class ServiceFactory extends Factory
 {
+    /**
+     * Keep `planned_end_at` consistent with `planned_start_at` +
+     * `planned_duration` after callers override start and/or duration but
+     * not the end. Without this, an override like
+     * `->create(['planned_start_time' => '09:30', 'planned_duration' => 60])`
+     * would leave the definition's random `planned_end_at` in place, and the
+     * model's saving hook would then re-derive a bogus duration from it.
+     */
+    public function configure(): static
+    {
+        return $this->afterMaking(function (Service $service): void {
+            if (
+                $service->planned_start_at instanceof \DateTimeInterface
+                && is_numeric($service->planned_duration)
+            ) {
+                $service->planned_end_at = CarbonImmutable::instance($service->planned_start_at)
+                    ->addMinutes((int) $service->planned_duration);
+            }
+        });
+    }
+
     /**
      * Define the model's default state.
      */
@@ -29,6 +51,8 @@ class ServiceFactory extends Factory
         $time = fake()->time('H:i');
         $plannedStart = CarbonImmutable::createFromFormat('Y-m-d H:i', "{$day} {$time}", $timezone);
         $plannedStartUtc = $plannedStart->utc();
+        $plannedDuration = fake()->numberBetween(30, 480);
+        $plannedEndUtc = $plannedStart->addMinutes($plannedDuration)->utc();
 
         $actualStart = fake()->boolean(40)
             ? $plannedStart->addMinutes(fake()->numberBetween(-15, 30))->utc()
@@ -79,7 +103,8 @@ class ServiceFactory extends Factory
             'destination_coordinates_accuracy' => $destinationSeed['accuracy'] ?? null,
             'destination_place_id' => $destinationSeed['place_id'] ?? null,
             'planned_start_at' => $plannedStartUtc,
-            'planned_duration' => fake()->numberBetween(30, 480),
+            'planned_end_at' => $plannedEndUtc,
+            'planned_duration' => $plannedDuration,
             'actual_start_at' => $actualStart,
             'actual_end_at' => $actualEnd,
             'timezone' => $timezone,

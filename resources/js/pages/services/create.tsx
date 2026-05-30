@@ -48,11 +48,16 @@ export default function ServicesCreate({
     thirdParties?: ThirdPartyOption[];
     documentTypes?: DocumentTypeOption[];
 }) {
+    // The planner can prefill a clicked slot (date + time); combine them
+    // into the single planned-start wall-clock the form now uses.
+    const prefillStart = prefill?.service_date
+        ? `${prefill.service_date} ${prefill.planned_start_time ?? '00:00'}`
+        : '';
+
     const { data, setData, post, processing, errors } = useForm({
         contract_id: '',
         vehicle_id: prefill?.vehicle_id ?? '',
         driver_id: '',
-        service_date: prefill?.service_date ?? '',
         origin_municipality_id: '',
         origin_address: '',
         origin_coordinates: '',
@@ -65,10 +70,11 @@ export default function ServicesCreate({
         destination_coordinates_source: '',
         destination_coordinates_accuracy: '',
         destination_place_id: '',
-        planned_start_time: prefill?.planned_start_time ?? '',
+        planned_start: prefillStart,
+        planned_end: '',
         planned_duration: '',
-        actual_start_time: '',
-        actual_end_time: '',
+        actual_start: '',
+        actual_end: '',
         unit_value: '',
         quantity: '1',
         billing_groups: [] as string[],
@@ -92,8 +98,9 @@ export default function ServicesCreate({
         () => new Set(executedDates),
         [executedDates],
     );
-    const isExecutedDay = data.service_date
-        ? executedDateSet.has(data.service_date)
+    const serviceDate = data.planned_start.slice(0, 10);
+    const isExecutedDay = serviceDate
+        ? executedDateSet.has(serviceDate)
         : false;
 
     // Cascade: contract create dialog launched from the "+" button next to
