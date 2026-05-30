@@ -360,6 +360,20 @@ function projectToUtcIso(
 }
 
 /**
+ * Render a wall-clock `HH:mm` (24h) string as 12-hour with a Spanish
+ * am/pm suffix (e.g. "22:00" → "10:00 p. m."). Presentation only — the
+ * stored/posted value stays 24h.
+ */
+function to12h(time: string): string {
+    const match = /^(\d{1,2}):(\d{2})/.exec(time);
+    if (!match) {
+        return time;
+    }
+    const d = new Date(2000, 0, 1, Number(match[1]), Number(match[2]));
+    return formatDate(d, 'hh:mm a', { locale: es });
+}
+
+/**
  * Read-only confirmation rendered next to the planned-start-time
  * picker so operators can see exactly what's about to be persisted
  * before submitting. Sourced from the contract's TZ when available,
@@ -386,7 +400,7 @@ function ScheduleTimezoneHint({
         <p className="text-xs text-muted-foreground">
             Se guardará como{' '}
             <strong>
-                {date} {time} {timezone}
+                {date} {to12h(time)} {timezone}
             </strong>
             {utcIso ? <> → {utcIso}</> : null}.
         </p>
@@ -424,6 +438,7 @@ function ScheduleDateTimeField({
             disabled={disabled}
             locale={es}
             weekStartsOn={1}
+            use12HourFormat
             timePicker={{ hour: true, minute: true, second: false }}
             renderTrigger={({ value: triggerValue }) => (
                 <button
@@ -440,7 +455,7 @@ function ScheduleDateTimeField({
                 >
                     <CalendarClock className="mr-2 size-4 shrink-0" />
                     {triggerValue
-                        ? formatDate(triggerValue, "d 'de' MMM yyyy, HH:mm", {
+                        ? formatDate(triggerValue, "d 'de' MMM yyyy, hh:mm a", {
                               locale: es,
                           })
                         : 'Seleccionar fecha y hora'}
