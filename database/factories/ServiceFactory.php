@@ -16,22 +16,41 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 class ServiceFactory extends Factory
 {
     /**
-     * Keep `planned_end_at` consistent with `planned_start_at` +
-     * `planned_duration` after callers override start and/or duration but
-     * not the end. Without this, an override like
-     * `->create(['planned_start_time' => '09:30', 'planned_duration' => 60])`
-     * would leave the definition's random `planned_end_at` in place, and the
-     * model's saving hook would then re-derive a bogus duration from it.
+     * Keep the planned window consistent and honour the `planned_duration`
+     * write-knob that tests/seeders still use for ergonomics. Since
+     * `planned_duration` is no longer a column, a caller passing it
+     * (e.g. `->create(['planned_start_time' => '09:30', 'planned_duration' => 60])`)
+     * sets a stray attribute — we translate it into `planned_end_at` and drop
+     * it before persist. When start was overridden without a duration and the
+     * end now precedes it, fall back to a sane 60-minute window.
      */
     public function configure(): static
     {
         return $this->afterMaking(function (Service $service): void {
-            if (
-                $service->planned_start_at instanceof \DateTimeInterface
-                && is_numeric($service->planned_duration)
-            ) {
-                $service->planned_end_at = CarbonImmutable::instance($service->planned_start_at)
-                    ->addMinutes((int) $service->planned_duration);
+            $attributes = $service->getAttributes();
+            $passedDuration = array_key_exists('planned_duration', $attributes)
+                ? (int) $attributes['planned_duration']
+                : null;
+            unset($service['planned_duration']);
+
+            if (! $service->planned_start_at instanceof \DateTimeInterface) {
+                return;
+            }
+
+            $start = CarbonImmutable::instance($service->planned_start_at);
+
+            if ($passedDuration !== null) {
+                $service->planned_end_at = $start->addMinutes($passedDuration);
+
+                return;
+            }
+
+            $end = $service->planned_end_at instanceof \DateTimeInterface
+                ? CarbonImmutable::instance($service->planned_end_at)
+                : null;
+
+            if ($end === null || $end->lessThanOrEqualTo($start)) {
+                $service->planned_end_at = $start->addMinutes(60);
             }
         });
     }
@@ -104,7 +123,6 @@ class ServiceFactory extends Factory
             'destination_place_id' => $destinationSeed['place_id'] ?? null,
             'planned_start_at' => $plannedStartUtc,
             'planned_end_at' => $plannedEndUtc,
-            'planned_duration' => $plannedDuration,
             'actual_start_at' => $actualStart,
             'actual_end_at' => $actualEnd,
             'timezone' => $timezone,

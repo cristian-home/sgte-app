@@ -95,8 +95,10 @@ class ServiceStoreRequest extends FormRequest
             'destination_coordinates_source' => ['required_with:destination_address,destination_municipality_id', 'nullable', Rule::in(['google', 'manual'])],
             'destination_coordinates_accuracy' => ['nullable', 'string', 'max:20'],
             'destination_place_id' => ['nullable', 'string', 'max:255'],
-            // Derived from (planned_end_at - planned_start_at) in
-            // prepareForValidation() and re-derived by Service::saving().
+            // Input-only convenience (minutes): when `planned_end` is omitted,
+            // prepareForValidation() derives planned_end_at from start +
+            // duration. Not persisted — the planned duration is derived from
+            // the window via the Service::planned_duration accessor.
             'planned_duration' => ['nullable', 'integer'],
             'actual_start' => ['nullable', Rule::requiredIf($this->input('service_status') === 'closed'), 'date_format:Y-m-d H:i'],
             'actual_end' => ['nullable', Rule::requiredIf($this->input('service_status') === 'closed'), 'date_format:Y-m-d H:i'],
@@ -120,22 +122,22 @@ class ServiceStoreRequest extends FormRequest
             'create_generic_contract' => ['nullable', 'boolean'],
         ];
 
-        if ($this->filled('vehicle_id') && $this->filled('planned_start_at') && $this->filled('planned_duration')) {
+        if ($this->filled('vehicle_id') && $this->filled('planned_start_at') && $this->filled('planned_end_at')) {
             $rules['vehicle_id'][] = new NoScheduleConflict(
                 'vehicle_id',
                 (int) $this->input('vehicle_id'),
                 $this->input('planned_start_at'),
-                (int) $this->input('planned_duration'),
+                $this->input('planned_end_at'),
                 $this->excludeServiceId(),
             );
         }
 
-        if ($this->filled('driver_id') && $this->filled('planned_start_at') && $this->filled('planned_duration')) {
+        if ($this->filled('driver_id') && $this->filled('planned_start_at') && $this->filled('planned_end_at')) {
             $rules['driver_id'][] = new NoScheduleConflict(
                 'driver_id',
                 (int) $this->input('driver_id'),
                 $this->input('planned_start_at'),
-                (int) $this->input('planned_duration'),
+                $this->input('planned_end_at'),
                 $this->excludeServiceId(),
             );
         }
@@ -610,12 +612,6 @@ class ServiceStoreRequest extends FormRequest
         }
         if ($plannedEndAt !== null) {
             $this->merge(['planned_end_at' => $plannedEndAt->utc()->toIso8601String()]);
-
-            if ($plannedStartAt !== null) {
-                $this->merge([
-                    'planned_duration' => (int) $plannedStartAt->diffInMinutes($plannedEndAt, false),
-                ]);
-            }
         }
 
         $this->mergeActualInstants($timezone);

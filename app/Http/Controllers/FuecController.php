@@ -121,7 +121,7 @@ class FuecController extends Controller
         Gate::authorize(Permission::VIEW_FUEC->value);
 
         $fuec->load([
-            'service:id,service_date_local,planned_start_at,timezone,vehicle_id,driver_id,contract_id,planned_duration,origin_municipality_id,destination_municipality_id,origin_address,destination_address',
+            'service:id,service_date_local,planned_start_at,planned_end_at,timezone,vehicle_id,driver_id,contract_id,origin_municipality_id,destination_municipality_id,origin_address,destination_address',
             'service.vehicle:id,plate,brand,line,model_year',
             'service.driver:id,first_name,first_lastname,identification_number',
             'service.contract:id,contract_number,third_party_id',
