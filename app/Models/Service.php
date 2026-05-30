@@ -47,7 +47,6 @@ class Service extends Model
         'destination_place_id',
         'planned_start_at',
         'planned_end_at',
-        'planned_duration',
         'actual_start_at',
         'actual_end_at',
         'timezone',
@@ -73,6 +72,7 @@ class Service extends Model
      */
     protected $appends = [
         'service_date',
+        'planned_duration',
         'planned_start_local',
         'planned_end_local',
         'actual_start_local',
@@ -152,15 +152,6 @@ class Service extends Model
             $service->service_date_local = Carbon::instance($service->planned_start_at)
                 ->setTimezone($tz)
                 ->toDateString();
-
-            // `planned_end_at` is the source of truth for the planned window;
-            // keep `planned_duration` (minutes) derived from it so the
-            // NoScheduleConflict rule and the Gantt — which read minutes —
-            // stay consistent without touching those consumers.
-            if ($service->planned_end_at instanceof \DateTimeInterface) {
-                $service->planned_duration = (int) Carbon::instance($service->planned_start_at)
-                    ->diffInMinutes(Carbon::instance($service->planned_end_at), false);
-            }
         });
 
         // Cache refresh hooks split across created/updated because:
@@ -214,6 +205,22 @@ class Service extends Model
     public function getPlannedEndLocalAttribute(): ?string
     {
         return $this->planned_end_at?->setTimezone($this->resolveTimezone())->format('H:i');
+    }
+
+    /**
+     * Planned duration in minutes, derived from the planned window. Not a
+     * stored column — `planned_end_at` is the source of truth. Returns null
+     * until both endpoints are set.
+     */
+    public function getPlannedDurationAttribute(): ?int
+    {
+        if (! $this->planned_start_at instanceof \DateTimeInterface
+            || ! $this->planned_end_at instanceof \DateTimeInterface) {
+            return null;
+        }
+
+        return (int) Carbon::instance($this->planned_start_at)
+            ->diffInMinutes(Carbon::instance($this->planned_end_at), false);
     }
 
     /**
@@ -456,7 +463,7 @@ class Service extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['id', 'contract_id', 'vehicle_id', 'driver_id', 'invoice_id', 'service_date_local', 'origin_municipality_id', 'origin_address', 'origin_coordinates', 'origin_coordinates_source', 'origin_coordinates_accuracy', 'origin_place_id', 'destination_municipality_id', 'destination_address', 'destination_coordinates', 'destination_coordinates_source', 'destination_coordinates_accuracy', 'destination_place_id', 'planned_start_at', 'planned_duration', 'actual_start_at', 'actual_end_at', 'timezone', 'unit_value', 'quantity', 'billing_groups', 'payment_method', 'service_status', 'manual_entry_justification', 'driver_declined_at', 'driver_decline_reason']);
+            ->logOnly(['id', 'contract_id', 'vehicle_id', 'driver_id', 'invoice_id', 'service_date_local', 'origin_municipality_id', 'origin_address', 'origin_coordinates', 'origin_coordinates_source', 'origin_coordinates_accuracy', 'origin_place_id', 'destination_municipality_id', 'destination_address', 'destination_coordinates', 'destination_coordinates_source', 'destination_coordinates_accuracy', 'destination_place_id', 'planned_start_at', 'planned_end_at', 'actual_start_at', 'actual_end_at', 'timezone', 'unit_value', 'quantity', 'billing_groups', 'payment_method', 'service_status', 'manual_entry_justification', 'driver_declined_at', 'driver_decline_reason']);
     }
 
     /**

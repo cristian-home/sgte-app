@@ -53,11 +53,10 @@ return new class extends Migration
             // `timezone` column via accessors on the Service model.
             $table->timestampTz('planned_start_at');
             // UTC instant for the planned end. Source of truth for the
-            // planned window; `planned_duration` (minutes) is derived from
-            // (planned_end_at - planned_start_at) by Service::saving() and
-            // kept in sync for NoScheduleConflict and the Gantt.
+            // planned window; the planned duration (minutes) is NOT stored —
+            // it is derived on the fly from (planned_end_at - planned_start_at)
+            // via the Service::planned_duration accessor.
             $table->timestampTz('planned_end_at')->nullable();
-            $table->integer('planned_duration');
             $table->timestampTz('actual_start_at')->nullable();
             $table->timestampTz('actual_end_at')->nullable();
             // IANA timezone the service is operationally scheduled in. Read

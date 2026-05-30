@@ -212,7 +212,7 @@ class DashboardController extends Controller
                 'origin_municipality_id',
                 'origin_address',
                 'planned_start_at',
-                'planned_duration',
+                'planned_end_at',
                 'timezone',
                 'service_status',
             ])
